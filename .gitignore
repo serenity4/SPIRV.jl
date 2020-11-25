@@ -1,1 +1,4 @@
-/Manifest.toml
+Manifest.toml
+docs/build
+gen/ctypes.jl
+gen/LibTemplate.jl

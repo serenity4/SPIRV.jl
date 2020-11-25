@@ -1,5 +1,6 @@
 module SPIRV
 
-# Write your package code here.
+include(joinpath(dirname(@__DIR__), "gen", "LibSpirv.jl")
+using .LibSpirv
 
 end

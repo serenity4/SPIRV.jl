@@ -3,7 +3,12 @@ uuid = "84138a67-b342-4d33-8200-33cfcca52eb2"
 authors = ["Cédric Belmant"]
 version = "0.1.0"
 
+[deps]
+CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
+SPIRV_Headers_jll = "50296a37-19d4-5487-a1d5-621c23d0d175"
+
 [compat]
+CEnum = "0.4.1"
 julia = "1.5"
 
 [extras]
