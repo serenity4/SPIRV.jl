@@ -1,4 +1,5 @@
 Manifest.toml
 docs/build
-gen/ctypes.jl
-gen/LibTemplate.jl
+spirv.core.grammar.json
+gen/spirv.jl
+.JuliaFormatter.toml

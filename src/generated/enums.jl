@@ -1,0 +1,675 @@
+@cenum SourceLanguage::UInt32 begin
+    Unknown = 0
+    ESSL = 1
+    GLSL = 2
+    OpenCL_C = 3
+    OpenCL_CPP = 4
+    HLSL = 5
+end
+
+@cenum ExecutionModel::UInt32 begin
+    Vertex = 0
+    TessellationControl = 1
+    TessellationEvaluation = 2
+    Geometry = 3
+    Fragment = 4
+    GLCompute = 5
+    Kernel = 6
+    TaskNV = 5267
+    MeshNV = 5268
+    RayGenerationNV = 5313
+    RayGenerationKHR = 5313
+    IntersectionNV = 5314
+    IntersectionKHR = 5314
+    AnyHitNV = 5315
+    AnyHitKHR = 5315
+    ClosestHitNV = 5316
+    ClosestHitKHR = 5316
+    MissNV = 5317
+    MissKHR = 5317
+    CallableNV = 5318
+    CallableKHR = 5318
+end
+
+@cenum AddressingModel::UInt32 begin
+    Logical = 0
+    Physical32 = 1
+    Physical64 = 2
+    PhysicalStorageBuffer64 = 5348
+    PhysicalStorageBuffer64EXT = 5348
+end
+
+@cenum MemoryModel::UInt32 begin
+    Simple = 0
+    GLSL450 = 1
+    OpenCL = 2
+    Vulkan = 3
+    VulkanKHR = 3
+end
+
+@cenum ExecutionMode::UInt32 begin
+    Invocations = 0
+    SpacingEqual = 1
+    SpacingFractionalEven = 2
+    SpacingFractionalOdd = 3
+    VertexOrderCw = 4
+    VertexOrderCcw = 5
+    PixelCenterInteger = 6
+    OriginUpperLeft = 7
+    OriginLowerLeft = 8
+    EarlyFragmentTests = 9
+    PointMode = 10
+    Xfb = 11
+    DepthReplacing = 12
+    DepthGreater = 14
+    DepthLess = 15
+    DepthUnchanged = 16
+    LocalSize = 17
+    LocalSizeHint = 18
+    InputPoints = 19
+    InputLines = 20
+    InputLinesAdjacency = 21
+    Triangles = 22
+    InputTrianglesAdjacency = 23
+    Quads = 24
+    Isolines = 25
+    OutputVertices = 26
+    OutputPoints = 27
+    OutputLineStrip = 28
+    OutputTriangleStrip = 29
+    VecTypeHint = 30
+    ContractionOff = 31
+    Initializer = 33
+    Finalizer = 34
+    SubgroupSize = 35
+    SubgroupsPerWorkgroup = 36
+    SubgroupsPerWorkgroupId = 37
+    LocalSizeId = 38
+    LocalSizeHintId = 39
+    PostDepthCoverage = 4446
+    DenormPreserve = 4459
+    DenormFlushToZero = 4460
+    SignedZeroInfNanPreserve = 4461
+    RoundingModeRTE = 4462
+    RoundingModeRTZ = 4463
+    StencilRefReplacingEXT = 5027
+    OutputLinesNV = 5269
+    OutputPrimitivesNV = 5270
+    DerivativeGroupQuadsNV = 5289
+    DerivativeGroupLinearNV = 5290
+    OutputTrianglesNV = 5298
+    PixelInterlockOrderedEXT = 5366
+    PixelInterlockUnorderedEXT = 5367
+    SampleInterlockOrderedEXT = 5368
+    SampleInterlockUnorderedEXT = 5369
+    ShadingRateInterlockOrderedEXT = 5370
+    ShadingRateInterlockUnorderedEXT = 5371
+end
+
+@cenum StorageClass::UInt32 begin
+    UniformConstant = 0
+    Input = 1
+    Uniform = 2
+    Output = 3
+    Workgroup = 4
+    CrossWorkgroup = 5
+    Private = 6
+    Function = 7
+    Generic = 8
+    PushConstant = 9
+    AtomicCounter = 10
+    Image = 11
+    StorageBuffer = 12
+    CallableDataNV = 5328
+    CallableDataKHR = 5328
+    IncomingCallableDataNV = 5329
+    IncomingCallableDataKHR = 5329
+    RayPayloadNV = 5338
+    RayPayloadKHR = 5338
+    HitAttributeNV = 5339
+    HitAttributeKHR = 5339
+    IncomingRayPayloadNV = 5342
+    IncomingRayPayloadKHR = 5342
+    ShaderRecordBufferNV = 5343
+    ShaderRecordBufferKHR = 5343
+    PhysicalStorageBuffer = 5349
+    PhysicalStorageBufferEXT = 5349
+end
+
+@cenum Dim::UInt32 begin
+    var"1D" = 0
+    var"2D" = 1
+    var"3D" = 2
+    Cube = 3
+    Rect = 4
+    Buffer = 5
+    SubpassData = 6
+end
+
+@cenum SamplerAddressingMode::UInt32 begin
+    None = 0
+    ClampToEdge = 1
+    Clamp = 2
+    Repeat = 3
+    RepeatMirrored = 4
+end
+
+@cenum SamplerFilterMode::UInt32 begin
+    Nearest = 0
+    Linear = 1
+end
+
+@cenum ImageFormat::UInt32 begin
+    Unknown = 0
+    Rgba32f = 1
+    Rgba16f = 2
+    R32f = 3
+    Rgba8 = 4
+    Rgba8Snorm = 5
+    Rg32f = 6
+    Rg16f = 7
+    R11fG11fB10f = 8
+    R16f = 9
+    Rgba16 = 10
+    Rgb10A2 = 11
+    Rg16 = 12
+    Rg8 = 13
+    R16 = 14
+    R8 = 15
+    Rgba16Snorm = 16
+    Rg16Snorm = 17
+    Rg8Snorm = 18
+    R16Snorm = 19
+    R8Snorm = 20
+    Rgba32i = 21
+    Rgba16i = 22
+    Rgba8i = 23
+    R32i = 24
+    Rg32i = 25
+    Rg16i = 26
+    Rg8i = 27
+    R16i = 28
+    R8i = 29
+    Rgba32ui = 30
+    Rgba16ui = 31
+    Rgba8ui = 32
+    R32ui = 33
+    Rgb10a2ui = 34
+    Rg32ui = 35
+    Rg16ui = 36
+    Rg8ui = 37
+    R16ui = 38
+    R8ui = 39
+end
+
+@cenum ImageChannelOrder::UInt32 begin
+    R = 0
+    A = 1
+    RG = 2
+    RA = 3
+    RGB = 4
+    RGBA = 5
+    BGRA = 6
+    ARGB = 7
+    Intensity = 8
+    Luminance = 9
+    Rx = 10
+    RGx = 11
+    RGBx = 12
+    Depth = 13
+    DepthStencil = 14
+    sRGB = 15
+    sRGBx = 16
+    sRGBA = 17
+    sBGRA = 18
+    ABGR = 19
+end
+
+@cenum ImageChannelDataType::UInt32 begin
+    SnormInt8 = 0
+    SnormInt16 = 1
+    UnormInt8 = 2
+    UnormInt16 = 3
+    UnormShort565 = 4
+    UnormShort555 = 5
+    UnormInt101010 = 6
+    SignedInt8 = 7
+    SignedInt16 = 8
+    SignedInt32 = 9
+    UnsignedInt8 = 10
+    UnsignedInt16 = 11
+    UnsignedInt32 = 12
+    HalfFloat = 13
+    Float = 14
+    UnormInt24 = 15
+    UnormInt101010_2 = 16
+end
+
+@cenum FPRoundingMode::UInt32 begin
+    RTE = 0
+    RTZ = 1
+    RTP = 2
+    RTN = 3
+end
+
+@cenum LinkageType::UInt32 begin
+    Export = 0
+    Import = 1
+end
+
+@cenum AccessQualifier::UInt32 begin
+    ReadOnly = 0
+    WriteOnly = 1
+    ReadWrite = 2
+end
+
+@cenum FunctionParameterAttribute::UInt32 begin
+    Zext = 0
+    Sext = 1
+    ByVal = 2
+    Sret = 3
+    NoAlias = 4
+    NoCapture = 5
+    NoWrite = 6
+    NoReadWrite = 7
+end
+
+@cenum Decoration::UInt32 begin
+    RelaxedPrecision = 0
+    SpecId = 1
+    Block = 2
+    BufferBlock = 3
+    RowMajor = 4
+    ColMajor = 5
+    ArrayStride = 6
+    MatrixStride = 7
+    GLSLShared = 8
+    GLSLPacked = 9
+    CPacked = 10
+    BuiltIn = 11
+    NoPerspective = 13
+    Flat = 14
+    Patch = 15
+    Centroid = 16
+    Sample = 17
+    Invariant = 18
+    Restrict = 19
+    Aliased = 20
+    Volatile = 21
+    Constant = 22
+    Coherent = 23
+    NonWritable = 24
+    NonReadable = 25
+    Uniform = 26
+    UniformId = 27
+    SaturatedConversion = 28
+    Stream = 29
+    Location = 30
+    Component = 31
+    Index = 32
+    Binding = 33
+    DescriptorSet = 34
+    Offset = 35
+    XfbBuffer = 36
+    XfbStride = 37
+    FuncParamAttr = 38
+    FPRoundingMode = 39
+    FPFastMathMode = 40
+    LinkageAttributes = 41
+    NoContraction = 42
+    InputAttachmentIndex = 43
+    Alignment = 44
+    MaxByteOffset = 45
+    AlignmentId = 46
+    MaxByteOffsetId = 47
+    NoSignedWrap = 4469
+    NoUnsignedWrap = 4470
+    ExplicitInterpAMD = 4999
+    OverrideCoverageNV = 5248
+    PassthroughNV = 5250
+    ViewportRelativeNV = 5252
+    SecondaryViewportRelativeNV = 5256
+    PerPrimitiveNV = 5271
+    PerViewNV = 5272
+    PerTaskNV = 5273
+    PerVertexNV = 5285
+    NonUniform = 5300
+    NonUniformEXT = 5300
+    RestrictPointer = 5355
+    RestrictPointerEXT = 5355
+    AliasedPointer = 5356
+    AliasedPointerEXT = 5356
+    CounterBuffer = 5634
+    HlslCounterBufferGOOGLE = 5634
+    UserSemantic = 5635
+    HlslSemanticGOOGLE = 5635
+    UserTypeGOOGLE = 5636
+end
+
+@cenum BuiltIn::UInt32 begin
+    Position = 0
+    PointSize = 1
+    ClipDistance = 3
+    CullDistance = 4
+    VertexId = 5
+    InstanceId = 6
+    PrimitiveId = 7
+    InvocationId = 8
+    Layer = 9
+    ViewportIndex = 10
+    TessLevelOuter = 11
+    TessLevelInner = 12
+    TessCoord = 13
+    PatchVertices = 14
+    FragCoord = 15
+    PointCoord = 16
+    FrontFacing = 17
+    SampleId = 18
+    SamplePosition = 19
+    SampleMask = 20
+    FragDepth = 22
+    HelperInvocation = 23
+    NumWorkgroups = 24
+    WorkgroupSize = 25
+    WorkgroupId = 26
+    LocalInvocationId = 27
+    GlobalInvocationId = 28
+    LocalInvocationIndex = 29
+    WorkDim = 30
+    GlobalSize = 31
+    EnqueuedWorkgroupSize = 32
+    GlobalOffset = 33
+    GlobalLinearId = 34
+    SubgroupSize = 36
+    SubgroupMaxSize = 37
+    NumSubgroups = 38
+    NumEnqueuedSubgroups = 39
+    SubgroupId = 40
+    SubgroupLocalInvocationId = 41
+    VertexIndex = 42
+    InstanceIndex = 43
+    SubgroupEqMask = 4416
+    SubgroupGeMask = 4417
+    SubgroupGtMask = 4418
+    SubgroupLeMask = 4419
+    SubgroupLtMask = 4420
+    SubgroupEqMaskKHR = 4416
+    SubgroupGeMaskKHR = 4417
+    SubgroupGtMaskKHR = 4418
+    SubgroupLeMaskKHR = 4419
+    SubgroupLtMaskKHR = 4420
+    BaseVertex = 4424
+    BaseInstance = 4425
+    DrawIndex = 4426
+    DeviceIndex = 4438
+    ViewIndex = 4440
+    BaryCoordNoPerspAMD = 4992
+    BaryCoordNoPerspCentroidAMD = 4993
+    BaryCoordNoPerspSampleAMD = 4994
+    BaryCoordSmoothAMD = 4995
+    BaryCoordSmoothCentroidAMD = 4996
+    BaryCoordSmoothSampleAMD = 4997
+    BaryCoordPullModelAMD = 4998
+    FragStencilRefEXT = 5014
+    ViewportMaskNV = 5253
+    SecondaryPositionNV = 5257
+    SecondaryViewportMaskNV = 5258
+    PositionPerViewNV = 5261
+    ViewportMaskPerViewNV = 5262
+    FullyCoveredEXT = 5264
+    TaskCountNV = 5274
+    PrimitiveCountNV = 5275
+    PrimitiveIndicesNV = 5276
+    ClipDistancePerViewNV = 5277
+    CullDistancePerViewNV = 5278
+    LayerPerViewNV = 5279
+    MeshViewCountNV = 5280
+    MeshViewIndicesNV = 5281
+    BaryCoordNV = 5286
+    BaryCoordNoPerspNV = 5287
+    FragSizeEXT = 5292
+    FragmentSizeNV = 5292
+    FragInvocationCountEXT = 5293
+    InvocationsPerPixelNV = 5293
+    LaunchIdNV = 5319
+    LaunchIdKHR = 5319
+    LaunchSizeNV = 5320
+    LaunchSizeKHR = 5320
+    WorldRayOriginNV = 5321
+    WorldRayOriginKHR = 5321
+    WorldRayDirectionNV = 5322
+    WorldRayDirectionKHR = 5322
+    ObjectRayOriginNV = 5323
+    ObjectRayOriginKHR = 5323
+    ObjectRayDirectionNV = 5324
+    ObjectRayDirectionKHR = 5324
+    RayTminNV = 5325
+    RayTminKHR = 5325
+    RayTmaxNV = 5326
+    RayTmaxKHR = 5326
+    InstanceCustomIndexNV = 5327
+    InstanceCustomIndexKHR = 5327
+    ObjectToWorldNV = 5330
+    ObjectToWorldKHR = 5330
+    WorldToObjectNV = 5331
+    WorldToObjectKHR = 5331
+    HitTNV = 5332
+    HitTKHR = 5332
+    HitKindNV = 5333
+    HitKindKHR = 5333
+    IncomingRayFlagsNV = 5351
+    IncomingRayFlagsKHR = 5351
+    RayGeometryIndexKHR = 5352
+    WarpsPerSMNV = 5374
+    SMCountNV = 5375
+    WarpIDNV = 5376
+    SMIDNV = 5377
+end
+
+@cenum Scope::UInt32 begin
+    CrossDevice = 0
+    Device = 1
+    Workgroup = 2
+    Subgroup = 3
+    Invocation = 4
+    QueueFamily = 5
+    QueueFamilyKHR = 5
+    ShaderCallKHR = 6
+end
+
+@cenum GroupOperation::UInt32 begin
+    Reduce = 0
+    InclusiveScan = 1
+    ExclusiveScan = 2
+    ClusteredReduce = 3
+    PartitionedReduceNV = 6
+    PartitionedInclusiveScanNV = 7
+    PartitionedExclusiveScanNV = 8
+end
+
+@cenum KernelEnqueueFlags::UInt32 begin
+    NoWait = 0
+    WaitKernel = 1
+    WaitWorkGroup = 2
+end
+
+@cenum Capability::UInt32 begin
+    Matrix = 0
+    Shader = 1
+    Geometry = 2
+    Tessellation = 3
+    Addresses = 4
+    Linkage = 5
+    Kernel = 6
+    Vector16 = 7
+    Float16Buffer = 8
+    Float16 = 9
+    Float64 = 10
+    Int64 = 11
+    Int64Atomics = 12
+    ImageBasic = 13
+    ImageReadWrite = 14
+    ImageMipmap = 15
+    Pipes = 17
+    Groups = 18
+    DeviceEnqueue = 19
+    LiteralSampler = 20
+    AtomicStorage = 21
+    Int16 = 22
+    TessellationPointSize = 23
+    GeometryPointSize = 24
+    ImageGatherExtended = 25
+    StorageImageMultisample = 27
+    UniformBufferArrayDynamicIndexing = 28
+    SampledImageArrayDynamicIndexing = 29
+    StorageBufferArrayDynamicIndexing = 30
+    StorageImageArrayDynamicIndexing = 31
+    ClipDistance = 32
+    CullDistance = 33
+    ImageCubeArray = 34
+    SampleRateShading = 35
+    ImageRect = 36
+    SampledRect = 37
+    GenericPointer = 38
+    Int8 = 39
+    InputAttachment = 40
+    SparseResidency = 41
+    MinLod = 42
+    Sampled1D = 43
+    Image1D = 44
+    SampledCubeArray = 45
+    SampledBuffer = 46
+    ImageBuffer = 47
+    ImageMSArray = 48
+    StorageImageExtendedFormats = 49
+    ImageQuery = 50
+    DerivativeControl = 51
+    InterpolationFunction = 52
+    TransformFeedback = 53
+    GeometryStreams = 54
+    StorageImageReadWithoutFormat = 55
+    StorageImageWriteWithoutFormat = 56
+    MultiViewport = 57
+    SubgroupDispatch = 58
+    NamedBarrier = 59
+    PipeStorage = 60
+    GroupNonUniform = 61
+    GroupNonUniformVote = 62
+    GroupNonUniformArithmetic = 63
+    GroupNonUniformBallot = 64
+    GroupNonUniformShuffle = 65
+    GroupNonUniformShuffleRelative = 66
+    GroupNonUniformClustered = 67
+    GroupNonUniformQuad = 68
+    ShaderLayer = 69
+    ShaderViewportIndex = 70
+    SubgroupBallotKHR = 4423
+    DrawParameters = 4427
+    SubgroupVoteKHR = 4431
+    StorageBuffer16BitAccess = 4433
+    StorageUniformBufferBlock16 = 4433
+    UniformAndStorageBuffer16BitAccess = 4434
+    StorageUniform16 = 4434
+    StoragePushConstant16 = 4435
+    StorageInputOutput16 = 4436
+    DeviceGroup = 4437
+    MultiView = 4439
+    VariablePointersStorageBuffer = 4441
+    VariablePointers = 4442
+    AtomicStorageOps = 4445
+    SampleMaskPostDepthCoverage = 4447
+    StorageBuffer8BitAccess = 4448
+    UniformAndStorageBuffer8BitAccess = 4449
+    StoragePushConstant8 = 4450
+    DenormPreserve = 4464
+    DenormFlushToZero = 4465
+    SignedZeroInfNanPreserve = 4466
+    RoundingModeRTE = 4467
+    RoundingModeRTZ = 4468
+    RayQueryProvisionalKHR = 4471
+    RayTraversalPrimitiveCullingProvisionalKHR = 4478
+    Float16ImageAMD = 5008
+    ImageGatherBiasLodAMD = 5009
+    FragmentMaskAMD = 5010
+    StencilExportEXT = 5013
+    ImageReadWriteLodAMD = 5015
+    ShaderClockKHR = 5055
+    SampleMaskOverrideCoverageNV = 5249
+    GeometryShaderPassthroughNV = 5251
+    ShaderViewportIndexLayerEXT = 5254
+    ShaderViewportIndexLayerNV = 5254
+    ShaderViewportMaskNV = 5255
+    ShaderStereoViewNV = 5259
+    PerViewAttributesNV = 5260
+    FragmentFullyCoveredEXT = 5265
+    MeshShadingNV = 5266
+    ImageFootprintNV = 5282
+    FragmentBarycentricNV = 5284
+    ComputeDerivativeGroupQuadsNV = 5288
+    FragmentDensityEXT = 5291
+    ShadingRateNV = 5291
+    GroupNonUniformPartitionedNV = 5297
+    ShaderNonUniform = 5301
+    ShaderNonUniformEXT = 5301
+    RuntimeDescriptorArray = 5302
+    RuntimeDescriptorArrayEXT = 5302
+    InputAttachmentArrayDynamicIndexing = 5303
+    InputAttachmentArrayDynamicIndexingEXT = 5303
+    UniformTexelBufferArrayDynamicIndexing = 5304
+    UniformTexelBufferArrayDynamicIndexingEXT = 5304
+    StorageTexelBufferArrayDynamicIndexing = 5305
+    StorageTexelBufferArrayDynamicIndexingEXT = 5305
+    UniformBufferArrayNonUniformIndexing = 5306
+    UniformBufferArrayNonUniformIndexingEXT = 5306
+    SampledImageArrayNonUniformIndexing = 5307
+    SampledImageArrayNonUniformIndexingEXT = 5307
+    StorageBufferArrayNonUniformIndexing = 5308
+    StorageBufferArrayNonUniformIndexingEXT = 5308
+    StorageImageArrayNonUniformIndexing = 5309
+    StorageImageArrayNonUniformIndexingEXT = 5309
+    InputAttachmentArrayNonUniformIndexing = 5310
+    InputAttachmentArrayNonUniformIndexingEXT = 5310
+    UniformTexelBufferArrayNonUniformIndexing = 5311
+    UniformTexelBufferArrayNonUniformIndexingEXT = 5311
+    StorageTexelBufferArrayNonUniformIndexing = 5312
+    StorageTexelBufferArrayNonUniformIndexingEXT = 5312
+    RayTracingNV = 5340
+    VulkanMemoryModel = 5345
+    VulkanMemoryModelKHR = 5345
+    VulkanMemoryModelDeviceScope = 5346
+    VulkanMemoryModelDeviceScopeKHR = 5346
+    PhysicalStorageBufferAddresses = 5347
+    PhysicalStorageBufferAddressesEXT = 5347
+    ComputeDerivativeGroupLinearNV = 5350
+    RayTracingProvisionalKHR = 5353
+    CooperativeMatrixNV = 5357
+    FragmentShaderSampleInterlockEXT = 5363
+    FragmentShaderShadingRateInterlockEXT = 5372
+    ShaderSMBuiltinsNV = 5373
+    FragmentShaderPixelInterlockEXT = 5378
+    DemoteToHelperInvocationEXT = 5379
+    SubgroupShuffleINTEL = 5568
+    SubgroupBufferBlockIOINTEL = 5569
+    SubgroupImageBlockIOINTEL = 5570
+    SubgroupImageMediaBlockIOINTEL = 5579
+    IntegerFunctions2INTEL = 5584
+    SubgroupAvcMotionEstimationINTEL = 5696
+    SubgroupAvcMotionEstimationIntraINTEL = 5697
+    SubgroupAvcMotionEstimationChromaINTEL = 5698
+end
+
+@cenum RayQueryIntersection::UInt32 begin
+    RayQueryCandidateIntersectionKHR = 0
+    RayQueryCommittedIntersectionKHR = 1
+end
+
+@cenum RayQueryCommittedIntersectionType::UInt32 begin
+    RayQueryCommittedIntersectionNoneKHR = 0
+    RayQueryCommittedIntersectionTriangleKHR = 1
+    RayQueryCommittedIntersectionGeneratedKHR = 2
+end
+
+@cenum RayQueryCandidateIntersectionType::UInt32 begin
+    RayQueryCandidateIntersectionTriangleKHR = 0
+    RayQueryCandidateIntersectionAABBKHR = 1
+end
