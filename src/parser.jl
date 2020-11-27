@@ -102,6 +102,7 @@ function Base.show(io::IO, spirmod::SPIRModule)
     println(io, "Generator: ", spirmod.generator_magic_number)
     println(io, "Bound: ", spirmod.bound)
     println(io, "Schema: ", spirmod.schema)
+    println(io)
     for inst ∈ spirmod.instructions
         println(io, inst)
     end
