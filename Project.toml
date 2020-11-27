@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
+Crayons = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 SPIRV_Headers_jll = "50296a37-19d4-5487-a1d5-621c23d0d175"
 
 [compat]

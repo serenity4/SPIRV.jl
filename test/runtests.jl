@@ -1,6 +1,8 @@
 using SPIRV
 using Test
 
-@testset "SPIRV.jl" begin
-    # Write your tests here.
-end
+const spv = SPIRV
+
+resource(filename) = joinpath(@__DIR__, "resources", filename)
+
+println(SPIRModule(resource("vert.spv")))
