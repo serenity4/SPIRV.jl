@@ -16,7 +16,8 @@ function generate_operand_enums(operand_kinds, kind=nothing)
         if op["category"] == "ValueEnum" && _kind == something(kind, _kind)
             enum_vals = []
             map(op["enumerants"]) do enumerant
-                push!(enum_vals, :($(Symbol(enumerant["enumerant"])) = $(enumerant["value"])))
+                name = enumerant["enumerant"]
+                push!(enum_vals, :($(Symbol(_kind, name)) = $(enumerant["value"])))
             end
             push!(exprs, :(@cenum $_kind::UInt32 begin $(enum_vals...) end))
         end
@@ -54,7 +55,6 @@ open(src_dir("generated", "instructions.jl"), "w+") do io
     map(generate_instructions(instructions)) do expr
         if expr.head == :(=)
             split_text = split(format_text(string(prettify(expr))), "\n")
-            @show split_text[1:5]
             println(io, join(replace.(split_text, r"^\s+\:" => "    ")), "\n")
         else
             custom_print(io, expr)
