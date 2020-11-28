@@ -90,32 +90,25 @@ end
 
 function next_argument(operands, info, category)
     kind = info.kind
-    if kind == "LiteralString"
+    if kind == LiteralString
         bytes = reinterpret(UInt8, operands)
         i, chars = parse_bytes_for_utf8_string(bytes)
         str = GC.@preserve chars unsafe_string(pointer(chars))
-        # @info "LiteralString => $str for $i bytes"
         div(i, 4, RoundUp), str
-    # elseif kind == "LiteralInteger"
-    #     for (i, word) ∈ enumerate(operands)
-    #         if (0 & word) ≠ 0
-
-    #         end
-    #     end
     elseif is_enum(category)
-        1, Base.eval(@__MODULE__, Symbol(kind))(first(operands))
+        1, kind(first(operands))
     else
         1, first(operands)
     end
 end
 
 function print_argument(io::IO, arg, kind, category)
-    if kind ≠ "IdResult"
+    if kind ≠ IdResult
         print(io, " ")
         if is_enum(category)
             print(io, replace(string(arg), Regex("^$kind") => ""))
         elseif category == "Literal"
-            if kind == "LiteralString"
+            if kind == LiteralString
                 print(io, crayon"#99ff88", arg, crayon"reset")
             else
                 print(io, crayon"red", Int(arg), crayon"reset")
@@ -164,7 +157,6 @@ function operands_to_arguments(inst::Instruction)
                 extra_info = extra_operands[typeof(arg)][arg]
                 insert!(op_info, operand + 1, extra_info)
             end
-            # @info "$operand ($i -> $(i + j)): $arg => $arguments"
             i += j
         end
     end

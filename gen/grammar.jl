@@ -9,11 +9,10 @@ function generate_category_as_enum(operand_kinds, category)
     :(@enum $(Symbol(category))::Int begin $([:($(Symbol(kind)) = $val) for (val, kind) ∈ enumerate(getindex.(filter(x -> x["category"] == category, operand_kinds), "kind"))]...) end)
 end
 
-function extra_operands(enumerant, enum_name)
+function extra_operands(enumerant, enum_name, operand)
     if hasproperty(enumerant, :parameters)
         params = map(enumerant[:parameters]) do param
-            # Dict(k => (k == :kind ? (v ∈ getproperty.(op["enumerants"], :enumerant) ? Symbol(kind, v) : Symbol(v)) : strip(v, '\'')) for (k, v) ∈ param)
-            Dict(k => strip(v, '\'') for (k, v) ∈ param)
+            Dict(k => (k == :kind ? Symbol(v) : strip(v, '\'')) for (k, v) ∈ param)
         end
         (enum_name, [:(tuple($([:($k = $v) for (k, v) ∈ param]...))) for param ∈ params]...)
     else
@@ -30,7 +29,7 @@ function generate_enum(operand, category)
         name = enumerant["enumerant"]
         enum_name = Symbol(kind, name)
 
-        extra_ops = extra_operands(enumerant, enum_name)
+        extra_ops = extra_operands(enumerant, enum_name, operand)
         !isnothing(extra_ops) && push!(parameters, extra_ops)
         val = category == "BitEnum" ? parse(UInt16, enumerant["value"]) : enumerant["value"]
 
@@ -71,11 +70,19 @@ function generate_instruction_printing_class(insts_pc)
     :(const class_printing = Dict($(dict_args...)))
 end
 
+function attrs(operand)
+    map(zip(keys(operand), values(operand))) do (name, value)
+        if name == :kind
+            :($name = $(Symbol(value)))
+        else
+            :($name = $(strip(value, '\'')))
+        end
+    end
+end
+
 function generate_instructions(insts)
     names = Symbol.(getproperty.(insts, :opname))
     classes = getproperty.(insts, :class)
-
-    attrs(operand) = [:($(Symbol(name)) = $(strip(value, '\''))) for (name, value) ∈ operand]
 
     info(inst) = "operands" ∈ keys(inst) ? [:(tuple($(attrs(operand)...))) for operand ∈ inst["operands"]] : Expr[]
 
@@ -88,7 +95,7 @@ function generate_instructions(insts)
 end
 
 function generate_kind_to_category(operands)
-    :(const kind_to_category = Dict($([:($(operand["kind"]) => $(operand["category"])) for operand ∈ operands]...)))
+    :(const kind_to_category = Dict($([:($(Symbol(operand["kind"])) => $(operand["category"])) for operand ∈ operands]...)))
 end
 
 function pretty_dump(io, expr::Expr)
@@ -117,6 +124,7 @@ function generate()
     open(src_dir("generated", "enums.jl"), "w+") do io
         pretty_dump(io, generate_category_as_enum(operand_kinds, "Id"))
         pretty_dump(io, generate_category_as_enum(operand_kinds, "Literal"))
+        pretty_dump(io, generate_category_as_enum(operand_kinds, "Composite"))
         pretty_dump(io, generate_enums(operand_kinds))
     end
 

@@ -14,6 +14,12 @@ end
     LiteralSpecConstantOpInteger  = 5
 end
 
+@enum Composite::Int begin
+    PairLiteralIntegerIdRef = 1
+    PairIdRefLiteralInteger = 2
+    PairIdRefIdRef = 3
+end
+
 @cenum ImageOperands::UInt32 begin
     ImageOperandsNone                  = 0x0000
     ImageOperandsBias                  = 0x0001
@@ -804,98 +810,94 @@ end
 
 const extra_operands = Dict(
     ImageOperands => Dict(
-        ImageOperandsBias => (kind = "IdRef",),
-        ImageOperandsLod => (kind = "IdRef",),
-        ImageOperandsGrad => (kind = "IdRef",),
-        ImageOperandsConstOffset => (kind = "IdRef",),
-        ImageOperandsOffset => (kind = "IdRef",),
-        ImageOperandsConstOffsets => (kind = "IdRef",),
-        ImageOperandsSample => (kind = "IdRef",),
-        ImageOperandsMinLod => (kind = "IdRef",),
-        ImageOperandsMakeTexelAvailable => (kind = "IdScope",),
-        ImageOperandsMakeTexelAvailableKHR => (kind = "IdScope",),
-        ImageOperandsMakeTexelVisible => (kind = "IdScope",),
-        ImageOperandsMakeTexelVisibleKHR => (kind = "IdScope",),
+        ImageOperandsBias => (kind = IdRef,),
+        ImageOperandsLod => (kind = IdRef,),
+        ImageOperandsGrad => (kind = IdRef,),
+        ImageOperandsConstOffset => (kind = IdRef,),
+        ImageOperandsOffset => (kind = IdRef,),
+        ImageOperandsConstOffsets => (kind = IdRef,),
+        ImageOperandsSample => (kind = IdRef,),
+        ImageOperandsMinLod => (kind = IdRef,),
+        ImageOperandsMakeTexelAvailable => (kind = IdScope,),
+        ImageOperandsMakeTexelAvailableKHR => (kind = IdScope,),
+        ImageOperandsMakeTexelVisible => (kind = IdScope,),
+        ImageOperandsMakeTexelVisibleKHR => (kind = IdScope,),
     ),
     LoopControl => Dict(
-        LoopControlDependencyLength => (kind = "LiteralInteger",),
-        LoopControlMinIterations => (kind = "LiteralInteger",),
-        LoopControlMaxIterations => (kind = "LiteralInteger",),
-        LoopControlIterationMultiple => (kind = "LiteralInteger",),
-        LoopControlPeelCount => (kind = "LiteralInteger",),
-        LoopControlPartialCount => (kind = "LiteralInteger",),
+        LoopControlDependencyLength => (kind = LiteralInteger,),
+        LoopControlMinIterations => (kind = LiteralInteger,),
+        LoopControlMaxIterations => (kind = LiteralInteger,),
+        LoopControlIterationMultiple => (kind = LiteralInteger,),
+        LoopControlPeelCount => (kind = LiteralInteger,),
+        LoopControlPartialCount => (kind = LiteralInteger,),
     ),
     MemoryAccess => Dict(
-        MemoryAccessAligned => (kind = "LiteralInteger",),
-        MemoryAccessMakePointerAvailable => (kind = "IdScope",),
-        MemoryAccessMakePointerAvailableKHR => (kind = "IdScope",),
-        MemoryAccessMakePointerVisible => (kind = "IdScope",),
-        MemoryAccessMakePointerVisibleKHR => (kind = "IdScope",),
+        MemoryAccessAligned => (kind = LiteralInteger,),
+        MemoryAccessMakePointerAvailable => (kind = IdScope,),
+        MemoryAccessMakePointerAvailableKHR => (kind = IdScope,),
+        MemoryAccessMakePointerVisible => (kind = IdScope,),
+        MemoryAccessMakePointerVisibleKHR => (kind = IdScope,),
     ),
     ExecutionMode => Dict(
-        ExecutionModeInvocations => (
-            kind = "LiteralInteger",
-            name = "Number of <<Invocation,invocations>>",
-        ),
-        ExecutionModeLocalSize => (kind = "LiteralInteger", name = "x size"),
-        ExecutionModeLocalSizeHint => (kind = "LiteralInteger", name = "x size"),
-        ExecutionModeOutputVertices => (kind = "LiteralInteger", name = "Vertex count"),
-        ExecutionModeVecTypeHint => (kind = "LiteralInteger", name = "Vector type"),
-        ExecutionModeSubgroupSize => (kind = "LiteralInteger", name = "Subgroup Size"),
+        ExecutionModeInvocations =>
+            (kind = LiteralInteger, name = "Number of <<Invocation,invocations>>"),
+        ExecutionModeLocalSize => (kind = LiteralInteger, name = "x size"),
+        ExecutionModeLocalSizeHint => (kind = LiteralInteger, name = "x size"),
+        ExecutionModeOutputVertices => (kind = LiteralInteger, name = "Vertex count"),
+        ExecutionModeVecTypeHint => (kind = LiteralInteger, name = "Vector type"),
+        ExecutionModeSubgroupSize => (kind = LiteralInteger, name = "Subgroup Size"),
         ExecutionModeSubgroupsPerWorkgroup =>
-            (kind = "LiteralInteger", name = "Subgroups Per Workgroup"),
+            (kind = LiteralInteger, name = "Subgroups Per Workgroup"),
         ExecutionModeSubgroupsPerWorkgroupId =>
-            (kind = "IdRef", name = "Subgroups Per Workgroup"),
-        ExecutionModeLocalSizeId => (kind = "IdRef", name = "x size"),
-        ExecutionModeLocalSizeHintId => (kind = "IdRef", name = "Local Size Hint"),
-        ExecutionModeDenormPreserve => (kind = "LiteralInteger", name = "Target Width"),
+            (kind = IdRef, name = "Subgroups Per Workgroup"),
+        ExecutionModeLocalSizeId => (kind = IdRef, name = "x size"),
+        ExecutionModeLocalSizeHintId => (kind = IdRef, name = "Local Size Hint"),
+        ExecutionModeDenormPreserve => (kind = LiteralInteger, name = "Target Width"),
         ExecutionModeDenormFlushToZero =>
-            (kind = "LiteralInteger", name = "Target Width"),
+            (kind = LiteralInteger, name = "Target Width"),
         ExecutionModeSignedZeroInfNanPreserve =>
-            (kind = "LiteralInteger", name = "Target Width"),
-        ExecutionModeRoundingModeRTE =>
-            (kind = "LiteralInteger", name = "Target Width"),
-        ExecutionModeRoundingModeRTZ =>
-            (kind = "LiteralInteger", name = "Target Width"),
+            (kind = LiteralInteger, name = "Target Width"),
+        ExecutionModeRoundingModeRTE => (kind = LiteralInteger, name = "Target Width"),
+        ExecutionModeRoundingModeRTZ => (kind = LiteralInteger, name = "Target Width"),
         ExecutionModeOutputPrimitivesNV =>
-            (kind = "LiteralInteger", name = "Primitive count"),
+            (kind = LiteralInteger, name = "Primitive count"),
     ),
     Decoration => Dict(
         DecorationSpecId =>
-            (kind = "LiteralInteger", name = "Specialization Constant ID"),
-        DecorationArrayStride => (kind = "LiteralInteger", name = "Array Stride"),
-        DecorationMatrixStride => (kind = "LiteralInteger", name = "Matrix Stride"),
-        DecorationBuiltIn => (kind = "BuiltIn",),
-        DecorationUniformId => (kind = "IdScope", name = "Execution"),
-        DecorationStream => (kind = "LiteralInteger", name = "Stream Number"),
-        DecorationLocation => (kind = "LiteralInteger", name = "Location"),
-        DecorationComponent => (kind = "LiteralInteger", name = "Component"),
-        DecorationIndex => (kind = "LiteralInteger", name = "Index"),
-        DecorationBinding => (kind = "LiteralInteger", name = "Binding Point"),
-        DecorationDescriptorSet => (kind = "LiteralInteger", name = "Descriptor Set"),
-        DecorationOffset => (kind = "LiteralInteger", name = "Byte Offset"),
-        DecorationXfbBuffer => (kind = "LiteralInteger", name = "XFB Buffer Number"),
-        DecorationXfbStride => (kind = "LiteralInteger", name = "XFB Stride"),
+            (kind = LiteralInteger, name = "Specialization Constant ID"),
+        DecorationArrayStride => (kind = LiteralInteger, name = "Array Stride"),
+        DecorationMatrixStride => (kind = LiteralInteger, name = "Matrix Stride"),
+        DecorationBuiltIn => (kind = BuiltIn,),
+        DecorationUniformId => (kind = IdScope, name = "Execution"),
+        DecorationStream => (kind = LiteralInteger, name = "Stream Number"),
+        DecorationLocation => (kind = LiteralInteger, name = "Location"),
+        DecorationComponent => (kind = LiteralInteger, name = "Component"),
+        DecorationIndex => (kind = LiteralInteger, name = "Index"),
+        DecorationBinding => (kind = LiteralInteger, name = "Binding Point"),
+        DecorationDescriptorSet => (kind = LiteralInteger, name = "Descriptor Set"),
+        DecorationOffset => (kind = LiteralInteger, name = "Byte Offset"),
+        DecorationXfbBuffer => (kind = LiteralInteger, name = "XFB Buffer Number"),
+        DecorationXfbStride => (kind = LiteralInteger, name = "XFB Stride"),
         DecorationFuncParamAttr => (
-            kind = "FunctionParameterAttribute",
+            kind = FunctionParameterAttribute,
             name = "Function Parameter Attribute",
         ),
         DecorationFPRoundingMode =>
-            (kind = "FPRoundingMode", name = "Floating-Point Rounding Mode"),
-        DecorationFPFastMathMode => (kind = "FPFastMathMode", name = "Fast-Math Mode"),
-        DecorationLinkageAttributes => (kind = "LiteralString", name = "Name"),
+            (kind = FPRoundingMode, name = "Floating-Point Rounding Mode"),
+        DecorationFPFastMathMode => (kind = FPFastMathMode, name = "Fast-Math Mode"),
+        DecorationLinkageAttributes => (kind = LiteralString, name = "Name"),
         DecorationInputAttachmentIndex =>
-            (kind = "LiteralInteger", name = "Attachment Index"),
-        DecorationAlignment => (kind = "LiteralInteger", name = "Alignment"),
-        DecorationMaxByteOffset => (kind = "LiteralInteger", name = "Max Byte Offset"),
-        DecorationAlignmentId => (kind = "IdRef", name = "Alignment"),
-        DecorationMaxByteOffsetId => (kind = "IdRef", name = "Max Byte Offset"),
+            (kind = LiteralInteger, name = "Attachment Index"),
+        DecorationAlignment => (kind = LiteralInteger, name = "Alignment"),
+        DecorationMaxByteOffset => (kind = LiteralInteger, name = "Max Byte Offset"),
+        DecorationAlignmentId => (kind = IdRef, name = "Alignment"),
+        DecorationMaxByteOffsetId => (kind = IdRef, name = "Max Byte Offset"),
         DecorationSecondaryViewportRelativeNV =>
-            (kind = "LiteralInteger", name = "Offset"),
-        DecorationCounterBuffer => (kind = "IdRef", name = "Counter Buffer"),
-        DecorationHlslCounterBufferGOOGLE => (kind = "IdRef", name = "Counter Buffer"),
-        DecorationUserSemantic => (kind = "LiteralString", name = "Semantic"),
-        DecorationHlslSemanticGOOGLE => (kind = "LiteralString", name = "Semantic"),
-        DecorationUserTypeGOOGLE => (kind = "LiteralString", name = "User Type"),
+            (kind = LiteralInteger, name = "Offset"),
+        DecorationCounterBuffer => (kind = IdRef, name = "Counter Buffer"),
+        DecorationHlslCounterBufferGOOGLE => (kind = IdRef, name = "Counter Buffer"),
+        DecorationUserSemantic => (kind = LiteralString, name = "Semantic"),
+        DecorationHlslSemanticGOOGLE => (kind = LiteralString, name = "Semantic"),
+        DecorationUserTypeGOOGLE => (kind = LiteralString, name = "User Type"),
     ),
 )
