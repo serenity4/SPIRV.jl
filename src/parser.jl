@@ -167,7 +167,7 @@ function print_instruction(io::IO, inst::Instruction, id_bound)
     op_info = classes[inst.opcode][2]
     operands = inst.operands
     op_kinds = getproperty.(op_info, :kind)
-    op = findfirst(x -> x == "IdResult", op_kinds)
+    op = findfirst(x -> x == IdResult, op_kinds)
     inst_crayon = crayon"#33ccff"
 
     if isnothing(op)
