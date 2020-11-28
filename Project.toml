@@ -12,6 +12,7 @@ SPIRV_Headers_jll = "50296a37-19d4-5487-a1d5-621c23d0d175"
 CEnum = "0.4.1"
 Crayons = "4.0"
 julia = "1.5"
+SPIRV_Headers_jll = "1.5"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
