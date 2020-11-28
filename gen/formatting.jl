@@ -55,6 +55,7 @@ function format()
     format_file(inst_file, margin=92)
     align_block(inst_file)
     align_block(inst_file, block_begin=r"const class_printing = Dict\(", block_end=r"^\)$", delim=r"=>")
+    align_block(inst_file, block_begin=r"const kind_to_category = Dict\(", block_end=r"^\)$", delim=r"=>")
 
     format_file(enum_file, margin=92)
     align_block(enum_file)
