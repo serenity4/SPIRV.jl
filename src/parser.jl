@@ -106,7 +106,7 @@ function print_argument(io::IO, arg, kind, category)
     if kind ≠ IdResult
         print(io, " ")
         if is_enum(category)
-            print(io, replace(string(arg), Regex("^$kind") => ""))
+            print(io, replace(string(arg), Regex("^$(nameof(kind))") => ""))
         elseif category == "Literal"
             if kind == LiteralString
                 print(io, crayon"#99ff88", arg, crayon"reset")
