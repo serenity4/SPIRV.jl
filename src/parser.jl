@@ -77,6 +77,8 @@ end
 
 hex(x) = "0x" * lpad(string(x, base=16), sizeof(x) * 2, '0')
 
+is_enum(category) = category ∈ ("ValueEnum", "BitEnum")
+
 function parse_bytes_for_utf8_string(bytes)
     utf8_chars = UInt8[]
     for (i, byte) ∈ enumerate(bytes)
@@ -100,7 +102,7 @@ function next_argument(operands, info, category)
 
     #         end
     #     end
-    elseif category == "ValueEnum"
+    elseif is_enum(category)
         1, Base.eval(@__MODULE__, Symbol(kind))(first(operands))
     else
         1, first(operands)
@@ -110,18 +112,16 @@ end
 function print_argument(io::IO, arg, kind, category)
     if kind ≠ "IdResult"
         print(io, " ")
-        if category == "ValueEnum"
-            print(io, arg)
+        if is_enum(category)
+            print(io, replace(string(arg), Regex("^$kind") => ""))
         elseif category == "Literal"
             if kind == "LiteralString"
-                print(io, arg)
+                print(io, crayon"#99ff88", arg, crayon"reset")
             else
-                print(io, Int(arg))
+                print(io, crayon"red", Int(arg), crayon"reset")
             end
         elseif category == "Id"
-            print(io, "%", Int(arg))
-        else
-            print(io, "<$category>", hex(arg))
+            print(io, crayon"#ffaaaa", "%", Int(arg), crayon"reset")
         end
     end
 end
@@ -131,27 +131,18 @@ Base.show(io::IO, inst::Instruction) = print_instruction(io, inst, nothing)
 id_padding(id::Nothing) = 0
 id_padding(id) = 4 + length(string(id))
 
-function print_instruction(io::IO, inst::Instruction, id_bound)
+"""
+    operands_to_arguments(inst)
+
+Retrieve arguments to an operation inside an [`Instruction`](@ref) `inst`, based on its operands (which form a sequence of 4-bytes words).
+Converts raw integer values to their final types: enumeration, string, or integer.
+
+According to the specification, 1 operand (4 bytes) = 1 argument, except for literals.
+Literal arguments may be built from several operands, e.g. a string consumes as many operands as necessary until it encounters a NUL character.
+"""
+function operands_to_arguments(inst::Instruction)
     op_info = classes[inst.opcode][2]
     operands = inst.operands
-    op_kinds = getproperty.(op_info, :kind)
-    op = findfirst(x -> x == "IdResult", op_kinds)
-    inst_crayon = crayon"#99ff88"
-
-    if isnothing(op)
-        print(io, " "^id_padding(id_bound), inst_crayon, inst.opcode, crayon"reset")
-    else
-        id = operands[op]
-        print(io, crayon"#ffbb00", lpad("%$id = ", id_padding(something(id_bound, id))), inst_crayon, inst.opcode, crayon"reset")
-    end
-
-    # According to the specification, 1 operand (4 bytes) = 1 argument, except for literals.
-    # Literal arguments may be built from several operands, e.g. a string consumes as many operands
-    # as necessary until it encounters a NUL character.
-    # It is necessary to recover all arguments.
-    # First, though, we need to know the type of the operand being processed;
-    # is it a literal (in which case we scan for more words), or does it obey the rule 1 operand = 1 argument?
-
     arguments = []
     i = 1
     while i ≤ length(operands)
@@ -169,7 +160,7 @@ function print_instruction(io::IO, inst::Instruction, id_bound)
         else
             j, arg = next_argument(operands[i:end], info, category)
             push!(arguments, arg)
-            if category == "ValueEnum" && haskey(extra_operands, typeof(arg)) && haskey(extra_operands[typeof(arg)], arg)
+            if is_enum(category) && haskey(extra_operands, typeof(arg)) && haskey(extra_operands[typeof(arg)], arg)
                 extra_info = extra_operands[typeof(arg)][arg]
                 insert!(op_info, operand + 1, extra_info)
             end
@@ -177,6 +168,24 @@ function print_instruction(io::IO, inst::Instruction, id_bound)
             i += j
         end
     end
+    arguments
+end
+
+function print_instruction(io::IO, inst::Instruction, id_bound)
+    op_info = classes[inst.opcode][2]
+    operands = inst.operands
+    op_kinds = getproperty.(op_info, :kind)
+    op = findfirst(x -> x == "IdResult", op_kinds)
+    inst_crayon = crayon"#33ccff"
+
+    if isnothing(op)
+        print(io, " "^id_padding(id_bound), inst_crayon, inst.opcode, crayon"reset")
+    else
+        id = operands[op]
+        print(io, crayon"#ffbb00", lpad("%$id = ", id_padding(something(id_bound, id))), inst_crayon, inst.opcode, crayon"reset")
+    end
+
+    arguments = operands_to_arguments(inst)
 
     for (arg, info) ∈ zip(arguments, op_info)
         kind = info.kind

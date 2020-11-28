@@ -1,3 +1,131 @@
+@enum Id::Int begin
+    IdResultType      = 1
+    IdResult          = 2
+    IdMemorySemantics = 3
+    IdScope           = 4
+    IdRef             = 5
+end
+
+@enum Literal::Int begin
+    LiteralInteger                = 1
+    LiteralString                 = 2
+    LiteralContextDependentNumber = 3
+    LiteralExtInstInteger         = 4
+    LiteralSpecConstantOpInteger  = 5
+end
+
+@cenum ImageOperands::UInt32 begin
+    ImageOperandsNone                  = 0x0000
+    ImageOperandsBias                  = 0x0001
+    ImageOperandsLod                   = 0x0002
+    ImageOperandsGrad                  = 0x0004
+    ImageOperandsConstOffset           = 0x0008
+    ImageOperandsOffset                = 0x0010
+    ImageOperandsConstOffsets          = 0x0020
+    ImageOperandsSample                = 0x0040
+    ImageOperandsMinLod                = 0x0080
+    ImageOperandsMakeTexelAvailable    = 0x0100
+    ImageOperandsMakeTexelAvailableKHR = 0x0100
+    ImageOperandsMakeTexelVisible      = 0x0200
+    ImageOperandsMakeTexelVisibleKHR   = 0x0200
+    ImageOperandsNonPrivateTexel       = 0x0400
+    ImageOperandsNonPrivateTexelKHR    = 0x0400
+    ImageOperandsVolatileTexel         = 0x0800
+    ImageOperandsVolatileTexelKHR      = 0x0800
+    ImageOperandsSignExtend            = 0x1000
+    ImageOperandsZeroExtend            = 0x2000
+end
+
+@cenum FPFastMathMode::UInt32 begin
+    FPFastMathModeNone       = 0x0000
+    FPFastMathModeNotNaN     = 0x0001
+    FPFastMathModeNotInf     = 0x0002
+    FPFastMathModeNSZ        = 0x0004
+    FPFastMathModeAllowRecip = 0x0008
+    FPFastMathModeFast       = 0x0010
+end
+
+@cenum SelectionControl::UInt32 begin
+    SelectionControlNone        = 0x0000
+    SelectionControlFlatten     = 0x0001
+    SelectionControlDontFlatten = 0x0002
+end
+
+@cenum LoopControl::UInt32 begin
+    LoopControlNone               = 0x0000
+    LoopControlUnroll             = 0x0001
+    LoopControlDontUnroll         = 0x0002
+    LoopControlDependencyInfinite = 0x0004
+    LoopControlDependencyLength   = 0x0008
+    LoopControlMinIterations      = 0x0010
+    LoopControlMaxIterations      = 0x0020
+    LoopControlIterationMultiple  = 0x0040
+    LoopControlPeelCount          = 0x0080
+    LoopControlPartialCount       = 0x0100
+end
+
+@cenum FunctionControl::UInt32 begin
+    FunctionControlNone       = 0x0000
+    FunctionControlInline     = 0x0001
+    FunctionControlDontInline = 0x0002
+    FunctionControlPure       = 0x0004
+    FunctionControlConst      = 0x0008
+end
+
+@cenum MemorySemantics::UInt32 begin
+    MemorySemanticsRelaxed                = 0x0000
+    MemorySemanticsNone                   = 0x0000
+    MemorySemanticsAcquire                = 0x0002
+    MemorySemanticsRelease                = 0x0004
+    MemorySemanticsAcquireRelease         = 0x0008
+    MemorySemanticsSequentiallyConsistent = 0x0010
+    MemorySemanticsUniformMemory          = 0x0040
+    MemorySemanticsSubgroupMemory         = 0x0080
+    MemorySemanticsWorkgroupMemory        = 0x0100
+    MemorySemanticsCrossWorkgroupMemory   = 0x0200
+    MemorySemanticsAtomicCounterMemory    = 0x0400
+    MemorySemanticsImageMemory            = 0x0800
+    MemorySemanticsOutputMemory           = 0x1000
+    MemorySemanticsOutputMemoryKHR        = 0x1000
+    MemorySemanticsMakeAvailable          = 0x2000
+    MemorySemanticsMakeAvailableKHR       = 0x2000
+    MemorySemanticsMakeVisible            = 0x4000
+    MemorySemanticsMakeVisibleKHR         = 0x4000
+    MemorySemanticsVolatile               = 0x8000
+end
+
+@cenum MemoryAccess::UInt32 begin
+    MemoryAccessNone                    = 0x0000
+    MemoryAccessVolatile                = 0x0001
+    MemoryAccessAligned                 = 0x0002
+    MemoryAccessNontemporal             = 0x0004
+    MemoryAccessMakePointerAvailable    = 0x0008
+    MemoryAccessMakePointerAvailableKHR = 0x0008
+    MemoryAccessMakePointerVisible      = 0x0010
+    MemoryAccessMakePointerVisibleKHR   = 0x0010
+    MemoryAccessNonPrivatePointer       = 0x0020
+    MemoryAccessNonPrivatePointerKHR    = 0x0020
+end
+
+@cenum KernelProfilingInfo::UInt32 begin
+    KernelProfilingInfoNone        = 0x0000
+    KernelProfilingInfoCmdExecTime = 0x0001
+end
+
+@cenum RayFlags::UInt32 begin
+    RayFlagsNoneKHR                     = 0x0000
+    RayFlagsOpaqueKHR                   = 0x0001
+    RayFlagsNoOpaqueKHR                 = 0x0002
+    RayFlagsTerminateOnFirstHitKHR      = 0x0004
+    RayFlagsSkipClosestHitShaderKHR     = 0x0008
+    RayFlagsCullBackFacingTrianglesKHR  = 0x0010
+    RayFlagsCullFrontFacingTrianglesKHR = 0x0020
+    RayFlagsCullOpaqueKHR               = 0x0040
+    RayFlagsCullNoOpaqueKHR             = 0x0080
+    RayFlagsSkipTrianglesKHR            = 0x0100
+    RayFlagsSkipAABBsKHR                = 0x0200
+end
+
 @cenum SourceLanguage::UInt32 begin
     SourceLanguageUnknown    = 0
     SourceLanguageESSL       = 1
@@ -674,10 +802,100 @@ end
     RayQueryCandidateIntersectionTypeRayQueryCandidateIntersectionAABBKHR     = 1
 end
 
-@enum IdType::Int begin
-    IdResultType      = 1
-    IdResult          = 2
-    IdMemorySemantics = 3
-    IdScope           = 4
-    IdRef             = 5
-end
+const extra_operands = Dict(
+    ImageOperands => Dict(
+        ImageOperandsBias => (kind = "IdRef",),
+        ImageOperandsLod => (kind = "IdRef",),
+        ImageOperandsGrad => (kind = "IdRef",),
+        ImageOperandsConstOffset => (kind = "IdRef",),
+        ImageOperandsOffset => (kind = "IdRef",),
+        ImageOperandsConstOffsets => (kind = "IdRef",),
+        ImageOperandsSample => (kind = "IdRef",),
+        ImageOperandsMinLod => (kind = "IdRef",),
+        ImageOperandsMakeTexelAvailable => (kind = "IdScope",),
+        ImageOperandsMakeTexelAvailableKHR => (kind = "IdScope",),
+        ImageOperandsMakeTexelVisible => (kind = "IdScope",),
+        ImageOperandsMakeTexelVisibleKHR => (kind = "IdScope",),
+    ),
+    LoopControl => Dict(
+        LoopControlDependencyLength => (kind = "LiteralInteger",),
+        LoopControlMinIterations => (kind = "LiteralInteger",),
+        LoopControlMaxIterations => (kind = "LiteralInteger",),
+        LoopControlIterationMultiple => (kind = "LiteralInteger",),
+        LoopControlPeelCount => (kind = "LiteralInteger",),
+        LoopControlPartialCount => (kind = "LiteralInteger",),
+    ),
+    MemoryAccess => Dict(
+        MemoryAccessAligned => (kind = "LiteralInteger",),
+        MemoryAccessMakePointerAvailable => (kind = "IdScope",),
+        MemoryAccessMakePointerAvailableKHR => (kind = "IdScope",),
+        MemoryAccessMakePointerVisible => (kind = "IdScope",),
+        MemoryAccessMakePointerVisibleKHR => (kind = "IdScope",),
+    ),
+    ExecutionMode => Dict(
+        ExecutionModeInvocations => (
+            kind = "LiteralInteger",
+            name = "Number of <<Invocation,invocations>>",
+        ),
+        ExecutionModeLocalSize => (kind = "LiteralInteger", name = "x size"),
+        ExecutionModeLocalSizeHint => (kind = "LiteralInteger", name = "x size"),
+        ExecutionModeOutputVertices => (kind = "LiteralInteger", name = "Vertex count"),
+        ExecutionModeVecTypeHint => (kind = "LiteralInteger", name = "Vector type"),
+        ExecutionModeSubgroupSize => (kind = "LiteralInteger", name = "Subgroup Size"),
+        ExecutionModeSubgroupsPerWorkgroup =>
+            (kind = "LiteralInteger", name = "Subgroups Per Workgroup"),
+        ExecutionModeSubgroupsPerWorkgroupId =>
+            (kind = "IdRef", name = "Subgroups Per Workgroup"),
+        ExecutionModeLocalSizeId => (kind = "IdRef", name = "x size"),
+        ExecutionModeLocalSizeHintId => (kind = "IdRef", name = "Local Size Hint"),
+        ExecutionModeDenormPreserve => (kind = "LiteralInteger", name = "Target Width"),
+        ExecutionModeDenormFlushToZero =>
+            (kind = "LiteralInteger", name = "Target Width"),
+        ExecutionModeSignedZeroInfNanPreserve =>
+            (kind = "LiteralInteger", name = "Target Width"),
+        ExecutionModeRoundingModeRTE =>
+            (kind = "LiteralInteger", name = "Target Width"),
+        ExecutionModeRoundingModeRTZ =>
+            (kind = "LiteralInteger", name = "Target Width"),
+        ExecutionModeOutputPrimitivesNV =>
+            (kind = "LiteralInteger", name = "Primitive count"),
+    ),
+    Decoration => Dict(
+        DecorationSpecId =>
+            (kind = "LiteralInteger", name = "Specialization Constant ID"),
+        DecorationArrayStride => (kind = "LiteralInteger", name = "Array Stride"),
+        DecorationMatrixStride => (kind = "LiteralInteger", name = "Matrix Stride"),
+        DecorationBuiltIn => (kind = "BuiltIn",),
+        DecorationUniformId => (kind = "IdScope", name = "Execution"),
+        DecorationStream => (kind = "LiteralInteger", name = "Stream Number"),
+        DecorationLocation => (kind = "LiteralInteger", name = "Location"),
+        DecorationComponent => (kind = "LiteralInteger", name = "Component"),
+        DecorationIndex => (kind = "LiteralInteger", name = "Index"),
+        DecorationBinding => (kind = "LiteralInteger", name = "Binding Point"),
+        DecorationDescriptorSet => (kind = "LiteralInteger", name = "Descriptor Set"),
+        DecorationOffset => (kind = "LiteralInteger", name = "Byte Offset"),
+        DecorationXfbBuffer => (kind = "LiteralInteger", name = "XFB Buffer Number"),
+        DecorationXfbStride => (kind = "LiteralInteger", name = "XFB Stride"),
+        DecorationFuncParamAttr => (
+            kind = "FunctionParameterAttribute",
+            name = "Function Parameter Attribute",
+        ),
+        DecorationFPRoundingMode =>
+            (kind = "FPRoundingMode", name = "Floating-Point Rounding Mode"),
+        DecorationFPFastMathMode => (kind = "FPFastMathMode", name = "Fast-Math Mode"),
+        DecorationLinkageAttributes => (kind = "LiteralString", name = "Name"),
+        DecorationInputAttachmentIndex =>
+            (kind = "LiteralInteger", name = "Attachment Index"),
+        DecorationAlignment => (kind = "LiteralInteger", name = "Alignment"),
+        DecorationMaxByteOffset => (kind = "LiteralInteger", name = "Max Byte Offset"),
+        DecorationAlignmentId => (kind = "IdRef", name = "Alignment"),
+        DecorationMaxByteOffsetId => (kind = "IdRef", name = "Max Byte Offset"),
+        DecorationSecondaryViewportRelativeNV =>
+            (kind = "LiteralInteger", name = "Offset"),
+        DecorationCounterBuffer => (kind = "IdRef", name = "Counter Buffer"),
+        DecorationHlslCounterBufferGOOGLE => (kind = "IdRef", name = "Counter Buffer"),
+        DecorationUserSemantic => (kind = "LiteralString", name = "Semantic"),
+        DecorationHlslSemanticGOOGLE => (kind = "LiteralString", name = "Semantic"),
+        DecorationUserTypeGOOGLE => (kind = "LiteralString", name = "User Type"),
+    ),
+)

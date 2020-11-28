@@ -9,37 +9,56 @@ function generate_category_as_enum(operand_kinds, category)
     :(@enum $(Symbol(category))::Int begin $([:($(Symbol(kind)) = $val) for (val, kind) ∈ enumerate(getindex.(filter(x -> x["category"] == category, operand_kinds), "kind"))]...) end)
 end
 
-function generate_operand_enums(value_enum_operands)
-    exprs = []
-    extra_operands = []
-    for op ∈ value_enum_operands
-        kind = Symbol(op["kind"])
-        enum_vals = []
-        parameters = []
-
-        foreach(op["enumerants"]) do enumerant
-            name = enumerant["enumerant"]
-            enum_name = Symbol(kind, name)
-
-            if hasproperty(enumerant, :parameters)
-                params = map(enumerant[:parameters]) do param
-                    # Dict(k => (k == :kind ? (v ∈ getproperty.(op["enumerants"], :enumerant) ? Symbol(kind, v) : Symbol(v)) : strip(v, '\'')) for (k, v) ∈ param)
-                    Dict(k => strip(v, '\'') for (k, v) ∈ param)
-                end
-                push!(parameters, (enum_name, [:(tuple($([:($k = $v) for (k, v) ∈ param]...))) for param ∈ params]...))
-            end
-
-            push!(enum_vals, :($enum_name = $(enumerant["value"])))
+function extra_operands(enumerant, enum_name)
+    if hasproperty(enumerant, :parameters)
+        params = map(enumerant[:parameters]) do param
+            # Dict(k => (k == :kind ? (v ∈ getproperty.(op["enumerants"], :enumerant) ? Symbol(kind, v) : Symbol(v)) : strip(v, '\'')) for (k, v) ∈ param)
+            Dict(k => strip(v, '\'') for (k, v) ∈ param)
         end
+        (enum_name, [:(tuple($([:($k = $v) for (k, v) ∈ param]...))) for param ∈ params]...)
+    else
+        nothing
+    end
+end
 
-        push!(exprs, :(@cenum $kind::UInt32 begin $(enum_vals...) end))
-        !isempty(parameters) && push!(extra_operands, :($kind => Dict($(map(x -> :($(x[1]) => $(x[2])), parameters)...))))
+function generate_enum(operand, category)
+    kind = Symbol(operand["kind"])
+    enum_vals = []
+    parameters = []
+
+    foreach(operand["enumerants"]) do enumerant
+        name = enumerant["enumerant"]
+        enum_name = Symbol(kind, name)
+
+        extra_ops = extra_operands(enumerant, enum_name)
+        !isnothing(extra_ops) && push!(parameters, extra_ops)
+        val = category == "BitEnum" ? parse(UInt16, enumerant["value"]) : enumerant["value"]
+
+        push!(enum_vals, :($enum_name = $val))
+    end
+
+    enum_expr = :(@cenum $kind::UInt32 begin $(enum_vals...) end)
+    extra_operands_expr = isempty(parameters) ? nothing : :($kind => Dict($(map(x -> :($(x[1]) => $(x[2])), parameters)...)))
+
+    enum_expr, extra_operands_expr
+end
+
+function generate_enums(operands)
+    enums = []
+    extra_operands = []
+    for op ∈ operands
+        category = op["category"]
+        if category ∈ ("ValueEnum", "BitEnum")
+            category == "ValueEnum"
+            enum_expr, extra_operands_expr = generate_enum(op, category)
+            !isnothing(extra_operands_expr) && push!(extra_operands, extra_operands_expr)
+            push!(enums, enum_expr)
+        end
     end
 
     parameter_dict = :(const extra_operands = Dict($(extra_operands...)))
-    push!(exprs, parameter_dict)
 
-    exprs
+    vcat(enums, parameter_dict)
 end
 
 function generate_instruction_printing_class(insts_pc)
@@ -98,7 +117,7 @@ function generate()
     open(src_dir("generated", "enums.jl"), "w+") do io
         pretty_dump(io, generate_category_as_enum(operand_kinds, "Id"))
         pretty_dump(io, generate_category_as_enum(operand_kinds, "Literal"))
-        pretty_dump(io, generate_operand_enums(filter(x -> x["category"] == "ValueEnum", operand_kinds)))
+        pretty_dump(io, generate_enums(operand_kinds))
     end
 
     true
