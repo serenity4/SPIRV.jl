@@ -13,7 +13,8 @@ include_gen_file("instructions.jl")
 include("parser.jl")
 
 export
-        Instruction,
+        InstructionChunk,
+        GenericInstruction,
         parse_spirv,
         SPIRModule,
         disassemble

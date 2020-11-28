@@ -11,16 +11,24 @@ SPIR-V instruction, in binary format.
 Essentially, an instruction is an `opcode` referring to an operation followed by `operands`, 4-bytes words that form the payload.
 Be aware that an argument may be represented by one _or several_ operands, as is the case for literal values (see the [specification](https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.html#Literal) for more details). Therefore, the number of operands is not necessarily equal to the number of arguments.
 """
-struct Instruction
+struct InstructionChunk
     opcode::OpCode
     operands::Vector{UInt32}
+end
+
+"""
+SPIR-V instruction in human-readable format.
+"""
+struct GenericInstruction
+    opcode::OpCode
+    arguments
 end
 
 """
 SPIR-V module, as a series of headers followed by a stream of instructions.
 The header embeds two magic numbers, one for the module itself and one for the tool that generated it (e.g. [glslang](https://github.com/KhronosGroup/glslang)). It also contains the version of the specification applicable to the module, the maximum ID number and an optional instruction schema.
 """
-struct SPIRModule{V<:AbstractVector{<:Instruction}}
+struct SPIRModule{V<:AbstractVector{GenericInstruction}}
     magic_number::UInt32
     generator_magic_number::UInt32
     version::VersionNumber
@@ -54,7 +62,7 @@ function next_instruction(io::IO, next_word)
     for i ∈ 1:(word_count-1)
         push!(operands, next_word(io))
     end
-    Instruction(opcode, operands)
+    GenericInstruction(InstructionChunk(opcode, operands))
 end
 
 function next_word_f(_magic_number::UInt32)
@@ -69,7 +77,7 @@ function next_word_f(_magic_number::UInt32)
 end
 
 function parse_spirv(io::IO)
-    insts = Instruction[]
+    insts = GenericInstruction[]
     _magic_number = read(io, UInt32)
     next_word = next_word_f(_magic_number)
     version = spirv_version(next_word(io))
@@ -128,21 +136,18 @@ function print_argument(io::IO, arg, kind, category)
     end
 end
 
-Base.show(io::IO, inst::Instruction) = print_instruction(io, inst, nothing)
+Base.show(io::IO, inst::GenericInstruction) = print_instruction(io, inst, nothing)
 
 id_padding(id::Nothing) = 0
 id_padding(id) = 4 + length(string(id))
 
 """
-    operands_to_arguments(inst)
+    GenericInstruction(inst)
 
-Retrieve arguments to an operation inside an [`Instruction`](@ref) `inst`, based on its operands (which form a sequence of 4-bytes words).
+Retrieve arguments to an operation inside an [`InstructionChunk`](@ref) `inst`, based on its operands (which form a sequence of 4-bytes words).
 Converts raw integer values to their final types: enumeration, string, or integer.
-
-According to the specification, 1 operand (4 bytes) = 1 argument, except for literals.
-Literal arguments may be built from several operands, e.g. a string consumes as many operands as necessary until it encounters a NUL character.
 """
-function operands_to_arguments(inst::Instruction)
+function GenericInstruction(inst::InstructionChunk)
     op_info = classes[inst.opcode][2]
     operands = inst.operands
     arguments = []
@@ -169,26 +174,26 @@ function operands_to_arguments(inst::Instruction)
             i += j
         end
     end
-    arguments
+    GenericInstruction(inst.opcode, arguments)
 end
 
-function print_instruction(io::IO, inst::Instruction, id_bound)
-    op_info = classes[inst.opcode][2]
-    operands = inst.operands
-    op_kinds = getproperty.(op_info, :kind)
-    op = findfirst(x -> x == IdResult, op_kinds)
-    inst_crayon = crayon"#33ccff"
+info(inst::GenericInstruction) = classes[inst.opcode][2]
 
-    if isnothing(op)
+function print_result_id(io::IO, inst::GenericInstruction, id_bound)
+    op_kinds = getproperty.(info(inst), :kind)
+    index = findfirst(x -> x == IdResult, op_kinds)
+    inst_crayon = crayon"#33ccff"
+    if isnothing(index)
         print(io, " "^id_padding(id_bound), inst_crayon, inst.opcode, crayon"reset")
     else
-        id = operands[op]
+        id = inst.arguments[index]
         print(io, crayon"#ffbb00", lpad("%$id = ", id_padding(something(id_bound, id))), inst_crayon, inst.opcode, crayon"reset")
     end
+end
 
-    arguments = operands_to_arguments(inst)
-
-    for (arg, info) ∈ zip(arguments, op_info)
+function print_instruction(io::IO, inst::GenericInstruction, id_bound)
+    print_result_id(io, inst, id_bound)
+    for (arg, info) ∈ zip(inst.arguments, info(inst))
         kind = info.kind
         category = kind_to_category[kind]
         if arg isa AbstractVector
