@@ -13,10 +13,6 @@ function generate_category_as_enum(operand_kinds, category)
     :(@enum $(Symbol(category))::Int begin $([:($(Symbol(kind)) = $val) for (val, kind) ∈ enumerate(getindex.(filter(x -> x["category"] == category, operand_kinds), "kind"))]...) end)
 end
 
-const_dict(name, arguments) = Expr(:const, Expr(:(=), :($(Symbol(name))), Expr(:call, :Dict, arguments...)))
-
-nt_from_dict(d) = Expr(:tuple, [Expr(:(=), Symbol(k), v) for (k, v) ∈ d]...)
-
 function generate_operand_enums(value_enum_operands)
     exprs = []
     extra_operands = []
@@ -32,14 +28,14 @@ function generate_operand_enums(value_enum_operands)
                     # Dict(k => (k == :kind ? (v ∈ getproperty.(op["enumerants"], :enumerant) ? Symbol(kind, v) : Symbol(v)) : strip(v, '\'')) for (k, v) ∈ param)
                     Dict(k => strip(v, '\'') for (k, v) ∈ param)
                 end
-                push!(parameters, (enum_name, :(($(nt_from_dict.(params)...)))))
+                push!(parameters, (enum_name, [:(tuple($([:($k = $v) for (k, v) ∈ param]...))) for param ∈ params]...))
             end
             push!(enum_vals, :($enum_name = $(enumerant["value"])))
         end
         push!(exprs, :(@cenum $kind::UInt32 begin $(enum_vals...) end))
-        !isempty(parameters) && push!(extra_operands, Expr(:call, :(=>), kind, Expr(:call, :Dict, map(x -> Expr(:call, :(=>), x[1], x[2]), parameters)...)))
+        !isempty(parameters) && push!(extra_operands, :($kind => Dict($(map(x -> :($(x[1]) => $(x[2])), parameters)...))))
     end
-    parameter_dict = const_dict(:extra_operands, extra_operands)
+    parameter_dict = :(const extra_operands = Dict($(extra_operands...)))
     push!(exprs, parameter_dict)
 
     exprs
@@ -50,23 +46,28 @@ function generate_instruction_printing_class(insts_pc)
     classes = getindex.(insts_pc_noexclude, "tag")
     strs = getindex.(insts_pc_noexclude, "heading")
     dict_args = vcat(:(Symbol("@exclude") => ""), [:(Symbol($class) => $str) for (class, str) ∈ zip(classes, strs)])
-    Expr(:const, Expr(:(=), :class_printing, Expr(:call, :Dict, dict_args...)))
+
+    :(const class_printing = Dict($(dict_args...)))
 end
 
 function generate_instructions(insts)
     names = Symbol.(getproperty.(insts, :opname))
     classes = getproperty.(insts, :class)
-    info(inst) = "operands" ∈ keys(inst) ? [Expr(:tuple, Expr(:parameters, [Expr(:kw, Symbol(name), strip(value, '\'')) for (name, value) ∈ operand]...)) for operand ∈ inst["operands"]] : Expr[]
-    dict_args = [Expr(:call, :(=>), name, Expr(:tuple, :(Symbol($class)), Expr(:vect, info(insts[i])...))) for (i, (name, class)) ∈ enumerate(zip(names, classes))]
+
+    attrs(operand) = [:($(Symbol(name)) = $(strip(value, '\''))) for (name, value) ∈ operand]
+
+    info(inst) = "operands" ∈ keys(inst) ? [:(tuple($(attrs(operand)...))) for operand ∈ inst["operands"]] : Expr[]
+
+    dict_args = [:($name => $(:(tuple(Symbol($class), [$(info(insts[i])...)])))) for (i, (name, class)) ∈ enumerate(zip(names, classes))]
 
     [
         :(@cenum OpCode::UInt32 begin $(map((name, val) -> :($name = $val), names, getproperty.(insts, :opcode))...) end),
-        Expr(:const, Expr(:(=), :classes, Expr(:call, :Dict, dict_args...))),
+        :(const classes = Dict($(dict_args...))),
     ]
 end
 
 function generate_kind_to_category(operands)
-    Expr(:const, Expr(:(=), :kind_to_category, Expr(:call, :Dict, [Expr(:call, :(=>), :($(operand["kind"])), :($(operand["category"]))) for operand ∈ operands]...)))
+    :(const kind_to_category = Dict($([:($(operand["kind"]) => $(operand["category"])) for operand ∈ operands]...)))
 end
 
 function pretty_dump(io, expr::Expr)
