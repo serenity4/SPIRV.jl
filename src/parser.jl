@@ -6,11 +6,20 @@ Base.showerror(io::IO, err::SPIRFormatError) = print(io, "Invalid SPIR-V format:
 
 invalid_format(msg) = throw(SPIRFormatError(msg))
 
+"""
+SPIR-V instruction, in binary format.
+Essentially, an instruction is an `opcode` referring to an operation followed by `operands`, 4-bytes words that form the payload.
+Be aware that an argument may be represented by one _or several_ operands, as is the case for literal values (see the [specification](https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.html#Literal) for more details). Therefore, the number of operands is not necessarily equal to the number of arguments.
+"""
 struct Instruction
     opcode::OpCode
     operands::Vector{UInt32}
 end
 
+"""
+SPIR-V module, as a series of headers followed by a stream of instructions.
+The header embeds two magic numbers, one for the module itself and one for the tool that generated it (e.g. [glslang](https://github.com/KhronosGroup/glslang)). It also contains the version of the specification applicable to the module, the maximum ID number and an optional instruction schema.
+"""
 struct SPIRModule{V<:AbstractVector{<:Instruction}}
     magic_number::UInt32
     generator_magic_number::UInt32
@@ -190,7 +199,16 @@ function print_instruction(io::IO, inst::Instruction, id_bound)
     end
 end
 
-function Base.show(io::IO, spirmod::SPIRModule)
+Base.show(io::IO, spirmod::SPIRModule) = print(io, "SPIRModule(#instructions=$(length(spirmod.instructions)))")
+
+Base.show(io::IO, ::MIME"text/plain", spirmod::SPIRModule) = disassemble(io, spirmod)
+
+"""
+    disassemble(io, spir_module)
+
+Transform the content of `spir_module` into a human-readable format and prints it to the provided IO.
+"""
+function disassemble(io::IO, spirmod::SPIRModule)
     if spirmod.magic_number == magic_number
         println(io, "SPIR-V")
     else
@@ -206,3 +224,5 @@ function Base.show(io::IO, spirmod::SPIRModule)
         println(io)
     end
 end
+
+disassemble(spirmod::SPIRModule) = disassemble(stdout, spirmod)

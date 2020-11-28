@@ -15,6 +15,7 @@ include("parser.jl")
 export
         Instruction,
         parse_spirv,
-        SPIRModule
+        SPIRModule,
+        disassemble
 
 end
