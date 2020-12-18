@@ -7,4 +7,8 @@ resource(filename) = joinpath(@__DIR__, "resources", filename)
 
 modules = SPIRModule.(resource.(["vert.spv", "frag.spv"]))
 
-disassemble.(modules)
+for mod ∈ modules
+    disassemble(mod)
+    ir = generate_ir(mod)
+    println.(ir.variables)
+end
