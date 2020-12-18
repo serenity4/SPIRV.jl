@@ -23,6 +23,7 @@ end
 
 include("parser.jl")
 include("ir.jl")
+include("resources.jl")
 
 export
         # parser
