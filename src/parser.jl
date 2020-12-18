@@ -28,13 +28,13 @@ end
 SPIR-V module, as a series of headers followed by a stream of instructions.
 The header embeds two magic numbers, one for the module itself and one for the tool that generated it (e.g. [glslang](https://github.com/KhronosGroup/glslang)). It also contains the version of the specification applicable to the module, the maximum ID number and an optional instruction schema.
 """
-struct SPIRModule{V<:AbstractVector{GenericInstruction}}
+struct SPIRModule
     magic_number::UInt32
     generator_magic_number::UInt32
     version::VersionNumber
     bound::Int
     schema::Int
-    instructions::V
+    instructions::Vector{GenericInstruction}
 end
 
 function SPIRModule(file)
