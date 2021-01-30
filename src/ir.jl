@@ -70,7 +70,7 @@ function generate_ir(mod::SPIRModule)
                 end
                 vars[id] = Dict(:id => id, :name => Symbol(name), :decorations => [])
             @case OpDecorate
-                id, decoration... = arguments
+                id, decoration = arguments[1], arguments[2:end]
                 push!(vars[id][:decorations], tuple(decoration...))
             @case _
                 nothing
