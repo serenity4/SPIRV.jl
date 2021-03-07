@@ -37,11 +37,12 @@ struct SPIRModule
     instructions::Vector{GenericInstruction}
 end
 
-function SPIRModule(file)
-    io = open(file, "r")
-    mod = parse_spirv(io)
-    close(io)
-    mod
+function SPIRModule(io::IO)
+    parse_spirv(io)
+end
+
+function SPIRModule(file::AbstractString)
+    open(x -> SPIRModule(x), file)
 end
 
 function spirv_version(word)
