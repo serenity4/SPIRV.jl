@@ -5,12 +5,11 @@ using Crayons
 using MLStyle
 using MLStyle.AbstractPatterns: literal
 
-include_gen_file(x::String...) = include(joinpath(@__DIR__, "generated", x...))
-
 const magic_number = 0x07230203
 
-include_gen_file("enums.jl")
-include_gen_file("instructions.jl")
+# generated SPIR-V wrapper
+include("generated/enums.jl")
+include("generated/instructions.jl")
 
 for enum ∈ [:OpCode, :Decoration]
     @eval begin
