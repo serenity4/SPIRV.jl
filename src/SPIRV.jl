@@ -12,9 +12,7 @@ const magic_number = 0x07230203
 include_gen_file("enums.jl")
 include_gen_file("instructions.jl")
 
-mlstyle_add_enums = [:OpCode, :Decoration]
-
-for enum ∈ mlstyle_add_enums
+for enum ∈ [:OpCode, :Decoration]
     @eval begin
         MLStyle.is_enum(::$enum) = true
         MLStyle.pattern_uncall(e::$enum, _, _, _, _) = literal(e)
