@@ -1,4 +1,4 @@
-g = JSON3.read(read(joinpath(include_dir, "spirv.core.grammar.json"), String))
+const g = JSON3.read(read(joinpath(include_dir, "spirv.core.grammar.json"), String))
 
 const magic_number = parse(UInt32, g[:magic_number])
 const grammar_version = VersionNumber(getindex.(Ref(g), [:major_version, :minor_version, :revision])...)
@@ -107,8 +107,6 @@ pretty_dump(io, exprs) = foreach(x -> pretty_dump(io, x), exprs)
 
 src_dir(x...) = joinpath(dirname(@__DIR__), "src", x...)
 
-mkpath(src_dir("generated"))
-
 function generate()
     @info "Generating files:"
     @info "  - instructions.jl"
@@ -130,5 +128,3 @@ function generate()
 
     true
 end
-
-generate() && format()
