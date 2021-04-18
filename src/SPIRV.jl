@@ -22,6 +22,7 @@ for enum ∈ mlstyle_add_enums
 end
 
 include("parser.jl")
+include("disassemble.jl")
 include("ir.jl")
 include("resources.jl")
 
@@ -35,7 +36,5 @@ export
 
         # IR
         IR,
-        Variable,
-        generate_ir
-
+        Variable
 end

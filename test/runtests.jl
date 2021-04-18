@@ -9,6 +9,6 @@ modules = SPIRModule.(resource.(["vert.spv", "frag.spv"]))
 
 for mod ∈ modules
     disassemble(mod)
-    ir = generate_ir(mod)
+    ir = IR(mod)
     println.(ir.variables)
 end

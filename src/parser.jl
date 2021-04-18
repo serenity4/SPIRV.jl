@@ -7,7 +7,7 @@ Base.showerror(io::IO, err::SPIRFormatError) = print(io, "Invalid SPIR-V format:
 invalid_format(msg) = throw(SPIRFormatError(msg))
 
 """
-SPIR-V instruction, in binary format.
+SPIR-V instruction in binary format.
 Essentially, an instruction is an `opcode` referring to an operation followed by `operands`, 4-bytes words that form the payload.
 Be aware that an argument may be represented by one _or several_ operands, as is the case for literal values (see the [specification](https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.html#Literal) for more details). Therefore, the number of operands is not necessarily equal to the number of arguments.
 """
@@ -17,7 +17,7 @@ struct InstructionChunk
 end
 
 """
-SPIR-V instruction in human-readable format.
+Generic SPIR-V instruction.
 """
 struct GenericInstruction
     opcode::OpCode
@@ -51,7 +51,7 @@ function spirv_version(word)
     VersionNumber(major, minor)
 end
 
-function next_instruction(io::IO, next_word)
+function next_instruction(io::IO, next_word)::GenericInstruction
     op_data = next_word(io)
     word_count = Int(op_data >> 16)
     opcode = OpCode(op_data & 0xffff)
@@ -63,7 +63,7 @@ function next_instruction(io::IO, next_word)
     for i ∈ 1:(word_count-1)
         push!(operands, next_word(io))
     end
-    GenericInstruction(InstructionChunk(opcode, operands))
+    InstructionChunk(opcode, operands)
 end
 
 function next_word_f(_magic_number::UInt32)
@@ -95,7 +95,7 @@ end
 
 hex(x) = "0x" * lpad(string(x, base=16), sizeof(x) * 2, '0')
 
-is_enum(category) = category ∈ ("ValueEnum", "BitEnum")
+is_enum(category) = category in ("ValueEnum", "BitEnum")
 
 function parse_bytes_for_utf8_string(bytes)
     utf8_chars = UInt8[]
@@ -120,37 +120,17 @@ function next_argument(operands, info, category)
     end
 end
 
-function print_argument(io::IO, arg, kind, category)
-    if kind ≠ IdResult
-        print(io, " ")
-        if is_enum(category)
-            print(io, replace(string(arg), Regex("^$(nameof(kind))") => ""))
-        elseif category == "Literal"
-            if kind == LiteralString
-                print(io, crayon"#99ff88", arg, crayon"reset")
-            else
-                print(io, crayon"red", Int(arg), crayon"reset")
-            end
-        elseif category == "Id"
-            print(io, crayon"#ffaaaa", "%", Int(arg), crayon"reset")
-        end
-    end
-end
-
 Base.show(io::IO, inst::GenericInstruction) = print_instruction(io, inst, nothing)
 
-id_padding(id::Nothing) = 0
-id_padding(id) = 4 + length(string(id))
-
 """
-    GenericInstruction(inst)
+    convert(GenericInstruction, chunk)
 
 Retrieve arguments to an operation inside an [`InstructionChunk`](@ref) `inst`, based on its operands (which form a sequence of 4-bytes words).
 Converts raw integer values to their final types: enumeration, string, or integer.
 """
-function GenericInstruction(inst::InstructionChunk)
-    op_info = classes[inst.opcode][2]
-    operands = inst.operands
+function Base.convert(::Type{GenericInstruction}, chunk::InstructionChunk)
+    op_info = classes[chunk.opcode][2]
+    operands = chunk.operands
     arguments = []
     i = 1
     while i ≤ length(operands)
@@ -175,60 +155,8 @@ function GenericInstruction(inst::InstructionChunk)
             i += j
         end
     end
-    GenericInstruction(inst.opcode, arguments)
-end
-
-info(inst::GenericInstruction) = classes[inst.opcode][2]
-
-function print_result_id(io::IO, inst::GenericInstruction, id_bound)
-    op_kinds = getproperty.(info(inst), :kind)
-    index = findfirst(x -> x == IdResult, op_kinds)
-    inst_crayon = crayon"#33ccff"
-    if isnothing(index)
-        print(io, " "^id_padding(id_bound), inst_crayon, inst.opcode, crayon"reset")
-    else
-        id = inst.arguments[index]
-        print(io, crayon"#ffbb00", lpad("%$id = ", id_padding(something(id_bound, id))), inst_crayon, inst.opcode, crayon"reset")
-    end
-end
-
-function print_instruction(io::IO, inst::GenericInstruction, id_bound)
-    print_result_id(io, inst, id_bound)
-    for (arg, info) ∈ zip(inst.arguments, info(inst))
-        kind = info.kind
-        category = kind_to_category[kind]
-        if arg isa AbstractVector
-            print_argument.(Ref(io), arg, kind, category)
-        else
-            print_argument(io, arg, kind, category)
-        end
-    end
+    GenericInstruction(chunk.opcode, arguments)
 end
 
 Base.show(io::IO, spirmod::SPIRModule) = print(io, "SPIRModule(#instructions=$(length(spirmod.instructions)))")
-
 Base.show(io::IO, ::MIME"text/plain", spirmod::SPIRModule) = disassemble(io, spirmod)
-
-"""
-    disassemble(io, spir_module)
-
-Transform the content of `spir_module` into a human-readable format and prints it to the provided IO.
-"""
-function disassemble(io::IO, spirmod::SPIRModule)
-    if spirmod.magic_number == magic_number
-        println(io, "SPIR-V")
-    else
-        println(io, "Magic number: ", spirmod.magic_number)
-    end
-    println(io, "Version: ", join([spirmod.version.major, spirmod.version.minor], "."))
-    println(io, "Generator: ", hex(spirmod.generator_magic_number))
-    println(io, "Bound: ", spirmod.bound)
-    println(io, "Schema: ", spirmod.schema)
-    println(io)
-    for inst ∈ spirmod.instructions
-        print_instruction(io, inst, spirmod.bound)
-        println(io)
-    end
-end
-
-disassemble(spirmod::SPIRModule) = disassemble(stdout, spirmod)

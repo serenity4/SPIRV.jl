@@ -40,7 +40,7 @@ struct IR
     variables::Vector{Pair{Int,Variable}}
 end
 
-function generate_ir(mod::SPIRModule)
+function IR(mod::SPIRModule)
     variables = Dict{Any,Variable}()
     extensions, vars = Symbol[], Dict{Int,Dict}()
     entry_point, capability, source, memory_model, addressing_model = fill(nothing, 5)
