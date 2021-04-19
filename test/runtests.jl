@@ -1,8 +1,6 @@
 using SPIRV
 using Test
 
-const spv = SPIRV
-
 resource(filename) = joinpath(@__DIR__, "resources", filename)
 
 for r in resource.(["vert.spv", "frag.spv"])
