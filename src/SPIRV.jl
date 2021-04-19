@@ -25,10 +25,10 @@ include("resources.jl")
 
 export
         # parser
-        InstructionChunk,
-        GenericInstruction,
-        parse_spirv,
-        SPIRModule,
+        PhysicalInstruction, PhysicalModule,
+        Instruction, SPIRModule,
+
+        # disassembler
         disassemble,
 
         # IR

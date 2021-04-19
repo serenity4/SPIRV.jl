@@ -48,7 +48,6 @@ function generate_enums(operands)
     for op ∈ operands
         category = op["category"]
         if category ∈ ("ValueEnum", "BitEnum")
-            category == "ValueEnum"
             enum_expr, extra_operands_expr = generate_enum(op, category)
             !isnothing(extra_operands_expr) && push!(extra_operands, extra_operands_expr)
             push!(enums, enum_expr)

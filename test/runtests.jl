@@ -5,9 +5,9 @@ const spv = SPIRV
 
 resource(filename) = joinpath(@__DIR__, "resources", filename)
 
-modules = SPIRModule.(resource.(["vert.spv", "frag.spv"]))
-
-for mod ∈ modules
+for r in resource.(["vert.spv", "frag.spv"])
+    pmod = PhysicalModule(r)
+    mod = SPIRModule(pmod)
     disassemble(mod)
     ir = IR(mod)
     println.(ir.variables)
