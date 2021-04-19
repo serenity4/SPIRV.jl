@@ -36,14 +36,15 @@ struct IR
     source::Source
     memory_model::MemoryModel
     addressing_model::AddressingModel
-    entry_point::EntryPoint
+    entry_points::Vector{EntryPoint}
     variables::Vector{Pair{Int,Variable}}
 end
 
 function IR(mod::SPIRModule)
     variables = Dict{Any,Variable}()
     extensions, vars = Symbol[], Dict{Int,Dict}()
-    entry_point, capability, source, memory_model, addressing_model = fill(nothing, 5)
+    entry_points = EntryPoint[]
+    capability, source, memory_model, addressing_model = fill(nothing, 4)
     unnamed_i = 0
 
     for inst ∈ mod.instructions
@@ -54,7 +55,7 @@ function IR(mod::SPIRModule)
             @case OpMemoryModel
                 addressing_model, memory_model = arguments
             @case OpEntryPoint
-                entry_point = EntryPoint(Symbol(arguments[3]), arguments[2], arguments[1])
+                push!(entry_points, EntryPoint(Symbol(arguments[3]), arguments[2], arguments[1]))
             @case OpSource
                 int_version = arguments[2]
                 major = int_version ÷ 100
@@ -77,5 +78,5 @@ function IR(mod::SPIRModule)
         end
     end
 
-    IR(capability, extensions, source, memory_model, addressing_model, entry_point, keys(vars) .=> Variable.(values(vars)))
+    IR(capability, extensions, source, memory_model, addressing_model, entry_points, keys(vars) .=> Variable.(values(vars)))
 end
