@@ -21,7 +21,7 @@ end
 include("parser.jl")
 include("disassemble.jl")
 include("ir.jl")
-include("resources.jl")
+include("reflection.jl")
 
 export
         # parser
@@ -33,5 +33,9 @@ export
 
         # IR
         IR,
-        Variable
+        Variable,
+
+        # reflection
+        bindings,
+        descriptor_sets
 end
