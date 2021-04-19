@@ -36,7 +36,7 @@ function argument_str(arg, kind, category)
         "BitEnum" => string(literalnum_color, arg, crayon"reset")
         "Literal" => @match kind begin
             &LiteralString => string(crayon"#99ff88", arg, crayon"reset")
-            _ => string(literalnum_color, Int(arg), crayon"reset")
+            _ => string(literalnum_color, arg, crayon"reset")
         end
         "Id" => string(crayon"#ffbb00", "%", Int(arg), crayon"reset")
     end
