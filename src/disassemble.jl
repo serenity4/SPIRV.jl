@@ -14,7 +14,7 @@ function disassemble(io::IO, inst::Instruction)
     print(io, assignment)
     print(io, crayon"#33ccff", inst.opcode, crayon"reset")
 
-    args = map(zip(inst.arguments, operand_kinds(inst.opcode, true))) do (arg, op_kind)
+    args = map(zip(inst.arguments, operand_kinds(inst))) do (arg, op_kind)
         category = kind_to_category[op_kind]
         @match arg begin
             ::AbstractVector => join(argument_str.(arg, op_kind, category), ", ")
@@ -68,7 +68,7 @@ hex(x) = "0x" * lpad(string(x, base=16), sizeof(x) * 2, '0')
 
 disassemble(obj) = disassemble(stdout, obj)
 
-Base.show(io::IO, ::MIME"text/plain", inst::Instruction) = disassemble(io, inst)
+show(io::IO, ::MIME"text/plain", inst::Instruction) = disassemble(io, inst)
 
-Base.show(io::IO, spirmod::SPIRModule) = print(io, "SPIRModule(#instructions=$(length(spirmod.instructions)))")
-Base.show(io::IO, ::MIME"text/plain", spirmod::SPIRModule) = disassemble(io, spirmod)
+show(io::IO, spirmod::SPIRModule) = print(io, "SPIRModule(#instructions=$(length(spirmod.instructions)))")
+show(io::IO, ::MIME"text/plain", spirmod::SPIRModule) = disassemble(io, spirmod)

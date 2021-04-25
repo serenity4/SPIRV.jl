@@ -4,7 +4,16 @@ struct SPIRFormatError <: Exception
     msg
 end
 
-Base.showerror(io::IO, err::SPIRFormatError) = print(io, "Invalid SPIR-V format: ", err.msg)
+defines_extra_operands(arg, category) = is_enum(category) && haskey(extra_operands, typeof(arg)) && haskey(extra_operands[typeof(arg)], arg)
+get_extra_operands(arg) = extra_operands[typeof(arg)][arg]
+
+function update_infos!(op_infos, i, arg, category)
+    if defines_extra_operands(arg, category)
+        insert!(op_infos, i + 1, get_extra_operands(arg))
+    end
+end
+
+showerror(io::IO, err::SPIRFormatError) = print(io, "Invalid SPIR-V format: ", err.msg)
 
 invalid_format(msg) = throw(SPIRFormatError(msg))
 
@@ -46,6 +55,8 @@ struct PhysicalInstruction <: AbstractInstruction
     operands::Vector{Word}
 end
 
+(==)(x::PhysicalInstruction, y::PhysicalInstruction) = x.word_count == y.word_count && x.opcode == y.opcode && x.type_id == y.type_id && x.result_id == y.result_id && x.operands == y.operands
+
 """
 SPIR-V module, as a series of headers followed by a stream of instructions.
 The header embeds two magic numbers, one for the module itself and one for the tool that generated it (e.g. [glslang](https://github.com/KhronosGroup/glslang)). It also contains the version of the specification applicable to the module, the maximum ID number and an optional instruction schema.
@@ -58,6 +69,8 @@ struct PhysicalModule
     schema::Word
     instructions::Vector{PhysicalInstruction}
 end
+
+(==)(x::PhysicalModule, y::PhysicalModule) = all(prop -> getproperty(x, prop) == getproperty(y, prop), fieldnames(PhysicalModule))
 
 function PhysicalModule(file::AbstractString)
     open(x -> PhysicalModule(x), file)
@@ -141,9 +154,25 @@ struct Instruction <: AbstractInstruction
     arguments::Vector{Any}
 end
 
-function Base.convert(::Type{Instruction}, inst::PhysicalInstruction)
+"""
+Information regarding the arguments of an `Instruction`, including extra operands.
+"""
+function info(inst::Instruction, skip_ids::Bool = true)
+    op_infos = copy(info(inst.opcode))
+
+    # add extra operands
+    foreach(enumerate(inst.arguments)) do (i, arg)
+        info = op_infos[i]
+        category = kind_to_category[info.kind]
+        update_infos!(op_infos, i, arg, category)
+    end
+
+    skip_ids ? op_infos[start_idx(inst):end] : op_infos
+end
+
+function convert(::Type{Instruction}, inst::PhysicalInstruction)
     opcode = OpCode(inst.opcode)
-    op_info = info(inst)
+    op_infos = copy(info(inst))
     op_kinds = operand_kinds(inst)
     operands = inst.operands
 
@@ -151,7 +180,7 @@ function Base.convert(::Type{Instruction}, inst::PhysicalInstruction)
     i = 1
     while i ≤ length(operands)
         operand = length(arguments) + 1
-        info = op_info[operand]
+        info = op_infos[operand]
         category = kind_to_category[info.kind]
         if hasproperty(info, :quantifier)
             quantifier = info.quantifier
@@ -164,10 +193,7 @@ function Base.convert(::Type{Instruction}, inst::PhysicalInstruction)
         else
             j, arg = next_argument(operands[i:end], info, category)
             push!(arguments, arg)
-            if is_enum(category) && haskey(extra_operands, typeof(arg)) && haskey(extra_operands[typeof(arg)], arg)
-                extra_info = extra_operands[typeof(arg)][arg]
-                insert!(op_info, operand + 1, extra_info)
-            end
+            update_infos!(op_infos, i, arg, category)
             i += j
         end
     end
@@ -181,6 +207,10 @@ function next_argument(operands, info, category)
         i, chars = parse_bytes_for_utf8_string(bytes)
         str = GC.@preserve chars unsafe_string(pointer(chars))
         div(i, 4, RoundUp), str
+    elseif kind isa Literal
+        arg = first(operands)
+        sizeof(arg) <= 4 || error("Literals with a size greater than 32 bits are not supported.")
+        1, arg
     elseif is_enum(category)
         1, kind(first(operands))
     else
@@ -211,7 +241,7 @@ end
 SPIRModule(mod::PhysicalModule) = convert(SPIRModule, mod)
 SPIRModule(source) = convert(SPIRModule, PhysicalModule(source))
 
-function Base.convert(::Type{SPIRModule}, mod::PhysicalModule)
+function convert(::Type{SPIRModule}, mod::PhysicalModule)
     SPIRModule(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, mod.instructions)
 end
 
@@ -219,4 +249,8 @@ function spirv_version(word)
     major = (word & 0x00ff0000) >> 16
     minor = (word & 0x0000ff00) >> 8
     VersionNumber(major, minor)
+end
+
+function spirv_version(version::VersionNumber)
+    version.major << 16 + version.minor << 8
 end

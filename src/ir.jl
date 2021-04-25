@@ -17,7 +17,7 @@ end
 
 Variable(d::AbstractDict) = Variable(d[:name], d[:id], d[:decorations])
 
-function Base.show(io::IO, var::Variable)
+function show(io::IO, var::Variable)
     print(io, "Variable ", var.name, " (%", var.id)
     if !isempty(var.decorations)
         for dec ∈ var.decorations

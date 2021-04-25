@@ -5,6 +5,8 @@ using Crayons
 using MLStyle
 using MLStyle.AbstractPatterns: literal
 
+import Base: convert, write, show, showerror, ==
+
 const magic_number = 0x07230203
 
 # generated SPIR-V wrapper
@@ -18,18 +20,22 @@ for enum ∈ [:OpCode, :Decoration]
     end
 end
 
-include("parser.jl")
+include("parse.jl")
 include("disassemble.jl")
 include("ir.jl")
+include("assemble.jl")
 include("reflection.jl")
 
 export
-        # parser
+        # parse
         PhysicalInstruction, PhysicalModule,
         Instruction, SPIRModule,
 
-        # disassembler
+        # disassemble
         disassemble,
+
+        # assemble
+        assemble,
 
         # IR
         IR,
