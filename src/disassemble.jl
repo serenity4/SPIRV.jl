@@ -1,46 +1,56 @@
-function disassemble(io::IO, inst::Instruction)
-    id_pad = 3 + 1
-
-    type_id = @match inst.type_id begin
-        ::Nothing => ""
-               id => string(crayon"#bbff00", "::", crayon"#ffbb00", "%$id", crayon"reset")
+function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
+    if !isnothing(inst.result_id)
+        printstyled(io, '%', inst.result_id; color=:yellow)
+        print(io, " = ")
     end
 
-    assignment = @match inst.result_id begin
-        ::Nothing => ' '^(id_pad + 3)
-               id => string(crayon"#ffbb00", lpad("%$id", id_pad), crayon"reset") * " = "
+    printstyled(io, inst.opcode; color=:light_cyan)
+
+    !isempty(inst.arguments) && print(io, '(')
+
+    arginfo = collect(zip(inst.arguments, operand_kinds(inst)))
+    !isempty(arginfo) && emit_argument(io, popfirst!(arginfo)...)
+    while !isempty(arginfo)
+        print(io, ", ")
+        emit_argument(io, popfirst!(arginfo)...)
     end
 
-    print(io, assignment)
-    print(io, crayon"#33ccff", inst.opcode, crayon"reset")
+    !isempty(inst.arguments) && print(io, ')')
 
-    args = map(zip(inst.arguments, operand_kinds(inst))) do (arg, kind)
-        category = kind_to_category[kind]
-        @match arg begin
-            ::AbstractVector => join(argument_str.(arg, kind, category), ", ")
-            _ => argument_str(arg, kind, category)
-        end
+    if !isnothing(inst.type_id)
+        printstyled(io, "::"; color=:light_green, bold=true)
+        printstyled(io, '%', inst.type_id; color=:light_green, bold=true)
     end
-
-    if !isempty(args)
-        print(io, '(', join(args, ", "), ')')
-    end
-
-    print(io, type_id)
 end
 
-function argument_str(arg, kind, category)
-    literalnum_color = crayon"red"
+function emit_argument(io, arg::AbstractVector, kind)
+    category = kind_to_category[kind]
+    args = copy(arg)
+    emit_argument(io, popfirst!(args), kind, category)
+    while !isempty(args)
+        print(io, ", ")
+        emit_argument(io, popfirst!(args), kind, category)
+    end
+end
+
+function emit_argument(io, arg, kind)
+    category = kind_to_category[kind]
+    emit_argument(io, arg, kind, category)
+end
+
+function emit_argument(io, arg, kind, category)
     @match category begin
-        "ValueEnum" => string(crayon"#abffcd", replace(string(arg), Regex("^$(nameof(kind))") => ""), crayon"reset")
-        "BitEnum" => string(literalnum_color, arg, crayon"reset")
+        "ValueEnum" => printstyled(io, replace(string(arg), Regex("^$(nameof(kind))") => ""); color=:208)
+        "BitEnum" => printstyled(io, arg; color=:light_magenta)
         "Literal" => @match kind begin
-            &LiteralString => string(crayon"#99ff88", arg, crayon"reset")
-            _ => string(literalnum_color, arg, crayon"reset")
+            &LiteralString => printstyled(io, arg; color=150)
+            _ => printstyled(io, arg; color=153)
         end
-        "Id" => string(crayon"#ffbb00", "%", Int(arg), crayon"reset")
+        "Id" => printstyled(io, '%', Int(arg); color=:yellow)
     end
 end
+
+show(io::IO, ::MIME"text/plain", inst::Instruction) = emit(io, inst)
 
 """
     disassemble(io, spir_module)
@@ -58,8 +68,11 @@ function disassemble(io::IO, mod::SPIRModule)
     println(io, "Bound: ", mod.bound)
     println(io, "Schema: ", mod.schema)
     println(io)
+
+    padding(id) = length(string(mod.bound)) - (isnothing(id) ? -4 : length(string(id)))
     for inst ∈ mod.instructions
-        disassemble(io, inst)
+        print(io, ' '^padding(inst.result_id))
+        emit(io, inst, mod.bound)
         println(io)
     end
 end
@@ -68,7 +81,5 @@ hex(x) = "0x" * lpad(string(x, base=16), sizeof(x) * 2, '0')
 
 disassemble(obj) = disassemble(stdout, obj)
 disassemble(io::IO, mod::PhysicalModule) = disassemble(io, convert(SPIRModule, mod))
-
-show(io::IO, ::MIME"text/plain", inst::Instruction) = disassemble(io, inst)
 
 show(io::IO, ::MIME"text/plain", mod::SPIRModule) = disassemble(io, mod)
