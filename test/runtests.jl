@@ -13,13 +13,14 @@ modules = [
         r = resource(file)
         pmod = PhysicalModule(r)
         mod = SPIRModule(pmod)
-        disassemble(stdout, mod)
+        disassemble(mod)
 
         @testset "Assembly/disassembly isomorphisms" begin
             pmod_reconstructed::PhysicalModule = mod
             @test pmod == pmod_reconstructed
 
             @test sizeof(assemble(pmod)) == stat(r).size
+            @test assemble(pmod) == assemble(mod)
 
             tmp = tempname()
             open(tmp, "w+") do io

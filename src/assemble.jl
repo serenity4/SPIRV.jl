@@ -102,3 +102,4 @@ function assemble!(words, mod::PhysicalModule)
     words
 end
 
+assemble(mod::SPIRModule) = assemble(convert(PhysicalModule, mod))
