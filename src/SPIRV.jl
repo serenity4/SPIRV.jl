@@ -1,9 +1,7 @@
 module SPIRV
 
 using CEnum
-using Crayons
 using MLStyle
-using MLStyle.AbstractPatterns: literal
 
 import Base: convert, write, show, showerror, ==
 
@@ -16,7 +14,7 @@ include("generated/instructions.jl")
 for enum ∈ [:OpCode, :Decoration]
     @eval begin
         MLStyle.is_enum(::$enum) = true
-        MLStyle.pattern_uncall(e::$enum, _, _, _, _) = literal(e)
+        MLStyle.pattern_uncall(e::$enum, _, _, _, _) = MLStyle.AbstractPatterns.literal(e)
     end
 end
 
