@@ -254,3 +254,5 @@ end
 function spirv_version(version::VersionNumber)
     version.major << 16 + version.minor << 8
 end
+
+show(io::IO, mod::SPIRModule) = print(io, "SPIRModule(#instructions=$(length(mod.instructions)))")

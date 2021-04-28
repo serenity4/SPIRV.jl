@@ -1,7 +1,7 @@
 function disassemble(io::IO, inst::Instruction)
     id_pad = 3 + 1
 
-    typeid = @match inst.type_id begin
+    type_id = @match inst.type_id begin
         ::Nothing => ""
                id => string(crayon"#bbff00", "::", crayon"#ffbb00", "%$id", crayon"reset")
     end
@@ -14,11 +14,11 @@ function disassemble(io::IO, inst::Instruction)
     print(io, assignment)
     print(io, crayon"#33ccff", inst.opcode, crayon"reset")
 
-    args = map(zip(inst.arguments, operand_kinds(inst))) do (arg, op_kind)
-        category = kind_to_category[op_kind]
+    args = map(zip(inst.arguments, operand_kinds(inst))) do (arg, kind)
+        category = kind_to_category[kind]
         @match arg begin
-            ::AbstractVector => join(argument_str.(arg, op_kind, category), ", ")
-            _ => argument_str(arg, op_kind, category)
+            ::AbstractVector => join(argument_str.(arg, kind, category), ", ")
+            _ => argument_str(arg, kind, category)
         end
     end
 
@@ -26,7 +26,7 @@ function disassemble(io::IO, inst::Instruction)
         print(io, '(', join(args, ", "), ')')
     end
 
-    print(io, typeid)
+    print(io, type_id)
 end
 
 function argument_str(arg, kind, category)
@@ -47,18 +47,18 @@ end
 
 Transform the content of `spir_module` into a human-readable format and prints it to `io`.
 """
-function disassemble(io::IO, spirmod::SPIRModule)
-    if spirmod.magic_number == magic_number
+function disassemble(io::IO, mod::SPIRModule)
+    if mod.magic_number == magic_number
         println(io, "SPIR-V")
     else
-        println(io, "Magic number: ", spirmod.magic_number)
+        println(io, "Magic number: ", mod.magic_number)
     end
-    println(io, "Version: ", join([spirmod.version.major, spirmod.version.minor], "."))
-    println(io, "Generator: ", hex(spirmod.generator_magic_number))
-    println(io, "Bound: ", spirmod.bound)
-    println(io, "Schema: ", spirmod.schema)
+    println(io, "Version: ", join([mod.version.major, mod.version.minor], "."))
+    println(io, "Generator: ", hex(mod.generator_magic_number))
+    println(io, "Bound: ", mod.bound)
+    println(io, "Schema: ", mod.schema)
     println(io)
-    for inst ∈ spirmod.instructions
+    for inst ∈ mod.instructions
         disassemble(io, inst)
         println(io)
     end
@@ -67,8 +67,8 @@ end
 hex(x) = "0x" * lpad(string(x, base=16), sizeof(x) * 2, '0')
 
 disassemble(obj) = disassemble(stdout, obj)
+disassemble(io::IO, mod::PhysicalModule) = disassemble(io, convert(SPIRModule, mod))
 
 show(io::IO, ::MIME"text/plain", inst::Instruction) = disassemble(io, inst)
 
-show(io::IO, spirmod::SPIRModule) = print(io, "SPIRModule(#instructions=$(length(spirmod.instructions)))")
-show(io::IO, ::MIME"text/plain", spirmod::SPIRModule) = disassemble(io, spirmod)
+show(io::IO, ::MIME"text/plain", mod::SPIRModule) = disassemble(io, mod)
