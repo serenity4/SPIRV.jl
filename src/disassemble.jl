@@ -57,7 +57,7 @@ show(io::IO, ::MIME"text/plain", inst::Instruction) = emit(io, inst)
 
 Transform the content of `spir_module` into a human-readable format and prints it to `io`.
 """
-function disassemble(io::IO, mod::SPIRModule)
+function disassemble(io::IO, mod::Module)
     if mod.magic_number == magic_number
         println(io, "SPIR-V")
     else
@@ -80,6 +80,6 @@ end
 hex(x) = "0x" * lpad(string(x, base=16), sizeof(x) * 2, '0')
 
 disassemble(obj) = disassemble(stdout, obj)
-disassemble(io::IO, mod::PhysicalModule) = disassemble(io, convert(SPIRModule, mod))
+disassemble(io::IO, mod::PhysicalModule) = disassemble(io, convert(Module, mod))
 
-show(io::IO, ::MIME"text/plain", mod::SPIRModule) = disassemble(io, mod)
+show(io::IO, ::MIME"text/plain", mod::Module) = disassemble(io, mod)

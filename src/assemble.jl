@@ -1,4 +1,4 @@
-function convert(::Type{PhysicalModule}, mod::SPIRModule)
+function convert(::Type{PhysicalModule}, mod::Module)
     PhysicalModule(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, mod.instructions)
 end
 
@@ -102,4 +102,4 @@ function assemble!(words, mod::PhysicalModule)
     words
 end
 
-assemble(mod::SPIRModule) = assemble(convert(PhysicalModule, mod))
+assemble(mod::Module) = assemble(convert(PhysicalModule, mod))

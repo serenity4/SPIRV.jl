@@ -27,7 +27,7 @@ include("reflection.jl")
 export
         # parse
         PhysicalInstruction, PhysicalModule,
-        Instruction, SPIRModule,
+        Instruction,
 
         # disassemble
         disassemble,

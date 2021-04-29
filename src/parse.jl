@@ -229,7 +229,7 @@ end
 
 is_enum(category) = category in ("ValueEnum", "BitEnum")
 
-struct SPIRModule
+struct Module
     magic_number::UInt32
     generator_magic_number::UInt32
     version::VersionNumber
@@ -238,11 +238,11 @@ struct SPIRModule
     instructions::Vector{Instruction}
 end
 
-SPIRModule(mod::PhysicalModule) = convert(SPIRModule, mod)
-SPIRModule(source) = convert(SPIRModule, PhysicalModule(source))
+Module(mod::PhysicalModule) = convert(Module, mod)
+Module(source) = convert(Module, PhysicalModule(source))
 
-function convert(::Type{SPIRModule}, mod::PhysicalModule)
-    SPIRModule(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, mod.instructions)
+function convert(::Type{Module}, mod::PhysicalModule)
+    Module(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, mod.instructions)
 end
 
 function spirv_version(word)
@@ -255,4 +255,4 @@ function spirv_version(version::VersionNumber)
     version.major << 16 + version.minor << 8
 end
 
-show(io::IO, mod::SPIRModule) = print(io, "SPIRModule(#instructions=$(length(mod.instructions)))")
+show(io::IO, mod::Module) = print(io, "Module(#instructions=$(length(mod.instructions)))")

@@ -40,7 +40,7 @@ struct IR
     variables::Vector{Pair{Int,Variable}}
 end
 
-function IR(mod::SPIRModule)
+function IR(mod::Module)
     variables = Dict{Any,Variable}()
     extensions, vars = Symbol[], Dict{Int,Dict}()
     entry_points = EntryPoint[]

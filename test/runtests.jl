@@ -12,7 +12,7 @@ modules = [
     @testset "Testing SPIR-V module $file" for file in modules
         r = resource(file)
         pmod = PhysicalModule(r)
-        mod = SPIRModule(pmod)
+        mod = SPIRV.Module(pmod)
         disassemble(mod)
 
         @testset "Assembly/disassembly isomorphisms" begin
