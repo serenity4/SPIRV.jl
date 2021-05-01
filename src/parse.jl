@@ -50,8 +50,8 @@ SPIR-V instruction in binary format.
 struct PhysicalInstruction <: AbstractInstruction
     word_count::UInt16
     opcode::UInt16
-    type_id::Union{Nothing,Word}
-    result_id::Union{Nothing,Word}
+    type_id::Optional{Word}
+    result_id::Optional{Word}
     operands::Vector{Word}
 end
 
@@ -149,9 +149,11 @@ Parsed SPIR-V instruction. It represents an instruction of the form `%result_id 
 """
 struct Instruction <: AbstractInstruction
     opcode::OpCode
-    type_id::Union{Nothing,Int}
-    result_id::Union{Nothing,Int}
+    type_id::Optional{Int}
+    result_id::Optional{Int}
     arguments::Vector{Any}
+    Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(convert(OpCode, opcode), convert(Optional{Int}, type_id), convert(Optional{Int}, result_id), convert(Vector{Any}, arguments))
+    Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
 end
 
 """

@@ -3,6 +3,8 @@ module SPIRV
 using CEnum
 using MLStyle
 
+const Optional{T} = Union{Nothing,T}
+
 import Base: convert, write, show, showerror, ==
 
 const magic_number = 0x07230203
@@ -18,6 +20,7 @@ for enum ∈ [:OpCode, :Decoration]
     end
 end
 
+include("utils.jl")
 include("parse.jl")
 include("disassemble.jl")
 include("ir.jl")

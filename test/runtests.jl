@@ -28,10 +28,12 @@ modules = [
             end
             @test PhysicalModule(tmp) == pmod_reconstructed
         end
+    end
 
-        @testset "Intermediate Representation" begin
-            ir = IR(mod)
-            println.(ir.variables)
-        end
+    @testset "Intermediate Representation" begin
+        mod = SPIRV.Module(resource("vert.spv"))
+        ir = IR(mod)
+        convert(SPIRV.Module, ir)
+        println(ir.variables)
     end
 end
