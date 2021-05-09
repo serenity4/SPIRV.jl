@@ -1,6 +1,9 @@
 struct Source
     language::SourceLanguage
     version::VersionNumber
+    file::Optional{String}
+    code::Optional{String}
+    extensions::Vector{Symbol}
 end
 
 @broadcastref struct EntryPoint
@@ -16,28 +19,9 @@ struct SSAVector{T}
     SSAVector{T}() where {T} = new{T}(Dict{Int,T}())
 end
 
-@forward SSAVector.els Base.getindex, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate
+@forward SSAVector.els Base.getindex, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate, Base.keys, Base.values, Base.haskey
 
-struct Variable
-    id::Int
-    name::Optional{Symbol}
-    decorations::Vector{Any}
-end
-
-Variable(d::AbstractDict) = Variable(d[:name], d[:id], d[:decorations])
-
-function show(io::IO, var::Variable)
-    print(io, "Variable ", var.name, " (%", var.id)
-    if !isempty(var.decorations)
-        for dec ∈ var.decorations
-            print(io, ", ", join((dec .|> @λ begin
-                x::Decoration -> replace(string(x), r".*Decoration" => "")
-                x -> x
-            end), ": ")...)
-        end
-    end
-    print(io, ")")
-end
+Base.merge!(vec::SSAVector, others::SSAVector...) = merge!(vec.els, getproperty.(others, :els)...)
 
 struct Metadata
     magic_number::UInt32
@@ -46,68 +30,125 @@ struct Metadata
     schema::Int
 end
 
+struct LineInfo
+    file::String
+    line::Int
+    column::Int
+end
+
+struct DebugInfo
+    filenames::SSAVector{String}
+    names::SSAVector{Symbol}
+    lines::SSAVector{LineInfo}
+    source::Optional{Source}
+end
+
+struct _Decoration
+    type::Decoration
+    args::Vector{Any}
+end
+
 struct IR
     meta::Metadata
     capabilities::Vector{Capability}
     extensions::Vector{Symbol}
     extinst_imports::SSAVector{Symbol}
+    addressing_model::AddressingModel
     memory_model::MemoryModel
     entry_points::SSAVector{EntryPoint}
-    addressing_model::AddressingModel
-    variables::SSAVector{Variable}
-    ids::Vector{Int}
+    decorations::SSAVector{Vector{_Decoration}}
+    results::SSAVector{Any}
+    debug::Optional{DebugInfo}
 end
 
 function IR(mod::Module)
-    variables = SSAVector{Variable}()
+    decorations = SSAVector{Vector{_Decoration}}()
+    capabilities = Capability[]
     extensions = Symbol[]
     extinst_imports = SSAVector{Symbol}()
-    entry_points = SSAVector{EntryPoint}()
-    capabilities = Capability[]
     source, memory_model, addressing_model = fill(nothing, 3)
+    entry_points = SSAVector{EntryPoint}()
+    results = SSAVector{Any}()
     unnamed_i = 0
+    filenames = SSAVector{String}()
+    names = SSAVector{Symbol}()
+    lines = SSAVector{LineInfo}()
     ids = Int[]
 
     for inst ∈ mod.instructions
-        arguments = inst.arguments
-        result_id = inst.result_id
-        @switch inst.opcode begin
-            @case OpCapability
-                @assert length(arguments) == 1
-                push!(capabilities, arguments[1])
-            @case OpExtInstImport
-                extinst_imports[result_id] = Symbol(arguments[1])
-            @case OpMemoryModel
-                addressing_model, memory_model = arguments
-            @case OpEntryPoint
-                model, id, name, interfaces = arguments
-                entry_points[id] = EntryPoint(Symbol(name), id, model, [], interfaces)
-            @case OpSource
-                int_version = arguments[2]
-                major = int_version ÷ 100
-                minor = (int_version - 100*major) ÷ 10
-                source = Source(arguments[1], VersionNumber(major, minor))
-            @case OpName
-                id, name_str = arguments
-                name = if isempty(name_str)
-                    unnamed_i += 1
-                    Symbol("__var_$unnamed_i")
-                else
-                    Symbol(name_str)
+        @unpack arguments, type_id, result_id, opcode = inst
+        class, info = classes[opcode]
+        @switch class begin
+            @case & Symbol("Mode-Setting")
+                @switch opcode begin
+                    @case OpCapability
+                        push!(capabilities, arguments[1])
+                    @case OpMemoryModel
+                        addressing_model, memory_model = arguments
+                    @case OpEntryPoint
+                        model, id, name, interfaces = arguments
+                        entry_points[id] = EntryPoint(Symbol(name), id, model, [], interfaces)
+                    @case OpExecutionMode || OpExecutionModeId
+                        id = arguments[1]
+                        push!(entry_points[id].modes, inst)
                 end
-                variables[id] = Variable(id, name, [])
-            @case OpDecorate
-                id, decoration... = arguments
-                push!(variables[id].decorations, tuple(decoration...))
+            @case & :Extension
+                @switch opcode begin
+                    @case OpExtension
+                        push!(extensions, Symbol(arguments[1]))
+                    @case OpExtInstImport
+                        extinst_imports[result_id] = Symbol(arguments[1])
+                    @case OpExtInst
+                        nothing
+                end
+            @case & :Debug
+                @switch opcode begin
+                    @case OpSource
+                        language, version = arguments[1:2]
+                        file, code = @match length(arguments) begin
+                            2 => (nothing, nothing)
+                            3 => @match arg = arguments[3] begin
+                                ::Integer => (arg, nothing)
+                                ::String => (nothing, arg)
+                            end
+                            4 => arguments[3:4]
+                        end
+                        source = Source(language, source_version(language, version), file, code, [])
+                    @case OpSourceExtension
+                        @assert !isnothing(source) "Source extension was declared before the source."
+                        push!(source.extensions, Symbol(arguments[1]))
+                    @case OpName
+                        id, name = arguments
+                        names[id] = Symbol(name)
+                    @case _
+                        nothing
+                end
+            @case & :Annotation
+                @switch opcode begin
+                    @case OpDecorate
+                        id, type, args... = arguments
+                        decoration = _Decoration(type, args)
+                        if !haskey(decorations, id)
+                            decorations[id] = [decoration]
+                        else
+                            push!(decorations[id], decoration)
+                        end
+                    @case _
+                        nothing
+                end
             @case _
                 nothing
         end
-        if !isnothing(inst.result_id)
-            push!(ids, inst.result_id)
+        if !isnothing(result_id)
+             results[result_id] = inst
         end
     end
 
-    IR(Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema), capabilities, extensions, extinst_imports, memory_model, entry_points, addressing_model, variables, sort(ids))
+    merge!(results, extinst_imports, entry_points)
+
+    debug = DebugInfo(filenames, names, lines, source)
+
+    IR(Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema), capabilities, extensions, extinst_imports, addressing_model, memory_model, entry_points, decorations, results, debug)
 end
 
 function Base.convert(::Type{Module}, ir::IR)
@@ -119,5 +160,35 @@ function Base.convert(::Type{Module}, ir::IR)
     push!(insts, @inst OpMemoryModel(ir.addressing_model, ir.memory_model))
     append!(insts, @inst(OpEntryPoint(entry.model, entry.id, entry.name, entry.interfaces)) for (_, entry) in ir.entry_points)
 
-    Module(ir.meta.magic_number, ir.meta.generator_magic_number, ir.meta.version, maximum(ir.ids) + 1, ir.meta.schema, insts)
+    # debug information
+    if !isnothing(ir.debug)
+        debug::DebugInfo = ir.debug
+        if !isnothing(debug.source)
+            source::Source = debug.source
+            args = Any[source.language, source_version(source.language, source.version)]
+            !isnothing(source.file) && push!(args, source.file)
+            !isnothing(source.code) && push!(args, source.code)
+            push!(insts, @inst OpSource(args...))
+            append!(insts, @inst(OpSourceExtension(string(ext))) for ext in source.extensions)
+        end
+        foreach(debug.filenames) do (id, filename)
+            push!(insts, @inst OpString(id, filename))
+        end
+
+        foreach(debug.names) do (id, name)
+            push!(insts, @inst OpName(id, string(name)))
+        end
+    end
+
+    # annotations (non-debug)
+    foreach(ir.decorations) do (id, decorations)
+        append!(insts, @inst(OpDecorate(id, dec.type, dec.args...)) for dec in decorations)
+    end
+
+    # all types, variables and constants
+
+    # all functions
+
+
+    Module(ir.meta.magic_number, ir.meta.generator_magic_number, ir.meta.version, maximum(keys(ir.results)) + 1, ir.meta.schema, insts)
 end

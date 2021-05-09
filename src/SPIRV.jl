@@ -2,6 +2,7 @@ module SPIRV
 
 using CEnum
 using MLStyle
+using UnPack
 
 const Optional{T} = Union{Nothing,T}
 
@@ -19,6 +20,8 @@ for enum ∈ [:OpCode, :Decoration]
         MLStyle.pattern_uncall(e::$enum, _, _, _, _) = MLStyle.AbstractPatterns.literal(e)
     end
 end
+
+MLStyle.pattern_uncall(s::Type{Symbol}, _, _, _, _) = x -> QuoteNode(x)
 
 include("utils.jl")
 include("parse.jl")

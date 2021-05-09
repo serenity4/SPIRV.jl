@@ -50,3 +50,22 @@ macro broadcastref(ex)
         Base.broadcastable(x::$(esc(T))) = Ref(x)
     end
 end
+
+function source_version(language::SourceLanguage, version::Integer)
+    @match language begin
+        &SourceLanguageGLSL => begin
+            major = version ÷ 100
+            minor = (version - 100 * major) ÷ 10
+            VersionNumber(major, minor)
+        end
+    end
+end
+
+function source_version(language::SourceLanguage, version::VersionNumber)
+    @match language begin
+        &SourceLanguageGLSL => begin
+            @unpack major, minor = version
+            10 * minor + 100 * major
+        end
+    end
+end
