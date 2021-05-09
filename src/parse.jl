@@ -9,7 +9,9 @@ get_extra_operands(arg) = extra_operands[typeof(arg)][arg]
 
 function update_infos!(op_infos, i, arg, category)
     if defines_extra_operands(arg, category)
-        insert!(op_infos, i + 1, get_extra_operands(arg))
+        foreach(get_extra_operands(arg)) do operand
+            insert!(op_infos, i + 1, operand)
+        end
     end
 end
 

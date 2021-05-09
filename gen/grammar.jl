@@ -5,50 +5,59 @@ const grammar_version = VersionNumber(getindex.(Ref(g), [:major_version, :minor_
 const instructions = g[:instructions]
 const operand_kinds = g[:operand_kinds]
 
-function generate_category_as_enum(operand_kinds, category)
-    :(@enum $(Symbol(category))::Int begin $([:($(Symbol(kind)) = $val) for (val, kind) ∈ enumerate(getindex.(filter(x -> x["category"] == category, operand_kinds), "kind"))]...) end)
+"""
+Generate enumeration values representing SPIR-V operand kind categories.
+These enumerations are not defined by the specification.
+"""
+function generate_category_as_enum(category)
+    _operand_kinds = filter(x -> x["category"] == category, operand_kinds)
+    kinds = getproperty.(_operand_kinds, :kind)
+
+    typedecl = :($(Symbol(category))::Int)
+    vals = (:($(Symbol(kind)) = $val) for (val, kind) in enumerate(kinds))
+    :(@enum $typedecl begin $(vals...) end)
 end
 
-function extra_operands(enumerant, enum_name, operand)
+function extra_operands(enumerant)::Vector{Expr}
     if hasproperty(enumerant, :parameters)
         params = map(enumerant[:parameters]) do param
             Dict(k => (k == :kind ? Symbol(v) : strip(v, '\'')) for (k, v) ∈ param)
         end
-        (enum_name, [:(tuple($([:($k = $v) for (k, v) ∈ param]...))) for param ∈ params]...)
+        [Expr(:tuple, (:($k = $v) for (k, v) ∈ param)...) for param ∈ params]
     else
-        nothing
+        []
     end
 end
 
-function generate_enum(operand, category)
+function generate_enum(operand)
     kind = Symbol(operand["kind"])
     enum_vals = []
-    parameters = []
+    extra_operands_parameters = Expr[]
 
     foreach(operand["enumerants"]) do enumerant
         name = enumerant["enumerant"]
         enum_name = Symbol(kind, name)
 
-        extra_ops = extra_operands(enumerant, enum_name, operand)
-        !isnothing(extra_ops) && push!(parameters, extra_ops)
-        val = category == "BitEnum" ? parse(UInt16, enumerant["value"]) : enumerant["value"]
-
+        val = operand[:category] == "BitEnum" ? parse(UInt32, enumerant["value"]) : enumerant["value"]
         push!(enum_vals, :($enum_name = $val))
+
+        parameters = extra_operands(enumerant)
+        if !isempty(parameters)
+            push!(extra_operands_parameters, :($enum_name => [$(parameters...)]))
+        end
     end
 
-    enum_expr = :(@cenum $kind::UInt32 begin $(enum_vals...) end)
-    extra_operands_expr = isempty(parameters) ? nothing : :($kind => Dict($(map(x -> :($(x[1]) => $(x[2])), parameters)...)))
-
-    enum_expr, extra_operands_expr
+    extra_operands_dict = isempty(extra_operands_parameters) ? nothing : :($kind => Dict($(extra_operands_parameters...)))
+    :(@cenum $kind::UInt32 begin $(enum_vals...) end), extra_operands_dict
 end
 
-function generate_enums(operands)
+function generate_enums()
     enums = []
     extra_operands = []
-    for op ∈ operands
+    for op ∈ operand_kinds
         category = op["category"]
         if category ∈ ("ValueEnum", "BitEnum")
-            enum_expr, extra_operands_expr = generate_enum(op, category)
+            enum_expr, extra_operands_expr = generate_enum(op)
             !isnothing(extra_operands_expr) && push!(extra_operands, extra_operands_expr)
             push!(enums, enum_expr)
         end
@@ -93,8 +102,8 @@ function generate_instructions(insts)
     ]
 end
 
-function generate_kind_to_category(operands)
-    :(const kind_to_category = Dict($([:($(Symbol(operand["kind"])) => $(operand["category"])) for operand ∈ operands]...)))
+function generate_kind_to_category()
+    :(const kind_to_category = Dict($([:($(Symbol(operand["kind"])) => $(operand["category"])) for operand ∈ operand_kinds]...)))
 end
 
 function pretty_dump(io, expr::Expr)
@@ -113,16 +122,16 @@ function generate()
     open(src_dir("generated", "instructions.jl"), "w+") do io
         pretty_dump(io, generate_instructions(instructions))
         pretty_dump(io, generate_instruction_printing_class(g[:instruction_printing_class]))
-        pretty_dump(io, generate_kind_to_category(operand_kinds))
+        pretty_dump(io, generate_kind_to_category())
     end
 
     @info "  - enums.jl"
 
     open(src_dir("generated", "enums.jl"), "w+") do io
-        pretty_dump(io, generate_category_as_enum(operand_kinds, "Id"))
-        pretty_dump(io, generate_category_as_enum(operand_kinds, "Literal"))
-        pretty_dump(io, generate_category_as_enum(operand_kinds, "Composite"))
-        pretty_dump(io, generate_enums(operand_kinds))
+        pretty_dump(io, generate_category_as_enum("Id"))
+        pretty_dump(io, generate_category_as_enum("Literal"))
+        pretty_dump(io, generate_category_as_enum("Composite"))
+        pretty_dump(io, generate_enums())
     end
 
     true

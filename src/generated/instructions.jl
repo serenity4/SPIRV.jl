@@ -343,13 +343,19 @@
     OpPtrEqual                                                              = 401
     OpPtrNotEqual                                                           = 402
     OpPtrDiff                                                               = 403
+    OpTerminateInvocation                                                   = 4416
     OpSubgroupBallotKHR                                                     = 4421
     OpSubgroupFirstInvocationKHR                                            = 4422
     OpSubgroupAllKHR                                                        = 4428
     OpSubgroupAnyKHR                                                        = 4429
     OpSubgroupAllEqualKHR                                                   = 4430
     OpSubgroupReadInvocationKHR                                             = 4432
-    OpTypeRayQueryProvisionalKHR                                            = 4472
+    OpTraceRayKHR                                                           = 4445
+    OpExecuteCallableKHR                                                    = 4446
+    OpConvertUToAccelerationStructureKHR                                    = 4447
+    OpIgnoreIntersectionKHR                                                 = 4448
+    OpTerminateRayKHR                                                       = 4449
+    OpTypeRayQueryKHR                                                       = 4472
     OpRayQueryInitializeKHR                                                 = 4473
     OpRayQueryTerminateKHR                                                  = 4474
     OpRayQueryGenerateIntersectionKHR                                       = 4475
@@ -373,15 +379,11 @@
     OpReportIntersectionNV                                                  = 5334
     OpReportIntersectionKHR                                                 = 5334
     OpIgnoreIntersectionNV                                                  = 5335
-    OpIgnoreIntersectionKHR                                                 = 5335
     OpTerminateRayNV                                                        = 5336
-    OpTerminateRayKHR                                                       = 5336
     OpTraceNV                                                               = 5337
-    OpTraceRayKHR                                                           = 5337
     OpTypeAccelerationStructureNV                                           = 5341
     OpTypeAccelerationStructureKHR                                          = 5341
     OpExecuteCallableNV                                                     = 5344
-    OpExecuteCallableKHR                                                    = 5344
     OpTypeCooperativeMatrixNV                                               = 5358
     OpCooperativeMatrixLoadNV                                               = 5359
     OpCooperativeMatrixStoreNV                                              = 5360
@@ -415,6 +417,8 @@
     OpUSubSatINTEL                                                          = 5596
     OpIMul32x16INTEL                                                        = 5597
     OpUMul32x16INTEL                                                        = 5598
+    OpFunctionPointerINTEL                                                  = 5600
+    OpFunctionPointerCallINTEL                                              = 5601
     OpDecorateString                                                        = 5632
     OpDecorateStringGOOGLE                                                  = 5632
     OpMemberDecorateString                                                  = 5633
@@ -537,6 +541,10 @@
     OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL                     = 5814
     OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL                       = 5815
     OpSubgroupAvcSicGetInterRawSadsINTEL                                    = 5816
+    OpLoopControlINTEL                                                      = 5887
+    OpReadPipeBlockingINTEL                                                 = 5946
+    OpWritePipeBlockingINTEL                                                = 5947
+    OpFPGARegINTEL                                                          = 5949
     OpRayQueryGetRayTMinKHR                                                 = 6016
     OpRayQueryGetRayFlagsKHR                                                = 6017
     OpRayQueryGetIntersectionTKHR                                           = 6018
@@ -554,6 +562,7 @@
     OpRayQueryGetWorldRayOriginKHR                                          = 6030
     OpRayQueryGetIntersectionObjectToWorldKHR                               = 6031
     OpRayQueryGetIntersectionWorldToObjectKHR                               = 6032
+    OpAtomicFAddEXT                                                         = 6035
 end
 
 const classes = Dict(
@@ -3178,6 +3187,7 @@ const classes = Dict(
             (kind = IdRef, name = "Operand 2"),
         ],
     ),
+    OpTerminateInvocation => (Symbol("Control-Flow"), []),
     OpSubgroupBallotKHR => (
         Symbol("Group"),
         [(kind = IdResultType,), (kind = IdResult,), (kind = IdRef, name = "Predicate")],
@@ -3207,7 +3217,33 @@ const classes = Dict(
             (kind = IdRef, name = "Index"),
         ],
     ),
-    OpTypeRayQueryProvisionalKHR => (Symbol("Reserved"), [(kind = IdResult,)]),
+    OpTraceRayKHR => (
+        Symbol("Reserved"),
+        [
+            (kind = IdRef, name = "Accel"),
+            (kind = IdRef, name = "Ray Flags"),
+            (kind = IdRef, name = "Cull Mask"),
+            (kind = IdRef, name = "SBT Offset"),
+            (kind = IdRef, name = "SBT Stride"),
+            (kind = IdRef, name = "Miss Index"),
+            (kind = IdRef, name = "Ray Origin"),
+            (kind = IdRef, name = "Ray Tmin"),
+            (kind = IdRef, name = "Ray Direction"),
+            (kind = IdRef, name = "Ray Tmax"),
+            (kind = IdRef, name = "Payload"),
+        ],
+    ),
+    OpExecuteCallableKHR => (
+        Symbol("Reserved"),
+        [(kind = IdRef, name = "SBT Index"), (kind = IdRef, name = "Callable Data")],
+    ),
+    OpConvertUToAccelerationStructureKHR => (
+        Symbol("Reserved"),
+        [(kind = IdResultType,), (kind = IdResult,), (kind = IdRef, name = "Accel")],
+    ),
+    OpIgnoreIntersectionKHR => (Symbol("Reserved"), []),
+    OpTerminateRayKHR => (Symbol("Reserved"), []),
+    OpTypeRayQueryKHR => (Symbol("Reserved"), [(kind = IdResult,)]),
     OpRayQueryInitializeKHR => (
         Symbol("Reserved"),
         [
@@ -3383,26 +3419,8 @@ const classes = Dict(
         ],
     ),
     OpIgnoreIntersectionNV => (Symbol("Reserved"), []),
-    OpIgnoreIntersectionKHR => (Symbol("Reserved"), []),
     OpTerminateRayNV => (Symbol("Reserved"), []),
-    OpTerminateRayKHR => (Symbol("Reserved"), []),
     OpTraceNV => (
-        Symbol("Reserved"),
-        [
-            (kind = IdRef, name = "Accel"),
-            (kind = IdRef, name = "Ray Flags"),
-            (kind = IdRef, name = "Cull Mask"),
-            (kind = IdRef, name = "SBT Offset"),
-            (kind = IdRef, name = "SBT Stride"),
-            (kind = IdRef, name = "Miss Index"),
-            (kind = IdRef, name = "Ray Origin"),
-            (kind = IdRef, name = "Ray Tmin"),
-            (kind = IdRef, name = "Ray Direction"),
-            (kind = IdRef, name = "Ray Tmax"),
-            (kind = IdRef, name = "PayloadId"),
-        ],
-    ),
-    OpTraceRayKHR => (
         Symbol("Reserved"),
         [
             (kind = IdRef, name = "Accel"),
@@ -3421,10 +3439,6 @@ const classes = Dict(
     OpTypeAccelerationStructureNV => (Symbol("Reserved"), [(kind = IdResult,)]),
     OpTypeAccelerationStructureKHR => (Symbol("Reserved"), [(kind = IdResult,)]),
     OpExecuteCallableNV => (
-        Symbol("Reserved"),
-        [(kind = IdRef, name = "SBT Index"), (kind = IdRef, name = "Callable DataId")],
-    ),
-    OpExecuteCallableKHR => (
         Symbol("Reserved"),
         [(kind = IdRef, name = "SBT Index"), (kind = IdRef, name = "Callable DataId")],
     ),
@@ -3676,6 +3690,18 @@ const classes = Dict(
             (kind = IdResult,),
             (kind = IdRef, name = "Operand 1"),
             (kind = IdRef, name = "Operand 2"),
+        ],
+    ),
+    OpFunctionPointerINTEL => (
+        Symbol("@exclude"),
+        [(kind = IdResultType,), (kind = IdResult,), (kind = IdRef, name = "Function")],
+    ),
+    OpFunctionPointerCallINTEL => (
+        Symbol("@exclude"),
+        [
+            (kind = IdResultType,),
+            (kind = IdResult,),
+            (kind = IdRef, quantifier = "*", name = "Operand 1"),
         ],
     ),
     OpDecorateString =>
@@ -4489,6 +4515,37 @@ const classes = Dict(
         Symbol("@exclude"),
         [(kind = IdResultType,), (kind = IdResult,), (kind = IdRef, name = "Payload")],
     ),
+    OpLoopControlINTEL => (
+        Symbol("Reserved"),
+        [(kind = LiteralInteger, quantifier = "*", name = "Loop Control Parameters")],
+    ),
+    OpReadPipeBlockingINTEL => (
+        Symbol("Pipe"),
+        [
+            (kind = IdResultType,),
+            (kind = IdResult,),
+            (kind = IdRef, name = "Packet Size"),
+            (kind = IdRef, name = "Packet Alignment"),
+        ],
+    ),
+    OpWritePipeBlockingINTEL => (
+        Symbol("Pipe"),
+        [
+            (kind = IdResultType,),
+            (kind = IdResult,),
+            (kind = IdRef, name = "Packet Size"),
+            (kind = IdRef, name = "Packet Alignment"),
+        ],
+    ),
+    OpFPGARegINTEL => (
+        Symbol("Reserved"),
+        [
+            (kind = IdResultType,),
+            (kind = IdResult,),
+            (kind = IdRef, name = "Result"),
+            (kind = IdRef, name = "Input"),
+        ],
+    ),
     OpRayQueryGetRayTMinKHR => (
         Symbol("Reserved"),
         [(kind = IdResultType,), (kind = IdResult,), (kind = IdRef, name = "RayQuery")],
@@ -4617,6 +4674,17 @@ const classes = Dict(
             (kind = IdRef, name = "Intersection"),
         ],
     ),
+    OpAtomicFAddEXT => (
+        Symbol("Atomic"),
+        [
+            (kind = IdResultType,),
+            (kind = IdResult,),
+            (kind = IdRef, name = "Pointer"),
+            (kind = IdScope, name = "Memory"),
+            (kind = IdMemorySemantics, name = "Semantics"),
+            (kind = IdRef, name = "Value"),
+        ],
+    ),
 )
 
 const class_printing = Dict(
@@ -4658,6 +4726,7 @@ const kind_to_category = Dict(
     MemoryAccess                      => "BitEnum",
     KernelProfilingInfo               => "BitEnum",
     RayFlags                          => "BitEnum",
+    FragmentShadingRate               => "BitEnum",
     SourceLanguage                    => "ValueEnum",
     ExecutionModel                    => "ValueEnum",
     AddressingModel                   => "ValueEnum",

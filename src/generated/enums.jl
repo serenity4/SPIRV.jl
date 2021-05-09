@@ -21,115 +21,129 @@ end
 end
 
 @cenum ImageOperands::UInt32 begin
-    ImageOperandsNone                  = 0x0000
-    ImageOperandsBias                  = 0x0001
-    ImageOperandsLod                   = 0x0002
-    ImageOperandsGrad                  = 0x0004
-    ImageOperandsConstOffset           = 0x0008
-    ImageOperandsOffset                = 0x0010
-    ImageOperandsConstOffsets          = 0x0020
-    ImageOperandsSample                = 0x0040
-    ImageOperandsMinLod                = 0x0080
-    ImageOperandsMakeTexelAvailable    = 0x0100
-    ImageOperandsMakeTexelAvailableKHR = 0x0100
-    ImageOperandsMakeTexelVisible      = 0x0200
-    ImageOperandsMakeTexelVisibleKHR   = 0x0200
-    ImageOperandsNonPrivateTexel       = 0x0400
-    ImageOperandsNonPrivateTexelKHR    = 0x0400
-    ImageOperandsVolatileTexel         = 0x0800
-    ImageOperandsVolatileTexelKHR      = 0x0800
-    ImageOperandsSignExtend            = 0x1000
-    ImageOperandsZeroExtend            = 0x2000
+    ImageOperandsNone                  = 0x00000000
+    ImageOperandsBias                  = 0x00000001
+    ImageOperandsLod                   = 0x00000002
+    ImageOperandsGrad                  = 0x00000004
+    ImageOperandsConstOffset           = 0x00000008
+    ImageOperandsOffset                = 0x00000010
+    ImageOperandsConstOffsets          = 0x00000020
+    ImageOperandsSample                = 0x00000040
+    ImageOperandsMinLod                = 0x00000080
+    ImageOperandsMakeTexelAvailable    = 0x00000100
+    ImageOperandsMakeTexelAvailableKHR = 0x00000100
+    ImageOperandsMakeTexelVisible      = 0x00000200
+    ImageOperandsMakeTexelVisibleKHR   = 0x00000200
+    ImageOperandsNonPrivateTexel       = 0x00000400
+    ImageOperandsNonPrivateTexelKHR    = 0x00000400
+    ImageOperandsVolatileTexel         = 0x00000800
+    ImageOperandsVolatileTexelKHR      = 0x00000800
+    ImageOperandsSignExtend            = 0x00001000
+    ImageOperandsZeroExtend            = 0x00002000
 end
 
 @cenum FPFastMathMode::UInt32 begin
-    FPFastMathModeNone       = 0x0000
-    FPFastMathModeNotNaN     = 0x0001
-    FPFastMathModeNotInf     = 0x0002
-    FPFastMathModeNSZ        = 0x0004
-    FPFastMathModeAllowRecip = 0x0008
-    FPFastMathModeFast       = 0x0010
+    FPFastMathModeNone       = 0x00000000
+    FPFastMathModeNotNaN     = 0x00000001
+    FPFastMathModeNotInf     = 0x00000002
+    FPFastMathModeNSZ        = 0x00000004
+    FPFastMathModeAllowRecip = 0x00000008
+    FPFastMathModeFast       = 0x00000010
 end
 
 @cenum SelectionControl::UInt32 begin
-    SelectionControlNone        = 0x0000
-    SelectionControlFlatten     = 0x0001
-    SelectionControlDontFlatten = 0x0002
+    SelectionControlNone        = 0x00000000
+    SelectionControlFlatten     = 0x00000001
+    SelectionControlDontFlatten = 0x00000002
 end
 
 @cenum LoopControl::UInt32 begin
-    LoopControlNone               = 0x0000
-    LoopControlUnroll             = 0x0001
-    LoopControlDontUnroll         = 0x0002
-    LoopControlDependencyInfinite = 0x0004
-    LoopControlDependencyLength   = 0x0008
-    LoopControlMinIterations      = 0x0010
-    LoopControlMaxIterations      = 0x0020
-    LoopControlIterationMultiple  = 0x0040
-    LoopControlPeelCount          = 0x0080
-    LoopControlPartialCount       = 0x0100
+    LoopControlNone                      = 0x00000000
+    LoopControlUnroll                    = 0x00000001
+    LoopControlDontUnroll                = 0x00000002
+    LoopControlDependencyInfinite        = 0x00000004
+    LoopControlDependencyLength          = 0x00000008
+    LoopControlMinIterations             = 0x00000010
+    LoopControlMaxIterations             = 0x00000020
+    LoopControlIterationMultiple         = 0x00000040
+    LoopControlPeelCount                 = 0x00000080
+    LoopControlPartialCount              = 0x00000100
+    LoopControlInitiationIntervalINTEL   = 0x00010000
+    LoopControlMaxConcurrencyINTEL       = 0x00020000
+    LoopControlDependencyArrayINTEL      = 0x00040000
+    LoopControlPipelineEnableINTEL       = 0x00080000
+    LoopControlLoopCoalesceINTEL         = 0x00100000
+    LoopControlMaxInterleavingINTEL      = 0x00200000
+    LoopControlSpeculatedIterationsINTEL = 0x00400000
 end
 
 @cenum FunctionControl::UInt32 begin
-    FunctionControlNone       = 0x0000
-    FunctionControlInline     = 0x0001
-    FunctionControlDontInline = 0x0002
-    FunctionControlPure       = 0x0004
-    FunctionControlConst      = 0x0008
+    FunctionControlNone       = 0x00000000
+    FunctionControlInline     = 0x00000001
+    FunctionControlDontInline = 0x00000002
+    FunctionControlPure       = 0x00000004
+    FunctionControlConst      = 0x00000008
 end
 
 @cenum MemorySemantics::UInt32 begin
-    MemorySemanticsRelaxed                = 0x0000
-    MemorySemanticsNone                   = 0x0000
-    MemorySemanticsAcquire                = 0x0002
-    MemorySemanticsRelease                = 0x0004
-    MemorySemanticsAcquireRelease         = 0x0008
-    MemorySemanticsSequentiallyConsistent = 0x0010
-    MemorySemanticsUniformMemory          = 0x0040
-    MemorySemanticsSubgroupMemory         = 0x0080
-    MemorySemanticsWorkgroupMemory        = 0x0100
-    MemorySemanticsCrossWorkgroupMemory   = 0x0200
-    MemorySemanticsAtomicCounterMemory    = 0x0400
-    MemorySemanticsImageMemory            = 0x0800
-    MemorySemanticsOutputMemory           = 0x1000
-    MemorySemanticsOutputMemoryKHR        = 0x1000
-    MemorySemanticsMakeAvailable          = 0x2000
-    MemorySemanticsMakeAvailableKHR       = 0x2000
-    MemorySemanticsMakeVisible            = 0x4000
-    MemorySemanticsMakeVisibleKHR         = 0x4000
-    MemorySemanticsVolatile               = 0x8000
+    MemorySemanticsRelaxed                = 0x00000000
+    MemorySemanticsNone                   = 0x00000000
+    MemorySemanticsAcquire                = 0x00000002
+    MemorySemanticsRelease                = 0x00000004
+    MemorySemanticsAcquireRelease         = 0x00000008
+    MemorySemanticsSequentiallyConsistent = 0x00000010
+    MemorySemanticsUniformMemory          = 0x00000040
+    MemorySemanticsSubgroupMemory         = 0x00000080
+    MemorySemanticsWorkgroupMemory        = 0x00000100
+    MemorySemanticsCrossWorkgroupMemory   = 0x00000200
+    MemorySemanticsAtomicCounterMemory    = 0x00000400
+    MemorySemanticsImageMemory            = 0x00000800
+    MemorySemanticsOutputMemory           = 0x00001000
+    MemorySemanticsOutputMemoryKHR        = 0x00001000
+    MemorySemanticsMakeAvailable          = 0x00002000
+    MemorySemanticsMakeAvailableKHR       = 0x00002000
+    MemorySemanticsMakeVisible            = 0x00004000
+    MemorySemanticsMakeVisibleKHR         = 0x00004000
+    MemorySemanticsVolatile               = 0x00008000
 end
 
 @cenum MemoryAccess::UInt32 begin
-    MemoryAccessNone                    = 0x0000
-    MemoryAccessVolatile                = 0x0001
-    MemoryAccessAligned                 = 0x0002
-    MemoryAccessNontemporal             = 0x0004
-    MemoryAccessMakePointerAvailable    = 0x0008
-    MemoryAccessMakePointerAvailableKHR = 0x0008
-    MemoryAccessMakePointerVisible      = 0x0010
-    MemoryAccessMakePointerVisibleKHR   = 0x0010
-    MemoryAccessNonPrivatePointer       = 0x0020
-    MemoryAccessNonPrivatePointerKHR    = 0x0020
+    MemoryAccessNone                    = 0x00000000
+    MemoryAccessVolatile                = 0x00000001
+    MemoryAccessAligned                 = 0x00000002
+    MemoryAccessNontemporal             = 0x00000004
+    MemoryAccessMakePointerAvailable    = 0x00000008
+    MemoryAccessMakePointerAvailableKHR = 0x00000008
+    MemoryAccessMakePointerVisible      = 0x00000010
+    MemoryAccessMakePointerVisibleKHR   = 0x00000010
+    MemoryAccessNonPrivatePointer       = 0x00000020
+    MemoryAccessNonPrivatePointerKHR    = 0x00000020
 end
 
 @cenum KernelProfilingInfo::UInt32 begin
-    KernelProfilingInfoNone        = 0x0000
-    KernelProfilingInfoCmdExecTime = 0x0001
+    KernelProfilingInfoNone        = 0x00000000
+    KernelProfilingInfoCmdExecTime = 0x00000001
 end
 
 @cenum RayFlags::UInt32 begin
-    RayFlagsNoneKHR                     = 0x0000
-    RayFlagsOpaqueKHR                   = 0x0001
-    RayFlagsNoOpaqueKHR                 = 0x0002
-    RayFlagsTerminateOnFirstHitKHR      = 0x0004
-    RayFlagsSkipClosestHitShaderKHR     = 0x0008
-    RayFlagsCullBackFacingTrianglesKHR  = 0x0010
-    RayFlagsCullFrontFacingTrianglesKHR = 0x0020
-    RayFlagsCullOpaqueKHR               = 0x0040
-    RayFlagsCullNoOpaqueKHR             = 0x0080
-    RayFlagsSkipTrianglesKHR            = 0x0100
-    RayFlagsSkipAABBsKHR                = 0x0200
+    RayFlagsNoneKHR                     = 0x00000000
+    RayFlagsOpaqueKHR                   = 0x00000001
+    RayFlagsNoOpaqueKHR                 = 0x00000002
+    RayFlagsTerminateOnFirstHitKHR      = 0x00000004
+    RayFlagsSkipClosestHitShaderKHR     = 0x00000008
+    RayFlagsCullBackFacingTrianglesKHR  = 0x00000010
+    RayFlagsCullFrontFacingTrianglesKHR = 0x00000020
+    RayFlagsCullOpaqueKHR               = 0x00000040
+    RayFlagsCullNoOpaqueKHR             = 0x00000080
+    RayFlagsSkipTrianglesKHR            = 0x00000100
+    RayFlagsSkipAABBsKHR                = 0x00000200
+end
+
+@cenum FragmentShadingRate::UInt32 begin
+    FragmentShadingRateVertical2Pixels   = 0x00000001
+    FragmentShadingRateVertical4Pixels   = 0x00000002
+    FragmentShadingRateHorizontal2Pixels = 0x00000004
+    FragmentShadingRateHorizontal4Pixels = 0x00000008
 end
 
 @cenum SourceLanguage::UInt32 begin
@@ -238,6 +252,10 @@ end
     ExecutionModeSampleInterlockUnorderedEXT      = 5369
     ExecutionModeShadingRateInterlockOrderedEXT   = 5370
     ExecutionModeShadingRateInterlockUnorderedEXT = 5371
+    ExecutionModeMaxWorkgroupSizeINTEL            = 5893
+    ExecutionModeMaxWorkDimINTEL                  = 5894
+    ExecutionModeNoGlobalOffsetINTEL              = 5895
+    ExecutionModeNumSIMDWorkitemsINTEL            = 5896
 end
 
 @cenum StorageClass::UInt32 begin
@@ -268,6 +286,7 @@ end
     StorageClassShaderRecordBufferKHR    = 5343
     StorageClassPhysicalStorageBuffer    = 5349
     StorageClassPhysicalStorageBufferEXT = 5349
+    StorageClassCodeSectionINTEL         = 5605
 end
 
 @cenum Dim::UInt32 begin
@@ -334,6 +353,8 @@ end
     ImageFormatRg8ui        = 37
     ImageFormatR16ui        = 38
     ImageFormatR8ui         = 39
+    ImageFormatR64ui        = 40
+    ImageFormatR64i         = 41
 end
 
 @cenum ImageChannelOrder::UInt32 begin
@@ -473,11 +494,24 @@ end
     DecorationRestrictPointerEXT          = 5355
     DecorationAliasedPointer              = 5356
     DecorationAliasedPointerEXT           = 5356
+    DecorationReferencedIndirectlyINTEL   = 5602
     DecorationCounterBuffer               = 5634
     DecorationHlslCounterBufferGOOGLE     = 5634
     DecorationUserSemantic                = 5635
     DecorationHlslSemanticGOOGLE          = 5635
     DecorationUserTypeGOOGLE              = 5636
+    DecorationRegisterINTEL               = 5825
+    DecorationMemoryINTEL                 = 5826
+    DecorationNumbanksINTEL               = 5827
+    DecorationBankwidthINTEL              = 5828
+    DecorationMaxPrivateCopiesINTEL       = 5829
+    DecorationSinglepumpINTEL             = 5830
+    DecorationDoublepumpINTEL             = 5831
+    DecorationMaxReplicatesINTEL          = 5832
+    DecorationSimpleDualPortINTEL         = 5833
+    DecorationMergeINTEL                  = 5834
+    DecorationBankBitsINTEL               = 5835
+    DecorationForcePow2DepthINTEL         = 5836
 end
 
 @cenum BuiltIn::UInt32 begin
@@ -535,8 +569,10 @@ end
     BuiltInBaseVertex                  = 4424
     BuiltInBaseInstance                = 4425
     BuiltInDrawIndex                   = 4426
+    BuiltInPrimitiveShadingRateKHR     = 4432
     BuiltInDeviceIndex                 = 4438
     BuiltInViewIndex                   = 4440
+    BuiltInShadingRateKHR              = 4444
     BuiltInBaryCoordNoPerspAMD         = 4992
     BuiltInBaryCoordNoPerspCentroidAMD = 4993
     BuiltInBaryCoordNoPerspSampleAMD   = 4994
@@ -588,7 +624,6 @@ end
     BuiltInWorldToObjectNV             = 5331
     BuiltInWorldToObjectKHR            = 5331
     BuiltInHitTNV                      = 5332
-    BuiltInHitTKHR                     = 5332
     BuiltInHitKindNV                   = 5333
     BuiltInHitKindKHR                  = 5333
     BuiltInIncomingRayFlagsNV          = 5351
@@ -697,6 +732,7 @@ end
     CapabilityGroupNonUniformQuad                          = 68
     CapabilityShaderLayer                                  = 69
     CapabilityShaderViewportIndex                          = 70
+    CapabilityFragmentShadingRateKHR                       = 4422
     CapabilitySubgroupBallotKHR                            = 4423
     CapabilityDrawParameters                               = 4427
     CapabilitySubgroupVoteKHR                              = 4431
@@ -721,12 +757,15 @@ end
     CapabilityRoundingModeRTE                              = 4467
     CapabilityRoundingModeRTZ                              = 4468
     CapabilityRayQueryProvisionalKHR                       = 4471
-    CapabilityRayTraversalPrimitiveCullingProvisionalKHR   = 4478
+    CapabilityRayQueryKHR                                  = 4472
+    CapabilityRayTraversalPrimitiveCullingKHR              = 4478
+    CapabilityRayTracingKHR                                = 4479
     CapabilityFloat16ImageAMD                              = 5008
     CapabilityImageGatherBiasLodAMD                        = 5009
     CapabilityFragmentMaskAMD                              = 5010
     CapabilityStencilExportEXT                             = 5013
     CapabilityImageReadWriteLodAMD                         = 5015
+    CapabilityInt64ImageEXT                                = 5016
     CapabilityShaderClockKHR                               = 5055
     CapabilitySampleMaskOverrideCoverageNV                 = 5249
     CapabilityGeometryShaderPassthroughNV                  = 5251
@@ -787,9 +826,20 @@ end
     CapabilitySubgroupImageBlockIOINTEL                    = 5570
     CapabilitySubgroupImageMediaBlockIOINTEL               = 5579
     CapabilityIntegerFunctions2INTEL                       = 5584
+    CapabilityFunctionPointersINTEL                        = 5603
+    CapabilityIndirectReferencesINTEL                      = 5604
     CapabilitySubgroupAvcMotionEstimationINTEL             = 5696
     CapabilitySubgroupAvcMotionEstimationIntraINTEL        = 5697
     CapabilitySubgroupAvcMotionEstimationChromaINTEL       = 5698
+    CapabilityFPGAMemoryAttributesINTEL                    = 5824
+    CapabilityUnstructuredLoopControlsINTEL                = 5886
+    CapabilityFPGALoopControlsINTEL                        = 5888
+    CapabilityKernelAttributesINTEL                        = 5892
+    CapabilityFPGAKernelAttributesINTEL                    = 5897
+    CapabilityBlockingPipesINTEL                           = 5945
+    CapabilityFPGARegINTEL                                 = 5948
+    CapabilityAtomicFloat32AddEXT                          = 6033
+    CapabilityAtomicFloat64AddEXT                          = 6034
 end
 
 @cenum RayQueryIntersection::UInt32 begin
@@ -810,94 +860,143 @@ end
 
 const extra_operands = Dict(
     ImageOperands => Dict(
-        ImageOperandsBias => (kind = IdRef,),
-        ImageOperandsLod => (kind = IdRef,),
-        ImageOperandsGrad => (kind = IdRef,),
-        ImageOperandsConstOffset => (kind = IdRef,),
-        ImageOperandsOffset => (kind = IdRef,),
-        ImageOperandsConstOffsets => (kind = IdRef,),
-        ImageOperandsSample => (kind = IdRef,),
-        ImageOperandsMinLod => (kind = IdRef,),
-        ImageOperandsMakeTexelAvailable => (kind = IdScope,),
-        ImageOperandsMakeTexelAvailableKHR => (kind = IdScope,),
-        ImageOperandsMakeTexelVisible => (kind = IdScope,),
-        ImageOperandsMakeTexelVisibleKHR => (kind = IdScope,),
+        ImageOperandsBias => [(kind = IdRef,)],
+        ImageOperandsLod => [(kind = IdRef,)],
+        ImageOperandsGrad => [(kind = IdRef,), (kind = IdRef,)],
+        ImageOperandsConstOffset => [(kind = IdRef,)],
+        ImageOperandsOffset => [(kind = IdRef,)],
+        ImageOperandsConstOffsets => [(kind = IdRef,)],
+        ImageOperandsSample => [(kind = IdRef,)],
+        ImageOperandsMinLod => [(kind = IdRef,)],
+        ImageOperandsMakeTexelAvailable => [(kind = IdScope,)],
+        ImageOperandsMakeTexelAvailableKHR => [(kind = IdScope,)],
+        ImageOperandsMakeTexelVisible => [(kind = IdScope,)],
+        ImageOperandsMakeTexelVisibleKHR => [(kind = IdScope,)],
     ),
     LoopControl => Dict(
-        LoopControlDependencyLength => (kind = LiteralInteger,),
-        LoopControlMinIterations => (kind = LiteralInteger,),
-        LoopControlMaxIterations => (kind = LiteralInteger,),
-        LoopControlIterationMultiple => (kind = LiteralInteger,),
-        LoopControlPeelCount => (kind = LiteralInteger,),
-        LoopControlPartialCount => (kind = LiteralInteger,),
+        LoopControlDependencyLength => [(kind = LiteralInteger,)],
+        LoopControlMinIterations => [(kind = LiteralInteger,)],
+        LoopControlMaxIterations => [(kind = LiteralInteger,)],
+        LoopControlIterationMultiple => [(kind = LiteralInteger,)],
+        LoopControlPeelCount => [(kind = LiteralInteger,)],
+        LoopControlPartialCount => [(kind = LiteralInteger,)],
+        LoopControlInitiationIntervalINTEL => [(kind = LiteralInteger,)],
+        LoopControlMaxConcurrencyINTEL => [(kind = LiteralInteger,)],
+        LoopControlDependencyArrayINTEL => [(kind = LiteralInteger,)],
+        LoopControlPipelineEnableINTEL => [(kind = LiteralInteger,)],
+        LoopControlLoopCoalesceINTEL => [(kind = LiteralInteger,)],
+        LoopControlMaxInterleavingINTEL => [(kind = LiteralInteger,)],
+        LoopControlSpeculatedIterationsINTEL => [(kind = LiteralInteger,)],
     ),
     MemoryAccess => Dict(
-        MemoryAccessAligned => (kind = LiteralInteger,),
-        MemoryAccessMakePointerAvailable => (kind = IdScope,),
-        MemoryAccessMakePointerAvailableKHR => (kind = IdScope,),
-        MemoryAccessMakePointerVisible => (kind = IdScope,),
-        MemoryAccessMakePointerVisibleKHR => (kind = IdScope,),
+        MemoryAccessAligned => [(kind = LiteralInteger,)],
+        MemoryAccessMakePointerAvailable => [(kind = IdScope,)],
+        MemoryAccessMakePointerAvailableKHR => [(kind = IdScope,)],
+        MemoryAccessMakePointerVisible => [(kind = IdScope,)],
+        MemoryAccessMakePointerVisibleKHR => [(kind = IdScope,)],
     ),
     ExecutionMode => Dict(
-        ExecutionModeInvocations =>
-            (kind = LiteralInteger, name = "Number of <<Invocation,invocations>>"),
-        ExecutionModeLocalSize => (kind = LiteralInteger, name = "x size"),
-        ExecutionModeLocalSizeHint => (kind = LiteralInteger, name = "x size"),
-        ExecutionModeOutputVertices => (kind = LiteralInteger, name = "Vertex count"),
-        ExecutionModeVecTypeHint => (kind = LiteralInteger, name = "Vector type"),
-        ExecutionModeSubgroupSize => (kind = LiteralInteger, name = "Subgroup Size"),
+        ExecutionModeInvocations => [(
+            kind = LiteralInteger,
+            name = "Number of <<Invocation,invocations>>",
+        )],
+        ExecutionModeLocalSize => [
+            (kind = LiteralInteger, name = "x size"),
+            (kind = LiteralInteger, name = "y size"),
+            (kind = LiteralInteger, name = "z size"),
+        ],
+        ExecutionModeLocalSizeHint => [
+            (kind = LiteralInteger, name = "x size"),
+            (kind = LiteralInteger, name = "y size"),
+            (kind = LiteralInteger, name = "z size"),
+        ],
+        ExecutionModeOutputVertices => [(kind = LiteralInteger, name = "Vertex count")],
+        ExecutionModeVecTypeHint => [(kind = LiteralInteger, name = "Vector type")],
+        ExecutionModeSubgroupSize => [(kind = LiteralInteger, name = "Subgroup Size")],
         ExecutionModeSubgroupsPerWorkgroup =>
-            (kind = LiteralInteger, name = "Subgroups Per Workgroup"),
+            [(kind = LiteralInteger, name = "Subgroups Per Workgroup")],
         ExecutionModeSubgroupsPerWorkgroupId =>
-            (kind = IdRef, name = "Subgroups Per Workgroup"),
-        ExecutionModeLocalSizeId => (kind = IdRef, name = "x size"),
-        ExecutionModeLocalSizeHintId => (kind = IdRef, name = "Local Size Hint"),
-        ExecutionModeDenormPreserve => (kind = LiteralInteger, name = "Target Width"),
+            [(kind = IdRef, name = "Subgroups Per Workgroup")],
+        ExecutionModeLocalSizeId => [
+            (kind = IdRef, name = "x size"),
+            (kind = IdRef, name = "y size"),
+            (kind = IdRef, name = "z size"),
+        ],
+        ExecutionModeLocalSizeHintId => [(kind = IdRef, name = "Local Size Hint")],
+        ExecutionModeDenormPreserve => [(kind = LiteralInteger, name = "Target Width")],
         ExecutionModeDenormFlushToZero =>
-            (kind = LiteralInteger, name = "Target Width"),
+            [(kind = LiteralInteger, name = "Target Width")],
         ExecutionModeSignedZeroInfNanPreserve =>
-            (kind = LiteralInteger, name = "Target Width"),
-        ExecutionModeRoundingModeRTE => (kind = LiteralInteger, name = "Target Width"),
-        ExecutionModeRoundingModeRTZ => (kind = LiteralInteger, name = "Target Width"),
+            [(kind = LiteralInteger, name = "Target Width")],
+        ExecutionModeRoundingModeRTE =>
+            [(kind = LiteralInteger, name = "Target Width")],
+        ExecutionModeRoundingModeRTZ =>
+            [(kind = LiteralInteger, name = "Target Width")],
         ExecutionModeOutputPrimitivesNV =>
-            (kind = LiteralInteger, name = "Primitive count"),
+            [(kind = LiteralInteger, name = "Primitive count")],
+        ExecutionModeMaxWorkgroupSizeINTEL => [
+            (kind = LiteralInteger, name = "max_x_size"),
+            (kind = LiteralInteger, name = "max_y_size"),
+            (kind = LiteralInteger, name = "max_z_size"),
+        ],
+        ExecutionModeMaxWorkDimINTEL =>
+            [(kind = LiteralInteger, name = "max_dimensions")],
+        ExecutionModeNumSIMDWorkitemsINTEL =>
+            [(kind = LiteralInteger, name = "vector_width")],
     ),
     Decoration => Dict(
         DecorationSpecId =>
-            (kind = LiteralInteger, name = "Specialization Constant ID"),
-        DecorationArrayStride => (kind = LiteralInteger, name = "Array Stride"),
-        DecorationMatrixStride => (kind = LiteralInteger, name = "Matrix Stride"),
-        DecorationBuiltIn => (kind = BuiltIn,),
-        DecorationUniformId => (kind = IdScope, name = "Execution"),
-        DecorationStream => (kind = LiteralInteger, name = "Stream Number"),
-        DecorationLocation => (kind = LiteralInteger, name = "Location"),
-        DecorationComponent => (kind = LiteralInteger, name = "Component"),
-        DecorationIndex => (kind = LiteralInteger, name = "Index"),
-        DecorationBinding => (kind = LiteralInteger, name = "Binding Point"),
-        DecorationDescriptorSet => (kind = LiteralInteger, name = "Descriptor Set"),
-        DecorationOffset => (kind = LiteralInteger, name = "Byte Offset"),
-        DecorationXfbBuffer => (kind = LiteralInteger, name = "XFB Buffer Number"),
-        DecorationXfbStride => (kind = LiteralInteger, name = "XFB Stride"),
-        DecorationFuncParamAttr => (
+            [(kind = LiteralInteger, name = "Specialization Constant ID")],
+        DecorationArrayStride => [(kind = LiteralInteger, name = "Array Stride")],
+        DecorationMatrixStride => [(kind = LiteralInteger, name = "Matrix Stride")],
+        DecorationBuiltIn => [(kind = BuiltIn,)],
+        DecorationUniformId => [(kind = IdScope, name = "Execution")],
+        DecorationStream => [(kind = LiteralInteger, name = "Stream Number")],
+        DecorationLocation => [(kind = LiteralInteger, name = "Location")],
+        DecorationComponent => [(kind = LiteralInteger, name = "Component")],
+        DecorationIndex => [(kind = LiteralInteger, name = "Index")],
+        DecorationBinding => [(kind = LiteralInteger, name = "Binding Point")],
+        DecorationDescriptorSet => [(kind = LiteralInteger, name = "Descriptor Set")],
+        DecorationOffset => [(kind = LiteralInteger, name = "Byte Offset")],
+        DecorationXfbBuffer => [(kind = LiteralInteger, name = "XFB Buffer Number")],
+        DecorationXfbStride => [(kind = LiteralInteger, name = "XFB Stride")],
+        DecorationFuncParamAttr => [(
             kind = FunctionParameterAttribute,
             name = "Function Parameter Attribute",
-        ),
+        )],
         DecorationFPRoundingMode =>
-            (kind = FPRoundingMode, name = "Floating-Point Rounding Mode"),
-        DecorationFPFastMathMode => (kind = FPFastMathMode, name = "Fast-Math Mode"),
-        DecorationLinkageAttributes => (kind = LiteralString, name = "Name"),
+            [(kind = FPRoundingMode, name = "Floating-Point Rounding Mode")],
+        DecorationFPFastMathMode => [(kind = FPFastMathMode, name = "Fast-Math Mode")],
+        DecorationLinkageAttributes => [
+            (kind = LiteralString, name = "Name"),
+            (kind = LinkageType, name = "Linkage Type"),
+        ],
         DecorationInputAttachmentIndex =>
-            (kind = LiteralInteger, name = "Attachment Index"),
-        DecorationAlignment => (kind = LiteralInteger, name = "Alignment"),
-        DecorationMaxByteOffset => (kind = LiteralInteger, name = "Max Byte Offset"),
-        DecorationAlignmentId => (kind = IdRef, name = "Alignment"),
-        DecorationMaxByteOffsetId => (kind = IdRef, name = "Max Byte Offset"),
+            [(kind = LiteralInteger, name = "Attachment Index")],
+        DecorationAlignment => [(kind = LiteralInteger, name = "Alignment")],
+        DecorationMaxByteOffset => [(kind = LiteralInteger, name = "Max Byte Offset")],
+        DecorationAlignmentId => [(kind = IdRef, name = "Alignment")],
+        DecorationMaxByteOffsetId => [(kind = IdRef, name = "Max Byte Offset")],
         DecorationSecondaryViewportRelativeNV =>
-            (kind = LiteralInteger, name = "Offset"),
-        DecorationCounterBuffer => (kind = IdRef, name = "Counter Buffer"),
-        DecorationHlslCounterBufferGOOGLE => (kind = IdRef, name = "Counter Buffer"),
-        DecorationUserSemantic => (kind = LiteralString, name = "Semantic"),
-        DecorationHlslSemanticGOOGLE => (kind = LiteralString, name = "Semantic"),
-        DecorationUserTypeGOOGLE => (kind = LiteralString, name = "User Type"),
+            [(kind = LiteralInteger, name = "Offset")],
+        DecorationCounterBuffer => [(kind = IdRef, name = "Counter Buffer")],
+        DecorationHlslCounterBufferGOOGLE => [(kind = IdRef, name = "Counter Buffer")],
+        DecorationUserSemantic => [(kind = LiteralString, name = "Semantic")],
+        DecorationHlslSemanticGOOGLE => [(kind = LiteralString, name = "Semantic")],
+        DecorationUserTypeGOOGLE => [(kind = LiteralString, name = "User Type")],
+        DecorationMemoryINTEL => [(kind = LiteralString, name = "Memory Type")],
+        DecorationNumbanksINTEL => [(kind = LiteralInteger, name = "Banks")],
+        DecorationBankwidthINTEL => [(kind = LiteralInteger, name = "Bank Width")],
+        DecorationMaxPrivateCopiesINTEL =>
+            [(kind = LiteralInteger, name = "Maximum Copies")],
+        DecorationMaxReplicatesINTEL =>
+            [(kind = LiteralInteger, name = "Maximum Replicates")],
+        DecorationMergeINTEL => [
+            (kind = LiteralString, name = "Merge Key"),
+            (kind = LiteralString, name = "Merge Type"),
+        ],
+        DecorationBankBitsINTEL =>
+            [(kind = LiteralInteger, quantifier = "*", name = "Bank Bits")],
+        DecorationForcePow2DepthINTEL => [(kind = LiteralInteger, name = "Force Key")],
     ),
 )
