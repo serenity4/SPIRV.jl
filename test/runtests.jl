@@ -6,6 +6,7 @@ resource(filename) = joinpath(@__DIR__, "resources", filename)
 modules = [
     "vert.spv",
     "frag.spv",
+    "comp.spv",
 ]
 
 @testset "SPIRV.jl" begin
