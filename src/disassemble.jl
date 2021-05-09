@@ -46,7 +46,7 @@ function emit_argument(io, arg, kind, category)
             &LiteralString => printstyled(io, '"', arg, '"'; color=150)
             _ => printstyled(io, arg; color=153)
         end
-        "Id" => printstyled(io, '%', Int(arg); color=:yellow)
+        "Id" => printstyled(io, '%', arg; color=:yellow)
     end
 end
 

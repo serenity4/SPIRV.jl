@@ -9,6 +9,7 @@ const Optional{T} = Union{Nothing,T}
 import Base: write, show, showerror, ==
 
 const magic_number = 0x07230203
+const ID = Int
 
 # generated SPIR-V wrapper
 include("generated/enums.jl")

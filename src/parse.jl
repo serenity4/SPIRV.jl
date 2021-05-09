@@ -151,10 +151,10 @@ Parsed SPIR-V instruction. It represents an instruction of the form `%result_id 
 """
 struct Instruction <: AbstractInstruction
     opcode::OpCode
-    type_id::Optional{Int}
-    result_id::Optional{Int}
+    type_id::Optional{ID}
+    result_id::Optional{ID}
     arguments::Vector{Any}
-    Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(convert(OpCode, opcode), convert(Optional{Int}, type_id), convert(Optional{Int}, result_id), convert(Vector{Any}, arguments))
+    Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(convert(OpCode, opcode), convert(Optional{ID}, type_id), convert(Optional{ID}, result_id), convert(Vector{Any}, arguments))
     Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
 end
 
