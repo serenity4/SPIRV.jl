@@ -80,6 +80,6 @@ end
 hex(x) = "0x" * lpad(string(x, base=16), sizeof(x) * 2, '0')
 
 disassemble(obj) = disassemble(stdout, obj)
-disassemble(io::IO, mod::PhysicalModule) = disassemble(io, convert(Module, mod))
+disassemble(io::IO, mod::PhysicalModule) = disassemble(io, Module(mod))
 
 show(io::IO, ::MIME"text/plain", mod::Module) = disassemble(io, mod)

@@ -6,7 +6,7 @@ using UnPack
 
 const Optional{T} = Union{Nothing,T}
 
-import Base: convert, write, show, showerror, ==
+import Base: write, show, showerror, ==
 
 const magic_number = 0x07230203
 

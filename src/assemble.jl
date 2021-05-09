@@ -1,8 +1,8 @@
-function convert(::Type{PhysicalModule}, mod::Module)
-    PhysicalModule(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, mod.instructions)
+function PhysicalModule(mod::Module)
+    PhysicalModule(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, PhysicalInstruction.(mod.instructions))
 end
 
-function convert(::Type{PhysicalInstruction}, inst::Instruction)
+function PhysicalInstruction(inst::Instruction)
     operands = physical_operands(inst)
     PhysicalInstruction(1 + length(operands) + !isnothing(inst.type_id) + !isnothing(inst.result_id), inst.opcode, inst.type_id, inst.result_id, operands)
 end
@@ -102,4 +102,4 @@ function assemble!(words, mod::PhysicalModule)
     words
 end
 
-assemble(mod::Module) = assemble(convert(PhysicalModule, mod))
+assemble(mod::Module) = assemble(PhysicalModule(mod))

@@ -174,7 +174,7 @@ function info(inst::Instruction, skip_ids::Bool = true)
     skip_ids ? op_infos[start_idx(inst):end] : op_infos
 end
 
-function convert(::Type{Instruction}, inst::PhysicalInstruction)
+function Instruction(inst::PhysicalInstruction)
     opcode = OpCode(inst.opcode)
     op_infos = copy(info(inst))
     op_kinds = operand_kinds(inst)
@@ -242,12 +242,8 @@ struct Module
     instructions::Vector{Instruction}
 end
 
-Module(mod::PhysicalModule) = convert(Module, mod)
-Module(source) = convert(Module, PhysicalModule(source))
-
-function convert(::Type{Module}, mod::PhysicalModule)
-    Module(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, mod.instructions)
-end
+Module(mod::PhysicalModule) = Module(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, Instruction.(mod.instructions))
+Module(source) = Module(PhysicalModule(source))
 
 function spirv_version(word)
     major = (word & 0x00ff0000) >> 16

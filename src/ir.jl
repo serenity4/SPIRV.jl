@@ -153,7 +153,7 @@ function IR(mod::Module)
     IR(Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema), capabilities, extensions, extinst_imports, addressing_model, memory_model, entry_points, decorations, results, debug)
 end
 
-function Base.convert(::Type{Module}, ir::IR)
+function Module(ir::IR)
     insts = Instruction[]
 
     append!(insts, @inst(OpCapability(cap)) for cap in ir.capabilities)

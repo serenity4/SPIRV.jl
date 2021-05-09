@@ -17,7 +17,7 @@ modules = [
         disassemble(mod)
 
         @testset "Assembly/disassembly isomorphisms" begin
-            pmod_reconstructed::PhysicalModule = mod
+            pmod_reconstructed = PhysicalModule(mod)
             @test pmod == pmod_reconstructed
 
             @test sizeof(assemble(pmod)) == stat(r).size
@@ -34,6 +34,6 @@ modules = [
     @testset "Intermediate Representation" begin
         mod = SPIRV.Module(resource("vert.spv"))
         ir = IR(mod)
-        convert(SPIRV.Module, ir)
+        mod2 = SPIRV.Module(ir)
     end
 end
