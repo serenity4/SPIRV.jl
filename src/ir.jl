@@ -119,7 +119,9 @@ function IR(mod::Module)
                         push!(source.extensions, Symbol(arguments[1]))
                     @case OpName
                         id, name = arguments
-                        names[id] = Symbol(name)
+                        if !isempty(name)
+                            names[id] = Symbol(name)
+                        end
                     @case _
                         nothing
                 end
