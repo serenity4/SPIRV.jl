@@ -14,14 +14,14 @@ end
     interfaces::Vector{Int}
 end
 
-struct SSAVector{T}
-    els::Dict{Int,T}
-    SSAVector{T}() where {T} = new{T}(Dict{Int,T}())
+struct SSADict{T}
+    dict::Dict{Int,T}
+    SSADict{T}() where {T} = new{T}(Dict{Int,T}())
 end
 
-@forward SSAVector.els Base.getindex, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate, Base.keys, Base.values, Base.haskey
+@forward SSADict.dict Base.getindex, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate, Base.keys, Base.values, Base.haskey
 
-Base.merge!(vec::SSAVector, others::SSAVector...) = merge!(vec.els, getproperty.(others, :els)...)
+Base.merge!(vec::SSADict, others::SSADict...) = merge!(vec.dict, getproperty.(others, :dict)...)
 
 struct Metadata
     magic_number::UInt32
@@ -37,9 +37,9 @@ struct LineInfo
 end
 
 struct DebugInfo
-    filenames::SSAVector{String}
-    names::SSAVector{Symbol}
-    lines::SSAVector{LineInfo}
+    filenames::SSADict{String}
+    names::SSADict{Symbol}
+    lines::SSADict{LineInfo}
     source::Optional{Source}
 end
 
@@ -52,27 +52,27 @@ struct IR
     meta::Metadata
     capabilities::Vector{Capability}
     extensions::Vector{Symbol}
-    extinst_imports::SSAVector{Symbol}
+    extinst_imports::SSADict{Symbol}
     addressing_model::AddressingModel
     memory_model::MemoryModel
-    entry_points::SSAVector{EntryPoint}
-    decorations::SSAVector{Vector{_Decoration}}
-    results::SSAVector{Any}
+    entry_points::SSADict{EntryPoint}
+    decorations::SSADict{Vector{_Decoration}}
+    results::SSADict{Any}
     debug::Optional{DebugInfo}
 end
 
 function IR(mod::Module)
-    decorations = SSAVector{Vector{_Decoration}}()
+    decorations = SSADict{Vector{_Decoration}}()
     capabilities = Capability[]
     extensions = Symbol[]
-    extinst_imports = SSAVector{Symbol}()
+    extinst_imports = SSADict{Symbol}()
     source, memory_model, addressing_model = fill(nothing, 3)
-    entry_points = SSAVector{EntryPoint}()
-    results = SSAVector{Any}()
+    entry_points = SSADict{EntryPoint}()
+    results = SSADict{Any}()
     unnamed_i = 0
-    filenames = SSAVector{String}()
-    names = SSAVector{Symbol}()
-    lines = SSAVector{LineInfo}()
+    filenames = SSADict{String}()
+    names = SSADict{Symbol}()
+    lines = SSADict{LineInfo}()
     ids = Int[]
 
     for inst ∈ mod.instructions
