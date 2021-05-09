@@ -43,7 +43,7 @@ function emit_argument(io, arg, kind, category)
         "ValueEnum" => printstyled(io, replace(string(arg), Regex("^$(nameof(kind))") => ""); color=:208)
         "BitEnum" => printstyled(io, arg; color=:light_magenta)
         "Literal" => @match kind begin
-            &LiteralString => printstyled(io, arg; color=150)
+            &LiteralString => printstyled(io, '"', arg, '"'; color=150)
             _ => printstyled(io, arg; color=153)
         end
         "Id" => printstyled(io, '%', Int(arg); color=:yellow)
