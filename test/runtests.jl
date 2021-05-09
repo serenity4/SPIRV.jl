@@ -34,6 +34,5 @@ modules = [
         mod = SPIRV.Module(resource("vert.spv"))
         ir = IR(mod)
         convert(SPIRV.Module, ir)
-        println(ir.variables)
     end
 end
