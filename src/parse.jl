@@ -22,7 +22,7 @@ invalid_format(msg) = throw(SPIRFormatError(msg))
 """
 SPIR-V instruction. Must contain an opcode, and optionally a type id and a result id.
 """
-abstract type AbstractInstruction end
+@broadcastref abstract type AbstractInstruction end
 
 info(opcode::OpCode) = classes[opcode][2]
 info(opcode::Integer) = info(OpCode(opcode))

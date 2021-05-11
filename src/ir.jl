@@ -53,12 +53,38 @@ struct FunctionType
     argtypes::Vector{ID}
 end
 
+@broadcastref struct Block
+    insts::Vector{Instruction}
+end
+
+struct ControlFlowGraph
+    blocks::Vector{Block}
+    graph::SimpleDiGraph
+end
+
+ControlFlowGraph() = ControlFlowGraph([], SimpleDiGraph())
+
+function get_vertex!(cfg::ControlFlowGraph, block::Block)
+    i = findfirst(==(block), cfg.blocks)
+    if isnothing(i)
+        push!(cfg.blocks, block)
+        add_vertex!(cfg.graph)
+        nv(cfg.graph)
+    else
+        i
+    end
+end
+
+LightGraphs.add_edge!(cfg::ControlFlowGraph, src::Block, dst::Block) = add_edge!(cfg.graph, get_vertex!(cfg, src), get_vertex!(cfg, dst))
+
 struct FunctionDefinition
     type::ID
     control::FunctionControl
     args::Vector{ID}
-    body::Vector{Instruction}
+    cfg::ControlFlowGraph
 end
+
+body(fdef::FunctionDefinition) = foldl(append!, map(x -> x.insts, fdef.cfg.blocks); init=Instruction[])
 
 struct IR
     meta::Metadata
@@ -93,6 +119,11 @@ function IR(mod::Module)
     results = SSADict{Any}()
 
     current_function = nothing
+    blocks = SSADict{Block}()
+    get_block(id) = haskey(blocks, id) ? blocks[id] : setindex!(blocks, Block([]), id)[id]
+
+    current_block = nothing
+    current_cfg = nothing
 
     # debug
     filenames = SSADict{String}()
@@ -102,6 +133,7 @@ function IR(mod::Module)
     for (i, inst) ∈ enumerate(mod.instructions)
         @unpack arguments, type_id, result_id, opcode = inst
         class, info = classes[opcode]
+        isnothing(current_block) || push!(current_block.insts, inst)
         @switch class begin
             @case & Symbol("Mode-Setting")
                 @switch opcode begin
@@ -194,12 +226,64 @@ function IR(mod::Module)
                 @switch opcode begin
                     @case OpFunction
                         control, type = arguments
-                        current_function = FunctionDefinition(type, control, [], [])
+                        current_cfg = ControlFlowGraph(Block[], SimpleDiGraph())
+                        current_function = FunctionDefinition(type, control, [], current_cfg)
                         fdefs[result_id] = current_function
                     @case OpFunctionParameter
                         push!(current_function.args, result_id)
                     @case OpFunctionEnd
                         current_function = nothing
+                    @case _
+                        nothing
+                end
+            @case & Symbol("Control-Flow")
+                @switch opcode begin
+                    # first block instruction
+                    @case OpLabel
+                        current_block = get_block(result_id)
+                        push!(current_block.insts, inst)
+                        @assert !isnothing(current_function) "Block definition outside function"
+                        cfg = current_cfg
+                        if current_block ∉ cfg.blocks
+                            push!(cfg.blocks, current_block)
+                            add_vertex!(cfg.graph)
+                        end
+
+                    @case OpBranch || OpBranchConditional || OpSwitch || OpReturn || OpReturnValue || OpKill || OpUnreachable || OpSelectionMerge || OpLoopMerge
+                        cfg = current_cfg
+                        src = current_block
+
+                        _add_edge! = dst -> add_edge!(cfg, src, get_block(dst))
+
+                        @switch opcode begin
+                            @case OpBranch
+                                dst = arguments[1]
+                                _add_edge!(dst)
+                            @case OpBranchConditional
+                                cond, dst1, dst2, weights... = arguments
+                                _add_edge!(dst1)
+                                _add_edge!(dst2)
+                            @case OpSwitch
+                                cond, default, dsts... = arguments
+                                foreach(_add_edge!, (default, dsts...))
+                            @case OpLoopMerge
+                                merge_id, continue_id, loop_control, params... = arguments
+                                _add_edge!(merge_id)
+                                _add_edge!(continue_id)
+                            @case OpSelectionMerge
+                                merge_id, selection_control = arguments
+                                _add_edge!(merge_id)
+                            @case _
+                                nothing
+                        end
+
+                        @switch opcode begin
+                            # last block instruction
+                            @case OpBranch || OpBranchConditional || OpSwitch || OpReturn || OpReturnValue || OpKill || OpUnreachable
+                                current_block = nothing
+                            @case _
+                                nothing
+                        end
                     @case _
                         nothing
                 end
@@ -266,13 +350,19 @@ end
 
 function append_functions!(insts, ir::IR)
     foreach(ir.fdefs) do (id, fdef)
-        type_id = fdef.type
-        type = ir.types[type_id]
-        push!(insts, @inst id = OpFunction(fdef.control, type_id)::type.rettype)
-        append!(insts, @inst(id = OpFunctionParameter()::argtype) for (id, argtype) in zip(fdef.args, type.argtypes))
-        append!(insts, fdef.body)
-        push!(insts, @inst OpFunctionEnd())
+        append!(insts, instructions(ir, fdef, id))
     end
+end
+
+function instructions(ir::IR, fdef::FunctionDefinition, id::ID)
+    insts = Instruction[]
+    type_id = fdef.type
+    type = ir.types[type_id]
+    push!(insts, @inst id = OpFunction(fdef.control, type_id)::type.rettype)
+    append!(insts, @inst(id = OpFunctionParameter()::argtype) for (id, argtype) in zip(fdef.args, type.argtypes))
+    append!(insts, body(fdef))
+    push!(insts, @inst OpFunctionEnd())
+    insts
 end
 
 function append_globals!(insts, ir::IR)

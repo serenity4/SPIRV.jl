@@ -35,18 +35,30 @@ macro inst(ex)
     :(Instruction($opcode, $(esc(type_id)), $(esc(result_id)), $(args...)))
 end
 
+isline(x) = false
+isline(x::LineNumberNode) = true
+
+function rmlines(ex)
+    @match ex begin
+        Expr(:macrocall, m, _...) => Expr(:macrocall, m, nothing, filter(x -> !isline(x), ex.args[3:end])...)
+        ::Expr                    => Expr(ex.head, filter(!isline, ex.args)...)
+        a                         => a
+    end
+end
+
 macro broadcastref(ex)
     T = @match ex begin
         :(struct $T; $(fields...); end) => T
+        :(abstract type $T end) => T
     end
 
     T = @match T begin
         ::Symbol => T
-        :($T{$(params...)}) => T
+        :($T{$(_...)}) => T
     end
 
     quote
-        $(esc(ex))
+        Base.@__doc__ $(esc(ex))
         Base.broadcastable(x::$(esc(T))) = Ref(x)
     end
 end

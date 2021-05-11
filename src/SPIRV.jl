@@ -3,6 +3,7 @@ module SPIRV
 using CEnum
 using MLStyle
 using UnPack
+using LightGraphs
 
 const Optional{T} = Union{Nothing,T}
 
