@@ -169,6 +169,10 @@ function IR(mod::Module)
                             end
                             4 => arguments[3:4]
                         end
+
+                        if !isnothing(file)
+                            file = filenames[file]
+                        end
                         source = Source(language, source_version(language, version), file, code, [])
                     @case OpSourceExtension
                         @assert !isnothing(source) "Source extension was declared before the source."
