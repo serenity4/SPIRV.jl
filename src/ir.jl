@@ -373,7 +373,5 @@ function append_globals!(insts, ir::IR)
     ids = keys(ir.globals)
     vals = values(ir.globals)
     perm = sortperm(collect(ids))
-    foreach(collect(vals)[perm]) do inst
-        push!(insts, inst)
-    end
+    append!(insts, collect(vals)[perm])
 end
