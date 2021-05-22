@@ -15,7 +15,6 @@ modules = [
         r = resource(file)
         pmod = PhysicalModule(r)
         mod = SPIRV.Module(pmod)
-        disassemble(mod)
 
         @testset "Assembly/disassembly isomorphisms" begin
             pmod_reconstructed = PhysicalModule(mod)
