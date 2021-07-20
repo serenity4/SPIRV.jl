@@ -53,6 +53,11 @@ macro broadcastref(ex)
     end
 
     T = @match T begin
+        :($T <: $AT) => T
+        _ => T
+    end
+
+    T = @match T begin
         ::Symbol => T
         :($T{$(_...)}) => T
     end

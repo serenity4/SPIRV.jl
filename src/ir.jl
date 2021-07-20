@@ -6,7 +6,12 @@ struct Source
     extensions::Vector{Symbol}
 end
 
-@broadcastref struct EntryPoint
+"""
+Something that is SSA-indexable.
+"""
+abstract type SSAIndexable end
+
+@broadcastref struct EntryPoint <: SSAIndexable
     name::Symbol
     func::ID
     model::ExecutionModel
@@ -14,9 +19,14 @@ end
     interfaces::Vector{ID}
 end
 
+ID(ep::EntryPoint) = ep.func
+
 struct SSADict{T}
     dict::Dict{ID,T}
     SSADict{T}() where {T} = new{T}(Dict{ID,T}())
+    SSADict(pairs::AbstractVector{Pair{ID,T}}) where {T} = new{T}(Dict(pairs...))
+    SSADict(args::AbstractVector{<:SSAIndexable}) = SSADict(ID.(args) .=> args)
+    SSADict(args::Vararg) = SSADict(collect(args))
 end
 
 @forward SSADict.dict Base.getindex, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate, Base.keys, Base.values, Base.haskey

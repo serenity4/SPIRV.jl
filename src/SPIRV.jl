@@ -45,7 +45,9 @@ export
 
         # IR
         IR,
-        Variable,
+        ID,
+        Metadata,
+        SSADict,
 
         # reflection
         bindings,
