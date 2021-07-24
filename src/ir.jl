@@ -25,9 +25,10 @@ struct SSADict{T}
     dict::Dict{ID,T}
     SSADict{T}() where {T} = new{T}(Dict{ID,T}())
     SSADict(pairs::AbstractVector{Pair{ID,T}}) where {T} = new{T}(Dict(pairs...))
-    SSADict(args::AbstractVector{<:SSAIndexable}) = SSADict(ID.(args) .=> args)
-    SSADict(args::Vararg) = SSADict(collect(args))
 end
+
+SSADict(args::AbstractVector{<:SSAIndexable}) = SSADict(ID.(args) .=> args)
+SSADict(args::Vararg) = SSADict(collect(args))
 
 @forward SSADict.dict Base.getindex, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate, Base.keys, Base.values, Base.haskey
 

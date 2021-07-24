@@ -4,6 +4,7 @@ using CEnum
 using MLStyle
 using UnPack
 using LightGraphs
+using Reexport
 
 const Optional{T} = Union{Nothing,T}
 
@@ -31,6 +32,9 @@ include("disassemble.jl")
 include("ir.jl")
 include("assemble.jl")
 include("reflection.jl")
+
+include("StructuredCFG/StructuredCFG.jl")
+@reexport using .StructuredCFG
 
 export
         # parse

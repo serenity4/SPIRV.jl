@@ -45,3 +45,5 @@ modules = [
         mod2 = SPIRV.Module(ir)
     end
 end
+
+include("StructuredCFG/runtests.jl")

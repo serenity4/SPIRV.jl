@@ -4,9 +4,11 @@ authors = ["Cédric Belmant"]
 version = "0.1.0"
 
 [deps]
+AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
 CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
 MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
