@@ -7,6 +7,6 @@ include("graph.jl")
 include("cfg.jl")
 include("reflection.jl")
 
-export CFG
+export CFG, is_single_entry_single_exit
 
 end # module

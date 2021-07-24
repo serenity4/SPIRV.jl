@@ -125,8 +125,13 @@ end
 Merge vertices `vs` into the first one.
 """
 merge_vertices!(dg::DeltaGraph, vs::AbstractVector) = foldl((x, y) -> merge_vertices!(dg, x, y), vs)
-
 merge_vertices!(dg::DeltaGraph, origin, merged...) = merge_vertices!(dg, [origin; collect(merged)])
+
+function merge_vertices!(dg::DeltaGraph, origin, merged)
+    copy_edges!(dg, merged, origin)
+    rem_vertex!(dg, merged)
+    origin
+end
 
 function copy_edges!(dg::DeltaGraph, from, to)
     for i in outneighbors(dg, from)
@@ -135,12 +140,6 @@ function copy_edges!(dg::DeltaGraph, from, to)
     for i in inneighbors(dg, from)
         add_edge!(dg, i, to)
     end
-end
-
-function merge_vertices!(dg::DeltaGraph, origin, merged)
-    copy_edges!(dg, merged, origin)
-    rem_vertex!(dg, merged)
-    origin
 end
 
 function compact(dg::DeltaGraph)
