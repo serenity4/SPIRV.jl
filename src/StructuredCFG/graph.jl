@@ -32,7 +32,7 @@ has_vertex(dg::DeltaGraph, v) = v in vertices(dg)
 vertices(dg::DeltaGraph) = dg.vertices
 
 is_directed(dg::DeltaGraph) = is_directed(typeof(dg))
-is_directed(::Type{DeltaGraph}) = true
+is_directed(::Type{<:DeltaGraph}) = true
 
 has_edge(dg::DeltaGraph, e::Edge) = has_edge(dg, e.src, e.dst)
 has_edge(dg::DeltaGraph, src, dst) = has_vertex(dg, src) && has_vertex(dg, dst) && dst in _outneighbors(dg, src)
