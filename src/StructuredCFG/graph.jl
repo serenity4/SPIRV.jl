@@ -1,6 +1,6 @@
 using LightGraphs
 using AutoHashEquals
-import LightGraphs: edges, edgetype, add_edge!, add_vertex!, rem_edge!, rem_vertex!, rem_vertices!, has_edge, has_vertex, inneighbors, outneighbors, ne, nv, vertices, is_directed, SimpleDiGraph
+import LightGraphs: edges, edgetype, add_edge!, add_vertex!, rem_edge!, rem_vertex!, rem_vertices!, has_edge, has_vertex, inneighbors, outneighbors, ne, nv, vertices, is_directed, SimpleDiGraph, merge_vertices!
 
 export DeltaGraph, compact
 
@@ -16,7 +16,13 @@ Base.broadcastable(dg::DeltaGraph) = Ref(dg)
 DeltaGraph{T}() where {T} = DeltaGraph{T}([], [], [])
 DeltaGraph(n = 0) = DeltaGraph{Int}(n)
 
-vertex_index(dg::DeltaGraph, v)::Int = findfirst(==(v), dg.vertices)
+function vertex_index(dg::DeltaGraph, v)
+    idx = findfirst(==(v), dg.vertices)
+    if isnothing(idx)
+        error("Vertex $v not found in $dg.")
+    end
+    idx
+end
 
 function DeltaGraph{T}(n::Int) where {T}
     dg = DeltaGraph{T}()
@@ -80,13 +86,28 @@ function add_edge!(dg::DeltaGraph, src, dst)
     nothing
 end
 
+"""
+Remove all edges from or to vertex `v`.
+"""
+function rem_edges!(dg::DeltaGraph, v::Int)
+    for i in _outneighbors(dg, v)
+        rem_edge!(dg, v, i)
+    end
+    for i in _inneighbors(dg, v)
+        rem_edge!(dg, i, v)
+    end
+end
+
 function rem_vertex!(dg::DeltaGraph, i)
     idx = vertex_index(dg, i)
+    rem_edges!(dg, i)
     deleteat!(dg.vertices, idx)
     deleteat!(dg.fadjlist, idx)
     deleteat!(dg.badjlist, idx)
     nothing
 end
+
+rem_vertices!(dg::DeltaGraph, vs...) = foreach(Base.Fix1(rem_vertex!, dg), vs)
 
 rem_edge!(dg::DeltaGraph, e::Edge) = rem_edge!(dg, e.src, e.dst)
 
@@ -98,6 +119,28 @@ function rem_edge!(dg::DeltaGraph, src, dst)
         deleteat!(ins, findfirst(==(src), ins))
     end
     nothing
+end
+
+"""
+Merge vertices `vs` into the first one.
+"""
+merge_vertices!(dg::DeltaGraph, vs::AbstractVector) = foldl((x, y) -> merge_vertices!(dg, x, y), vs)
+
+merge_vertices!(dg::DeltaGraph, origin, merged...) = merge_vertices!(dg, [origin; collect(merged)])
+
+function copy_edges!(dg::DeltaGraph, from, to)
+    for i in outneighbors(dg, from)
+        add_edge!(dg, to, i)
+    end
+    for i in inneighbors(dg, from)
+        add_edge!(dg, i, to)
+    end
+end
+
+function merge_vertices!(dg::DeltaGraph, origin, merged)
+    copy_edges!(dg, merged, origin)
+    rem_vertex!(dg, merged)
+    origin
 end
 
 function compact(dg::DeltaGraph)

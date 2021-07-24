@@ -37,4 +37,16 @@
         @test vertices(g) == [1, 2, 3, 4]
         @test edges(g) == [Edge(1, 2), Edge(2, 3)]
     end
+
+    @testset "Graph manipulations" begin
+        g = DeltaGraph(5)
+        add_edge!(g, 1, 2)
+        add_edge!(g, 2, 3)
+        merge_vertices!(g, 1, 2, 3)
+        @test edges(g) == [Edge(1, 1)]
+
+        add_edge!(g, 1, 4)
+        merge_vertices!(g, 4, 5)
+        @test edges(g) == [Edge(1, 1), Edge(1, 4)]
+    end
 end
