@@ -31,8 +31,6 @@ end
 
 f(::String) = "ho"
 
-strongly_connected_components(cfg.graph)
-
 @testset "StructuredCFG" begin
     include("deltagraph.jl")
 
