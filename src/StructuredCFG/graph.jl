@@ -37,6 +37,10 @@ edgetype(dg::DeltaGraph) = Edge{eltype(dg)}
 has_vertex(dg::DeltaGraph, v) = v in vertices(dg)
 vertices(dg::DeltaGraph) = dg.vertices
 
+is_single_node(dg::DeltaGraph) = isempty(edges(dg)) && nv(dg) == 1
+
+Base.isempty(dg::DeltaGraph) = isempty(dg.vertices)
+
 is_directed(dg::DeltaGraph) = is_directed(typeof(dg))
 is_directed(::Type{<:DeltaGraph}) = true
 
