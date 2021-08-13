@@ -8,9 +8,19 @@ struct CFG
     Mapping from node index to instructions.
     """
     instructions::Vector{Vector{Any}}
+    indices::Vector{Int}
     code::Union{CodeInfo,IRCode}
-    CFG(graph::DeltaGraph, instructions::Vector{Vector{Any}}, code::Union{CodeInfo,IRCode}) = new(graph, instructions, code)
 end
+
+function CodeInfoTools.verify(cfg::CFG)
+    verify(cfg.code)
+end
+
+function block_ranges(cfg::CFG)
+    map(Base.splat(UnitRange), zip(cfg.indices[1:end-1], cfg.indices[2:end] .- 1))
+end
+
+exit_blocks(cfg::CFG) = BasicBlock.(sinks(cfg.graph))
 
 function CFG(code::Union{CodeInfo,IRCode})
     stmts = if code isa CodeInfo
@@ -19,10 +29,7 @@ function CFG(code::Union{CodeInfo,IRCode})
         code.stmts
     end
     bbs = compute_basic_blocks(stmts)
-    indices = [1; bbs.index]
-    insts = map(1:length(indices)-1) do i
-        stmts[indices[i]:indices[i+1]-1]
-    end
+
     g = DeltaGraph(length(bbs.blocks))
     for (i, block) in enumerate(bbs.blocks)
         for pred in block.preds
@@ -32,7 +39,13 @@ function CFG(code::Union{CodeInfo,IRCode})
             add_edge!(g, i, succ)
         end
     end
-    CFG(g, insts, code)
+
+    indices = [1; bbs.index]
+    insts = map(1:length(indices)-1) do i
+        stmts[indices[i]:indices[i+1]-1]
+    end
+
+    CFG(g, insts, indices, code)
 end
 
 function CFG(@nospecialize(f), @nospecialize(argtypes))

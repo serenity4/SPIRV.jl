@@ -27,6 +27,16 @@ end
 
 f(::String) = "ho"
 
+function f()
+    for x in randn(100)
+        println(x)
+        x < 0.5 && continue
+        x > 1.2 && break
+        println(x / 2)
+        continue
+    end
+end
+
 @testset "Reflection" begin
     g = DeltaGraph(1)
     add_edge!(g, 1, 1)
@@ -87,6 +97,10 @@ f(::String) = "ho"
     @test is_tail_structured(cfg)
 
     cfg = CFG(f, Tuple{Float64})
+    @test !is_single_entry_single_exit(cfg)
+    @test !is_tail_structured(cfg)
+
+    cfg = CFG(f, Tuple{})
     @test !is_single_entry_single_exit(cfg)
     @test !is_tail_structured(cfg)
 end

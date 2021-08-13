@@ -5,4 +5,5 @@ using LightGraphs
 @testset "StructuredCFG" begin
     include("deltagraph.jl")
     include("reflection.jl")
+    include("restructuring.jl")
 end

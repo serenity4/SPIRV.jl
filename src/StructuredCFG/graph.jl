@@ -37,6 +37,13 @@ edgetype(dg::DeltaGraph) = Edge{eltype(dg)}
 has_vertex(dg::DeltaGraph, v) = v in vertices(dg)
 vertices(dg::DeltaGraph) = dg.vertices
 
+function Base.empty!(dg::DeltaGraph)
+    empty!(dg.vertices)
+    empty!(dg.badjlist)
+    empty!(dg.fadjlist)
+    dg
+end
+
 is_single_node(dg::DeltaGraph) = isempty(edges(dg)) && nv(dg) == 1
 
 Base.isempty(dg::DeltaGraph) = isempty(dg.vertices)
@@ -171,3 +178,6 @@ function SimpleDiGraph(dg::DeltaGraph)
     end
     g
 end
+
+sinks(dg::DeltaGraph) = vertices(dg)[findall(isempty ∘ Base.Fix1(outneighbors, dg), vertices(dg))]
+sources(dg::DeltaGraph) = vertices(dg)[findall(isempty ∘ Base.Fix1(inneighbors, dg), vertices(dg))]
