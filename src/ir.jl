@@ -54,11 +54,6 @@ struct DebugInfo
     source::Optional{Source}
 end
 
-struct _Decoration
-    type::Decoration
-    args::Vector{Any}
-end
-
 struct FunctionType
     rettype::ID
     argtypes::Vector{ID}
@@ -105,7 +100,7 @@ struct IR
     addressing_model::AddressingModel
     memory_model::MemoryModel
     entry_points::SSADict{EntryPoint}
-    decorations::SSADict{Vector{_Decoration}}
+    decorations::SSADict{Dictionary{Decoration,Vector{Any}}}
     types::SSADict{Any}
     constants::SSADict{Instruction}
     global_vars::SSADict{Instruction}
@@ -116,7 +111,7 @@ struct IR
 end
 
 function IR(mod::Module)
-    decorations = SSADict{Vector{_Decoration}}()
+    decorations = SSADict{Dictionary{Decoration,Vector{Any}}}()
     capabilities = Capability[]
     extensions = Symbol[]
     extinst_imports = SSADict{Symbol}()
@@ -200,8 +195,7 @@ function IR(mod::Module)
                 @switch opcode begin
                     @case OpDecorate
                         id, type, args... = arguments
-                        decoration = _Decoration(type, args)
-                        push!(get!(decorations, id, _Decoration[]), decoration)
+                        insert!(get!(decorations, id, Dictionary{Decoration,Vector{Any}}()), type, args)
                     @case _
                         nothing
                 end
@@ -355,7 +349,7 @@ end
 
 function append_annotations!(insts, ir::IR)
     foreach(pairs(ir.decorations)) do (id, decorations)
-        append!(insts, @inst(OpDecorate(id, dec.type, dec.args...)) for dec in decorations)
+        append!(insts, @inst(OpDecorate(id, type, args...)) for (type, args) in pairs(decorations))
     end
 end
 
