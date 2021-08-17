@@ -23,10 +23,9 @@ modules = [
             @test sizeof(assemble(pmod)) == stat(r).size
             @test assemble(pmod) == assemble(mod)
 
-            tmp = tempname()
-            open(tmp, "w+") do io
-                write(io, pmod_reconstructed)
-            end
+            tmp = IOBuffer()
+            write(tmp, pmod_reconstructed)
+            seekstart(tmp)
             @test PhysicalModule(tmp) == pmod_reconstructed
         end
     end
