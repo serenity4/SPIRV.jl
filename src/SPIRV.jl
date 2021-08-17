@@ -50,9 +50,5 @@ export
         IR,
         ID,
         Metadata,
-        SSADict,
-
-        # reflection
-        bindings,
-        descriptor_sets
+        SSADict
 end
