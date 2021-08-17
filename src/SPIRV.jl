@@ -5,6 +5,7 @@ using MLStyle
 using UnPack
 using LightGraphs
 using Reexport
+using Dictionaries
 
 const Optional{T} = Union{Nothing,T}
 

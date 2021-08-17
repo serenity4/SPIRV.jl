@@ -22,15 +22,15 @@ end
 ID(ep::EntryPoint) = ep.func
 
 struct SSADict{T}
-    dict::Dict{ID,T}
-    SSADict{T}() where {T} = new{T}(Dict{ID,T}())
-    SSADict(pairs::AbstractVector{Pair{ID,T}}) where {T} = new{T}(Dict(pairs...))
+    dict::Dictionary{ID,T}
+    SSADict{T}() where {T} = new{T}(Dictionary{ID,T}())
+    SSADict(pairs::AbstractVector{Pair{ID,T}}) where {T} = new{T}(Dictionary(pairs...))
 end
 
 SSADict(args::AbstractVector{<:SSAIndexable}) = SSADict(ID.(args) .=> args)
 SSADict(args::Vararg) = SSADict(collect(args))
 
-@forward SSADict.dict Base.getindex, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate, Base.keys, Base.values, Base.haskey
+@forward SSADict.dict Base.getindex, Base.insert!, Dictionaries.set!, Base.get!, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate, Base.keys, Base.values, Base.haskey
 
 Base.merge!(vec::SSADict, others::SSADict...) = merge!(vec.dict, getproperty.(others, :dict)...)
 
@@ -131,7 +131,7 @@ function IR(mod::Module)
 
     current_function = nothing
     blocks = SSADict{Block}()
-    get_block(id) = haskey(blocks, id) ? blocks[id] : setindex!(blocks, Block([]), id)[id]
+    get_block(id) = get!(blocks, id, Block([]))
 
     current_block = nothing
     current_cfg = nothing
@@ -154,7 +154,7 @@ function IR(mod::Module)
                         addressing_model, memory_model = arguments
                     @case OpEntryPoint
                         model, id, name, interfaces = arguments
-                        entry_points[id] = EntryPoint(Symbol(name), id, model, [], interfaces)
+                        insert!(entry_points, id, EntryPoint(Symbol(name), id, model, [], interfaces))
                     @case OpExecutionMode || OpExecutionModeId
                         id = arguments[1]
                         push!(entry_points[id].modes, inst)
@@ -164,7 +164,7 @@ function IR(mod::Module)
                     @case OpExtension
                         push!(extensions, Symbol(arguments[1]))
                     @case OpExtInstImport
-                        extinst_imports[result_id] = Symbol(arguments[1])
+                        insert!(extinst_imports, result_id, Symbol(arguments[1]))
                     @case OpExtInst
                         nothing
                 end
@@ -191,7 +191,7 @@ function IR(mod::Module)
                     @case OpName
                         id, name = arguments
                         if !isempty(name)
-                            names[id] = Symbol(name)
+                            insert!(names, id, Symbol(name))
                         end
                     @case _
                         nothing
@@ -201,11 +201,7 @@ function IR(mod::Module)
                     @case OpDecorate
                         id, type, args... = arguments
                         decoration = _Decoration(type, args)
-                        if !haskey(decorations, id)
-                            decorations[id] = [decoration]
-                        else
-                            push!(decorations[id], decoration)
-                        end
+                        push!(get!(decorations, id, _Decoration[]), decoration)
                     @case _
                         nothing
                 end
@@ -214,14 +210,14 @@ function IR(mod::Module)
                     @case OpTypeFunction
                         rettype = arguments[1]
                         argtypes = length(arguments) == 2 ? arguments[2] : ID[]
-                        types[result_id] = FunctionType(rettype, argtypes)
+                        insert!(types, result_id, FunctionType(rettype, argtypes))
                     @case _
-                        types[result_id] = inst
+                        insert!(types, result_id, inst)
                 end
-                globals[result_id] = inst
+                insert!(globals, result_id, inst)
             @case & Symbol("Constant-Creation")
-                constants[result_id] = inst
-                globals[result_id] = inst
+                insert!(constants, result_id, inst)
+                insert!(globals, result_id, inst)
             @case & Symbol("Memory")
                 @switch opcode begin
                     @case OpVariable
@@ -231,8 +227,8 @@ function IR(mod::Module)
                             @case &StorageClassFunction
                                 nothing
                             @case _
-                                globals[result_id] = inst
-                                global_vars[result_id] = inst
+                                insert!(globals, result_id, inst)
+                                insert!(global_vars, result_id, inst)
                         end
                     @case _
                         nothing
@@ -243,7 +239,7 @@ function IR(mod::Module)
                         control, type = arguments
                         current_cfg = ControlFlowGraph(Block[], SimpleDiGraph())
                         current_function = FunctionDefinition(type, control, [], current_cfg)
-                        fdefs[result_id] = current_function
+                        insert!(fdefs, result_id, current_function)
                     @case OpFunctionParameter
                         push!(current_function.args, result_id)
                     @case OpFunctionEnd
@@ -306,7 +302,7 @@ function IR(mod::Module)
                 nothing
         end
         if !isnothing(result_id) && !haskey(results, result_id)
-             results[result_id] = inst
+             insert!(results, result_id, inst)
         end
     end
 
@@ -323,9 +319,9 @@ function Module(ir::IR)
 
     append!(insts, @inst(OpCapability(cap)) for cap in ir.capabilities)
     append!(insts, @inst(OpExtension(ext)) for ext in ir.extensions)
-    append!(insts, @inst(id = OpExtInstImport(extinst)) for (id, extinst) in ir.extinst_imports)
+    append!(insts, @inst(id = OpExtInstImport(extinst)) for (id, extinst) in pairs(ir.extinst_imports))
     push!(insts, @inst OpMemoryModel(ir.addressing_model, ir.memory_model))
-    append!(insts, @inst(OpEntryPoint(entry.model, entry.func, entry.name, entry.interfaces)) for (_, entry) in ir.entry_points)
+    append!(insts, @inst(OpEntryPoint(entry.model, entry.func, entry.name, entry.interfaces)) for entry in ir.entry_points)
 
     append_debug_instructions!(insts, ir)
     append_annotations!(insts, ir)
@@ -347,24 +343,24 @@ function append_debug_instructions!(insts, ir::IR)
             append!(insts, @inst(OpSourceExtension(string(ext))) for ext in source.extensions)
         end
 
-        foreach(debug.filenames) do (id, filename)
+        foreach(pairs(debug.filenames)) do (id, filename)
             push!(insts, @inst OpString(id, filename))
         end
 
-        foreach(debug.names) do (id, name)
+        foreach(pairs(debug.names)) do (id, name)
             push!(insts, @inst OpName(id, string(name)))
         end
     end
 end
 
 function append_annotations!(insts, ir::IR)
-    foreach(ir.decorations) do (id, decorations)
+    foreach(pairs(ir.decorations)) do (id, decorations)
         append!(insts, @inst(OpDecorate(id, dec.type, dec.args...)) for dec in decorations)
     end
 end
 
 function append_functions!(insts, ir::IR)
-    foreach(ir.fdefs) do (id, fdef)
+    foreach(pairs(ir.fdefs)) do (id, fdef)
         append!(insts, instructions(ir, fdef, id))
     end
 end
