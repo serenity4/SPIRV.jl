@@ -31,7 +31,6 @@ include("parse.jl")
 include("disassemble.jl")
 include("ir.jl")
 include("assemble.jl")
-include("reflection.jl")
 
 include("StructuredCFG/StructuredCFG.jl")
 @reexport using .StructuredCFG
