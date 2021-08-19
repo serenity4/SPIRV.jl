@@ -6,11 +6,6 @@ struct Source
     extensions::Vector{Symbol}
 end
 
-"""
-Something that is SSA-indexable.
-"""
-abstract type SSAIndexable end
-
 @broadcastref struct EntryPoint <: SSAIndexable
     name::Symbol
     func::ID
@@ -20,19 +15,6 @@ abstract type SSAIndexable end
 end
 
 ID(ep::EntryPoint) = ep.func
-
-struct SSADict{T}
-    dict::Dictionary{ID,T}
-    SSADict{T}() where {T} = new{T}(Dictionary{ID,T}())
-    SSADict(pairs::AbstractVector{Pair{ID,T}}) where {T} = new{T}(Dictionary(pairs...))
-end
-
-SSADict(args::AbstractVector{<:SSAIndexable}) = SSADict(ID.(args) .=> args)
-SSADict(args::Vararg) = SSADict(collect(args))
-
-@forward SSADict.dict Base.getindex, Base.insert!, Dictionaries.set!, Base.get!, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate, Base.keys, Base.values, Base.haskey
-
-Base.merge!(vec::SSADict, others::SSADict...) = merge!(vec.dict, getproperty.(others, :dict)...)
 
 struct Metadata
     magic_number::UInt32
@@ -54,43 +36,21 @@ struct DebugInfo
     source::Optional{Source}
 end
 
-struct FunctionType
-    rettype::ID
-    argtypes::Vector{ID}
+struct Variable
+    id::ID
+    type::SPIRType
+    storage_class::StorageClass
+    initializer::Optional{Instruction}
+    decorations::Dictionary{Decoration,Vector{Any}}
 end
 
-@broadcastref struct Block
-    insts::Vector{Instruction}
+function Variable(inst::Instruction, types::SSADict{SPIRType}, results::SSADict{Any}, decorations::SSADict{Dictionary{Decoration,Vector{Any}}})
+    storage_class = first(inst.arguments)
+    initializer = length(inst.arguments) == 2 ? results[last(inst.arguments)] : nothing
+    Variable(inst.result_id, types[inst.type_id], storage_class, initializer, get(decorations, inst.result_id, Dictionary{Decoration,Vector{Any}}()))
 end
 
-struct ControlFlowGraph
-    blocks::Vector{Block}
-    graph::SimpleDiGraph
-end
-
-ControlFlowGraph() = ControlFlowGraph([], SimpleDiGraph())
-
-function get_vertex!(cfg::ControlFlowGraph, block::Block)
-    i = findfirst(==(block), cfg.blocks)
-    if isnothing(i)
-        push!(cfg.blocks, block)
-        add_vertex!(cfg.graph)
-        nv(cfg.graph)
-    else
-        i
-    end
-end
-
-LightGraphs.add_edge!(cfg::ControlFlowGraph, src::Block, dst::Block) = add_edge!(cfg.graph, get_vertex!(cfg, src), get_vertex!(cfg, dst))
-
-struct FunctionDefinition
-    type::ID
-    control::FunctionControl
-    args::Vector{ID}
-    cfg::ControlFlowGraph
-end
-
-body(fdef::FunctionDefinition) = foldl(append!, map(x -> x.insts, fdef.cfg.blocks); init=Instruction[])
+SPIRType(var::Variable) = PointerType(var.storage_class, var.type)
 
 struct IR
     meta::Metadata
@@ -101,9 +61,9 @@ struct IR
     memory_model::MemoryModel
     entry_points::SSADict{EntryPoint}
     decorations::SSADict{Dictionary{Decoration,Vector{Any}}}
-    types::SSADict{Any}
+    types::SSADict{SPIRType}
     constants::SSADict{Instruction}
-    global_vars::SSADict{Instruction}
+    global_vars::SSADict{Variable}
     globals::SSADict{Instruction}
     fdefs::SSADict{FunctionDefinition}
     results::SSADict{Any}
@@ -117,9 +77,9 @@ function IR(mod::Module)
     extinst_imports = SSADict{Symbol}()
     source, memory_model, addressing_model = fill(nothing, 3)
     entry_points = SSADict{EntryPoint}()
-    types = SSADict{Any}()
+    types = SSADict{SPIRType}()
     constants = SSADict{Instruction}()
-    global_vars = SSADict{Instruction}()
+    global_vars = SSADict{Variable}()
     globals = SSADict{Instruction}()
     fdefs = SSADict{FunctionDefinition}()
     results = SSADict{Any}()
@@ -206,7 +166,7 @@ function IR(mod::Module)
                         argtypes = length(arguments) == 2 ? arguments[2] : ID[]
                         insert!(types, result_id, FunctionType(rettype, argtypes))
                     @case _
-                        insert!(types, result_id, inst)
+                        insert!(types, result_id, parse_type(inst, types, results))
                 end
                 insert!(globals, result_id, inst)
             @case & Symbol("Constant-Creation")
@@ -222,7 +182,7 @@ function IR(mod::Module)
                                 nothing
                             @case _
                                 insert!(globals, result_id, inst)
-                                insert!(global_vars, result_id, inst)
+                                insert!(global_vars, result_id, Variable(inst, types, results, decorations))
                         end
                     @case _
                         nothing

@@ -8,6 +8,7 @@ modules = [
     "vert.spv",
     "frag.spv",
     "comp.spv",
+    "decorations.spv",
 ]
 
 @testset "SPIRV.jl" begin
