@@ -47,7 +47,7 @@ end
 function Variable(inst::Instruction, types::SSADict{SPIRType}, results::SSADict{Any}, decorations::SSADict{Dictionary{Decoration,Vector{Any}}})
     storage_class = first(inst.arguments)
     initializer = length(inst.arguments) == 2 ? results[last(inst.arguments)] : nothing
-    Variable(inst.result_id, types[inst.type_id], storage_class, initializer, get(decorations, inst.result_id, Dictionary{Decoration,Vector{Any}}()))
+    Variable(inst.result_id, types[inst.type_id].type, storage_class, initializer, get(decorations, inst.result_id, Dictionary{Decoration,Vector{Any}}()))
 end
 
 SPIRType(var::Variable) = PointerType(var.storage_class, var.type)

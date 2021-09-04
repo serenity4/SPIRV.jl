@@ -50,6 +50,18 @@ export
         # assemble
         assemble,
 
+        # SPIR-V types
+        SPIRType,
+        VoidType,
+        ScalarType, BooleanType, IntegerType, FloatType,
+        VectorType, MatrixType,
+        ImageType,
+        SamplerType, SampledImageType,
+        ArrayType,
+        OpaqueType,
+        StructType,
+        PointerType,
+
         # IR
         IR,
         ID,
