@@ -36,8 +36,8 @@ include("spir_types.jl")
 include("ir.jl")
 include("assemble.jl")
 
-include("StructuredCFG/StructuredCFG.jl")
-@reexport using .StructuredCFG
+# include("StructuredCFG/StructuredCFG.jl")
+# @reexport using .StructuredCFG
 
 export
         # parse
