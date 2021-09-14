@@ -25,8 +25,6 @@ for enum ∈ [:OpCode, :Decoration]
     end
 end
 
-MLStyle.pattern_uncall(s::Type{Symbol}, _, _, _, _) = x -> QuoteNode(x)
-
 include("utils.jl")
 include("parse.jl")
 include("disassemble.jl")
