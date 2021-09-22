@@ -155,7 +155,11 @@ function IR(mod::Module)
                 @switch opcode begin
                     @case OpDecorate
                         id, type, args... = arguments
-                        insert!(get!(decorations, id, Dictionary{Decoration,Vector{Any}}()), type, args)
+                        if haskey(decorations, id)
+                            insert!(decorations[id], type, args)
+                        else
+                            insert!(decorations, id, dictionary([type => args]))
+                        end
                     @case _
                         nothing
                 end
