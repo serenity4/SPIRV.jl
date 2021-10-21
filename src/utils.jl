@@ -78,7 +78,7 @@ function source_version(language::SourceLanguage, version::Integer)
     end
 end
 
-function source_version(language::SourceLanguage, version::VersionNumber)
+function source_version(language::SourceLanguage, version::VersionNumber)::UInt32
     @match language begin
         &SourceLanguageGLSL => begin
             @unpack major, minor = version

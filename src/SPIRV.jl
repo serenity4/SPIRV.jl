@@ -3,16 +3,17 @@ module SPIRV
 using CEnum
 using MLStyle
 using UnPack
-using LightGraphs
+using Graphs
 using Reexport
 using Dictionaries
+using AutoHashEquals
 
 const Optional{T} = Union{Nothing,T}
 
 import Base: write, show, showerror, ==
 
 const magic_number = 0x07230203
-const ID = Int
+const ID = UInt32
 
 # generated SPIR-V wrapper
 include("generated/enums.jl")
@@ -64,5 +65,6 @@ export
         IR,
         ID,
         Metadata,
-        SSADict
+        SSADict,
+        @inst
 end

@@ -1,4 +1,5 @@
 @broadcastref struct Block
+    id::ID
     insts::Vector{Instruction}
 end
 
@@ -20,7 +21,7 @@ function get_vertex!(cfg::ControlFlowGraph, block::Block)
     end
 end
 
-LightGraphs.add_edge!(cfg::ControlFlowGraph, src::Block, dst::Block) = add_edge!(cfg.graph, get_vertex!(cfg, src), get_vertex!(cfg, dst))
+Graphs.add_edge!(cfg::ControlFlowGraph, src::Block, dst::Block) = add_edge!(cfg.graph, get_vertex!(cfg, src), get_vertex!(cfg, dst))
 
 struct FunctionDefinition
     type::ID

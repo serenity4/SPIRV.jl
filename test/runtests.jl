@@ -1,5 +1,5 @@
 using SPIRV
-using LightGraphs
+using Graphs
 using Test
 
 resource(filename) = joinpath(@__DIR__, "resources", filename)
@@ -37,11 +37,15 @@ modules = [
         f = ir.fdefs[4]
         @test length(f.cfg.blocks) == nv(f.cfg.graph) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f)))
         mod2 = SPIRV.Module(ir)
+        pmod2 = PhysicalModule(mod2)
+        @test SPIRV.Module(pmod2) == mod2
 
         mod = SPIRV.Module(resource("comp.spv"))
         ir = IR(mod)
         f = ir.fdefs[52]
         @test length(f.cfg.blocks) == nv(f.cfg.graph) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f)))
         mod2 = SPIRV.Module(ir)
+        pmod2 = PhysicalModule(mod2)
+        @test SPIRV.Module(pmod2) == mod2
     end
 end

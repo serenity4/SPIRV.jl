@@ -149,7 +149,7 @@ end
 """
 Parsed SPIR-V instruction. It represents an instruction of the form `%result_id = %opcode(%arguments...)::%type_id`.
 """
-struct Instruction <: AbstractInstruction
+@auto_hash_equals struct Instruction <: AbstractInstruction
     opcode::OpCode
     type_id::Optional{ID}
     result_id::Optional{ID}
@@ -233,7 +233,7 @@ end
 
 is_enum(category) = category in ("ValueEnum", "BitEnum")
 
-struct Module
+@auto_hash_equals struct Module
     magic_number::UInt32
     generator_magic_number::UInt32
     version::VersionNumber
@@ -256,3 +256,19 @@ function spirv_version(version::VersionNumber)
 end
 
 show(io::IO, mod::Module) = print(io, "Module(#instructions=$(length(mod.instructions)))")
+
+Base.write(io::IO, mod::Module) = write(io, assemble(mod))
+
+function print_diff(mod1::Module, mod2::Module)
+    buff1 = IOBuffer()
+    disassemble(buff1, mod1)
+    seekstart(buff1)
+    buff2 = IOBuffer()
+    disassemble(buff2, mod2)
+    seekstart(buff2)
+    for (l1, l2) in zip(readlines(buff1), readlines(buff2))
+        if l1 ≠ l2
+            println(l1, " => ", l2)
+        end
+    end
+end

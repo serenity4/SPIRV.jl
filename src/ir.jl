@@ -86,7 +86,7 @@ function IR(mod::Module)
 
     current_function = nothing
     blocks = SSADict{Block}()
-    get_block(id) = get!(blocks, id, Block([]))
+    get_block(id) = get!(blocks, id, Block(id, []))
 
     current_block = nothing
     current_cfg = nothing
@@ -148,6 +148,10 @@ function IR(mod::Module)
                         if !isempty(name)
                             insert!(names, id, Symbol(name))
                         end
+                    @case OpMemberName
+                        id, mindex, name = arguments
+                        #TODO: add member name
+                        nothing
                     @case _
                         nothing
                 end
@@ -277,10 +281,9 @@ function Module(ir::IR)
 
     append!(insts, @inst(OpCapability(cap)) for cap in ir.capabilities)
     append!(insts, @inst(OpExtension(ext)) for ext in ir.extensions)
-    append!(insts, @inst(id = OpExtInstImport(extinst)) for (id, extinst) in pairs(ir.extinst_imports))
+    append!(insts, @inst(id = OpExtInstImport(string(extinst))) for (id, extinst) in pairs(ir.extinst_imports))
     push!(insts, @inst OpMemoryModel(ir.addressing_model, ir.memory_model))
-    append!(insts, @inst(OpEntryPoint(entry.model, entry.func, entry.name, entry.interfaces)) for entry in ir.entry_points)
-
+    append!(insts, @inst(OpEntryPoint(entry.model, entry.func, string(entry.name), entry.interfaces)) for entry in ir.entry_points)
     append_debug_instructions!(insts, ir)
     append_annotations!(insts, ir)
     append_globals!(insts, ir)
