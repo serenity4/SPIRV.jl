@@ -347,3 +347,18 @@ function append_globals!(insts, ir::IR)
     perm = sortperm(collect(ids))
     append!(insts, collect(vals)[perm])
 end
+
+function show(io::IO, mime::MIME"text/plain", ir::IR)
+    mod = Module(ir)
+    isnothing(ir.debug) && return show(io, mime, mod)
+    str = sprint(disassemble, mod; context = :color => true)
+    lines = split(str, '\n')
+    filter!(lines) do line
+        !contains(line, "OpName")
+    end
+    lines = map(lines) do line
+        replace(line, r"%\d+" => id -> string('%', get(ir.debug.filenames, parse(ID, id[2:end]), id[2:end])))
+        replace(line, r"%\d+" => id -> string('%', get(ir.debug.names, parse(ID, id[2:end]), id[2:end])))
+    end
+    print(io, join(lines, '\n'))
+end
