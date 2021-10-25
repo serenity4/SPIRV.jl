@@ -52,7 +52,7 @@ end
 
 SPIRType(var::Variable) = PointerType(var.storage_class, var.type)
 
-struct IR
+mutable struct IR
     meta::Metadata
     capabilities::Vector{Capability}
     extensions::Vector{Symbol}
@@ -68,6 +68,10 @@ struct IR
     fdefs::SSADict{FunctionDefinition}
     results::SSADict{Any}
     debug::Optional{DebugInfo}
+end
+
+function IR(meta::Metadata, addressing_model::AddressingModel, memory_model::MemoryModel)
+    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), nothing)
 end
 
 function IR(mod::Module)

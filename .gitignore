@@ -6,3 +6,4 @@ gen/spirv.jl
 .vscode
 tmp.jl
 /scratch
+/JuliaSysimage.so
