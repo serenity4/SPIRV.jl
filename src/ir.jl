@@ -107,29 +107,29 @@ function IR(mod::Module)
         @switch class begin
             @case & Symbol("Mode-Setting")
                 @switch opcode begin
-                    @case OpCapability
+                    @case &OpCapability
                         push!(capabilities, arguments[1])
-                    @case OpMemoryModel
+                    @case &OpMemoryModel
                         addressing_model, memory_model = arguments
-                    @case OpEntryPoint
+                    @case &OpEntryPoint
                         model, id, name, interfaces = arguments
                         insert!(entry_points, id, EntryPoint(Symbol(name), id, model, [], interfaces))
-                    @case OpExecutionMode || OpExecutionModeId
+                    @case &OpExecutionMode || OpExecutionModeId
                         id = arguments[1]
                         push!(entry_points[id].modes, inst)
                 end
             @case & :Extension
                 @switch opcode begin
-                    @case OpExtension
+                    @case &OpExtension
                         push!(extensions, Symbol(arguments[1]))
-                    @case OpExtInstImport
+                    @case &OpExtInstImport
                         insert!(extinst_imports, result_id, Symbol(arguments[1]))
-                    @case OpExtInst
+                    @case &OpExtInst
                         nothing
                 end
             @case & :Debug
                 @switch opcode begin
-                    @case OpSource
+                    @case &OpSource
                         language, version = arguments[1:2]
                         file, code = @match length(arguments) begin
                             2 => (nothing, nothing)
@@ -144,15 +144,15 @@ function IR(mod::Module)
                             file = filenames[file]
                         end
                         source = Source(language, source_version(language, version), file, code, [])
-                    @case OpSourceExtension
+                    @case &OpSourceExtension
                         @assert !isnothing(source) "Source extension was declared before the source."
                         push!(source.extensions, Symbol(arguments[1]))
-                    @case OpName
+                    @case &OpName
                         id, name = arguments
                         if !isempty(name)
                             insert!(names, id, Symbol(name))
                         end
-                    @case OpMemberName
+                    @case &OpMemberName
                         id, mindex, name = arguments
                         #TODO: add member name
                         nothing
@@ -161,7 +161,7 @@ function IR(mod::Module)
                 end
             @case & :Annotation
                 @switch opcode begin
-                    @case OpDecorate
+                    @case &OpDecorate
                         id, type, args... = arguments
                         if haskey(decorations, id)
                             insert!(decorations[id], type, args)
@@ -173,7 +173,7 @@ function IR(mod::Module)
                 end
             @case & Symbol("Type-Declaration")
                 @switch opcode begin
-                    @case OpTypeFunction
+                    @case &OpTypeFunction
                         rettype = arguments[1]
                         argtypes = length(arguments) == 2 ? arguments[2] : ID[]
                         insert!(types, result_id, FunctionType(rettype, argtypes))
@@ -186,7 +186,7 @@ function IR(mod::Module)
                 insert!(globals, result_id, inst)
             @case & Symbol("Memory")
                 @switch opcode begin
-                    @case OpVariable
+                    @case &OpVariable
                         storage_class = arguments[1]
                         initializer = length(arguments) == 2 ? arguments[2] : nothing
                         @switch storage_class begin
@@ -201,14 +201,14 @@ function IR(mod::Module)
                 end
             @case & :Function
                 @switch opcode begin
-                    @case OpFunction
+                    @case &OpFunction
                         control, type = arguments
                         current_cfg = ControlFlowGraph(Block[], SimpleDiGraph())
                         current_function = FunctionDefinition(type, control, [], current_cfg)
                         insert!(fdefs, result_id, current_function)
-                    @case OpFunctionParameter
+                    @case &OpFunctionParameter
                         push!(current_function.args, result_id)
-                    @case OpFunctionEnd
+                    @case &OpFunctionEnd
                         current_function = nothing
                     @case _
                         nothing
@@ -216,7 +216,7 @@ function IR(mod::Module)
             @case & Symbol("Control-Flow")
                 @switch opcode begin
                     # first block instruction
-                    @case OpLabel
+                    @case &OpLabel
                         current_block = get_block(result_id)
                         push!(current_block.insts, inst)
                         @assert !isnothing(current_function) "Block definition outside function"
@@ -226,28 +226,28 @@ function IR(mod::Module)
                             add_vertex!(cfg.graph)
                         end
 
-                    @case OpBranch || OpBranchConditional || OpSwitch || OpReturn || OpReturnValue || OpKill || OpUnreachable || OpSelectionMerge || OpLoopMerge
+                    @case &OpBranch || &OpBranchConditional || &OpSwitch || &OpReturn || &OpReturnValue || &OpKill || &OpUnreachable || &OpSelectionMerge || &OpLoopMerge
                         cfg = current_cfg
                         src = current_block
 
                         _add_edge! = dst -> add_edge!(cfg, src, get_block(dst))
 
                         @switch opcode begin
-                            @case OpBranch
+                            @case &OpBranch
                                 dst = arguments[1]
                                 _add_edge!(dst)
-                            @case OpBranchConditional
+                            @case &OpBranchConditional
                                 cond, dst1, dst2, weights... = arguments
                                 _add_edge!(dst1)
                                 _add_edge!(dst2)
-                            @case OpSwitch
+                            @case &OpSwitch
                                 cond, default, dsts... = arguments
                                 foreach(_add_edge!, (default, dsts...))
-                            @case OpLoopMerge
+                            @case &OpLoopMerge
                                 merge_id, continue_id, loop_control, params... = arguments
                                 _add_edge!(merge_id)
                                 _add_edge!(continue_id)
-                            @case OpSelectionMerge
+                            @case &OpSelectionMerge
                                 merge_id, selection_control = arguments
                                 _add_edge!(merge_id)
                             @case _
@@ -256,7 +256,7 @@ function IR(mod::Module)
 
                         @switch opcode begin
                             # last block instruction
-                            @case OpBranch || OpBranchConditional || OpSwitch || OpReturn || OpReturnValue || OpKill || OpUnreachable
+                            @case &OpBranch || &OpBranchConditional || &OpSwitch || &OpReturn || &OpReturnValue || &OpKill || &OpUnreachable
                                 current_block = nothing
                             @case _
                                 nothing

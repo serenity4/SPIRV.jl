@@ -19,13 +19,6 @@ const ID = UInt32
 include("generated/enums.jl")
 include("generated/instructions.jl")
 
-for enum ∈ [:OpCode, :Decoration]
-    @eval begin
-        MLStyle.is_enum(::$enum) = true
-        MLStyle.pattern_uncall(e::$enum, _, _, _, _) = MLStyle.AbstractPatterns.literal(e)
-    end
-end
-
 include("utils.jl")
 include("parse.jl")
 include("disassemble.jl")
