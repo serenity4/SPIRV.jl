@@ -357,8 +357,8 @@ function show(io::IO, mime::MIME"text/plain", ir::IR)
         !contains(line, "OpName")
     end
     lines = map(lines) do line
-        replace(line, r"%\d+" => id -> string('%', get(ir.debug.filenames, parse(ID, id[2:end]), id[2:end])))
-        replace(line, r"%\d+" => id -> string('%', get(ir.debug.names, parse(ID, id[2:end]), id[2:end])))
+        replace(line, r"(?<=%)\d+" => id -> string(get(ir.debug.filenames, parse(ID, id), id)))
+        replace(line, r"(?<=%)\d+" => id -> string(get(ir.debug.names, parse(ID, id), id)))
     end
     print(io, join(lines, '\n'))
 end
