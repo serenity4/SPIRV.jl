@@ -114,7 +114,7 @@ function IR(mod::Module)
                     @case &OpEntryPoint
                         model, id, name, interfaces = arguments
                         insert!(entry_points, id, EntryPoint(Symbol(name), id, model, [], interfaces))
-                    @case &OpExecutionMode || OpExecutionModeId
+                    @case &OpExecutionMode || &OpExecutionModeId
                         id = arguments[1]
                         push!(entry_points[id].modes, inst)
                 end
