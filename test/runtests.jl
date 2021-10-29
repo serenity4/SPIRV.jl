@@ -16,6 +16,7 @@ modules = [
         r = resource(file)
         pmod = PhysicalModule(r)
         mod = SPIRV.Module(pmod)
+        @test validate(mod)
 
         @testset "Assembly/disassembly isomorphisms" begin
             pmod_reconstructed = PhysicalModule(mod)
@@ -39,6 +40,11 @@ modules = [
         mod2 = SPIRV.Module(ir)
         pmod2 = PhysicalModule(mod2)
         @test SPIRV.Module(pmod2) == mod2
+        #=
+        error: line 43: Structure id 32 decorated as Block must be explicitly laid out with Offset decorations.
+            %UniformBufferObject = OpTypeStruct %mat4v4float %mat4v4float %mat4v4float
+        =#
+        @test_broken validate(ir)
 
         mod = SPIRV.Module(resource("comp.spv"))
         ir = IR(mod)
@@ -47,5 +53,7 @@ modules = [
         mod2 = SPIRV.Module(ir)
         pmod2 = PhysicalModule(mod2)
         @test SPIRV.Module(pmod2) == mod2
+        # error: line 312: Block 617[%617] appears in the binary before its dominator 619[%619]
+        @test_broken validate(ir)
     end
 end

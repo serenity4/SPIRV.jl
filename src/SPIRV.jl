@@ -9,6 +9,9 @@ using Dictionaries
 using AutoHashEquals
 using Accessors
 
+import SPIRV_Tools_jll
+const spirv_val = SPIRV_Tools_jll.spirv_val(identity)
+
 const Optional{T} = Union{Nothing,T}
 
 import Base: write, show, showerror, ==
@@ -27,9 +30,7 @@ include("functions.jl")
 include("spir_types.jl")
 include("ir.jl")
 include("assemble.jl")
-
-# include("StructuredCFG/StructuredCFG.jl")
-# @reexport using .StructuredCFG
+include("validate.jl")
 
 export
         # parse
@@ -60,5 +61,8 @@ export
         SSAValue,
         Metadata,
         SSADict,
-        @inst
+        @inst,
+
+        # validation
+        validate
 end
