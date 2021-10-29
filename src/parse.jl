@@ -8,6 +8,7 @@ defines_extra_operands(arg, category) = is_enum(category) && haskey(extra_operan
 get_extra_operands(arg) = extra_operands[typeof(arg)][arg]
 
 function update_infos!(op_infos, i, arg, category)
+    arg isa SSAValue && (arg = arg.id)
     if defines_extra_operands(arg, category)
         foreach(get_extra_operands(arg)) do operand
             insert!(op_infos, i + 1, operand)
@@ -151,12 +152,12 @@ Parsed SPIR-V instruction. It represents an instruction of the form `%result_id 
 """
 @auto_hash_equals struct Instruction <: AbstractInstruction
     opcode::OpCode
-    type_id::Optional{ID}
-    result_id::Optional{ID}
+    type_id::Optional{SSAValue}
+    result_id::Optional{SSAValue}
     arguments::Vector{Any}
-    Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(convert(OpCode, opcode), convert(Optional{ID}, type_id), convert(Optional{ID}, result_id), convert(Vector{Any}, arguments))
-    Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
+    Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(convert(OpCode, opcode), convert(Optional{SSAValue}, type_id), convert(Optional{SSAValue}, result_id), convert(Vector{Any}, arguments))
 end
+Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
 
 """
 Information regarding the arguments of an `Instruction`, including extra operands.
@@ -189,13 +190,16 @@ function Instruction(inst::PhysicalInstruction)
         if hasproperty(info, :quantifier)
             quantifier = info.quantifier
             if quantifier == "*"
-                push!(arguments, operands[i:end])
+                arg = operands[i:end]
+                category == "Id" && (arg = SSAValue.(arg))
+                push!(arguments, arg)
                 break
             elseif quantifier == "?"
                 error("Unhandled '?' quantifier")
             end
         else
             j, arg = next_argument(operands[i:end], info, category)
+            category == "Id" && (arg = SSAValue(arg))
             push!(arguments, arg)
             update_infos!(op_infos, i, arg, category)
             i += j

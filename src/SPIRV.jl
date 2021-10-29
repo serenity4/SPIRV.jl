@@ -7,22 +7,22 @@ using Graphs
 using Reexport
 using Dictionaries
 using AutoHashEquals
+using Accessors
 
 const Optional{T} = Union{Nothing,T}
 
 import Base: write, show, showerror, ==
 
 const magic_number = 0x07230203
-const ID = UInt32
 
 # generated SPIR-V wrapper
 include("generated/enums.jl")
 include("generated/instructions.jl")
 
 include("utils.jl")
+include("ssa.jl")
 include("parse.jl")
 include("disassemble.jl")
-include("ssa.jl")
 include("functions.jl")
 include("spir_types.jl")
 include("ir.jl")
@@ -57,6 +57,7 @@ export
         # IR
         IR,
         ID,
+        SSAValue,
         Metadata,
         SSADict,
         @inst

@@ -4,6 +4,7 @@ authors = ["Cédric Belmant"]
 version = "0.1.0"
 
 [deps]
+Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
 AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
 CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 CodeInfoTools = "bc773b8a-8374-437a-b9f2-0e9785855863"

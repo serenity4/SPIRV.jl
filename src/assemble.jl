@@ -42,6 +42,12 @@ function physical_operands(inst::Instruction)
 end
 
 function add_operand!(operands, arg, kind)
+    @match arg begin
+        ::SSAValue => (push!(operands, arg); return)
+        ::Vector{SSAValue} => (append!(operands, id.(arg)); return)
+        _ => nothing
+    end
+
     @match kind begin
         &LiteralString => begin
             utf8_chars = collect(transcode(UInt8, arg))

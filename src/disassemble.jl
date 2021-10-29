@@ -1,6 +1,6 @@
 function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
     if !isnothing(inst.result_id)
-        printstyled(io, '%', inst.result_id; color=:yellow)
+        printstyled(io, inst.result_id; color=:yellow)
         print(io, " = ")
     end
 
@@ -19,7 +19,7 @@ function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
 
     if !isnothing(inst.type_id)
         printstyled(io, "::"; color=:light_green, bold=true)
-        printstyled(io, '%', inst.type_id; color=:light_green, bold=true)
+        printstyled(io, inst.type_id; color=:light_green, bold=true)
     end
 end
 
@@ -46,7 +46,7 @@ function emit_argument(io, arg, kind, category)
             &LiteralString => printstyled(io, '"', arg, '"'; color=150)
             _ => printstyled(io, arg; color=153)
         end
-        "Id" => printstyled(io, '%', arg; color=:yellow)
+        "Id" => printstyled(io, arg; color=:yellow)
     end
 end
 
@@ -69,7 +69,7 @@ function disassemble(io::IO, mod::Module)
     println(io, "Schema: ", mod.schema)
     println(io)
 
-    padding(id) = length(string(mod.bound)) - (isnothing(id) ? -4 : length(string(id)))
+    padding(id) = length(string(mod.bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
     for inst ∈ mod.instructions
         print(io, ' '^padding(inst.result_id))
         emit(io, inst, mod.bound)

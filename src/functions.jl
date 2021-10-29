@@ -1,5 +1,5 @@
 @broadcastref struct Block
-    id::ID
+    id::SSAValue
     insts::Vector{Instruction}
 end
 
@@ -24,9 +24,9 @@ end
 Graphs.add_edge!(cfg::ControlFlowGraph, src::Block, dst::Block) = add_edge!(cfg.graph, get_vertex!(cfg, src), get_vertex!(cfg, dst))
 
 struct FunctionDefinition
-    type::ID
+    type::SSAValue
     control::FunctionControl
-    args::Vector{ID}
+    args::Vector{SSAValue}
     cfg::ControlFlowGraph
 end
 

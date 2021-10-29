@@ -6,15 +6,13 @@ struct Source
     extensions::Vector{Symbol}
 end
 
-@broadcastref struct EntryPoint <: SSAIndexable
+@broadcastref struct EntryPoint
     name::Symbol
-    func::ID
+    func::SSAValue
     model::ExecutionModel
     modes::Vector{Instruction}
-    interfaces::Vector{ID}
+    interfaces::Vector{SSAValue}
 end
-
-ID(ep::EntryPoint) = ep.func
 
 struct Metadata
     magic_number::UInt32
@@ -37,7 +35,7 @@ struct DebugInfo
 end
 
 struct Variable
-    id::ID
+    id::SSAValue
     type::SPIRType
     storage_class::StorageClass
     initializer::Optional{Instruction}
@@ -68,10 +66,11 @@ mutable struct IR
     fdefs::SSADict{FunctionDefinition}
     results::SSADict{Any}
     debug::Optional{DebugInfo}
+    max_ssa_id::SSAValue
 end
 
 function IR(meta::Metadata, addressing_model::AddressingModel, memory_model::MemoryModel)
-    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), nothing)
+    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), nothing, 0)
 end
 
 function IR(mod::Module)
@@ -175,7 +174,7 @@ function IR(mod::Module)
                 @switch opcode begin
                     @case &OpTypeFunction
                         rettype = arguments[1]
-                        argtypes = length(arguments) == 2 ? arguments[2] : ID[]
+                        argtypes = length(arguments) == 2 ? arguments[2] : SSAValue[]
                         insert!(types, result_id, FunctionType(rettype, argtypes))
                     @case _
                         insert!(types, result_id, parse_type(inst, types, results))
@@ -277,7 +276,7 @@ function IR(mod::Module)
     meta = Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema)
     debug = DebugInfo(filenames, names, lines, source)
 
-    IR(meta, capabilities, extensions, extinst_imports, addressing_model, memory_model, entry_points, decorations, types, constants, global_vars, globals, fdefs, results, debug)
+    IR(meta, capabilities, extensions, extinst_imports, addressing_model, memory_model, entry_points, decorations, types, constants, global_vars, globals, fdefs, results, debug, maximum(id.(keys(results))))
 end
 
 function Module(ir::IR)
@@ -293,7 +292,7 @@ function Module(ir::IR)
     append_globals!(insts, ir)
     append_functions!(insts, ir)
 
-    Module(ir.meta.magic_number, ir.meta.generator_magic_number, ir.meta.version, maximum(keys(ir.results)) + 1, ir.meta.schema, insts)
+    Module(ir.meta.magic_number, ir.meta.generator_magic_number, ir.meta.version, ir.max_ssa_id.id + 1, ir.meta.schema, insts)
 end
 
 function append_debug_instructions!(insts, ir::IR)
@@ -330,7 +329,7 @@ function append_functions!(insts, ir::IR)
     end
 end
 
-function instructions(ir::IR, fdef::FunctionDefinition, id::ID)
+function instructions(ir::IR, fdef::FunctionDefinition, id::SSAValue)
     insts = Instruction[]
     type_id = fdef.type
     type = ir.types[type_id]
@@ -342,9 +341,9 @@ function instructions(ir::IR, fdef::FunctionDefinition, id::ID)
 end
 
 function append_globals!(insts, ir::IR)
-    ids = keys(ir.globals)
+    ids = id.(collect(keys(ir.globals)))
     vals = values(ir.globals)
-    perm = sortperm(collect(ids))
+    perm = sortperm(ids)
     append!(insts, collect(vals)[perm])
 end
 
@@ -357,8 +356,8 @@ function show(io::IO, mime::MIME"text/plain", ir::IR)
         !contains(line, "OpName")
     end
     lines = map(lines) do line
-        replace(line, r"(?<=%)\d+" => id -> string(get(ir.debug.filenames, parse(ID, id), id)))
-        replace(line, r"(?<=%)\d+" => id -> string(get(ir.debug.names, parse(ID, id), id)))
+        replace(line, r"(?<=%)\d+" => id -> string(get(ir.debug.filenames, parse(SSAValue, id), id)))
+        replace(line, r"(?<=%)\d+" => id -> string(get(ir.debug.names, parse(SSAValue, id), id)))
     end
     print(io, join(lines, '\n'))
 end

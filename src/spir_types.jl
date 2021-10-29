@@ -105,8 +105,8 @@ struct Constant
 end
 
 struct FunctionType <: SPIRType
-    rettype::ID
-    argtypes::Vector{ID}
+    rettype::SSAValue
+    argtypes::Vector{SSAValue}
 end
 
 function parse_type(inst::Instruction, types::SSADict{SPIRType}, results::SSADict{Any})::SPIRType
