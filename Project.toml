@@ -16,6 +16,7 @@ SPIRV_Tools_jll = "6ac6d60f-d740-5983-97d7-a4482c0689f4"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
+Accessors = "0.1"
 CEnum = "0.4.1"
 MLStyle = "0.4"
 UnPack = "1"
