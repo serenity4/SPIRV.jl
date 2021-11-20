@@ -57,7 +57,6 @@ export
 
         # IR
         IR,
-        ID,
         SSAValue,
         Metadata,
         SSADict,
@@ -65,4 +64,8 @@ export
 
         # validation
         validate
+
+include("Spells/Spells.jl")
+export Spells
+
 end

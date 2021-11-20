@@ -57,3 +57,5 @@ modules = [
         @test_broken validate(ir)
     end
 end
+
+include("Spells/runtests.jl")
