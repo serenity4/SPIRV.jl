@@ -1,3 +1,6 @@
+"""
+Compile Julia code to SPIR-V.
+"""
 module Spells
 
 using AutoHashEquals
@@ -10,6 +13,8 @@ using Graphs
 const Optional{T} = Union{Nothing, T}
 const magic_number = 0x12349876
 
+include("ast.jl")
+include("modules.jl")
 include("types.jl")
 include("emit/types.jl")
 include("emit/cfg_constructs.jl")
