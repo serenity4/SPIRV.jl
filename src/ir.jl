@@ -100,7 +100,7 @@ function IR(mod::Module)
     lines = SSADict{LineInfo}()
 
     for (i, inst) ∈ enumerate(mod.instructions)
-        @unpack arguments, type_id, result_id, opcode = inst
+        (; arguments, type_id, result_id, opcode) = inst
         class, info = classes[opcode]
         isnothing(current_block) || push!(current_block.insts, inst)
         @switch class begin

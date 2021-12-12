@@ -2,7 +2,6 @@ module SPIRV
 
 using CEnum
 using MLStyle
-using UnPack
 using Graphs
 using Reexport
 using Dictionaries
