@@ -1,3 +1,5 @@
+using SPIRV, Test
+
 function f(x, sampler)
     intensity = sampler[x] * 2
     if intensity < 0. || sqrt(intensity) < 1.

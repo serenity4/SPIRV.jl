@@ -1,3 +1,5 @@
+using SPIRV, Test
+
 @testset "DeltaGraph" begin
     @testset "Construction" begin
         g = DeltaGraph()

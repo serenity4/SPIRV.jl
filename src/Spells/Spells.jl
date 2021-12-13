@@ -11,6 +11,7 @@ using MLStyle
 using Dictionaries
 using ..SPIRV
 using ..SPIRV: @forward
+using Accessors: @set, setproperties
 
 const Optional{T} = Union{Nothing, T}
 const magic_number = 0x12349876
@@ -19,7 +20,6 @@ const magic_number = 0x12349876
 # include("emit/types.jl")
 # include("emit/cfg_constructs.jl")
 # include("emit/functions.jl")
-include("compile.jl")
 
 include("graph.jl")
 include("interpreter.jl")
@@ -27,6 +27,8 @@ include("cfg.jl")
 include("basicblocks.jl")
 include("reflection.jl")
 include("restructuring.jl")
+include("emit/intrinsics.jl")
+include("compile.jl")
 
 export
         Context,
@@ -52,6 +54,7 @@ export
         lowered_code,
         inferred_code,
 
-        verify
+        verify,
+        compile
 
 end

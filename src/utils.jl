@@ -17,10 +17,12 @@ macro forward(ex, fs)
 end
 
 macro inst(ex)
+    Base.remove_linenums!(ex)
     result_id, inst = @match ex begin
         :($result_id = $inst) => (result_id, inst)
         _ => (nothing, ex)
     end
+    Meta.isexpr(inst, :block) && (inst = only(inst.args))
 
     type_id, call = @match inst begin
         :($call::$T) => (T, call)

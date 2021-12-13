@@ -1,6 +1,4 @@
-using SPIRV
-using .Spells
-using Test
+using SPIRV, Test
 using Graphs
 
 spirv_file(filename) = joinpath(@__DIR__, "resources", filename * ".spv")

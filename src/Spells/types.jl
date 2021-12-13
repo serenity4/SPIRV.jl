@@ -18,11 +18,6 @@ macro call(ex)
     :(Call($ex))
 end
 
-struct Assign
-    var::Variable
-    expr::Call
-end
-
 @auto_hash_equals struct Signature{T}
     name::Symbol
     argtypes::Vector{T}
@@ -101,16 +96,4 @@ end
 struct Func
     sig::Signature{TypeSpec}
     body::Vector{Any}
-end
-
-struct If
-    cond # expression
-    when_true::Vector{Any}
-    when_false::Vector{Any}
-end
-
-struct Loop
-    cond
-    body
-    continue_target
 end

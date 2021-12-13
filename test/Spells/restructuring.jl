@@ -1,3 +1,5 @@
+using SPIRV, Test
+
 @testset "CFG restructuring" begin
     @testset "Merge return nodes" begin
         cfg = CFG(f, Tuple{Float64})

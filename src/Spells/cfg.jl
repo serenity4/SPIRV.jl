@@ -77,13 +77,16 @@ cache_inferred!(mi::MethodInstance, code::CodeInfo) = insert!(INFERRED_CODE_CACH
 
 "Run type inference on the given `MethodInstance`."
 function infer!(mi::MethodInstance)
+    haskey(INFERRED_CODE_CACHE, mi) && return INFERRED_CODE_CACHE[mi]
     interp = Core.Compiler.NativeInterpreter()
     result = InferenceResult(mi)
-    src = @something(copy(get(LOWERED_CODE_CACHE, mi, nothing)), retrieve_code_info(result.linfo))
+    src = get(LOWERED_CODE_CACHE, mi, nothing)
+    src = !isnothing(src) ? copy(src) : retrieve_code_info(result.linfo)
     frame = InferenceState(result, src, :global, interp)
     lock_mi_inference(interp, result.linfo)
     typeinf(interp, frame)
     cache_inferred!(mi, src)
+    src
 end
 
 """
@@ -92,15 +95,15 @@ Run type inference on the provided CFG and wrap inferred code with a new CFG.
 The internal `MethodInstance` of the original CFG gets mutated in the process.
 """
 function infer!(cfg::CFG)
-    infer!(cfg.mi)
-    CFG(cfg.mi, inferred = true)
+    code = infer!(cfg.mi)
+    CFG(cfg.mi, code)
 end
 
 inferred_code(cfg::CFG) = inferred_code(cfg.mi)
 inferred_code(mi::MethodInstance) = Core.Compiler._uncompressed_ir(mi.cache, mi.cache.inferred)
 
 function Base.show(io::IO, cfg::CFG)
-    print(io, "CFG ($(nv(cfg.graph)) nodes, $(ne(cfg.graph)) edges, $(length(cfg.instructions)) instructions)")
+    print(io, "CFG ($(nv(cfg.graph)) nodes, $(ne(cfg.graph)) edges, $(sum(length, cfg.instructions)) instructions)")
 end
 
 function block_ranges(cfg::CFG)

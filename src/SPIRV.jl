@@ -65,6 +65,6 @@ export
         validate
 
 include("Spells/Spells.jl")
-export Spells
+@reexport using .Spells
 
 end
