@@ -5,7 +5,6 @@
         }
     ],
     "settings": {
-        "julia.environmentPath": "/home/belmant/.julia/dev/SPIRV",
         "julia.executablePath": "/home/belmant/.asdf/installs/julia/nightly/bin/julia",
         "editor.tabSize": 2
     }
