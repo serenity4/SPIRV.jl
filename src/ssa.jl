@@ -33,4 +33,6 @@ Base.convert(::Type{SSADict{T}}, dict::SSADict) where {T} = SSADict{T}(convert(D
 
 @forward SSADict.dict Base.getindex, Base.insert!, Dictionaries.set!, Base.get!, Base.get, Base.setindex!, Base.pop!, Base.first, Base.last, Base.broadcastable, Base.length, Base.iterate, Base.keys, Base.values, Base.haskey
 
+Base.get!(default, dict::SSADict, key) = get!(default, dict.dict, key)
+
 Base.merge!(vec::SSADict, others::SSADict...) = merge!(vec.dict, getproperty.(others, :dict)...)

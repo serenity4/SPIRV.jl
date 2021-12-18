@@ -35,21 +35,17 @@ modules = [
     @testset "Intermediate Representation" begin
         mod = SPIRV.Module(resource("vert.spv"))
         ir = IR(mod)
-        f = ir.fdefs[4]
-        @test length(f.cfg.blocks) == nv(f.cfg.graph) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f)))
+        f1 = ir.fdefs[4]
+        @test length(f1.cfg.blocks) == nv(f1.cfg.graph) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f1)))
         mod2 = SPIRV.Module(ir)
         pmod2 = PhysicalModule(mod2)
         @test SPIRV.Module(pmod2) == mod2
-        #=
-        error: line 43: Structure id 32 decorated as Block must be explicitly laid out with Offset decorations.
-            %UniformBufferObject = OpTypeStruct %mat4v4float %mat4v4float %mat4v4float
-        =#
-        @test_broken validate(ir)
+        @test validate(ir)
 
         mod = SPIRV.Module(resource("comp.spv"))
         ir = IR(mod)
-        f = ir.fdefs[52]
-        @test length(f.cfg.blocks) == nv(f.cfg.graph) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f)))
+        f2 = ir.fdefs[52]
+        @test length(f2.cfg.blocks) == nv(f2.cfg.graph) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f2)))
         mod2 = SPIRV.Module(ir)
         pmod2 = PhysicalModule(mod2)
         @test SPIRV.Module(pmod2) == mod2

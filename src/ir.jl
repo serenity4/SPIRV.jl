@@ -39,13 +39,13 @@ struct Variable
     type::SPIRType
     storage_class::StorageClass
     initializer::Optional{Instruction}
-    decorations::Dictionary{Decoration,Vector{Any}}
+    decorations::DecorationData
 end
 
-function Variable(inst::Instruction, types::SSADict{SPIRType}, results::SSADict{Any}, decorations::SSADict{Dictionary{Decoration,Vector{Any}}})
+function Variable(inst::Instruction, types::SSADict{SPIRType}, results::SSADict{Any}, decorations::SSADict{DecorationData})
     storage_class = first(inst.arguments)
     initializer = length(inst.arguments) == 2 ? results[last(inst.arguments)] : nothing
-    Variable(inst.result_id, types[inst.type_id].type, storage_class, initializer, get(decorations, inst.result_id, Dictionary{Decoration,Vector{Any}}()))
+    Variable(inst.result_id, types[inst.type_id].type, storage_class, initializer, get(decorations, inst.result_id, DecorationData()))
 end
 
 SPIRType(var::Variable) = PointerType(var.storage_class, var.type)
@@ -58,7 +58,7 @@ mutable struct IR
     addressing_model::AddressingModel
     memory_model::MemoryModel
     entry_points::SSADict{EntryPoint}
-    decorations::SSADict{Dictionary{Decoration,Vector{Any}}}
+    decorations::SSADict{DecorationData}
     types::SSADict{SPIRType}
     constants::SSADict{Instruction}
     global_vars::SSADict{Variable}
@@ -74,7 +74,8 @@ function IR(meta::Metadata, addressing_model::AddressingModel, memory_model::Mem
 end
 
 function IR(mod::Module)
-    decorations = SSADict{Dictionary{Decoration,Vector{Any}}}()
+    decorations = SSADict{DecorationData}()
+    member_decorations = SSADict{Dictionary{Int,DecorationData}}()
     capabilities = Capability[]
     extensions = Symbol[]
     extinst_imports = SSADict{Symbol}()
@@ -161,12 +162,16 @@ function IR(mod::Module)
             @case & :Annotation
                 @switch opcode begin
                     @case &OpDecorate
-                        id, type, args... = arguments
+                        id, decoration, args... = arguments
                         if haskey(decorations, id)
-                            insert!(decorations[id], type, args)
+                            insert!(decorations[id], decoration, args)
                         else
-                            insert!(decorations, id, dictionary([type => args]))
+                            insert!(decorations, id, dictionary([decoration => args]))
                         end
+                    @case &OpMemberDecorate
+                        id, member, decoration, args... = arguments
+                        member += 1 # convert to 1-based indexing
+                        insert!(get!(DecorationData, get!(Dictionary{Int,DecorationData}, member_decorations, SSAValue(id)), member), decoration, args)
                     @case _
                         nothing
                 end
@@ -276,6 +281,20 @@ function IR(mod::Module)
     meta = Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema)
     debug = DebugInfo(filenames, names, lines, source)
 
+    # Resolve member decoration targets to types.
+    for (id, decs) in pairs(member_decorations)
+        for (member, decs) in pairs(decs)
+            for (dec, args) in pairs(decs)
+                type = types[id]
+                if type isa StructType
+                    insert!(get!(DecorationData, type.member_decorations, member), dec, args)
+                else
+                    error("Unsupported member decoration on non-struct type $type")
+                end
+            end
+        end
+    end
+
     IR(meta, capabilities, extensions, extinst_imports, addressing_model, memory_model, entry_points, decorations, types, constants, global_vars, globals, fdefs, results, debug, maximum(id.(keys(results))))
 end
 
@@ -307,24 +326,29 @@ function append_debug_instructions!(insts, ir::IR)
             append!(insts, @inst(OpSourceExtension(string(ext))) for ext in source.extensions)
         end
 
-        foreach(pairs(debug.filenames)) do (id, filename)
+        for (id, filename) in pairs(debug.filenames)
             push!(insts, @inst OpString(id, filename))
         end
 
-        foreach(pairs(debug.names)) do (id, name)
+        for (id, name) in pairs(debug.names)
             push!(insts, @inst OpName(id, string(name)))
         end
     end
 end
 
 function append_annotations!(insts, ir::IR)
-    foreach(pairs(ir.decorations)) do (id, decorations)
-        append!(insts, @inst(OpDecorate(id, type, args...)) for (type, args) in pairs(decorations))
+    for (id, decorations) in pairs(ir.decorations)
+        append!(insts, @inst(OpDecorate(id, dec, args...)) for (dec, args) in pairs(decorations))
+    end
+    for (id, type) in pairs(ir.types)
+        if type isa StructType
+            append!(insts, @inst(OpMemberDecorate(id, member - UInt32(1), dec, args...)) for (member, decs) in pairs(type.member_decorations) for (dec, args) in pairs(decs))
+        end
     end
 end
 
 function append_functions!(insts, ir::IR)
-    foreach(pairs(ir.fdefs)) do (id, fdef)
+    for (id, fdef) in pairs(ir.fdefs)
         append!(insts, instructions(ir, fdef, id))
     end
 end

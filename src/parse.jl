@@ -166,7 +166,7 @@ function info(inst::Instruction, skip_ids::Bool = true)
     op_infos = copy(info(inst.opcode))
 
     # add extra operands
-    foreach(enumerate(inst.arguments)) do (i, arg)
+    for (i, arg) in enumerate(inst.arguments)
         info = op_infos[i]
         category = kind_to_category[info.kind]
         update_infos!(op_infos, i, arg, category)

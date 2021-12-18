@@ -88,9 +88,14 @@ struct OpaqueType <: SPIRType
     name::Symbol
 end
 
+const DecorationData = Dictionary{Decoration,Vector{Any}}
+
 struct StructType <: SPIRType
     members::Vector{SPIRType}
+    member_decorations::Dictionary{UInt32,DecorationData}
 end
+
+StructType(members::AbstractVector) = StructType(members, Dictionary())
 
 struct PointerType <: SPIRType
     storage_class::StorageClass
