@@ -8,7 +8,7 @@ struct SSAValue
     id::UInt32
 end
 
-Base.convert(::Type{T}, val::SSAValue) where {T<:Integer} = val.id
+Base.convert(::Type{T}, val::SSAValue) where {T<:Integer} = convert(T, val.id)
 Base.convert(::Type{Core.SSAValue}, val::SSAValue) where {T<:Integer} = Core.SSAValue(val.id)
 Base.convert(::Type{SSAValue}, val::Core.SSAValue) where {T<:Integer} = SSAValue(val.id)
 Base.convert(::Type{SSAValue}, id::Integer) = SSAValue(id)

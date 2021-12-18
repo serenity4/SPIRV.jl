@@ -89,11 +89,6 @@ function IR(mod::Module)
     results = SSADict{Any}()
 
     current_function = nothing
-    blocks = SSADict{Block}()
-    get_block(id) = get!(blocks, id, Block(id, []))
-
-    current_block = nothing
-    current_cfg = nothing
 
     # debug
     filenames = SSADict{String}()
@@ -103,8 +98,7 @@ function IR(mod::Module)
     for (i, inst) ∈ enumerate(mod.instructions)
         (; arguments, type_id, result_id, opcode) = inst
         class, info = classes[opcode]
-        isnothing(current_block) || push!(current_block.insts, inst)
-        @switch class begin
+        @tryswitch class begin
             @case & Symbol("Mode-Setting")
                 @switch opcode begin
                     @case &OpCapability
@@ -128,7 +122,7 @@ function IR(mod::Module)
                         nothing
                 end
             @case & :Debug
-                @switch opcode begin
+                @tryswitch opcode begin
                     @case &OpSource
                         language, version = arguments[1:2]
                         file, code = @match length(arguments) begin
@@ -156,11 +150,9 @@ function IR(mod::Module)
                         id, mindex, name = arguments
                         #TODO: add member name
                         nothing
-                    @case _
-                        nothing
                 end
             @case & :Annotation
-                @switch opcode begin
+                @tryswitch opcode begin
                     @case &OpDecorate
                         id, decoration, args... = arguments
                         if haskey(decorations, id)
@@ -172,8 +164,6 @@ function IR(mod::Module)
                         id, member, decoration, args... = arguments
                         member += 1 # convert to 1-based indexing
                         insert!(get!(DecorationData, get!(Dictionary{Int,DecorationData}, member_decorations, SSAValue(id)), member), decoration, args)
-                    @case _
-                        nothing
                 end
             @case & Symbol("Type-Declaration")
                 @switch opcode begin
@@ -189,7 +179,7 @@ function IR(mod::Module)
                 insert!(constants, result_id, inst)
                 insert!(globals, result_id, inst)
             @case & Symbol("Memory")
-                @switch opcode begin
+                @tryswitch opcode begin
                     @case &OpVariable
                         storage_class = arguments[1]
                         initializer = length(arguments) == 2 ? arguments[2] : nothing
@@ -200,76 +190,26 @@ function IR(mod::Module)
                                 insert!(globals, result_id, inst)
                                 insert!(global_vars, result_id, Variable(inst, types, results, decorations))
                         end
-                    @case _
-                        nothing
                 end
             @case & :Function
-                @switch opcode begin
+                @tryswitch opcode begin
                     @case &OpFunction
                         control, type = arguments
-                        current_cfg = ControlFlowGraph(Block[], SimpleDiGraph())
-                        current_function = FunctionDefinition(type, control, [], current_cfg)
+                        current_function = FunctionDefinition(type, control, [], SSADict())
                         insert!(fdefs, result_id, current_function)
                     @case &OpFunctionParameter
                         push!(current_function.args, result_id)
                     @case &OpFunctionEnd
                         current_function = nothing
-                    @case _
-                        nothing
                 end
             @case & Symbol("Control-Flow")
-                @switch opcode begin
-                    # first block instruction
-                    @case &OpLabel
-                        current_block = get_block(result_id)
-                        push!(current_block.insts, inst)
-                        @assert !isnothing(current_function) "Block definition outside function"
-                        cfg = current_cfg
-                        if current_block ∉ cfg.blocks
-                            push!(cfg.blocks, current_block)
-                            add_vertex!(cfg.graph)
-                        end
-
-                    @case &OpBranch || &OpBranchConditional || &OpSwitch || &OpReturn || &OpReturnValue || &OpKill || &OpUnreachable || &OpSelectionMerge || &OpLoopMerge
-                        cfg = current_cfg
-                        src = current_block
-
-                        _add_edge! = dst -> add_edge!(cfg, src, get_block(dst))
-
-                        @switch opcode begin
-                            @case &OpBranch
-                                dst = arguments[1]
-                                _add_edge!(dst)
-                            @case &OpBranchConditional
-                                cond, dst1, dst2, weights... = arguments
-                                _add_edge!(dst1)
-                                _add_edge!(dst2)
-                            @case &OpSwitch
-                                cond, default, dsts... = arguments
-                                foreach(_add_edge!, (default, dsts...))
-                            @case &OpLoopMerge
-                                merge_id, continue_id, loop_control, params... = arguments
-                                _add_edge!(merge_id)
-                                _add_edge!(continue_id)
-                            @case &OpSelectionMerge
-                                merge_id, selection_control = arguments
-                                _add_edge!(merge_id)
-                            @case _
-                                nothing
-                        end
-
-                        @switch opcode begin
-                            # last block instruction
-                            @case &OpBranch || &OpBranchConditional || &OpSwitch || &OpReturn || &OpReturnValue || &OpKill || &OpUnreachable
-                                current_block = nothing
-                            @case _
-                                nothing
-                        end
-                    @case _
-                        nothing
+                @assert !isnothing(current_function)
+                if opcode == OpLabel
+                    insert!(current_function.blocks, inst.result_id, Block(inst.result_id, []))
                 end
-            @case _
-                nothing
+        end
+        if !isnothing(current_function) && !isempty(current_function.blocks)
+            push!(last(values(current_function.blocks)).insts, inst)
         end
         if !isnothing(result_id) && !haskey(results, result_id)
              insert!(results, result_id, inst)

@@ -28,6 +28,7 @@ include("disassemble.jl")
 include("functions.jl")
 include("spir_types.jl")
 include("ir.jl")
+include("cfg.jl")
 include("assemble.jl")
 include("validate.jl")
 
@@ -60,6 +61,9 @@ export
         Metadata,
         SSADict,
         @inst,
+
+        # CFG
+        control_flow_graph,
 
         # validation
         validate

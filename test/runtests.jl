@@ -36,7 +36,8 @@ modules = [
         mod = SPIRV.Module(resource("vert.spv"))
         ir = IR(mod)
         f1 = ir.fdefs[4]
-        @test length(f1.cfg.blocks) == nv(f1.cfg.graph) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f1)))
+        cfg = control_flow_graph(f1)
+        @test nv(cfg) == length(f1.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f1)))
         mod2 = SPIRV.Module(ir)
         pmod2 = PhysicalModule(mod2)
         @test SPIRV.Module(pmod2) == mod2
@@ -45,12 +46,12 @@ modules = [
         mod = SPIRV.Module(resource("comp.spv"))
         ir = IR(mod)
         f2 = ir.fdefs[52]
-        @test length(f2.cfg.blocks) == nv(f2.cfg.graph) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f2)))
+        cfg = control_flow_graph(f2)
+        @test nv(cfg) == length(f2.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f2)))
         mod2 = SPIRV.Module(ir)
         pmod2 = PhysicalModule(mod2)
         @test SPIRV.Module(pmod2) == mod2
-        # error: line 312: Block 617[%617] appears in the binary before its dominator 619[%619]
-        @test_broken validate(ir)
+        @test validate(ir)
     end
 end
 
