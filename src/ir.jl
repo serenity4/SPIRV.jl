@@ -27,12 +27,14 @@ struct LineInfo
     column::Int
 end
 
-struct DebugInfo
+mutable struct DebugInfo
     filenames::SSADict{String}
     names::SSADict{Symbol}
     lines::SSADict{LineInfo}
     source::Optional{Source}
 end
+
+DebugInfo() = DebugInfo(SSADict(), SSADict(), SSADict(), nothing)
 
 struct Variable
     id::SSAValue
@@ -65,35 +67,19 @@ mutable struct IR
     globals::SSADict{Instruction}
     fdefs::SSADict{FunctionDefinition}
     results::SSADict{Any}
-    debug::Optional{DebugInfo}
-    max_ssa_id::SSAValue
+    debug::DebugInfo
 end
 
 function IR(meta::Metadata, addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
-    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), nothing, 0)
+    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), DebugInfo())
 end
 
 function IR(mod::Module)
-    decorations = SSADict{DecorationData}()
     member_decorations = SSADict{Dictionary{Int,DecorationData}}()
-    capabilities = Capability[]
-    extensions = Symbol[]
-    extinst_imports = SSADict{Symbol}()
-    source, memory_model, addressing_model = fill(nothing, 3)
-    entry_points = SSADict{EntryPoint}()
-    types = SSADict{SPIRType}()
-    constants = SSADict{Instruction}()
-    global_vars = SSADict{Variable}()
-    globals = SSADict{Instruction}()
-    fdefs = SSADict{FunctionDefinition}()
-    results = SSADict{Any}()
-
     current_function = nothing
 
-    # debug
-    filenames = SSADict{String}()
-    names = SSADict{Symbol}()
-    lines = SSADict{LineInfo}()
+    ir = IR(Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema))
+    (; debug, decorations, types, globals, results) = ir
 
     for inst in mod
         (; arguments, type_id, result_id, opcode) = inst
@@ -102,22 +88,22 @@ function IR(mod::Module)
             @case & Symbol("Mode-Setting")
                 @switch opcode begin
                     @case &OpCapability
-                        push!(capabilities, arguments[1])
+                        push!(ir.capabilities, arguments[1])
                     @case &OpMemoryModel
-                        addressing_model, memory_model = arguments
+                        ir.addressing_model, ir.memory_model = arguments
                     @case &OpEntryPoint
                         model, id, name, interfaces = arguments
-                        insert!(entry_points, id, EntryPoint(Symbol(name), id, model, [], interfaces))
+                        insert!(ir.entry_points, id, EntryPoint(Symbol(name), id, model, [], interfaces))
                     @case &OpExecutionMode || &OpExecutionModeId
                         id = arguments[1]
-                        push!(entry_points[id].modes, inst)
+                        push!(ir.entry_points[id].modes, inst)
                 end
             @case & :Extension
                 @switch opcode begin
                     @case &OpExtension
-                        push!(extensions, Symbol(arguments[1]))
+                        push!(ir.extensions, Symbol(arguments[1]))
                     @case &OpExtInstImport
-                        insert!(extinst_imports, result_id, Symbol(arguments[1]))
+                        insert!(ir.extinst_imports, result_id, Symbol(arguments[1]))
                     @case &OpExtInst
                         nothing
                 end
@@ -134,17 +120,15 @@ function IR(mod::Module)
                             4 => arguments[3:4]
                         end
 
-                        if !isnothing(file)
-                            file = filenames[file]
-                        end
-                        source = Source(language, source_version(language, version), file, code, [])
+                        !isnothing(file) && (file = debug.filenames[file])
+                        debug.source = Source(language, source_version(language, version), file, code, [])
                     @case &OpSourceExtension
-                        @assert !isnothing(source) "Source extension was declared before the source."
-                        push!(source.extensions, Symbol(arguments[1]))
+                        !isnothing(debug.source) || error("Source extension was declared before the source, or the source was not declared at all.")
+                        push!(debug.source.extensions, Symbol(arguments[1]))
                     @case &OpName
                         id, name = arguments
                         if !isempty(name)
-                            insert!(names, id, Symbol(name))
+                            insert!(debug.names, id, Symbol(name))
                         end
                     @case &OpMemberName
                         id, mindex, name = arguments
@@ -176,7 +160,7 @@ function IR(mod::Module)
                 end
                 insert!(globals, result_id, inst)
             @case & Symbol("Constant-Creation")
-                insert!(constants, result_id, inst)
+                insert!(ir.constants, result_id, inst)
                 insert!(globals, result_id, inst)
             @case & Symbol("Memory")
                 @tryswitch opcode begin
@@ -188,7 +172,7 @@ function IR(mod::Module)
                                 nothing
                             @case _
                                 insert!(globals, result_id, inst)
-                                insert!(global_vars, result_id, Variable(inst, types, results, decorations))
+                                insert!(ir.global_vars, result_id, Variable(inst, types, results, decorations))
                         end
                 end
             @case & :Function
@@ -196,7 +180,7 @@ function IR(mod::Module)
                     @case &OpFunction
                         control, type = arguments
                         current_function = FunctionDefinition(type, control, [], SSADict())
-                        insert!(fdefs, result_id, current_function)
+                        insert!(ir.fdefs, result_id, current_function)
                     @case &OpFunctionParameter
                         push!(current_function.args, result_id)
                     @case &OpFunctionEnd
@@ -216,16 +200,23 @@ function IR(mod::Module)
         end
     end
 
-    merge!(results, extinst_imports)
+    merge!(results, ir.extinst_imports)
+    attach_member_decorations!(ir, member_decorations)
+    ir
+end
 
-    meta = Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema)
-    debug = DebugInfo(filenames, names, lines, source)
+max_id(ir::IR) = maximum(id.(keys(ir.results)))
 
-    # Resolve member decoration targets to types.
+"""
+Attach member decorations to SPIR-V types (see [`SPIRType`](@ref)).
+
+Member decorations are attached separately because they use forward references to decorated types.
+"""
+function attach_member_decorations!(ir::IR, member_decorations::SSADict{Dictionary{Int,DecorationData}})
     for (id, decs) in pairs(member_decorations)
         for (member, decs) in pairs(decs)
             for (dec, args) in pairs(decs)
-                type = types[id]
+                type = ir.types[id]
                 if type isa StructType
                     insert!(get!(DecorationData, type.member_decorations, member), dec, args)
                 else
@@ -234,8 +225,6 @@ function IR(mod::Module)
             end
         end
     end
-
-    IR(meta, capabilities, extensions, extinst_imports, addressing_model, memory_model, entry_points, decorations, types, constants, global_vars, globals, fdefs, results, debug, maximum(id.(keys(results))))
 end
 
 function Module(ir::IR)
@@ -251,28 +240,26 @@ function Module(ir::IR)
     append_globals!(insts, ir)
     append_functions!(insts, ir)
 
-    Module(ir.meta.magic_number, ir.meta.generator_magic_number, ir.meta.version, ir.max_ssa_id.id + 1, ir.meta.schema, insts)
+    Module(ir.meta.magic_number, ir.meta.generator_magic_number, ir.meta.version, max_id(ir) + 1, ir.meta.schema, insts)
 end
 
 function append_debug_instructions!(insts, ir::IR)
-    if !isnothing(ir.debug)
-        debug::DebugInfo = ir.debug
-        if !isnothing(debug.source)
-            source::Source = debug.source
-            args = Any[source.language, source_version(source.language, source.version)]
-            !isnothing(source.file) && push!(args, source.file)
-            !isnothing(source.code) && push!(args, source.code)
-            push!(insts, @inst OpSource(args...))
-            append!(insts, @inst(OpSourceExtension(string(ext))) for ext in source.extensions)
-        end
+    (; debug) = ir
+    if !isnothing(debug.source)
+        (; source) = debug
+        args = Any[source.language, source_version(source.language, source.version)]
+        !isnothing(source.file) && push!(args, source.file)
+        !isnothing(source.code) && push!(args, source.code)
+        push!(insts, @inst OpSource(args...))
+        append!(insts, @inst(OpSourceExtension(string(ext))) for ext in source.extensions)
+    end
 
-        for (id, filename) in pairs(debug.filenames)
-            push!(insts, @inst OpString(id, filename))
-        end
+    for (id, filename) in pairs(debug.filenames)
+        push!(insts, @inst OpString(id, filename))
+    end
 
-        for (id, name) in pairs(debug.names)
-            push!(insts, @inst OpName(id, string(name)))
-        end
+    for (id, name) in pairs(debug.names)
+        push!(insts, @inst OpName(id, string(name)))
     end
 end
 
