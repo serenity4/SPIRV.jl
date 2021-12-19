@@ -40,17 +40,20 @@ struct Variable
     id::SSAValue
     type::SPIRType
     storage_class::StorageClass
-    initializer::Optional{Instruction}
-    decorations::DecorationData
+    initializer::Optional{SSAValue}
 end
 
-function Variable(inst::Instruction, types::SSADict{SPIRType}, results::SSADict{Any}, decorations::SSADict{DecorationData})
+function Variable(inst::Instruction, type::SPIRType)
     storage_class = first(inst.arguments)
-    initializer = length(inst.arguments) == 2 ? results[last(inst.arguments)] : nothing
-    Variable(inst.result_id, types[inst.type_id].type, storage_class, initializer, get(decorations, inst.result_id, DecorationData()))
+    initializer = length(inst.arguments) == 2 ? SSAValue(last(inst.arguments)) : nothing
+    if type isa PointerType && !isnothing(type.storage_class)
+        type.storage_class == storage_class || error("""
+        Storage classes for a variable and its type must be the same.
+        Found pointer storage class $(type.storage_class) and variable storage class $storage_class.
+        """)
+    end
+    Variable(inst.result_id, type, storage_class, initializer)
 end
-
-SPIRType(var::Variable) = PointerType(var.storage_class, var.type)
 
 mutable struct IR
     meta::Metadata
@@ -62,16 +65,16 @@ mutable struct IR
     entry_points::SSADict{EntryPoint}
     decorations::SSADict{DecorationData}
     types::SSADict{SPIRType}
+    "Constants, including specialization constants."
     constants::SSADict{Instruction}
     global_vars::SSADict{Variable}
-    globals::SSADict{Instruction}
     fdefs::SSADict{FunctionDefinition}
     results::SSADict{Any}
     debug::DebugInfo
 end
 
 function IR(meta::Metadata, addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
-    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), DebugInfo())
+    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), DebugInfo())
 end
 
 function IR(mod::Module)
@@ -79,7 +82,7 @@ function IR(mod::Module)
     current_function = nothing
 
     ir = IR(Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema))
-    (; debug, decorations, types, globals, results) = ir
+    (; debug, decorations, types, results) = ir
 
     for inst in mod
         (; arguments, type_id, result_id, opcode) = inst
@@ -152,27 +155,20 @@ function IR(mod::Module)
             @case & Symbol("Type-Declaration")
                 @switch opcode begin
                     @case &OpTypeFunction
-                        rettype = arguments[1]
+                        rettype = first(arguments)
                         argtypes = length(arguments) == 2 ? arguments[2] : SSAValue[]
                         insert!(types, result_id, FunctionType(rettype, argtypes))
                     @case _
-                        insert!(types, result_id, parse_type(inst, types, results))
+                        insert!(types, result_id, parse(SPIRType, inst, types, ir.constants))
                 end
-                insert!(globals, result_id, inst)
             @case & Symbol("Constant-Creation")
                 insert!(ir.constants, result_id, inst)
-                insert!(globals, result_id, inst)
             @case & Symbol("Memory")
                 @tryswitch opcode begin
                     @case &OpVariable
-                        storage_class = arguments[1]
-                        initializer = length(arguments) == 2 ? arguments[2] : nothing
-                        @switch storage_class begin
-                            @case &StorageClassFunction
-                                nothing
-                            @case _
-                                insert!(globals, result_id, inst)
-                                insert!(ir.global_vars, result_id, Variable(inst, types, results, decorations))
+                        storage_class = first(arguments)
+                        if storage_class ≠ StorageClassFunction
+                            insert!(ir.global_vars, result_id, Variable(inst, types[inst.type_id]))
                         end
                 end
             @case & :Function
@@ -292,10 +288,16 @@ function instructions(ir::IR, fdef::FunctionDefinition, id::SSAValue)
 end
 
 function append_globals!(insts, ir::IR)
-    ids = id.(collect(keys(ir.globals)))
-    vals = values(ir.globals)
-    perm = sortperm(ids)
-    append!(insts, collect(vals)[perm])
+    globals = merge_unique!(SSADict(), ir.types, ir.constants, ir.global_vars)
+    sortkeys!(globals)
+    id_map = Dictionary(values(globals), keys(globals))
+    append!(insts, Instruction(val, id, id_map) for (id, val) in pairs(globals))
+end
+
+function Instruction(var::Variable, id::SSAValue, id_map::Dictionary)
+    inst = @inst id = OpVariable(var.storage_class)::id_map[var.type]
+    !isnothing(var.initializer) && push!(inst.arguments, var.initializer)
+    inst
 end
 
 function show(io::IO, mime::MIME"text/plain", ir::IR)

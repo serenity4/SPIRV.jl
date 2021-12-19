@@ -95,3 +95,12 @@ macro tryswitch(val, ex)
     res = MLStyle.MatchImpl.init_cfg(res)
     esc(res)
 end
+
+function merge_unique!(dict::AbstractDictionary, ds::AbstractDictionary...)
+    for d in ds
+        for (k, v) in pairs(d)
+            insert!(dict, k, v)
+        end
+    end
+    dict
+end

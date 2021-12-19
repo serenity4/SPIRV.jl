@@ -165,9 +165,10 @@ Information regarding the arguments of an `Instruction`, including extra operand
 function info(inst::Instruction, skip_ids::Bool = true)
     op_infos = copy(info(inst.opcode))
 
-    # add extra operands
+    # Add extra operands.
     for (i, arg) in enumerate(inst.arguments)
-        info = op_infos[i]
+        # Clamp to last info `min` to handle a variable number of arguments ('*').
+        info = op_infos[min(lastindex(op_infos), i)]
         category = kind_to_category[info.kind]
         update_infos!(op_infos, i, arg, category)
     end

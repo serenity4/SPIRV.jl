@@ -114,7 +114,7 @@ struct FunctionType <: SPIRType
     argtypes::Vector{SSAValue}
 end
 
-function parse_type(inst::Instruction, types::SSADict{SPIRType}, results::SSADict{Any})::SPIRType
+function Base.parse(::Type{SPIRType}, inst::Instruction, types::SSADict{SPIRType}, constants::SSADict{Instruction})
     @match op = inst.opcode begin
         &OpTypeVoid => VoidType()
         &OpTypeInt => IntegerType(inst)
@@ -125,11 +125,45 @@ function parse_type(inst::Instruction, types::SSADict{SPIRType}, results::SSADic
         &OpTypeImage => ImageType(inst, types[first(inst.arguments)])
         &OpTypeSampler => SamplerType()
         &OpTypeSampledImage => SampledImageType(types[inst.arguments[]])
-        &OpTypeArray => ArrayType(types[first(inst.arguments)], results[last(inst.arguments)])
+        &OpTypeArray => ArrayType(types[first(inst.arguments)], constants[last(inst.arguments)])
         &OpTypeRuntimeArray => ArrayType(types[inst.arguments[]], nothing)
         &OpTypeStruct => StructType([types[id] for id in inst.arguments[]])
         &OpTypeOpaque => OpaqueType(Symbol(inst.arguments[]))
         &OpTypePointer => PointerType(inst, types[last(inst.arguments)])
         _ => error("$op does not represent a SPIR-V type or the corresponding type is not implemented.")
     end
+end
+
+Instruction(inst::Instruction, id::SSAValue, ::Dictionary) = @set inst.result_id = id
+Instruction(::VoidType, id::SSAValue, ::Dictionary) = @inst id = OpTypeVoid()
+Instruction(::BooleanType, id::SSAValue, ::Dictionary) = @inst id = OpTypeBool()
+Instruction(t::IntegerType, id::SSAValue, ::Dictionary) = @inst id = OpTypeInt(UInt32(t.width), UInt32(t.signed))
+Instruction(t::FloatType, id::SSAValue, ::Dictionary) = @inst id = OpTypeFloat(UInt32(t.width))
+Instruction(t::VectorType, id::SSAValue, id_map::Dictionary) = @inst id = OpTypeVector(id_map[t.eltype], UInt32(t.n))
+Instruction(t::MatrixType, id::SSAValue, id_map::Dictionary) = @inst id = OpTypeMatrix(id_map[t.eltype], UInt32(t.n))
+function Instruction(t::ImageType, id::SSAValue, id_map::Dictionary)
+    inst = @inst id = OpTypeImage(id_map[t.sampled_type], t.dim, UInt32(something(t.depth, 2)), UInt32(t.arrayed), UInt32(t.multisampled), UInt32(something(t.sampled, 2)), t.format)
+    !isnothing(t.access_qualifier) && push!(inst.arguments, t.access_qualifier)
+    inst
+end
+Instruction(t::SamplerType, id::SSAValue, ::Dictionary) = @inst id = OpTypeSampler()
+Instruction(t::SampledImageType, id::SSAValue, id_map::Dictionary) = @inst id = OpTypeSampledImage(id_map[t.image_type])
+function Instruction(t::ArrayType, id::SSAValue, id_map::Dictionary)
+    if isnothing(t.size)
+        @inst id = OpTypeRuntimeArray(id_map[t.eltype])
+    else
+        @inst id = OpTypeArray(id_map[t.eltype], id_map[t.size::Instruction])
+    end
+end
+function Instruction(t::StructType, id::SSAValue, id_map::Dictionary)
+    inst = @inst id = OpTypeStruct()
+    append!(inst.arguments, id_map[member] for member in t.members)
+    inst
+end
+Instruction(t::OpaqueType, id::SSAValue, ::Dictionary) = @inst id = OpTypeOpaque(t.name)
+Instruction(t::PointerType, id::SSAValue, id_map::Dictionary) = @inst id = OpTypePointer(t.storage_class, id_map[t.type])
+function Instruction(t::FunctionType, id::SSAValue, id_map::Dictionary)
+    inst = @inst id = OpTypeFunction(t.rettype)
+    append!(inst.arguments, t.argtypes)
+    inst
 end
