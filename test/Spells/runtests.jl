@@ -7,4 +7,5 @@ spirv_file(filename) = joinpath(@__DIR__, "resources", filename * ".spv")
     include("deltagraph.jl")
     include("reflection.jl")
     include("restructuring.jl")
+    include("compile.jl")
 end
