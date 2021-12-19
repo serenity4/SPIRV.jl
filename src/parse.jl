@@ -249,6 +249,8 @@ end
 Module(mod::PhysicalModule) = Module(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, Instruction.(mod.instructions))
 Module(source) = Module(PhysicalModule(source))
 
+@forward Module.instructions (Base.iterate,)
+
 function spirv_version(word)
     major = (word & 0x00ff0000) >> 16
     minor = (word & 0x0000ff00) >> 8

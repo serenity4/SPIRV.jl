@@ -69,7 +69,7 @@ mutable struct IR
     max_ssa_id::SSAValue
 end
 
-function IR(meta::Metadata, addressing_model::AddressingModel, memory_model::MemoryModel)
+function IR(meta::Metadata, addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
     IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), nothing, 0)
 end
 
@@ -95,7 +95,7 @@ function IR(mod::Module)
     names = SSADict{Symbol}()
     lines = SSADict{LineInfo}()
 
-    for (i, inst) ∈ enumerate(mod.instructions)
+    for inst in mod
         (; arguments, type_id, result_id, opcode) = inst
         class, info = classes[opcode]
         @tryswitch class begin
