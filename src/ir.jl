@@ -103,13 +103,11 @@ function IR(mod::Module)
                         push!(ir.entry_points[id].modes, inst)
                 end
             @case & :Extension
-                @switch opcode begin
+                @tryswitch opcode begin
                     @case &OpExtension
                         push!(ir.extensions, Symbol(arguments[1]))
                     @case &OpExtInstImport
                         insert!(ir.extinst_imports, result_id, Symbol(arguments[1]))
-                    @case &OpExtInst
-                        nothing
                 end
             @case & :Debug
                 @tryswitch opcode begin
