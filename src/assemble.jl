@@ -101,7 +101,7 @@ function assemble!(words, mod::PhysicalModule)
         mod.schema,
     ])
 
-    foreach(mod.instructions) do inst
+    for inst in mod.instructions
         assemble!(words, inst)
     end
 

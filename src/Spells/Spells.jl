@@ -16,18 +16,13 @@ using Accessors: @set, setproperties
 const Optional{T} = Union{Nothing, T}
 const magic_number = 0x12349876
 
-# include("types.jl")
-# include("emit/types.jl")
-# include("emit/cfg_constructs.jl")
-# include("emit/functions.jl")
-
-include("graph.jl")
+include("deltagraph.jl")
 include("interpreter.jl")
 include("cfg.jl")
 include("basicblocks.jl")
 include("reflection.jl")
 include("restructuring.jl")
-include("emit/intrinsics.jl")
+include("intrinsics.jl")
 include("compile.jl")
 
 export
