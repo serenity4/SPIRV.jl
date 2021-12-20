@@ -26,11 +26,6 @@ include("intrinsics.jl")
 include("compile.jl")
 
 export
-        Context,
-        Func,
-        PrimitiveType,
-        CompositeType,
-
         CFG,
         is_single_entry_single_exit,
         is_tail_structured,

@@ -96,7 +96,7 @@ macro tryswitch(val, ex)
     esc(res)
 end
 
-function merge_unique!(dict::AbstractDictionary, ds::AbstractDictionary...)
+function merge_unique!(dict::AbstractDictionary, ds...)
     for d in ds
         for (k, v) in pairs(d)
             insert!(dict, k, v)

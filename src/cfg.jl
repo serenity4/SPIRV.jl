@@ -1,5 +1,3 @@
-block_index(f::FunctionDefinition, id::SSAValue) = findfirst(==(id), collect(keys(f.blocks)))
-
 function control_flow_graph(f::FunctionDefinition)
     cfg = SimpleDiGraph(length(f.blocks))
     for (i, block) in enumerate(f.blocks)
@@ -23,3 +21,5 @@ function control_flow_graph(f::FunctionDefinition)
     end
     cfg
 end
+
+block_index(f::FunctionDefinition, id::SSAValue) = findfirst(==(id), collect(keys(f.blocks)))

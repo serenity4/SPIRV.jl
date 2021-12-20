@@ -90,7 +90,13 @@ end
 
 const DecorationData = Dictionary{Decoration,Vector{Any}}
 
-@auto_hash_equals struct StructType <: SPIRType
+"""
+SPIR-V aggregate type.
+
+Equality is defined in terms of identity, since different aggregate
+types have in principle different semantics.
+"""
+mutable struct StructType <: SPIRType
     members::Vector{SPIRType}
     member_decorations::Dictionary{Int,DecorationData}
     member_names::Dictionary{Int,Symbol}
@@ -111,11 +117,11 @@ struct Constant
 end
 
 @auto_hash_equals struct FunctionType <: SPIRType
-    rettype::SSAValue
-    argtypes::Vector{SSAValue}
+    rettype::SPIRType
+    argtypes::Vector{SPIRType}
 end
 
-function Base.parse(::Type{SPIRType}, inst::Instruction, types::SSADict{SPIRType}, constants::SSADict{Instruction})
+function Base.parse(::Type{SPIRType}, inst::Instruction, types::BijectiveMapping, constants::SSADict{Instruction})
     @match op = inst.opcode begin
         &OpTypeVoid => VoidType()
         &OpTypeInt => IntegerType(inst)
@@ -164,7 +170,7 @@ end
 Instruction(t::OpaqueType, id::SSAValue, ::Dictionary) = @inst id = OpTypeOpaque(t.name)
 Instruction(t::PointerType, id::SSAValue, id_map::Dictionary) = @inst id = OpTypePointer(t.storage_class, id_map[t.type])
 function Instruction(t::FunctionType, id::SSAValue, id_map::Dictionary)
-    inst = @inst id = OpTypeFunction(t.rettype)
-    append!(inst.arguments, t.argtypes)
+    inst = @inst id = OpTypeFunction(id_map[t.rettype])
+    append!(inst.arguments, id_map[argtype] for argtype in t.argtypes)
     inst
 end

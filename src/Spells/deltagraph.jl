@@ -9,7 +9,6 @@ Graph whose vertices and edges remain identical after deletion of other vertices
     vertices::Vector{T}
     fadjlist::Vector{Vector{T}}
     badjlist::Vector{Vector{T}}
-    # delta_verts::Vector{T}
 end
 
 Base.broadcastable(dg::DeltaGraph) = Ref(dg)

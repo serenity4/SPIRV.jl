@@ -155,7 +155,7 @@ Parsed SPIR-V instruction. It represents an instruction of the form `%result_id 
     type_id::Optional{SSAValue}
     result_id::Optional{SSAValue}
     arguments::Vector{Any}
-    Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(convert(OpCode, opcode), convert(Optional{SSAValue}, type_id), convert(Optional{SSAValue}, result_id), convert(Vector{Any}, arguments))
+    Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(opcode, type_id, result_id, arguments)
 end
 Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
 

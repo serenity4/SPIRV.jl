@@ -64,7 +64,7 @@ mutable struct IR
     memory_model::MemoryModel
     entry_points::SSADict{EntryPoint}
     decorations::SSADict{DecorationData}
-    types::SSADict{SPIRType}
+    types::BijectiveMapping{SSAValue,SPIRType}
     "Constants, including specialization constants."
     constants::SSADict{Instruction}
     global_vars::SSADict{Variable}
@@ -74,7 +74,7 @@ mutable struct IR
 end
 
 function IR(meta::Metadata, addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
-    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), SSADict(), DebugInfo())
+    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), BijectiveMapping(), SSADict(), SSADict(), SSADict(), SSADict(), DebugInfo())
 end
 
 function IR(mod::Module)
@@ -151,8 +151,8 @@ function IR(mod::Module)
             @case & Symbol("Type-Declaration")
                 @switch opcode begin
                     @case &OpTypeFunction
-                        rettype = first(arguments)
-                        argtypes = arguments[2:end]
+                        rettype = types[first(arguments)]
+                        argtypes = [types[id] for id in arguments[2:end]]
                         insert!(types, result_id, FunctionType(rettype, argtypes))
                     @case _
                         insert!(types, result_id, parse(SPIRType, inst, types, ir.constants))
@@ -170,8 +170,8 @@ function IR(mod::Module)
             @case & :Function
                 @tryswitch opcode begin
                     @case &OpFunction
-                        control, type = arguments
-                        current_function = FunctionDefinition(type, control, [], SSADict())
+                        control, ftype = arguments
+                        current_function = FunctionDefinition(types[ftype], control, [], SSADict())
                         insert!(ir.fdefs, result_id, current_function)
                     @case &OpFunctionParameter
                         push!(current_function.args, result_id)
@@ -298,10 +298,9 @@ end
 
 function instructions(ir::IR, fdef::FunctionDefinition, id::SSAValue)
     insts = Instruction[]
-    type_id = fdef.type
-    type = ir.types[type_id]
-    push!(insts, @inst id = OpFunction(fdef.control, type_id)::type.rettype)
-    append!(insts, @inst(id = OpFunctionParameter()::argtype) for (id, argtype) in zip(fdef.args, type.argtypes))
+    (; type) = fdef
+    push!(insts, @inst id = OpFunction(fdef.control, ir.types[type])::ir.types[type.rettype])
+    append!(insts, @inst(id = OpFunctionParameter()::ir.types[argtype]) for (id, argtype) in zip(fdef.args, type.argtypes))
     append!(insts, body(fdef))
     push!(insts, @inst OpFunctionEnd())
     insts

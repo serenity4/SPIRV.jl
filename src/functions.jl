@@ -4,7 +4,7 @@
 end
 
 struct FunctionDefinition
-    type::SSAValue
+    type::FunctionType
     control::FunctionControl
     args::Vector{SSAValue}
     blocks::SSADict{Block}
