@@ -79,6 +79,7 @@ end
 
 function IR(mod::Module)
     member_decorations = SSADict{Dictionary{Int,DecorationData}}()
+    member_names = SSADict{Dictionary{Int,Symbol}}()
     current_function = nothing
 
     ir = IR(Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema))
@@ -95,7 +96,7 @@ function IR(mod::Module)
                     @case &OpMemoryModel
                         ir.addressing_model, ir.memory_model = arguments
                     @case &OpEntryPoint
-                        model, id, name, interfaces = arguments
+                        model, id, name, interfaces... = arguments
                         insert!(ir.entry_points, id, EntryPoint(Symbol(name), id, model, [], interfaces))
                     @case &OpExecutionMode || &OpExecutionModeId
                         id = arguments[1]
@@ -130,13 +131,11 @@ function IR(mod::Module)
                         push!(debug.source.extensions, Symbol(arguments[1]))
                     @case &OpName
                         id, name = arguments
-                        if !isempty(name)
-                            insert!(debug.names, id, Symbol(name))
-                        end
+                        insert!(debug.names, id, Symbol(name))
                     @case &OpMemberName
                         id, mindex, name = arguments
                         #TODO: add member name
-                        nothing
+                        insert!(get!(Dictionary, member_names, id), mindex + 1, Symbol(name))
                 end
             @case & :Annotation
                 @tryswitch opcode begin
@@ -156,7 +155,7 @@ function IR(mod::Module)
                 @switch opcode begin
                     @case &OpTypeFunction
                         rettype = first(arguments)
-                        argtypes = length(arguments) == 2 ? arguments[2] : SSAValue[]
+                        argtypes = arguments[2:end]
                         insert!(types, result_id, FunctionType(rettype, argtypes))
                     @case _
                         insert!(types, result_id, parse(SPIRType, inst, types, ir.constants))
@@ -198,6 +197,7 @@ function IR(mod::Module)
 
     merge!(results, ir.extinst_imports)
     attach_member_decorations!(ir, member_decorations)
+    attach_member_names!(ir, member_names)
     ir
 end
 
@@ -210,15 +210,27 @@ Member decorations are attached separately because they use forward references t
 """
 function attach_member_decorations!(ir::IR, member_decorations::SSADict{Dictionary{Int,DecorationData}})
     for (id, decs) in pairs(member_decorations)
+        type = ir.types[id]
+        isa(type, StructType) || error("Unsupported member decoration on non-struct type $type")
         for (member, decs) in pairs(decs)
             for (dec, args) in pairs(decs)
-                type = ir.types[id]
-                if type isa StructType
-                    insert!(get!(DecorationData, type.member_decorations, member), dec, args)
-                else
-                    error("Unsupported member decoration on non-struct type $type")
-                end
+                insert!(get!(DecorationData, type.member_decorations, member), dec, args)
             end
+        end
+    end
+end
+
+"""
+Attach member names to SPIR-V aggregate types (see [`StructType`](@ref)).
+
+Member names are attached separately because they use forward references to decorated types.
+"""
+function attach_member_names!(ir::IR, member_names::SSADict{Dictionary{Int,Symbol}})
+    for (id, names) in pairs(member_names)
+        type = ir.types[id]
+        isa(type, StructType) || error("Unsupported member name declaration on non-struct type $type")
+        for (member, name) in pairs(names)
+            insert!(type.member_names, member, name)
         end
     end
 end
@@ -230,7 +242,10 @@ function Module(ir::IR)
     append!(insts, @inst(OpExtension(ext)) for ext in ir.extensions)
     append!(insts, @inst(id = OpExtInstImport(string(extinst))) for (id, extinst) in pairs(ir.extinst_imports))
     push!(insts, @inst OpMemoryModel(ir.addressing_model, ir.memory_model))
-    append!(insts, @inst(OpEntryPoint(entry.model, entry.func, string(entry.name), entry.interfaces)) for entry in ir.entry_points)
+    for entry in ir.entry_points
+        push!(insts, @inst OpEntryPoint(entry.model, entry.func, string(entry.name), entry.interfaces...))
+        append!(insts, entry.modes)
+    end
     append_debug_instructions!(insts, ir)
     append_annotations!(insts, ir)
     append_globals!(insts, ir)
@@ -257,6 +272,14 @@ function append_debug_instructions!(insts, ir::IR)
     for (id, name) in pairs(debug.names)
         push!(insts, @inst OpName(id, string(name)))
     end
+
+    for (id, type) in pairs(ir.types)
+        if type isa StructType
+            for (member, name) in pairs(type.member_names)
+                push!(insts, @inst OpMemberName(id, UInt32(member - 1), string(name)))
+            end
+        end
+    end
 end
 
 function append_annotations!(insts, ir::IR)
@@ -265,7 +288,7 @@ function append_annotations!(insts, ir::IR)
     end
     for (id, type) in pairs(ir.types)
         if type isa StructType
-            append!(insts, @inst(OpMemberDecorate(id, member - UInt32(1), dec, args...)) for (member, decs) in pairs(type.member_decorations) for (dec, args) in pairs(decs))
+            append!(insts, @inst(OpMemberDecorate(id, UInt32(member - 1), dec, args...)) for (member, decs) in pairs(type.member_decorations) for (dec, args) in pairs(decs))
         end
     end
 end
@@ -300,17 +323,22 @@ function Instruction(var::Variable, id::SSAValue, id_map::Dictionary)
     inst
 end
 
+function replace_name(id, names)
+    repl = string(get(names, parse(SSAValue, id), ""))
+    isempty(repl) ? id : repl
+end
+
 function show(io::IO, mime::MIME"text/plain", ir::IR)
     mod = Module(ir)
     isnothing(ir.debug) && return show(io, mime, mod)
     str = sprint(disassemble, mod; context = :color => true)
     lines = split(str, '\n')
     filter!(lines) do line
-        !contains(line, "OpName")
+        !contains(line, "OpName") && !contains(line, "OpMemberName")
     end
     lines = map(lines) do line
-        replace(line, r"(?<=%)\d+" => id -> string(get(ir.debug.filenames, parse(SSAValue, id), id)))
-        replace(line, r"(?<=%)\d+" => id -> string(get(ir.debug.names, parse(SSAValue, id), id)))
+        replace(line, r"(?<=%)\d+" => id -> replace_name(id, ir.debug.filenames))
+        replace(line, r"(?<=%)\d+" => id -> replace_name(id, ir.debug.names))
     end
     print(io, join(lines, '\n'))
 end

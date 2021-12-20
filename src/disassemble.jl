@@ -8,11 +8,11 @@ function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
 
     !isempty(inst.arguments) && print(io, '(')
 
-    arginfo = collect(zip(inst.arguments, operand_kinds(inst)))
-    !isempty(arginfo) && emit_argument(io, popfirst!(arginfo)...)
-    while !isempty(arginfo)
-        print(io, ", ")
-        emit_argument(io, popfirst!(arginfo)...)
+    isfirst = true
+    for (arg, info) in zip(inst.arguments, info(inst))
+        !isfirst && print(io, ", ")
+        isfirst = false
+        emit_argument(io, arg, info.kind)
     end
 
     !isempty(inst.arguments) && print(io, ')')

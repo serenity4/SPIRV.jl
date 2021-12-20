@@ -39,10 +39,9 @@ modules = [
         cfg = control_flow_graph(f1)
         @test nv(cfg) == length(f1.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f1)))
         mod2 = SPIRV.Module(ir)
-        pmod2 = PhysicalModule(mod2)
-        # FIXME: handle OpMemberName instructions, and possibly more things that are currently not reconstructed
-        @test_broken SPIRV.Module(pmod2) == mod2
+        @test SPIRV.Module(PhysicalModule(mod2)) == mod2
         @test validate(ir)
+        @test mod2 ≈ mod
 
         mod = SPIRV.Module(resource("comp.spv"))
         ir = IR(mod)
@@ -51,9 +50,9 @@ modules = [
         @test nv(cfg) == length(f2.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f2)))
         mod2 = SPIRV.Module(ir)
         pmod2 = PhysicalModule(mod2)
-        # FIXME: handle OpMemberName instructions, and possibly more things that are currently not reconstructed
-        @test_broken SPIRV.Module(pmod2) == mod2
+        @test SPIRV.Module(PhysicalModule(mod2)) == mod2
         @test validate(ir)
+        @test mod2 ≈ mod
     end
 end
 

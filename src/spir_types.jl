@@ -40,7 +40,7 @@ function MatrixType(inst::Instruction, eltype::VectorType)
     MatrixType(eltype, last(inst.arguments))
 end
 
-struct ImageType <: SPIRType
+@auto_hash_equals struct ImageType <: SPIRType
     sampled_type::SPIRType
     dim::Dim
     format::ImageFormat
@@ -90,12 +90,13 @@ end
 
 const DecorationData = Dictionary{Decoration,Vector{Any}}
 
-struct StructType <: SPIRType
+@auto_hash_equals struct StructType <: SPIRType
     members::Vector{SPIRType}
-    member_decorations::Dictionary{UInt32,DecorationData}
+    member_decorations::Dictionary{Int,DecorationData}
+    member_names::Dictionary{Int,Symbol}
 end
 
-StructType(members::AbstractVector) = StructType(members, Dictionary())
+StructType(members::AbstractVector) = StructType(members, Dictionary(), Dictionary())
 
 struct PointerType <: SPIRType
     storage_class::StorageClass
@@ -109,7 +110,7 @@ struct Constant
     is_spec_const::Bool
 end
 
-struct FunctionType <: SPIRType
+@auto_hash_equals struct FunctionType <: SPIRType
     rettype::SSAValue
     argtypes::Vector{SSAValue}
 end
@@ -127,7 +128,7 @@ function Base.parse(::Type{SPIRType}, inst::Instruction, types::SSADict{SPIRType
         &OpTypeSampledImage => SampledImageType(types[inst.arguments[]])
         &OpTypeArray => ArrayType(types[first(inst.arguments)], constants[last(inst.arguments)])
         &OpTypeRuntimeArray => ArrayType(types[inst.arguments[]], nothing)
-        &OpTypeStruct => StructType([types[id] for id in inst.arguments[]])
+        &OpTypeStruct => StructType([types[id] for id in inst.arguments])
         &OpTypeOpaque => OpaqueType(Symbol(inst.arguments[]))
         &OpTypePointer => PointerType(inst, types[last(inst.arguments)])
         _ => error("$op does not represent a SPIR-V type or the corresponding type is not implemented.")

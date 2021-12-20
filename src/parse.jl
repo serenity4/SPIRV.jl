@@ -165,10 +165,17 @@ Information regarding the arguments of an `Instruction`, including extra operand
 function info(inst::Instruction, skip_ids::Bool = true)
     op_infos = copy(info(inst.opcode))
 
+    # Repeat the last info if there is a variable number of arguments.
+    if !isempty(op_infos)
+        linfo = last(op_infos)
+        if get(linfo, :quantifier, "") == "*"
+            append!(op_infos, linfo for _ in 1:(length(inst.arguments) - 1))
+        end
+    end
+
     # Add extra operands.
     for (i, arg) in enumerate(inst.arguments)
-        # Clamp to last info `min` to handle a variable number of arguments ('*').
-        info = op_infos[min(lastindex(op_infos), i)]
+        info = op_infos[i]
         category = kind_to_category[info.kind]
         update_infos!(op_infos, i, arg, category)
     end
@@ -179,7 +186,6 @@ end
 function Instruction(inst::PhysicalInstruction)
     opcode = OpCode(inst.opcode)
     op_infos = copy(info(inst))
-    op_kinds = operand_kinds(inst)
     operands = inst.operands
 
     arguments = []
@@ -193,7 +199,7 @@ function Instruction(inst::PhysicalInstruction)
             if quantifier == "*"
                 arg = operands[i:end]
                 category == "Id" && (arg = SSAValue.(arg))
-                push!(arguments, arg)
+                append!(arguments, arg)
                 break
             elseif quantifier == "?"
                 error("Unhandled '?' quantifier")
@@ -249,6 +255,8 @@ end
 
 Module(mod::PhysicalModule) = Module(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, Instruction.(mod.instructions))
 Module(source) = Module(PhysicalModule(source))
+
+Base.isapprox(mod1::Module, mod2::Module) = mod1.bound == mod2.bound && mod1.generator_magic_number == mod2.generator_magic_number && mod1.magic_number == mod2.magic_number && mod1.schema == mod2.schema && mod1.version == mod2.version && Set(mod1.instructions) == Set(mod2.instructions)
 
 @forward Module.instructions (Base.iterate,)
 
