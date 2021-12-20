@@ -132,7 +132,6 @@ function IR(mod::Module)
                         insert!(debug.names, id, Symbol(name))
                     @case &OpMemberName
                         id, mindex, name = arguments
-                        #TODO: add member name
                         insert!(get!(Dictionary, member_names, id), mindex + 1, Symbol(name))
                 end
             @case & :Annotation
