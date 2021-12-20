@@ -121,7 +121,7 @@ end
     argtypes::Vector{SPIRType}
 end
 
-function Base.parse(::Type{SPIRType}, inst::Instruction, types::BijectiveMapping, constants::SSADict{Instruction})
+function Base.parse(::Type{SPIRType}, inst::Instruction, types::BijectiveMapping, constants::BijectiveMapping)
     @match op = inst.opcode begin
         &OpTypeVoid => VoidType()
         &OpTypeInt => IntegerType(inst)
@@ -141,36 +141,36 @@ function Base.parse(::Type{SPIRType}, inst::Instruction, types::BijectiveMapping
     end
 end
 
-Instruction(inst::Instruction, id::SSAValue, ::Dictionary) = @set inst.result_id = id
-Instruction(::VoidType, id::SSAValue, ::Dictionary) = @inst id = OpTypeVoid()
-Instruction(::BooleanType, id::SSAValue, ::Dictionary) = @inst id = OpTypeBool()
-Instruction(t::IntegerType, id::SSAValue, ::Dictionary) = @inst id = OpTypeInt(UInt32(t.width), UInt32(t.signed))
-Instruction(t::FloatType, id::SSAValue, ::Dictionary) = @inst id = OpTypeFloat(UInt32(t.width))
-Instruction(t::VectorType, id::SSAValue, id_map::Dictionary) = @inst id = OpTypeVector(id_map[t.eltype], UInt32(t.n))
-Instruction(t::MatrixType, id::SSAValue, id_map::Dictionary) = @inst id = OpTypeMatrix(id_map[t.eltype], UInt32(t.n))
-function Instruction(t::ImageType, id::SSAValue, id_map::Dictionary)
-    inst = @inst id = OpTypeImage(id_map[t.sampled_type], t.dim, UInt32(something(t.depth, 2)), UInt32(t.arrayed), UInt32(t.multisampled), UInt32(something(t.sampled, 2)), t.format)
+Instruction(inst::Instruction, id::SSAValue, ::BijectiveMapping) = @set inst.result_id = id
+Instruction(::VoidType, id::SSAValue, ::BijectiveMapping) = @inst id = OpTypeVoid()
+Instruction(::BooleanType, id::SSAValue, ::BijectiveMapping) = @inst id = OpTypeBool()
+Instruction(t::IntegerType, id::SSAValue, ::BijectiveMapping) = @inst id = OpTypeInt(UInt32(t.width), UInt32(t.signed))
+Instruction(t::FloatType, id::SSAValue, ::BijectiveMapping) = @inst id = OpTypeFloat(UInt32(t.width))
+Instruction(t::VectorType, id::SSAValue, globals::BijectiveMapping) = @inst id = OpTypeVector(globals[t.eltype], UInt32(t.n))
+Instruction(t::MatrixType, id::SSAValue, globals::BijectiveMapping) = @inst id = OpTypeMatrix(globals[t.eltype], UInt32(t.n))
+function Instruction(t::ImageType, id::SSAValue, globals::BijectiveMapping)
+    inst = @inst id = OpTypeImage(globals[t.sampled_type], t.dim, UInt32(something(t.depth, 2)), UInt32(t.arrayed), UInt32(t.multisampled), UInt32(something(t.sampled, 2)), t.format)
     !isnothing(t.access_qualifier) && push!(inst.arguments, t.access_qualifier)
     inst
 end
-Instruction(t::SamplerType, id::SSAValue, ::Dictionary) = @inst id = OpTypeSampler()
-Instruction(t::SampledImageType, id::SSAValue, id_map::Dictionary) = @inst id = OpTypeSampledImage(id_map[t.image_type])
-function Instruction(t::ArrayType, id::SSAValue, id_map::Dictionary)
+Instruction(t::SamplerType, id::SSAValue, ::BijectiveMapping) = @inst id = OpTypeSampler()
+Instruction(t::SampledImageType, id::SSAValue, globals::BijectiveMapping) = @inst id = OpTypeSampledImage(globals[t.image_type])
+function Instruction(t::ArrayType, id::SSAValue, globals::BijectiveMapping)
     if isnothing(t.size)
-        @inst id = OpTypeRuntimeArray(id_map[t.eltype])
+        @inst id = OpTypeRuntimeArray(globals[t.eltype])
     else
-        @inst id = OpTypeArray(id_map[t.eltype], id_map[t.size::Instruction])
+        @inst id = OpTypeArray(globals[t.eltype], globals[t.size::Instruction])
     end
 end
-function Instruction(t::StructType, id::SSAValue, id_map::Dictionary)
+function Instruction(t::StructType, id::SSAValue, globals::BijectiveMapping)
     inst = @inst id = OpTypeStruct()
-    append!(inst.arguments, id_map[member] for member in t.members)
+    append!(inst.arguments, globals[member] for member in t.members)
     inst
 end
-Instruction(t::OpaqueType, id::SSAValue, ::Dictionary) = @inst id = OpTypeOpaque(t.name)
-Instruction(t::PointerType, id::SSAValue, id_map::Dictionary) = @inst id = OpTypePointer(t.storage_class, id_map[t.type])
-function Instruction(t::FunctionType, id::SSAValue, id_map::Dictionary)
-    inst = @inst id = OpTypeFunction(id_map[t.rettype])
-    append!(inst.arguments, id_map[argtype] for argtype in t.argtypes)
+Instruction(t::OpaqueType, id::SSAValue, ::BijectiveMapping) = @inst id = OpTypeOpaque(t.name)
+Instruction(t::PointerType, id::SSAValue, globals::BijectiveMapping) = @inst id = OpTypePointer(t.storage_class, globals[t.type])
+function Instruction(t::FunctionType, id::SSAValue, globals::BijectiveMapping)
+    inst = @inst id = OpTypeFunction(globals[t.rettype])
+    append!(inst.arguments, globals[argtype] for argtype in t.argtypes)
     inst
 end

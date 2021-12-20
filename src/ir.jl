@@ -66,15 +66,15 @@ mutable struct IR
     decorations::SSADict{DecorationData}
     types::BijectiveMapping{SSAValue,SPIRType}
     "Constants, including specialization constants."
-    constants::SSADict{Instruction}
-    global_vars::SSADict{Variable}
+    constants::BijectiveMapping{SSAValue,Instruction}
+    global_vars::BijectiveMapping{SSAValue,Variable}
     fdefs::SSADict{FunctionDefinition}
     results::SSADict{Any}
     debug::DebugInfo
 end
 
 function IR(meta::Metadata, addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
-    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), BijectiveMapping(), SSADict(), SSADict(), SSADict(), SSADict(), DebugInfo())
+    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), SSADict(), DebugInfo())
 end
 
 function IR(mod::Module)
@@ -307,13 +307,12 @@ function instructions(ir::IR, fdef::FunctionDefinition, id::SSAValue)
 end
 
 function append_globals!(insts, ir::IR)
-    globals = merge_unique!(SSADict(), ir.types, ir.constants, ir.global_vars)
+    globals = merge_unique!(BijectiveMapping{SSAValue,Any}(), ir.types, ir.constants, ir.global_vars)
     sortkeys!(globals)
-    id_map = Dictionary(values(globals), keys(globals))
-    append!(insts, Instruction(val, id, id_map) for (id, val) in pairs(globals))
+    append!(insts, Instruction(val, id, globals) for (id, val) in pairs(globals))
 end
 
-function Instruction(var::Variable, id::SSAValue, id_map::Dictionary)
+function Instruction(var::Variable, id::SSAValue, id_map::BijectiveMapping)
     inst = @inst id = OpVariable(var.storage_class)::id_map[var.type]
     !isnothing(var.initializer) && push!(inst.arguments, var.initializer)
     inst
