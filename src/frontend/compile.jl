@@ -1,17 +1,41 @@
 function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
     original = CFG(f, argtypes)
     inferred = infer!(original)
-    SPIRV.Module(inferred)
+    ir = IR(inferred)
+    PhysicalModule(Module(ir))
 end
 
-function SPIRV.Module(cfg::CFG)
-    ir = IR(Metadata(SPIRV.magic_number, magic_number, v"1", 0))
-    emit!(ir, cfg)
+IR() = IR(Metadata(magic_number, generator_magic_number, v"1", 0))
+IR(cfg::CFG) = emit!(IR(), cfg)
+
+struct IRMapping
+    args::Dictionary{Core.Argument,SSAValue}
+    "SPIR-V SSA values for basic blocks from Julia IR."
+    bbs::Dictionary{Int,SSAValue}
+    "SPIR-V SSA values that correspond semantically to `Core.SSAValue`s."
+    ssavals::Dictionary{Core.SSAValue,SSAValue}
+    types::Dictionary{Type,SSAValue}
 end
+
+IRMapping() = IRMapping(Dictionary(), Dictionary(), Dictionary(), Dictionary())
+
+SSAValue(arg::Core.Argument, irmap::IRMapping) = irmap.args[arg]
+SSAValue(bb::Int, irmap::IRMapping) = irmap.bbs[bb]
+SSAValue(ssaval::Core.SSAValue, irmap::IRMapping) = irmap.ssavals[ssaval]
 
 function emit!(ir::IR, cfg::CFG)
     ftype = FunctionType(cfg.mi)
     fdef = FunctionDefinition(ftype, FunctionControlNone, [], SSADict())
+    irmap = IRMapping()
+    emit!(ir, irmap, ftype)
+    insert!(ir.fdefs, next!(ir.ssacounter), fdef)
+    for n in eachindex(ftype.argtypes)
+        id = next!(ir.ssacounter)
+        insert!(irmap.args, Core.Argument(n + 1), id)
+        push!(fdef.args, id)
+    end
+    emit!(fdef, ir, irmap, cfg)
+    ir
 end
 
 function FunctionType(mi::MethodInstance)
@@ -19,37 +43,131 @@ function FunctionType(mi::MethodInstance)
     FunctionType(SPIRType(mi.cache.rettype), argtypes)
 end
 
-function SPIRType(@nospecialize(t::Type))
-    @match t begin
-        &Float16 => FloatType(16)
-        &Float32 => FloatType(32)
-        &Float64 => FloatType(64)
-        &Nothing => VoidType()
-        &Bool => BooleanType()
-        &UInt8 => IntegerType(8, false)
-        &UInt16 => IntegerType(16, false)
-        &UInt32 => IntegerType(32, false)
-        &UInt64 => IntegerType(64, false)
-        &Int8 => IntegerType(8, true)
-        &Int16 => IntegerType(16, true)
-        &Int32 => IntegerType(32, true)
-        &Int64 => IntegerType(64, true)
-        ::Type{<:Array} => begin
-            eltype, n = t.parameters
-            @match n begin
-                1 => ArrayType(SPIRType(eltype), nothing)
-                _ => ArrayType(SPIRType(Array{eltype,n-1}), nothing)
+function emit!(ir::IR, irmap::IRMapping, type::FunctionType)
+    emit!(ir, irmap, type.rettype)
+    for t in type.argtypes
+        emit!(ir, irmap, t)
+    end
+    insert!(ir.types, next!(ir.ssacounter), type)
+end
+
+function emit!(ir::IR, irmap::IRMapping, @nospecialize(type::SPIRType))
+    !haskey(ir.types.backward, type) || return ir.types[type]
+
+    @switch type begin
+        @case ::PointerType
+            emit!(ir, irmap, type.type)
+        @case (::ArrayType && GuardBy(isnothing ∘ Base.Fix2(getproperty, :size))) || ::VectorType || ::MatrixType
+            emit!(ir, irmap, type.eltype)
+        @case ::ArrayType
+            emit!(ir, irmap, type.eltype)
+            emit!(ir, irmap, type.size)
+        @case ::StructType
+            for t in type.members
+                emit!(ir, irmap, t)
             end
+        @case ::ImageType
+            emit!(ir, irmap, type.sampled_type)
+        @case ::SampledImageType
+            emit!(ir, irmap, type.image_type)
+        @case ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType
+            next!(ir.ssacounter)
+    end
+
+    id = next!(ir.ssacounter)
+    insert!(ir.types, id, type)
+    id
+end
+
+function emit!(ir::IR, irmap::IRMapping, c::Constant)
+    @switch c.value begin
+        @case (::Nothing, type::SPIRType) || (::Vector{SSAValue}, type::SPIRType)
+            emit!(ir, irmap, type)
+        @case ::Bool
+            emit!(ir, irmap, BooleanType())
+        @case val
+            emit!(ir, irmap, SPIRType(typeof(val)))
+    end
+    id = next!(ir.ssacounter)
+    insert!(ir.constants, id, c)
+    id
+end
+
+function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG)
+    ranges = block_ranges(cfg)
+    for node in topological_sort_by_dfs(bfs_tree(cfg.graph, 1))
+        emit!(fdef, ir, irmap, cfg, ranges[node])
+    end
+end
+
+function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, range::UnitRange)
+    (; code) = cfg
+    blk = Block(next!(ir.ssacounter))
+    push!(blk.insts, @inst blk.id = OpLabel())
+    insert!(fdef.blocks, blk.id, blk)
+    i = first(range)
+    n = last(range)
+    while i ≤ n
+        inst = code.code[i]
+        jtype = code.ssavaluetypes[i]
+        @switch inst begin
+            # Termination instructions.
+            @case ::Core.GotoIfNot || ::Core.GotoNode || ::Core.ReturnNode
+                break
+            @case _
+                spv_inst = emit!(blk, ir, irmap, i, inst, jtype)
         end
-        ::Type{<:Tuple} => @match n = length(t.types) begin
-                GuardBy(>(1)) => begin
-                    @match t begin
-                        ::Type{<:NTuple} => ArrayType(eltype(t), Constant(n))
+        i += 1
+    end
+
+    # Process termination instructions.
+    i ≤ n || error("No termination instruction found. Last instruction: :($(code.code[n]))")
+    for inst in code.code[i:n]
+        @switch inst begin
+            @case ::Core.ReturnNode
+                spv_inst = @match inst.val begin
+                    ::Nothing => @inst OpReturn()
+                    id::Core.SSAValue => @inst OpReturnValue(irmap.ssavals[id])
+                    # Assume returned value is a literal.
+                    _ => begin
+                        c = Constant(inst.val)
+                        c_inst = emit!(ir, irmap, c)::Instruction
+                        @inst OpReturnValue(c_inst.result_id::SSAValue)
                     end
                 end
-                _ => error("Unsupported $n-element tuple type $t")
-            end
-        GuardBy(isstructtype) => StructType(SPIRType.(t.types), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
-        _ => error("Type $t does not have a corresponding SPIR-V type.")
+                emit!(blk, ir, irmap, n, spv_inst)
+            @case ::Core.GotoNode
+                emit!(blk, ir, irmap, n)
+            @case ::Core.GotoIfNot
+                nothing
+        end
+    end
+end
+
+function emit!(block::Block, ir::IR, irmap::IRMapping, i::Integer, args...)
+    emit!(block, ir, irmap, i, emit!(ir, irmap, args...))
+end
+
+function emit!(block::Block, ir::IR, irmap::IRMapping, i::Integer, inst::Instruction)
+    push!(block.insts, inst)
+    if !isnothing(inst.result_id)
+        insert!(irmap.ssavals, Core.SSAValue(i), inst.result_id)
+    end
+    inst
+end
+
+function julia_type(@nospecialize(t::SPIRType), ir::IR)
+    @match t begin
+        &(IntegerType(8, false)) => UInt8
+        &(IntegerType(16, false)) => UInt16
+        &(IntegerType(32, false)) => UInt32
+        &(IntegerType(64, false)) => UInt64
+        &(IntegerType(8, true)) => Int8
+        &(IntegerType(16, true)) => Int16
+        &(IntegerType(32, true)) => Int32
+        &(IntegerType(64, true)) => Int64
+        &(FloatType(16)) => Float16
+        &(FloatType(32)) => Float32
+        &(FloatType(64)) => Float64
     end
 end

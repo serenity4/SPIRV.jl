@@ -1,5 +1,5 @@
 using SPIRV, Test
-using SPIRV: OpFMul, OpFAdd, emit_intrinsic
+using SPIRV: OpFMul, OpFAdd
 
 function f_straightcode(x)
   y = x + 1
@@ -13,12 +13,15 @@ function f_extinst(x)
   log(z)
 end
 
-cfg = infer!(CFG(f_straightcode, Tuple{Float64}))
-
 @testset "Compilation to SPIR-V" begin
+  cfg = infer!(CFG(f_straightcode, Tuple{Float32}))
+  ir = IR(cfg)
   @testset "Intrinsics" begin
-    @test emit_intrinsic(cfg.instructions[1][1], Core.SSAValue(1), SSAValue(100)) == @inst SSAValue(1) = OpFAdd(Core.Argument(2), 1.0)::SSAValue(100)
-    @test emit_intrinsic(cfg.instructions[1][2], Core.SSAValue(2), SSAValue(100)) == @inst SSAValue(2) = OpFMul(3.0, Core.SSAValue(1))::SSAValue(100)
-    @test emit_intrinsic(cfg.instructions[1][3], Core.SSAValue(3), SSAValue(100)) == @inst SSAValue(3) = OpFMul(Core.SSAValue(2), Core.SSAValue(2))::SSAValue(100)
+    @test only(only(values(ir.fdefs)).blocks)[2] == @inst SSAValue(8) = OpFAdd(SSAValue(5), SSAValue(7))::SSAValue(2)
+    @test only(only(values(ir.fdefs)).blocks)[3] == @inst SSAValue(10) = OpFMul(SSAValue(9), SSAValue(8))::SSAValue(2)
+    @test only(only(values(ir.fdefs)).blocks)[4] == @inst SSAValue(11) = OpFMul(SSAValue(10), SSAValue(10))::SSAValue(2)
   end
+  pmod = compile(f_straightcode, Tuple{Float32})
+  @test isa(pmod, PhysicalModule)
+  @test SPIRV.Module(pmod) == SPIRV.Module(ir)
 end

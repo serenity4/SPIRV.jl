@@ -43,8 +43,8 @@ include("frontend/cfg.jl")
 include("frontend/basicblocks.jl")
 include("frontend/reflection.jl")
 include("frontend/restructuring.jl")
-include("frontend/intrinsics.jl")
 include("frontend/compile.jl")
+include("frontend/intrinsics.jl")
 
 export
         # parse

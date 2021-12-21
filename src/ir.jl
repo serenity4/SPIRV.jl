@@ -71,10 +71,11 @@ mutable struct IR
     fdefs::SSADict{FunctionDefinition}
     results::SSADict{Any}
     debug::DebugInfo
+    ssacounter::SSACounter
 end
 
 function IR(meta::Metadata, addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
-    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), SSADict(), DebugInfo())
+    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), SSADict(), DebugInfo(), SSACounter(0))
 end
 
 function IR(mod::Module)
@@ -207,10 +208,11 @@ function IR(mod::Module)
     merge!(results, ir.extinst_imports)
     attach_member_decorations!(ir, member_decorations)
     attach_member_names!(ir, member_names)
+    ir.ssacounter.val = SSAValue(maximum(id.(keys(ir.results))))
     ir
 end
 
-max_id(ir::IR) = maximum(id.(keys(ir.results)))
+max_id(ir::IR) = id(SSAValue(ir.ssacounter))
 
 """
 Attach member decorations to SPIR-V types (see [`SPIRType`](@ref)).

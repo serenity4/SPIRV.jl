@@ -21,3 +21,13 @@ Base.parse(::Type{SSAValue}, id) = SSAValue(parse(UInt32, id))
 Base.show(io::IO, val::SSAValue) = print(io, string('%', val.id))
 
 const SSADict{T} = Dictionary{SSAValue,T}
+
+mutable struct SSACounter
+    val::SSAValue
+end
+
+Base.convert(::Type{SSAValue}, counter::SSACounter) = SSAValue(counter)
+SSAValue(counter::SSACounter) = counter.val
+function next!(counter::SSACounter)
+    counter.val = SSAValue(id(counter.val) + 1)
+end

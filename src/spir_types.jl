@@ -183,23 +183,55 @@ function Instruction(c::Constant, id::SSAValue, globals::BijectiveMapping)
         (false, false) => @inst id = OpConstantFalse()::globals[BooleanType()]
         (false, true) => @inst id = OpSpecConstantFalse()::globals[BooleanType()]
         ((ids::Vector{SSAValue}, type), false) => @inst id = OpConstantComposite(ids...)::globals[type]
-        ((ids::Vector{SSAValue}, type), false) => @inst id = OpSpecConstantComposite(ids...)::globals[type]
+        ((ids::Vector{SSAValue}, type), true) => @inst id = OpSpecConstantComposite(ids...)::globals[type]
         (val, false) => @inst id = OpConstant(reinterpret(UInt32, val))::globals[SPIRType(typeof(val))]
     end
 end
 
-function julia_type(@nospecialize(t::SPIRType), ir::IR)
+function SPIRType(t::Type)
     @match t begin
-        &(IntegerType(8, false)) => UInt8
-        &(IntegerType(16, false)) => UInt16
-        &(IntegerType(32, false)) => UInt32
-        &(IntegerType(64, false)) => UInt64
-        &(IntegerType(8, true)) => Int8
-        &(IntegerType(16, true)) => Int16
-        &(IntegerType(32, true)) => Int32
-        &(IntegerType(64, true)) => Int64
-        &(FloatType(16)) => Float16
-        &(FloatType(32)) => Float32
-        &(FloatType(64)) => Float64
+        &Float16 => FloatType(16)
+        &Float32 => FloatType(32)
+        &Float64 => FloatType(64)
+        &Nothing => VoidType()
+        &Bool => BooleanType()
+        &UInt8 => IntegerType(8, false)
+        &UInt16 => IntegerType(16, false)
+        &UInt32 => IntegerType(32, false)
+        &UInt64 => IntegerType(64, false)
+        &Int8 => IntegerType(8, true)
+        &Int16 => IntegerType(16, true)
+        &Int32 => IntegerType(32, true)
+        &Int64 => IntegerType(64, true)
+        ::Type{<:Array} => begin
+            eltype, n = t.parameters
+            @match n begin
+                1 => ArrayType(SPIRType(eltype), nothing)
+                _ => ArrayType(SPIRType(Array{eltype,n-1}), nothing)
+            end
+        end
+        ::Type{<:Tuple} => @match n = length(t.types) begin
+                GuardBy(>(1)) => begin
+                    @match t begin
+                        ::Type{<:NTuple} => ArrayType(eltype(t), Constant(n))
+                    end
+                end
+                _ => error("Unsupported $n-element tuple type $t")
+            end
+        GuardBy(isstructtype) => StructType(SPIRType.(t.types), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
+        _ => error("Type $t does not have a corresponding SPIR-V type.")
+    end
+end
+
+function children(@nospecialize(type::SPIRType))
+    @match type begin
+        ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType => SPIRType[]
+        ::PointerType => [type.type]
+        (::ArrayType && GuardBy(isnothing ∘ Base.Fix2(getproperty, :size))) || ::VectorType || ::MatrixType => [type.eltype]
+        ::ArrayType => [type.eltype; children(type.size)]
+        ::StructType => type.members
+        ::ImageType => [type.sampled_type]
+        ::SampledImageType => [type.image_type]
+        ::FunctionType => [type.rettype; type.argtypes]
     end
 end

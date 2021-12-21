@@ -3,6 +3,10 @@
     insts::Vector{Instruction}
 end
 
+Block(id::SSAValue) = Block(id, [])
+
+@forward Block.insts (Base.getindex,)
+
 struct FunctionDefinition
     type::FunctionType
     control::FunctionControl
