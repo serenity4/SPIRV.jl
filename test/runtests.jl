@@ -54,6 +54,11 @@ modules = [
         @test validate(ir)
         @test mod2 ≈ mod
     end
-end
 
-include("Spells/runtests.jl")
+    @testset "Front-end" begin
+        include("frontend/deltagraph.jl")
+        include("frontend/reflection.jl")
+        include("frontend/restructuring.jl")
+        include("frontend/compile.jl")
+    end
+end

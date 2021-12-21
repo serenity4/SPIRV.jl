@@ -5,5 +5,10 @@ function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
 end
 
 function SPIRV.Module(cfg::CFG)
-    cfg
+    ir = IR(Metadata(SPIRV.magic_number, magic_number, v"1", 0))
+    emit!(ir, cfg)
+end
+
+function emit!(ir::IR, cfg::CFG)
+    fdef = FunctionDefinition()
 end

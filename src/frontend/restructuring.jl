@@ -23,7 +23,7 @@ function merge_return_blocks(cfg::CFG)
     b = Builder(cfg.code)
     new_block = last(vertices(cfg.graph)) + 1
     rvals = []
-    redges = Variable[]
+    redges = Core.SSAValue[]
     for (v, st) in b
         @switch st begin
             @case ::Core.ReturnNode
@@ -38,7 +38,7 @@ function merge_return_blocks(cfg::CFG)
         b[v] = Core.GotoNode(phi_id)
     end
     push!(b, Core.PhiNode(Int32.(getproperty.(redges, :id)), rvals))
-    push!(b, Core.ReturnNode(Variable(phi_id)))
+    push!(b, Core.ReturnNode(Core.SSAValue(phi_id)))
     code = finish(b)
     CFG(cfg.mi, code)
 end

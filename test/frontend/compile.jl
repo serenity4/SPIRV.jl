@@ -1,6 +1,5 @@
 using SPIRV, Test
-using .Spells: emit_intrinsic
-using SPIRV: OpFMul, OpFAdd
+using SPIRV: OpFMul, OpFAdd, emit_intrinsic
 
 function f_straightcode(x)
   y = x + 1
@@ -14,7 +13,7 @@ function f_extinst(x)
   log(z)
 end
 
-cfg = compile(f_straightcode, Tuple{Float64})
+cfg = infer!(CFG(f_straightcode, Tuple{Float64}))
 
 @testset "Compilation to SPIR-V" begin
   @testset "Intrinsics" begin

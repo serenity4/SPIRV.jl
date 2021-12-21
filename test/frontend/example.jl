@@ -1,4 +1,4 @@
-using StructuredCFG
+using SPIRV
 
 for sym in [:a, :b, :c, :d, :e]
   @eval $sym() = Base.invokelatest(Nothing, ())
