@@ -66,7 +66,7 @@ mutable struct IR
     decorations::SSADict{DecorationData}
     types::BijectiveMapping{SSAValue,SPIRType}
     "Constants, including specialization constants."
-    constants::BijectiveMapping{SSAValue,Instruction}
+    constants::BijectiveMapping{SSAValue,Constant}
     global_vars::BijectiveMapping{SSAValue,Variable}
     fdefs::SSADict{FunctionDefinition}
     results::SSADict{Any}
@@ -158,7 +158,19 @@ function IR(mod::Module)
                         insert!(types, result_id, parse(SPIRType, inst, types, ir.constants))
                 end
             @case & Symbol("Constant-Creation")
-                insert!(ir.constants, result_id, inst)
+                c = @match opcode begin
+                    &OpConstant || &OpSpecConstant => begin
+                        literal = only(arguments)
+                        t = types[type_id]
+                        Constant(reinterpret(julia_type(t, ir), literal), opcode == OpSpecConstant)
+                    end
+                    &OpConstantFalse || &OpConstantTrue => Constant(opcode == OpConstantTrue)
+                    &OpSpecConstantFalse || &OpSpecConstantTrue => Constant(opcode == OpSpecConstantTrue, true)
+                    &OpConstantNull => Constant((nothing, types[type_id]))
+                    &OpConstantComposite || &OpSpecConstantComposite => Constant((convert(Vector{SSAValue}, arguments), types[type_id]), opcode == OpSpecConstantComposite)
+                    _ => error("Unsupported constant instruction $inst")
+                end
+                insert!(ir.constants, result_id, c)
             @case & Symbol("Memory")
                 @tryswitch opcode begin
                     @case &OpVariable

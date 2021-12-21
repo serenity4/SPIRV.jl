@@ -64,7 +64,7 @@ function add_operand!(operands, arg, kind)
                 if kind isa Literal
                     sizeof(arg) <= 4 || error("Literals with a size greater than 32 bits are not supported.")
                 end
-                push!(operands, arg)
+                push!(operands, reinterpret(Word, arg))
             end
         end 
     end

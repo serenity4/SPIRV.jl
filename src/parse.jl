@@ -50,7 +50,7 @@ operand_kinds(inst::AbstractInstruction, skip_ids::Bool = true) = getproperty.(i
 """
 SPIR-V instruction in binary format.
 """
-struct PhysicalInstruction <: AbstractInstruction
+@auto_hash_equals struct PhysicalInstruction <: AbstractInstruction
     word_count::UInt16
     opcode::UInt16
     type_id::Optional{Word}
@@ -58,13 +58,11 @@ struct PhysicalInstruction <: AbstractInstruction
     operands::Vector{Word}
 end
 
-(==)(x::PhysicalInstruction, y::PhysicalInstruction) = x.word_count == y.word_count && x.opcode == y.opcode && x.type_id == y.type_id && x.result_id == y.result_id && x.operands == y.operands
-
 """
 SPIR-V module, as a series of headers followed by a stream of instructions.
 The header embeds two magic numbers, one for the module itself and one for the tool that generated it (e.g. [glslang](https://github.com/KhronosGroup/glslang)). It also contains the version of the specification applicable to the module, the maximum ID number and an optional instruction schema.
 """
-struct PhysicalModule
+@auto_hash_equals struct PhysicalModule
     magic_number::Word
     generator_magic_number::Word
     version::Word
@@ -73,7 +71,7 @@ struct PhysicalModule
     instructions::Vector{PhysicalInstruction}
 end
 
-(==)(x::PhysicalModule, y::PhysicalModule) = all(prop -> getproperty(x, prop) == getproperty(y, prop), fieldnames(PhysicalModule))
+Base.isapprox(mod1::PhysicalModule, mod2::PhysicalModule) = mod1.bound == mod2.bound && mod1.generator_magic_number == mod2.generator_magic_number && mod1.magic_number == mod2.magic_number && mod1.schema == mod2.schema && mod1.version == mod2.version && Set(mod1.instructions) == Set(mod2.instructions)
 
 function PhysicalModule(file::AbstractString)
     open(x -> PhysicalModule(x), file)
@@ -216,8 +214,8 @@ function Instruction(inst::PhysicalInstruction)
 end
 
 function next_argument(operands, info, category)
-    kind = info.kind
-    if kind == LiteralString
+    (; kind) = info
+    (nwords, val) = if kind == LiteralString
         bytes = reinterpret(UInt8, operands)
         i, chars = parse_bytes_for_utf8_string(bytes)
         str = GC.@preserve chars unsafe_string(pointer(chars))

@@ -78,10 +78,16 @@ struct SampledImageType <: SPIRType
     image_type::ImageType
 end
 
+struct Constant
+    value::Any
+    is_spec_const::Bool
+end
+Constant(value) = Constant(value, false)
+
 struct ArrayType <: SPIRType
     eltype::SPIRType
     "Constant expression giving the size of the array, if determined at compile-time. SPIR-V runtime arrays will have this field set to `nothing`."
-    size::Optional{Instruction}
+    size::Optional{Constant}
 end
 
 struct OpaqueType <: SPIRType
@@ -110,11 +116,6 @@ struct PointerType <: SPIRType
 end
 
 PointerType(inst::Instruction, type::SPIRType) = PointerType(first(inst.arguments), type)
-
-struct Constant
-    value::Any
-    is_spec_const::Bool
-end
 
 @auto_hash_equals struct FunctionType <: SPIRType
     rettype::SPIRType
@@ -159,7 +160,7 @@ function Instruction(t::ArrayType, id::SSAValue, globals::BijectiveMapping)
     if isnothing(t.size)
         @inst id = OpTypeRuntimeArray(globals[t.eltype])
     else
-        @inst id = OpTypeArray(globals[t.eltype], globals[t.size::Instruction])
+        @inst id = OpTypeArray(globals[t.eltype], globals[t.size::Constant])
     end
 end
 function Instruction(t::StructType, id::SSAValue, globals::BijectiveMapping)
@@ -173,4 +174,32 @@ function Instruction(t::FunctionType, id::SSAValue, globals::BijectiveMapping)
     inst = @inst id = OpTypeFunction(globals[t.rettype])
     append!(inst.arguments, globals[argtype] for argtype in t.argtypes)
     inst
+end
+function Instruction(c::Constant, id::SSAValue, globals::BijectiveMapping)
+    @match (c.value, c.is_spec_const) begin
+        ((::Nothing, type), false) => @inst id = OpConstantNull()::globals[type]
+        (true, false) => @inst id = OpConstantTrue()::globals[BooleanType()]
+        (true, true) => @inst id = OpSpecConstantTrue()::globals[BooleanType()]
+        (false, false) => @inst id = OpConstantFalse()::globals[BooleanType()]
+        (false, true) => @inst id = OpSpecConstantFalse()::globals[BooleanType()]
+        ((ids::Vector{SSAValue}, type), false) => @inst id = OpConstantComposite(ids...)::globals[type]
+        ((ids::Vector{SSAValue}, type), false) => @inst id = OpSpecConstantComposite(ids...)::globals[type]
+        (val, false) => @inst id = OpConstant(reinterpret(UInt32, val))::globals[SPIRType(typeof(val))]
+    end
+end
+
+function julia_type(@nospecialize(t::SPIRType), ir::IR)
+    @match t begin
+        &(IntegerType(8, false)) => UInt8
+        &(IntegerType(16, false)) => UInt16
+        &(IntegerType(32, false)) => UInt32
+        &(IntegerType(64, false)) => UInt64
+        &(IntegerType(8, true)) => Int8
+        &(IntegerType(16, true)) => Int16
+        &(IntegerType(32, true)) => Int32
+        &(IntegerType(64, true)) => Int64
+        &(FloatType(16)) => Float16
+        &(FloatType(32)) => Float32
+        &(FloatType(64)) => Float64
+    end
 end

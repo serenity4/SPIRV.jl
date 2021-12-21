@@ -33,26 +33,31 @@ modules = [
     end
 
     @testset "Intermediate Representation" begin
-        mod = SPIRV.Module(resource("vert.spv"))
+        pmod = SPIRV.PhysicalModule(resource("vert.spv"))
+        mod = SPIRV.Module(pmod)
         ir = IR(mod)
         f1 = ir.fdefs[4]
         cfg = control_flow_graph(f1)
         @test nv(cfg) == length(f1.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f1)))
         mod2 = SPIRV.Module(ir)
-        @test SPIRV.Module(PhysicalModule(mod2)) == mod2
+        @test mod ≈ mod2
+        pmod2 = PhysicalModule(mod2)
+        @test SPIRV.Module(pmod2) == mod2
+        @test pmod ≈ pmod2
         @test validate(ir)
-        @test mod2 ≈ mod
 
-        mod = SPIRV.Module(resource("comp.spv"))
+        pmod = SPIRV.PhysicalModule(resource("comp.spv"))
+        mod = SPIRV.Module(pmod)
         ir = IR(mod)
         f2 = ir.fdefs[52]
         cfg = control_flow_graph(f2)
         @test nv(cfg) == length(f2.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f2)))
         mod2 = SPIRV.Module(ir)
+        @test mod ≈ mod2
         pmod2 = PhysicalModule(mod2)
-        @test SPIRV.Module(PhysicalModule(mod2)) == mod2
+        @test SPIRV.Module(pmod2) == mod2
+        @test pmod ≈ pmod2
         @test validate(ir)
-        @test mod2 ≈ mod
     end
 
     @testset "Front-end" begin
