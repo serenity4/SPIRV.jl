@@ -34,31 +34,42 @@ modules = [
     end
 
     @testset "Intermediate Representation" begin
-        pmod = SPIRV.PhysicalModule(resource("vert.spv"))
-        mod = SPIRV.Module(pmod)
-        ir = IR(mod)
-        f1 = ir.fdefs[4]
-        cfg = control_flow_graph(f1)
-        @test nv(cfg) == length(f1.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f1)))
-        mod2 = SPIRV.Module(ir)
-        @test mod ≈ mod2
-        pmod2 = PhysicalModule(mod2)
-        @test SPIRV.Module(pmod2) == mod2
-        @test pmod ≈ pmod2
-        @test validate(ir)
+        @testset "Initialization & mode-setting" begin
+            ir = IR(memory_model = SPIRV.MemoryModelVulkan)
+            @test :SPV_KHR_vulkan_memory_model in ir.extensions
+            @test SPIRV.CapabilityVulkanMemoryModel in ir.capabilities
 
-        pmod = SPIRV.PhysicalModule(resource("comp.spv"))
-        mod = SPIRV.Module(pmod)
-        ir = IR(mod)
-        f2 = ir.fdefs[52]
-        cfg = control_flow_graph(f2)
-        @test nv(cfg) == length(f2.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f2)))
-        mod2 = SPIRV.Module(ir)
-        @test mod ≈ mod2
-        pmod2 = PhysicalModule(mod2)
-        @test SPIRV.Module(pmod2) == mod2
-        @test pmod ≈ pmod2
-        @test validate(ir)
+            ir = IR(addressing_model = SPIRV.AddressingModelPhysical64)
+            @test SPIRV.CapabilityAddresses in ir.capabilities
+        end
+
+        @testset "Conversion between modules and IR" begin
+            pmod = SPIRV.PhysicalModule(resource("vert.spv"))
+            mod = SPIRV.Module(pmod)
+            ir = IR(mod)
+            f1 = ir.fdefs[4]
+            cfg = control_flow_graph(f1)
+            @test nv(cfg) == length(f1.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f1)))
+            mod2 = SPIRV.Module(ir)
+            @test mod ≈ mod2
+            pmod2 = PhysicalModule(mod2)
+            @test SPIRV.Module(pmod2) == mod2
+            @test pmod ≈ pmod2
+            @test validate(ir)
+
+            pmod = SPIRV.PhysicalModule(resource("comp.spv"))
+            mod = SPIRV.Module(pmod)
+            ir = IR(mod)
+            f2 = ir.fdefs[52]
+            cfg = control_flow_graph(f2)
+            @test nv(cfg) == length(f2.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f2)))
+            mod2 = SPIRV.Module(ir)
+            @test mod ≈ mod2
+            pmod2 = PhysicalModule(mod2)
+            @test SPIRV.Module(pmod2) == mod2
+            @test pmod ≈ pmod2
+            @test validate(ir)
+        end
     end
 
     @testset "Parsing human-readable SPIR-V assembly (.spvasm)" begin

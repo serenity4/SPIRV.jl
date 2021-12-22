@@ -14,13 +14,6 @@ end
     interfaces::Vector{SSAValue}
 end
 
-struct Metadata
-    magic_number::UInt32
-    generator_magic_number::UInt32
-    version::VersionNumber
-    schema::Int
-end
-
 struct LineInfo
     file::String
     line::Int
@@ -74,19 +67,27 @@ mutable struct IR
     ssacounter::SSACounter
 end
 
-function IR(meta::Metadata; addressing_model::AddressingModel = AddressingModelLogical,
+function IR(; meta::Metadata = Metadata(), addressing_model::AddressingModel = AddressingModelLogical,
             memory_model::MemoryModel = MemoryModelVulkan, extensions = Symbol[], capabilities = Capability[])
+    required_exts = Symbol[]
+    required_caps = Capability[]
     @tryswitch memory_model begin
         @case &MemoryModelVulkan || &MemoryModelVulkanKHR
-            ext = :SPV_KHR_vulkan_memory_model
+            push!(required_exts, :SPV_KHR_vulkan_memory_model)
             cap = @match memory_model begin
                 &MemoryModelVulkan => CapabilityVulkanMemoryModel
                 &MemoryModelVulkanKHR => CapabilityVulkanMemoryModelKHR
             end
-            !in(ext, extensions) && push!(extensions, ext)
-            !in(cap, capabilities) && push!(capabilities, cap)
+            push!(required_caps, cap)
     end
-    IR(meta, capabilities, extensions, SSADict(), addressing_model, memory_model, SSADict(), SSADict(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), SSADict(), DebugInfo(), SSACounter(0))
+
+    @tryswitch addressing_model begin
+        @case &AddressingModelPhysical32 || &AddressingModelPhysical64
+            push!(required_caps, CapabilityAddresses)
+    end
+
+    IR(meta, union(capabilities, required_caps), union(extensions, required_exts), SSADict(), addressing_model, memory_model,
+        SSADict(), SSADict(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), SSADict(), DebugInfo(), SSACounter(0))
 end
 
 """
@@ -130,8 +131,7 @@ function initialize_ir(mod::Module)
         end
     end
 
-    meta = Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema)
-    ir = IR(meta; addressing_model, memory_model, extensions, capabilities)
+    ir = IR(; mod.meta, addressing_model, memory_model, extensions, capabilities)
     ir.entry_points = entry_points
     ir.extinst_imports = extinst_imports
 
@@ -302,7 +302,7 @@ function Module(ir::IR)
     append_globals!(insts, ir)
     append_functions!(insts, ir)
 
-    Module(ir.meta.magic_number, ir.meta.generator_magic_number, ir.meta.version, max_id(ir) + 1, ir.meta.schema, insts)
+    Module(ir.meta, max_id(ir) + 1, insts)
 end
 
 function append_debug_instructions!(insts, ir::IR)

@@ -1,5 +1,7 @@
 function PhysicalModule(mod::Module)
-    PhysicalModule(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, PhysicalInstruction.(mod.instructions))
+    (; meta, bound, instructions) = mod
+    (; magic_number, generator_magic_number, version, schema) = meta
+    PhysicalModule(magic_number, generator_magic_number, spirv_version(version), bound, schema, PhysicalInstruction.(instructions))
 end
 
 function PhysicalInstruction(inst::Instruction)
@@ -175,7 +177,7 @@ function Base.read(::Type{Module}, io::IO)
         end
         push!(insts, Instruction(opcode, type_id, result_id, arguments))
     end
-    Module(magic_number, generator_magic_number, v"1", max_id(insts) + 1, 0, insts)
+    Module(Metadata(), max_id(insts) + 1, insts)
 end
 
 Base.parse(::Type{Module}, str::AbstractString) = read(Module, IOBuffer(str))

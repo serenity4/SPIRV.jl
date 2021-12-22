@@ -5,7 +5,6 @@ function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
     ir
 end
 
-IR() = IR(Metadata(magic_number, generator_magic_number, v"1", 0))
 IR(cfg::CFG) = emit!(IR(), cfg)
 
 struct IRMapping

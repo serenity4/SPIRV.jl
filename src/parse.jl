@@ -246,19 +246,25 @@ end
 
 is_enum(category) = category in ("ValueEnum", "BitEnum")
 
-@auto_hash_equals struct Module
+struct Metadata
     magic_number::UInt32
     generator_magic_number::UInt32
     version::VersionNumber
-    bound::Int
     schema::Int
+end
+
+Metadata() = Metadata(magic_number, generator_magic_number, v"1.5", 0)
+
+@auto_hash_equals struct Module
+    meta::Metadata
+    bound::Int
     instructions::Vector{Instruction}
 end
 
-Module(mod::PhysicalModule) = Module(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.bound, mod.schema, Instruction.(mod.instructions))
+Module(mod::PhysicalModule) = Module(Metadata(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.schema), mod.bound, Instruction.(mod.instructions))
 Module(source) = Module(PhysicalModule(source))
 
-Base.isapprox(mod1::Module, mod2::Module) = mod1.bound == mod2.bound && mod1.generator_magic_number == mod2.generator_magic_number && mod1.magic_number == mod2.magic_number && mod1.schema == mod2.schema && mod1.version == mod2.version && Set(mod1.instructions) == Set(mod2.instructions)
+Base.isapprox(mod1::Module, mod2::Module) = mod1.meta == mod2.meta && mod1.bound == mod2.bound && Set(mod1.instructions) == Set(mod2.instructions)
 
 @forward Module.instructions (Base.iterate,)
 
