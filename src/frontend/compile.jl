@@ -2,7 +2,7 @@ function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
     original = CFG(f, argtypes)
     inferred = infer!(original)
     ir = IR(inferred)
-    PhysicalModule(Module(ir))
+    ir
 end
 
 IR() = IR(Metadata(magic_number, generator_magic_number, v"1", 0))

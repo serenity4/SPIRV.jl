@@ -54,18 +54,20 @@ end
 function generate_enums()
     enums = []
     extra_operands = []
+    enum_kinds = []
     for op ∈ operand_kinds
         category = op["category"]
         if category ∈ ("ValueEnum", "BitEnum")
             enum_expr, extra_operands_expr = generate_enum(op)
             !isnothing(extra_operands_expr) && push!(extra_operands, extra_operands_expr)
             push!(enums, enum_expr)
+            push!(enum_kinds, QuoteNode(Symbol(op["kind"])))
         end
     end
 
     parameter_dict = :(const extra_operands = Dict($(extra_operands...)))
 
-    vcat(enums, parameter_dict)
+    vcat(enums, parameter_dict), :(const enum_kinds = [$(enum_kinds...)])
 end
 
 function generate_instruction_printing_class(insts_pc)
@@ -131,7 +133,9 @@ function generate()
         pretty_dump(io, generate_category_as_enum("Id"))
         pretty_dump(io, generate_category_as_enum("Literal"))
         pretty_dump(io, generate_category_as_enum("Composite"))
-        pretty_dump(io, generate_enums())
+        enums, enum_kinds = generate_enums()
+        pretty_dump(io, enums)
+        pretty_dump(io, enum_kinds)
     end
 
     true

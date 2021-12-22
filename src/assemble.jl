@@ -109,3 +109,72 @@ function assemble!(words, mod::PhysicalModule)
 end
 
 assemble(mod::Module) = assemble(PhysicalModule(mod))
+
+Base.read(::Type{Module}, filename::AbstractString) = open(Base.Fix1(read, Module), filename)
+
+function Base.read(::Type{Module}, io::IO)
+    insts = Instruction[]
+
+    while !eof(io)
+        result_id = nothing
+        type_id = nothing
+        arguments = []
+        line = strip(readline(io))
+        operands = []
+        (startswith(line, ';') || startswith(line, '#') || isempty(line)) && continue
+        ex = if contains(line, '=')
+            m = match(r"(%\d+)\s*=\s*(.*)", line)
+            push!(operands, m[1])
+            m[2]
+        else
+            line
+        end
+        if endswith(ex, r"\)(::%\d+)?")
+            # Pretty print-like format.
+            m = match(r"(.*)::(%\d+)", ex)
+            if !isnothing(m)
+                push!(operands, m[2])
+                ex = m[1]
+            end
+            m = match(r"([a-zA-Z\d]+)\((.*)\)$", ex)::RegexMatch
+            ex = replace(join(m, " "), ", " => " ")
+        end
+        opcode, rest = match(r"([a-zA-Z\d]+)\(?\s*(.*|$)", ex)
+        opcode = getproperty(@__MODULE__, Symbol(opcode))::OpCode
+        !isempty(rest) && append!(operands, split(rest, ' '))
+        op_infos = info(opcode, operands)
+        if length(op_infos) > 1 && first(op_infos).kind === IdResultType
+            # The result ID is defined after the type ID, but parsed first.
+            # Therefore they need to be switched.
+            op_infos[1], op_infos[2] = op_infos[2], op_infos[1]
+        end
+        for (op, op_info) in zip(operands, op_infos)
+            (; kind) = op_info
+            @switch kind begin
+                @case &IdResult
+                    result_id = parse(SSAValue, op)
+                @case &IdResultType
+                    type_id = parse(SSAValue, op)
+                @case _
+                    t = isa(kind, DataType) ? kind : typeof(kind)
+                    val = @match name = nameof(t) begin
+                        GuardBy(in(enum_kinds)) => getproperty(@__MODULE__, Symbol(name, op))
+                        :Id => parse(SSAValue, op)
+                        :Literal => @match kind begin
+                            &LiteralExtInstInteger => parse(Int, op)
+                            &LiteralInteger || &LiteralSpecConstantOpInteger => parse(UInt32, op)
+                            &LiteralContextDependentNumber => contains(op, '.') ? reinterpret(UInt32, parse(Float32, op)) : parse(UInt32, op)
+                            &LiteralString => strip(op, '"')
+                        end
+                        :Composite => error("Composites are not supported yet.")
+                        _ => error(name)
+                    end
+                    push!(arguments, val)
+            end
+        end
+        push!(insts, Instruction(opcode, type_id, result_id, arguments))
+    end
+    Module(magic_number, generator_magic_number, v"1", max_id(insts) + 1, 0, insts)
+end
+
+Base.parse(::Type{Module}, str::AbstractString) = read(Module, IOBuffer(str))

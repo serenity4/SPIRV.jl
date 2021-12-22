@@ -6,7 +6,7 @@ function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
 
     printstyled(io, inst.opcode; color=:light_cyan)
 
-    !isempty(inst.arguments) && print(io, '(')
+    print(io, '(')
 
     isfirst = true
     for (arg, info) in zip(inst.arguments, info(inst))
@@ -15,7 +15,7 @@ function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
         emit_argument(io, arg, info.kind)
     end
 
-    !isempty(inst.arguments) && print(io, ')')
+    print(io, ')')
 
     if !isnothing(inst.type_id)
         printstyled(io, "::"; color=:light_green, bold=true)
@@ -40,8 +40,8 @@ end
 
 function emit_argument(io, arg, kind, category)
     @match category begin
-        "ValueEnum" => printstyled(io, replace(string(arg), Regex("^$(nameof(kind))") => ""); color=:208)
-        "BitEnum" => printstyled(io, arg; color=:light_magenta)
+        "ValueEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => ""); color=:208)
+        "BitEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => ""); color=:light_magenta)
         "Literal" => @match kind begin
             &LiteralString => printstyled(io, '"', arg, '"'; color=150)
             _ => printstyled(io, arg; color=153)

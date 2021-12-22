@@ -157,27 +157,31 @@ Parsed SPIR-V instruction. It represents an instruction of the form `%result_id 
 end
 Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
 
-"""
-Information regarding the arguments of an `Instruction`, including extra operands.
-"""
-function info(inst::Instruction, skip_ids::Bool = true)
-    op_infos = copy(info(inst.opcode))
+function info(opcode::OpCode, arguments::AbstractVector)
+    op_infos = copy(info(opcode))
 
     # Repeat the last info if there is a variable number of arguments.
     if !isempty(op_infos)
         linfo = last(op_infos)
         if get(linfo, :quantifier, "") == "*"
-            append!(op_infos, linfo for _ in 1:(length(inst.arguments) - 1))
+            append!(op_infos, linfo for _ in 1:(length(arguments) - 1))
         end
     end
 
     # Add extra operands.
-    for (i, arg) in enumerate(inst.arguments)
+    for (i, arg) in enumerate(arguments)
         info = op_infos[i]
         category = kind_to_category[info.kind]
         update_infos!(op_infos, i, arg, category)
     end
+    op_infos
+end
 
+"""
+Information regarding the arguments of an `Instruction`, including extra operands.
+"""
+function info(inst::Instruction, skip_ids::Bool = true)
+    op_infos = info(inst.opcode, inst.arguments)
     skip_ids ? op_infos[start_idx(inst):end] : op_infos
 end
 
@@ -285,3 +289,6 @@ function print_diff(mod1::Module, mod2::Module)
         end
     end
 end
+
+max_ssa(insts::Vector{Instruction}) = maximum(x -> something(x.result_id, SSAValue(0)), insts)
+max_ssa(mod::Union{PhysicalModule,Module}) = SSAValue(mod.bound)

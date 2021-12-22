@@ -212,7 +212,7 @@ function IR(mod::Module)
     ir
 end
 
-max_id(ir::IR) = id(SSAValue(ir.ssacounter))
+max_ssa(ir::IR) = SSAValue(ir.ssacounter)
 
 """
 Attach member decorations to SPIR-V types (see [`SPIRType`](@ref)).
@@ -332,9 +332,9 @@ function Instruction(var::Variable, id::SSAValue, id_map::BijectiveMapping)
     inst
 end
 
-function replace_name(id, names)
-    repl = string(get(names, parse(SSAValue, id), ""))
-    isempty(repl) ? id : repl
+function replace_name(val::SSAValue, names)
+    name = get(names, val, id(val))
+    "%$name"
 end
 
 function show(io::IO, mime::MIME"text/plain", ir::IR)
@@ -346,8 +346,8 @@ function show(io::IO, mime::MIME"text/plain", ir::IR)
         !contains(line, "OpName") && !contains(line, "OpMemberName")
     end
     lines = map(lines) do line
-        replace(line, r"(?<=%)\d+" => id -> replace_name(id, ir.debug.filenames))
-        replace(line, r"(?<=%)\d+" => id -> replace_name(id, ir.debug.names))
+        replace(line, r"%\d+" => id -> replace_name(parse(SSAValue, id), ir.debug.filenames))
+        replace(line, r"%\d+" => id -> replace_name(parse(SSAValue, id), ir.debug.names))
     end
     print(io, join(lines, '\n'))
 end

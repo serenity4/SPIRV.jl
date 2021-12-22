@@ -17,7 +17,9 @@ Base.convert(::Type{SSAValue}, id::Integer) = SSAValue(id)
 
 id(val::SSAValue) = val.id
 
-Base.parse(::Type{SSAValue}, id) = SSAValue(parse(UInt32, id))
+Base.tryparse(::Type{SSAValue}, id::AbstractString) = !isempty(id) && return SSAValue(parse(UInt32, id[2:end]))
+Base.parse(::Type{SSAValue}, id::AbstractString) = tryparse(SSAValue, id)::SSAValue
+
 Base.show(io::IO, val::SSAValue) = print(io, string('%', val.id))
 
 const SSADict{T} = Dictionary{SSAValue,T}
@@ -31,3 +33,5 @@ SSAValue(counter::SSACounter) = counter.val
 function next!(counter::SSACounter)
     counter.val = SSAValue(id(counter.val) + 1)
 end
+
+max_id(x) = id(max_ssa(x))

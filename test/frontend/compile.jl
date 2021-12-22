@@ -14,14 +14,28 @@ function f_extinst(x)
 end
 
 @testset "Compilation to SPIR-V" begin
-  cfg = infer!(CFG(f_straightcode, Tuple{Float32}))
-  ir = IR(cfg)
+  ir = compile(f_straightcode, Tuple{Float32})
   @testset "Intrinsics" begin
     @test only(only(values(ir.fdefs)).blocks)[2] == @inst SSAValue(8) = OpFAdd(SSAValue(5), SSAValue(7))::SSAValue(2)
     @test only(only(values(ir.fdefs)).blocks)[3] == @inst SSAValue(10) = OpFMul(SSAValue(9), SSAValue(8))::SSAValue(2)
     @test only(only(values(ir.fdefs)).blocks)[4] == @inst SSAValue(11) = OpFMul(SSAValue(10), SSAValue(10))::SSAValue(2)
   end
-  pmod = compile(f_straightcode, Tuple{Float32})
-  @test isa(pmod, PhysicalModule)
-  @test SPIRV.Module(pmod) == SPIRV.Module(ir)
+  mod = SPIRV.Module(ir)
+  @test mod == parse(SPIRV.Module, """
+         OpMemoryModel(Logical, Vulkan)
+    %2 = OpTypeFloat(32)
+    %3 = OpTypeFunction(%2, %2)
+    # Constant literals are not interpreted as floating point values.
+    # Doing so would require the knowledge of types, expressed in the IR.
+    %7 = OpConstant(1065353216)::%2
+    %9 = OpConstant(1077936128)::%2
+    %4 = OpFunction(None, %3)::%2
+    %5 = OpFunctionParameter()::%2
+    %6 = OpLabel()
+    %8 = OpFAdd(%5, %7)::%2
+   %10 = OpFMul(%9, %8)::%2
+   %11 = OpFMul(%10, %10)::%2
+         OpReturnValue(%11)
+         OpFunctionEnd()
+  """)
 end

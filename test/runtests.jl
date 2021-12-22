@@ -3,6 +3,7 @@ using Graphs
 using Test
 
 resource(filename) = joinpath(@__DIR__, "resources", filename)
+spvasm(basename) = joinpath(@__DIR__, "spvasm", basename * ".spvasm")
 
 modules = [
     "vert.spv",
@@ -58,6 +59,16 @@ modules = [
         @test SPIRV.Module(pmod2) == mod2
         @test pmod ≈ pmod2
         @test validate(ir)
+    end
+
+    @testset "Parsing human-readable SPIR-V assembly (.spvasm)" begin
+        mod = read(SPIRV.Module, spvasm("simple"))
+        ir = IR(mod)
+        @test SPIRV.Module(ir) ≈ mod
+
+        # Support for fancier (Julia style) .spvasm
+        mod2 = read(SPIRV.Module, spvasm("simple_fancy"))
+        @test mod2 == mod
     end
 
     @testset "Front-end" begin
