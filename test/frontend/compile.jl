@@ -22,6 +22,8 @@ end
   end
   mod = SPIRV.Module(ir)
   @test mod == parse(SPIRV.Module, """
+         OpCapability(VulkanMemoryModel)
+         OpExtension("SPV_KHR_vulkan_memory_model")
          OpMemoryModel(Logical, Vulkan)
     %2 = OpTypeFloat(32)
     %3 = OpTypeFunction(%2, %2)
@@ -38,4 +40,7 @@ end
          OpReturnValue(%11)
          OpFunctionEnd()
   """)
+  @test_throws SPIRV.ValidationError("""
+    error: line 0: No OpEntryPoint instruction was found. This is only allowed if the Linkage capability is being used.
+    """) validate(ir)
 end

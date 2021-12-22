@@ -74,42 +74,82 @@ mutable struct IR
     ssacounter::SSACounter
 end
 
-function IR(meta::Metadata, addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
-    IR(meta, [], [], SSADict(), addressing_model, memory_model, SSADict(), SSADict(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), SSADict(), DebugInfo(), SSACounter(0))
+function IR(meta::Metadata; addressing_model::AddressingModel = AddressingModelLogical,
+            memory_model::MemoryModel = MemoryModelVulkan, extensions = Symbol[], capabilities = Capability[])
+    @tryswitch memory_model begin
+        @case &MemoryModelVulkan || &MemoryModelVulkanKHR
+            ext = :SPV_KHR_vulkan_memory_model
+            cap = @match memory_model begin
+                &MemoryModelVulkan => CapabilityVulkanMemoryModel
+                &MemoryModelVulkanKHR => CapabilityVulkanMemoryModelKHR
+            end
+            !in(ext, extensions) && push!(extensions, ext)
+            !in(cap, capabilities) && push!(capabilities, cap)
+    end
+    IR(meta, capabilities, extensions, SSADict(), addressing_model, memory_model, SSADict(), SSADict(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), SSADict(), DebugInfo(), SSACounter(0))
 end
 
-function IR(mod::Module)
-    member_decorations = SSADict{Dictionary{Int,DecorationData}}()
-    member_names = SSADict{Dictionary{Int,Symbol}}()
-    current_function = nothing
+"""
+Construct an IR after gathering all mode-setting and extension information from the module.
+"""
+function initialize_ir(mod::Module)
+    extensions = Symbol[]
+    capabilities = Capability[]
+    addressing_model = memory_model = nothing
+    entry_points = SSADict{EntryPoint}()
+    extinst_imports = SSADict{Symbol}()
 
-    ir = IR(Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema))
-    (; debug, decorations, types, results) = ir
-
-    for inst in mod
+    start = 0
+    for (i, inst) in enumerate(mod.instructions)
         (; arguments, type_id, result_id, opcode) = inst
         class, info = classes[opcode]
-        @tryswitch class begin
+        @switch class begin
             @case & Symbol("Mode-Setting")
                 @switch opcode begin
                     @case &OpCapability
-                        push!(ir.capabilities, arguments[1])
+                        push!(capabilities, arguments[1])
                     @case &OpMemoryModel
-                        ir.addressing_model, ir.memory_model = arguments
+                        addressing_model, memory_model = arguments
                     @case &OpEntryPoint
                         model, id, name, interfaces... = arguments
-                        insert!(ir.entry_points, id, EntryPoint(Symbol(name), id, model, [], interfaces))
+                        insert!(entry_points, id, EntryPoint(Symbol(name), id, model, [], interfaces))
                     @case &OpExecutionMode || &OpExecutionModeId
                         id = arguments[1]
-                        push!(ir.entry_points[id].modes, inst)
+                        push!(entry_points[id].modes, inst)
                 end
             @case & :Extension
                 @tryswitch opcode begin
                     @case &OpExtension
-                        push!(ir.extensions, Symbol(arguments[1]))
+                        push!(extensions, Symbol(arguments[1]))
                     @case &OpExtInstImport
-                        insert!(ir.extinst_imports, result_id, Symbol(arguments[1]))
+                        insert!(extinst_imports, result_id, Symbol(arguments[1]))
                 end
+            @case _
+                start = i
+                break
+        end
+    end
+
+    meta = Metadata(mod.magic_number, mod.generator_magic_number, mod.version, mod.schema)
+    ir = IR(meta; addressing_model, memory_model, extensions, capabilities)
+    ir.entry_points = entry_points
+    ir.extinst_imports = extinst_imports
+
+    (ir, start)
+end
+
+function IR(mod::Module)
+    (ir, start) = initialize_ir(mod)
+    (; debug, decorations, types, results) = ir
+
+    member_decorations = SSADict{Dictionary{Int,DecorationData}}()
+    member_names = SSADict{Dictionary{Int,Symbol}}()
+    current_function = nothing
+
+    for inst in mod.instructions[start:end]
+        (; arguments, type_id, result_id, opcode) = inst
+        class, info = classes[opcode]
+        @tryswitch class begin
             @case & :Debug
                 @tryswitch opcode begin
                     @case &OpSource
@@ -250,7 +290,7 @@ function Module(ir::IR)
     insts = Instruction[]
 
     append!(insts, @inst(OpCapability(cap)) for cap in ir.capabilities)
-    append!(insts, @inst(OpExtension(ext)) for ext in ir.extensions)
+    append!(insts, @inst(OpExtension(string(ext))) for ext in ir.extensions)
     append!(insts, @inst(id = OpExtInstImport(string(extinst))) for (id, extinst) in pairs(ir.extinst_imports))
     push!(insts, @inst OpMemoryModel(ir.addressing_model, ir.memory_model))
     for entry in ir.entry_points

@@ -50,6 +50,7 @@ function add_operand!(operands, arg, kind)
 
     @match kind begin
         &LiteralString => begin
+            !isa(arg, Vector{UInt8}) && (arg = string(arg))
             utf8_chars = collect(transcode(UInt8, arg))
             push!(utf8_chars, '\0')
             nrem = length(utf8_chars) % 4
