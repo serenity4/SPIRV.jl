@@ -9,7 +9,7 @@ function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
     print(io, '(')
 
     isfirst = true
-    for (arg, info) in zip(inst.arguments, info(inst))
+    for (arg, info) in zip(inst.arguments, operand_infos(inst))
         !isfirst && print(io, ", ")
         isfirst = false
         emit_argument(io, arg, info.kind)

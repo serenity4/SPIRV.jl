@@ -51,8 +51,8 @@ end
 mutable struct IR
     meta::Metadata
     capabilities::Vector{Capability}
-    extensions::Vector{Symbol}
-    extinst_imports::SSADict{Symbol}
+    extensions::Vector{String}
+    extinst_imports::SSADict{String}
     addressing_model::AddressingModel
     memory_model::MemoryModel
     entry_points::SSADict{EntryPoint}
@@ -69,11 +69,11 @@ end
 
 function IR(; meta::Metadata = Metadata(), addressing_model::AddressingModel = AddressingModelLogical,
             memory_model::MemoryModel = MemoryModelVulkan, extensions = Symbol[], capabilities = Capability[])
-    required_exts = Symbol[]
+    required_exts = String[]
     required_caps = Capability[]
     @tryswitch memory_model begin
         @case &MemoryModelVulkan || &MemoryModelVulkanKHR
-            push!(required_exts, :SPV_KHR_vulkan_memory_model)
+            push!(required_exts, "SPV_KHR_vulkan_memory_model")
             cap = @match memory_model begin
                 &MemoryModelVulkan => CapabilityVulkanMemoryModel
                 &MemoryModelVulkanKHR => CapabilityVulkanMemoryModelKHR
@@ -94,18 +94,19 @@ end
 Construct an IR after gathering all mode-setting and extension information from the module.
 """
 function initialize_ir(mod::Module)
-    extensions = Symbol[]
+    extensions = String[]
     capabilities = Capability[]
     addressing_model = memory_model = nothing
     entry_points = SSADict{EntryPoint}()
-    extinst_imports = SSADict{Symbol}()
+    extinst_imports = SSADict{String}()
 
     start = 0
     for (i, inst) in enumerate(mod.instructions)
         (; arguments, type_id, result_id, opcode) = inst
-        class, info = classes[opcode]
+        inst_info = info(inst)
+        (; class) = inst_info
         @switch class begin
-            @case & Symbol("Mode-Setting")
+            @case "Mode-Setting"
                 @switch opcode begin
                     @case &OpCapability
                         push!(capabilities, arguments[1])
@@ -118,12 +119,12 @@ function initialize_ir(mod::Module)
                         id = arguments[1]
                         push!(entry_points[id].modes, inst)
                 end
-            @case & :Extension
+            @case "Extension"
                 @tryswitch opcode begin
                     @case &OpExtension
-                        push!(extensions, Symbol(arguments[1]))
+                        push!(extensions, arguments[1])
                     @case &OpExtInstImport
-                        insert!(extinst_imports, result_id, Symbol(arguments[1]))
+                        insert!(extinst_imports, result_id, arguments[1])
                 end
             @case _
                 start = i
@@ -148,9 +149,10 @@ function IR(mod::Module)
 
     for inst in mod.instructions[start:end]
         (; arguments, type_id, result_id, opcode) = inst
-        class, info = classes[opcode]
+        inst_info = info(inst)
+        (; class) = inst_info
         @tryswitch class begin
-            @case & :Debug
+            @case "Debug"
                 @tryswitch opcode begin
                     @case &OpSource
                         language, version = arguments[1:2]
@@ -175,7 +177,7 @@ function IR(mod::Module)
                         id, mindex, name = arguments
                         insert!(get!(Dictionary, member_names, id), mindex + 1, Symbol(name))
                 end
-            @case & :Annotation
+            @case "Annotation"
                 @tryswitch opcode begin
                     @case &OpDecorate
                         id, decoration, args... = arguments
@@ -189,7 +191,7 @@ function IR(mod::Module)
                         member += 1 # convert to 1-based indexing
                         insert!(get!(DecorationData, get!(Dictionary{Int,DecorationData}, member_decorations, SSAValue(id)), member), decoration, args)
                 end
-            @case & Symbol("Type-Declaration")
+            @case "Type-Declaration"
                 @switch opcode begin
                     @case &OpTypeFunction
                         rettype = types[first(arguments)]
@@ -198,7 +200,7 @@ function IR(mod::Module)
                     @case _
                         insert!(types, result_id, parse(SPIRType, inst, types, ir.constants))
                 end
-            @case & Symbol("Constant-Creation")
+            @case "Constant-Creation"
                 c = @match opcode begin
                     &OpConstant || &OpSpecConstant => begin
                         literal = only(arguments)
@@ -212,7 +214,7 @@ function IR(mod::Module)
                     _ => error("Unsupported constant instruction $inst")
                 end
                 insert!(ir.constants, result_id, c)
-            @case & Symbol("Memory")
+            @case "Memory"
                 @tryswitch opcode begin
                     @case &OpVariable
                         storage_class = first(arguments)
@@ -220,7 +222,7 @@ function IR(mod::Module)
                             insert!(ir.global_vars, result_id, Variable(inst, types[inst.type_id]))
                         end
                 end
-            @case & :Function
+            @case "Function"
                 @tryswitch opcode begin
                     @case &OpFunction
                         control, ftype = arguments
@@ -231,7 +233,7 @@ function IR(mod::Module)
                     @case &OpFunctionEnd
                         current_function = nothing
                 end
-            @case & Symbol("Control-Flow")
+            @case "Control-Flow"
                 @assert !isnothing(current_function)
                 if opcode == OpLabel
                     insert!(current_function.blocks, inst.result_id, Block(inst.result_id, []))
@@ -290,8 +292,8 @@ function Module(ir::IR)
     insts = Instruction[]
 
     append!(insts, @inst(OpCapability(cap)) for cap in ir.capabilities)
-    append!(insts, @inst(OpExtension(string(ext))) for ext in ir.extensions)
-    append!(insts, @inst(id = OpExtInstImport(string(extinst))) for (id, extinst) in pairs(ir.extinst_imports))
+    append!(insts, @inst(OpExtension(ext)) for ext in ir.extensions)
+    append!(insts, @inst(id = OpExtInstImport(extinst)) for (id, extinst) in pairs(ir.extinst_imports))
     push!(insts, @inst OpMemoryModel(ir.addressing_model, ir.memory_model))
     for entry in ir.entry_points
         push!(insts, @inst OpEntryPoint(entry.model, entry.func, string(entry.name), entry.interfaces...))

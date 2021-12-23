@@ -36,7 +36,7 @@ modules = [
     @testset "Intermediate Representation" begin
         @testset "Initialization & mode-setting" begin
             ir = IR(memory_model = SPIRV.MemoryModelVulkan)
-            @test :SPV_KHR_vulkan_memory_model in ir.extensions
+            @test "SPV_KHR_vulkan_memory_model" in ir.extensions
             @test SPIRV.CapabilityVulkanMemoryModel in ir.capabilities
 
             ir = IR(addressing_model = SPIRV.AddressingModelPhysical64)

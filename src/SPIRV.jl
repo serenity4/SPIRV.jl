@@ -23,7 +23,10 @@ const generator_magic_number = 0x12349876
 
 # generated SPIR-V wrapper
 include("generated/enums.jl")
+include("grammar.jl")
+include("generated/enum_infos.jl")
 include("generated/instructions.jl")
+include("generated/extinsts.jl")
 
 include("utils.jl")
 include("bijection.jl")

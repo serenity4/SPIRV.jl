@@ -5,7 +5,11 @@ function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
     ir
 end
 
-IR(cfg::CFG) = emit!(IR(), cfg)
+function IR(cfg::CFG)
+    ir = IR()
+    emit!(ir, cfg)
+    ir
+end
 
 struct IRMapping
     args::Dictionary{Core.Argument,SSAValue}
@@ -27,14 +31,15 @@ function emit!(ir::IR, cfg::CFG)
     fdef = FunctionDefinition(ftype, FunctionControlNone, [], SSADict())
     irmap = IRMapping()
     emit!(ir, irmap, ftype)
-    insert!(ir.fdefs, next!(ir.ssacounter), fdef)
+    id = next!(ir.ssacounter)
+    insert!(ir.fdefs, id, fdef)
     for n in eachindex(ftype.argtypes)
         id = next!(ir.ssacounter)
         insert!(irmap.args, Core.Argument(n + 1), id)
         push!(fdef.args, id)
     end
     emit!(fdef, ir, irmap, cfg)
-    ir
+    id
 end
 
 function FunctionType(mi::MethodInstance)
@@ -44,6 +49,7 @@ function FunctionType(mi::MethodInstance)
 end
 
 function emit!(ir::IR, irmap::IRMapping, type::FunctionType)
+    !haskey(ir.types.backward, type) || return ir.types[type]
     emit!(ir, irmap, type.rettype)
     for t in type.argtypes
         emit!(ir, irmap, t)

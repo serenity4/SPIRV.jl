@@ -11,35 +11,28 @@ end
 
 function physical_operands(inst::Instruction)
     operands = Word[]
-    opcode = inst.opcode
-    op_infos = info(inst)
-    arguments = inst.arguments
+    op_infos = operand_infos(inst)
+    (; arguments) = inst
     for (i, (info, arg)) in enumerate(zip(op_infos, arguments))
-        kind = info.kind
-        if hasproperty(info, :quantifier)
-            quantifier = info.quantifier
-            @match quantifier begin
-                "*" => begin
-                    foreach(arguments[i:end]) do arg
-                        add_operand!(operands, arg, kind)
-                    end
-                    break
+        (; kind, quantifier) = info
+        @switch quantifier begin
+            @case "*"
+                for arg in arguments[i:end]
+                    add_operand!(operands, arg, kind)
                 end
-                "?" => begin
-                    nmissing = length(arguments) - (i - 1)
-                    nopt = count(x -> hasproperty(x, :quantifier) && x.quantifier == "?", op_infos[i:end])
-                    if nmissing == nopt
-                        add_operand!(operands, arg, kind)
-                    elseif nmissing > 0
-                        error("Unsupported number of values: found $nmissing values for $nopt optional arguments")
-                    end
+                break
+            @case "?"
+                nmissing = length(arguments) - (i - 1)
+                nopt = count(x -> hasproperty(x, :quantifier) && x.quantifier == "?", op_infos[i:end])
+                if nmissing == nopt
+                    add_operand!(operands, arg, kind)
+                elseif nmissing > 0
+                    error("Unsupported number of values: found $nmissing values for $nopt optional arguments")
                 end
-            end
-        else
-            add_operand!(operands, arg, kind)
+            @case nothing
+                add_operand!(operands, arg, kind)
         end
     end
-
     operands
 end
 
@@ -145,7 +138,7 @@ function Base.read(::Type{Module}, io::IO)
         opcode, rest = match(r"([a-zA-Z\d]+)\(?\s*(.*|$)", ex)
         opcode = getproperty(@__MODULE__, Symbol(opcode))::OpCode
         !isempty(rest) && append!(operands, split(rest, ' '))
-        op_infos = info(opcode, operands)
+        op_infos = operand_infos(opcode, operands, false)
         if length(op_infos) > 1 && first(op_infos).kind === IdResultType
             # The result ID is defined after the type ID, but parsed first.
             # Therefore they need to be switched.
@@ -161,7 +154,6 @@ function Base.read(::Type{Module}, io::IO)
                 @case _
                     t = isa(kind, DataType) ? kind : typeof(kind)
                     val = @match name = nameof(t) begin
-                        GuardBy(in(enum_kinds)) => getproperty(@__MODULE__, Symbol(name, op))
                         :Id => parse(SSAValue, op)
                         :Literal => @match kind begin
                             &LiteralExtInstInteger => parse(Int, op)
@@ -170,7 +162,7 @@ function Base.read(::Type{Module}, io::IO)
                             &LiteralString => strip(op, '"')
                         end
                         :Composite => error("Composites are not supported yet.")
-                        _ => error(name)
+                        _ => getproperty(@__MODULE__, Symbol(name, op))
                     end
                     push!(arguments, val)
             end

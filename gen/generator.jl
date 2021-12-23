@@ -6,8 +6,8 @@ import SPIRV_Headers_jll
 
 const include_dir = joinpath(SPIRV_Headers_jll.artifact_dir, "include", "spirv", "unified1")
 
-include("formatting.jl")
-include("grammar.jl")
+includet("formatting.jl")
+includet("grammar.jl")
 
 mkpath(src_dir("generated"))
 

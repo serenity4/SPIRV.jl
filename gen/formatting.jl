@@ -45,21 +45,26 @@ end
 custom_print(io::IO, expr::Expr) = println(io, prettify(expr))
 
 function format()
-    inst_file = src_dir("generated", "instructions.jl")
     enum_file = src_dir("generated", "enums.jl")
+    enum_info_file = src_dir("generated", "enum_infos.jl")
+    inst_file = src_dir("generated", "instructions.jl")
+    extinst_file = src_dir("generated", "extinsts.jl")
 
     @info "Formatting."
 
     # initial formatting
-    format_file(inst_file, margin=92)
+    format_file(enum_info_file, margin=92)
     format_file(enum_file, margin=92)
+    format_file(inst_file, margin=92)
+    format_file(extinst_file, margin=92)
 
     # align blocks
+    align_block(enum_file)
+
     align_block(inst_file)
     align_block(inst_file, block_begin=r"const class_printing = Dict\(", block_end=r"^\)$", delim=r"=>")
     align_block(inst_file, block_begin=r"const kind_to_category = Dict\(", block_end=r"^\)$", delim=r"=>")
 
-    align_block(enum_file)
-
+    align_block(extinst_file)
     true
 end

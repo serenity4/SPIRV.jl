@@ -7,7 +7,7 @@ Block(id::SSAValue) = Block(id, [])
 
 @forward Block.insts (Base.getindex,)
 
-struct FunctionDefinition
+@auto_hash_equals struct FunctionDefinition
     type::FunctionType
     control::FunctionControl
     args::Vector{SSAValue}

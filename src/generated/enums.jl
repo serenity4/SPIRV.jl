@@ -1,25 +1,3 @@
-@enum Id::Int begin
-    IdResultType      = 1
-    IdResult          = 2
-    IdMemorySemantics = 3
-    IdScope           = 4
-    IdRef             = 5
-end
-
-@enum Literal::Int begin
-    LiteralInteger                = 1
-    LiteralString                 = 2
-    LiteralContextDependentNumber = 3
-    LiteralExtInstInteger         = 4
-    LiteralSpecConstantOpInteger  = 5
-end
-
-@enum Composite::Int begin
-    PairLiteralIntegerIdRef = 1
-    PairIdRefLiteralInteger = 2
-    PairIdRefIdRef = 3
-end
-
 @cenum ImageOperands::UInt32 begin
     ImageOperandsNone                  = 0x00000000
     ImageOperandsBias                  = 0x00000001
@@ -858,183 +836,24 @@ end
     RayQueryCandidateIntersectionTypeRayQueryCandidateIntersectionAABBKHR     = 1
 end
 
-const extra_operands = Dict(
-    ImageOperands => Dict(
-        ImageOperandsBias => [(kind = IdRef,)],
-        ImageOperandsLod => [(kind = IdRef,)],
-        ImageOperandsGrad => [(kind = IdRef,), (kind = IdRef,)],
-        ImageOperandsConstOffset => [(kind = IdRef,)],
-        ImageOperandsOffset => [(kind = IdRef,)],
-        ImageOperandsConstOffsets => [(kind = IdRef,)],
-        ImageOperandsSample => [(kind = IdRef,)],
-        ImageOperandsMinLod => [(kind = IdRef,)],
-        ImageOperandsMakeTexelAvailable => [(kind = IdScope,)],
-        ImageOperandsMakeTexelAvailableKHR => [(kind = IdScope,)],
-        ImageOperandsMakeTexelVisible => [(kind = IdScope,)],
-        ImageOperandsMakeTexelVisibleKHR => [(kind = IdScope,)],
-    ),
-    LoopControl => Dict(
-        LoopControlDependencyLength => [(kind = LiteralInteger,)],
-        LoopControlMinIterations => [(kind = LiteralInteger,)],
-        LoopControlMaxIterations => [(kind = LiteralInteger,)],
-        LoopControlIterationMultiple => [(kind = LiteralInteger,)],
-        LoopControlPeelCount => [(kind = LiteralInteger,)],
-        LoopControlPartialCount => [(kind = LiteralInteger,)],
-        LoopControlInitiationIntervalINTEL => [(kind = LiteralInteger,)],
-        LoopControlMaxConcurrencyINTEL => [(kind = LiteralInteger,)],
-        LoopControlDependencyArrayINTEL => [(kind = LiteralInteger,)],
-        LoopControlPipelineEnableINTEL => [(kind = LiteralInteger,)],
-        LoopControlLoopCoalesceINTEL => [(kind = LiteralInteger,)],
-        LoopControlMaxInterleavingINTEL => [(kind = LiteralInteger,)],
-        LoopControlSpeculatedIterationsINTEL => [(kind = LiteralInteger,)],
-    ),
-    MemoryAccess => Dict(
-        MemoryAccessAligned => [(kind = LiteralInteger,)],
-        MemoryAccessMakePointerAvailable => [(kind = IdScope,)],
-        MemoryAccessMakePointerAvailableKHR => [(kind = IdScope,)],
-        MemoryAccessMakePointerVisible => [(kind = IdScope,)],
-        MemoryAccessMakePointerVisibleKHR => [(kind = IdScope,)],
-    ),
-    ExecutionMode => Dict(
-        ExecutionModeInvocations => [(
-            kind = LiteralInteger,
-            name = "Number of <<Invocation,invocations>>",
-        )],
-        ExecutionModeLocalSize => [
-            (kind = LiteralInteger, name = "x size"),
-            (kind = LiteralInteger, name = "y size"),
-            (kind = LiteralInteger, name = "z size"),
-        ],
-        ExecutionModeLocalSizeHint => [
-            (kind = LiteralInteger, name = "x size"),
-            (kind = LiteralInteger, name = "y size"),
-            (kind = LiteralInteger, name = "z size"),
-        ],
-        ExecutionModeOutputVertices => [(kind = LiteralInteger, name = "Vertex count")],
-        ExecutionModeVecTypeHint => [(kind = LiteralInteger, name = "Vector type")],
-        ExecutionModeSubgroupSize => [(kind = LiteralInteger, name = "Subgroup Size")],
-        ExecutionModeSubgroupsPerWorkgroup =>
-            [(kind = LiteralInteger, name = "Subgroups Per Workgroup")],
-        ExecutionModeSubgroupsPerWorkgroupId =>
-            [(kind = IdRef, name = "Subgroups Per Workgroup")],
-        ExecutionModeLocalSizeId => [
-            (kind = IdRef, name = "x size"),
-            (kind = IdRef, name = "y size"),
-            (kind = IdRef, name = "z size"),
-        ],
-        ExecutionModeLocalSizeHintId => [(kind = IdRef, name = "Local Size Hint")],
-        ExecutionModeDenormPreserve => [(kind = LiteralInteger, name = "Target Width")],
-        ExecutionModeDenormFlushToZero =>
-            [(kind = LiteralInteger, name = "Target Width")],
-        ExecutionModeSignedZeroInfNanPreserve =>
-            [(kind = LiteralInteger, name = "Target Width")],
-        ExecutionModeRoundingModeRTE =>
-            [(kind = LiteralInteger, name = "Target Width")],
-        ExecutionModeRoundingModeRTZ =>
-            [(kind = LiteralInteger, name = "Target Width")],
-        ExecutionModeOutputPrimitivesNV =>
-            [(kind = LiteralInteger, name = "Primitive count")],
-        ExecutionModeMaxWorkgroupSizeINTEL => [
-            (kind = LiteralInteger, name = "max_x_size"),
-            (kind = LiteralInteger, name = "max_y_size"),
-            (kind = LiteralInteger, name = "max_z_size"),
-        ],
-        ExecutionModeMaxWorkDimINTEL =>
-            [(kind = LiteralInteger, name = "max_dimensions")],
-        ExecutionModeNumSIMDWorkitemsINTEL =>
-            [(kind = LiteralInteger, name = "vector_width")],
-    ),
-    Decoration => Dict(
-        DecorationSpecId =>
-            [(kind = LiteralInteger, name = "Specialization Constant ID")],
-        DecorationArrayStride => [(kind = LiteralInteger, name = "Array Stride")],
-        DecorationMatrixStride => [(kind = LiteralInteger, name = "Matrix Stride")],
-        DecorationBuiltIn => [(kind = BuiltIn,)],
-        DecorationUniformId => [(kind = IdScope, name = "Execution")],
-        DecorationStream => [(kind = LiteralInteger, name = "Stream Number")],
-        DecorationLocation => [(kind = LiteralInteger, name = "Location")],
-        DecorationComponent => [(kind = LiteralInteger, name = "Component")],
-        DecorationIndex => [(kind = LiteralInteger, name = "Index")],
-        DecorationBinding => [(kind = LiteralInteger, name = "Binding Point")],
-        DecorationDescriptorSet => [(kind = LiteralInteger, name = "Descriptor Set")],
-        DecorationOffset => [(kind = LiteralInteger, name = "Byte Offset")],
-        DecorationXfbBuffer => [(kind = LiteralInteger, name = "XFB Buffer Number")],
-        DecorationXfbStride => [(kind = LiteralInteger, name = "XFB Stride")],
-        DecorationFuncParamAttr => [(
-            kind = FunctionParameterAttribute,
-            name = "Function Parameter Attribute",
-        )],
-        DecorationFPRoundingMode =>
-            [(kind = FPRoundingMode, name = "Floating-Point Rounding Mode")],
-        DecorationFPFastMathMode => [(kind = FPFastMathMode, name = "Fast-Math Mode")],
-        DecorationLinkageAttributes => [
-            (kind = LiteralString, name = "Name"),
-            (kind = LinkageType, name = "Linkage Type"),
-        ],
-        DecorationInputAttachmentIndex =>
-            [(kind = LiteralInteger, name = "Attachment Index")],
-        DecorationAlignment => [(kind = LiteralInteger, name = "Alignment")],
-        DecorationMaxByteOffset => [(kind = LiteralInteger, name = "Max Byte Offset")],
-        DecorationAlignmentId => [(kind = IdRef, name = "Alignment")],
-        DecorationMaxByteOffsetId => [(kind = IdRef, name = "Max Byte Offset")],
-        DecorationSecondaryViewportRelativeNV =>
-            [(kind = LiteralInteger, name = "Offset")],
-        DecorationCounterBuffer => [(kind = IdRef, name = "Counter Buffer")],
-        DecorationHlslCounterBufferGOOGLE => [(kind = IdRef, name = "Counter Buffer")],
-        DecorationUserSemantic => [(kind = LiteralString, name = "Semantic")],
-        DecorationHlslSemanticGOOGLE => [(kind = LiteralString, name = "Semantic")],
-        DecorationUserTypeGOOGLE => [(kind = LiteralString, name = "User Type")],
-        DecorationMemoryINTEL => [(kind = LiteralString, name = "Memory Type")],
-        DecorationNumbanksINTEL => [(kind = LiteralInteger, name = "Banks")],
-        DecorationBankwidthINTEL => [(kind = LiteralInteger, name = "Bank Width")],
-        DecorationMaxPrivateCopiesINTEL =>
-            [(kind = LiteralInteger, name = "Maximum Copies")],
-        DecorationMaxReplicatesINTEL =>
-            [(kind = LiteralInteger, name = "Maximum Replicates")],
-        DecorationMergeINTEL => [
-            (kind = LiteralString, name = "Merge Key"),
-            (kind = LiteralString, name = "Merge Type"),
-        ],
-        DecorationBankBitsINTEL =>
-            [(kind = LiteralInteger, quantifier = "*", name = "Bank Bits")],
-        DecorationForcePow2DepthINTEL => [(kind = LiteralInteger, name = "Force Key")],
-    ),
-)
+@enum Id::Int begin
+    IdResultType      = 1
+    IdResult          = 2
+    IdMemorySemantics = 3
+    IdScope           = 4
+    IdRef             = 5
+end
 
-const enum_kinds = [
-    :ImageOperands,
-    :FPFastMathMode,
-    :SelectionControl,
-    :LoopControl,
-    :FunctionControl,
-    :MemorySemantics,
-    :MemoryAccess,
-    :KernelProfilingInfo,
-    :RayFlags,
-    :FragmentShadingRate,
-    :SourceLanguage,
-    :ExecutionModel,
-    :AddressingModel,
-    :MemoryModel,
-    :ExecutionMode,
-    :StorageClass,
-    :Dim,
-    :SamplerAddressingMode,
-    :SamplerFilterMode,
-    :ImageFormat,
-    :ImageChannelOrder,
-    :ImageChannelDataType,
-    :FPRoundingMode,
-    :LinkageType,
-    :AccessQualifier,
-    :FunctionParameterAttribute,
-    :Decoration,
-    :BuiltIn,
-    :Scope,
-    :GroupOperation,
-    :KernelEnqueueFlags,
-    :Capability,
-    :RayQueryIntersection,
-    :RayQueryCommittedIntersectionType,
-    :RayQueryCandidateIntersectionType,
-]
+@enum Literal::Int begin
+    LiteralInteger                = 1
+    LiteralString                 = 2
+    LiteralContextDependentNumber = 3
+    LiteralExtInstInteger         = 4
+    LiteralSpecConstantOpInteger  = 5
+end
+
+@enum Composite::Int begin
+    PairLiteralIntegerIdRef = 1
+    PairIdRefLiteralInteger = 2
+    PairIdRefIdRef = 3
+end

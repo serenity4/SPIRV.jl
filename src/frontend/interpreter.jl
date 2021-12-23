@@ -70,3 +70,24 @@ Core.Compiler.OptimizationParams(si::SPIRVInterpreter) = si.opt_params
 Core.Compiler.get_world_counter(si::SPIRVInterpreter) = si.world
 Core.Compiler.get_inference_cache(si::SPIRVInterpreter) = si.cache
 Core.Compiler.code_cache(si::SPIRVInterpreter) = WorldView(GLOBAL_CI_CACHE, get_world_counter(si))
+
+function Core.Compiler.inlining_policy(si::SPIRVInterpreter, @nospecialize(src), stmt_flag::UInt8,
+    mi::MethodInstance, argtypes::Vector{Any})
+    if isa(src, CodeInfo) || isa(src, Vector{UInt8})
+        src_inferred = ccall(:jl_ir_flag_inferred, Bool, (Any,), src)
+        src_inlineable = Core.Compiler.is_stmt_inline(stmt_flag) || ccall(:jl_ir_flag_inlineable, Bool, (Any,), src)
+        return src_inferred && src_inlineable ? src : nothing
+    elseif src === nothing && Core.Compiler.is_stmt_inline(stmt_flag)
+        # if this statement is forced to be inlined, make an additional effort to find the
+        # inferred source in the local cache
+        # we still won't find a source for recursive call because the "single-level" inlining
+        # seems to be more trouble and complex than it's worth
+        inf_result = Core.Compiler.cache_lookup(mi, argtypes, Core.Compiler.get_inference_cache(si))
+        inf_result === nothing && return nothing
+        src = inf_result.src
+        if isa(src, CodeInfo)
+            src_inferred = ccall(:jl_ir_flag_inferred, Bool, (Any,), src)
+            return src_inferred ? src : nothing
+        end
+    end
+end

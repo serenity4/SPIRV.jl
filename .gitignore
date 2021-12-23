@@ -1,7 +1,5 @@
 Manifest.toml
 docs/build
-spirv.core.grammar.json
-gen/spirv.jl
 /.JuliaFormatter.toml
 .vscode
 tmp.jl

@@ -4,14 +4,16 @@ struct SPIRFormatError <: Exception
     msg
 end
 
-defines_extra_operands(arg, category) = is_enum(category) && haskey(extra_operands, typeof(arg)) && haskey(extra_operands[typeof(arg)], arg)
-get_extra_operands(arg) = extra_operands[typeof(arg)][arg]
+function defines_extra_operands(arg)
+    val = get(enum_infos, arg, nothing)
+    !isnothing(val) && !isempty(val.parameters)
+end
 
 function update_infos!(op_infos, i, arg, category)
-    arg isa SSAValue && (arg = arg.id)
-    if defines_extra_operands(arg, category)
-        foreach(get_extra_operands(arg)) do operand
-            insert!(op_infos, i + 1, operand)
+    # arg isa SSAValue && (arg = arg.id)
+    if defines_extra_operands(arg)
+        for info in reverse(enum_infos[arg].parameters)
+            insert!(op_infos, i + 1, info)
         end
     end
 end
@@ -25,27 +27,22 @@ SPIR-V instruction. Must contain an opcode, and optionally a type id and a resul
 """
 @broadcastref abstract type AbstractInstruction end
 
-info(opcode::OpCode) = classes[opcode][2]
-info(opcode::Integer) = info(OpCode(opcode))
-
-function info(inst::AbstractInstruction, skip_ids::Bool = true)
-    res = info(inst.opcode)
-    skip_ids ? res[start_idx(inst):end] : res
+function info(opcode::Union{OpCode,OpCodeGLSL}, skip_ids::Bool = true)
+    source = isa(opcode, OpCode) ? instruction_infos : instruction_infos_glsl
+    info = source[opcode]
+    if skip_ids
+        info = @set info.operands = filter(x -> !in(x.kind, (IdResultType, IdResult)), info.operands)
+    end
+    info
 end
+info(opcode::Integer, args...) = info(OpCode(opcode), args...)
+info(inst::AbstractInstruction, args...) = info(inst.opcode, args...)
 
 start_idx(type_id, result_id) = 1 + !isnothing(type_id) + !isnothing(result_id)
 start_idx(inst::AbstractInstruction) = start_idx(inst.type_id, inst.result_id)
 
-function operand_kinds(opcode, skip_ids::Bool)
-    op_kinds = getproperty.(info(opcode), :kind)
-    if skip_ids
-        filter(!in((IdResultType, IdResult)), op_kinds)
-    else
-        op_kinds
-    end
-end
-
-operand_kinds(inst::AbstractInstruction, skip_ids::Bool = true) = getproperty.(info(inst, skip_ids), :kind)
+operand_infos(args...) = info(args...).operands
+operand_kinds(args...) = getproperty.(operand_infos(args...), :kind)
 
 """
 SPIR-V instruction in binary format.
@@ -96,7 +93,7 @@ end
 function next_id(io::IO, next_word, op_kinds, id_type)
     @match id_type begin
         &IdResultType => begin
-            if length(op_kinds) ≠ 0 && first(op_kinds) == id_type
+            if length(op_kinds) ≠ 0 && id_type == first(op_kinds)
                 next_word(io)
             else
                 nothing
@@ -157,13 +154,14 @@ Parsed SPIR-V instruction. It represents an instruction of the form `%result_id 
 end
 Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
 
-function info(opcode::OpCode, arguments::AbstractVector)
-    op_infos = copy(info(opcode))
+function info(opcode::OpCode, arguments::AbstractVector, skip_ids::Bool = true)
+    inst_info = deepcopy(info(opcode, skip_ids))
+    op_infos = inst_info.operands
 
     # Repeat the last info if there is a variable number of arguments.
     if !isempty(op_infos)
         linfo = last(op_infos)
-        if get(linfo, :quantifier, "") == "*"
+        if linfo.quantifier == "*"
             append!(op_infos, linfo for _ in 1:(length(arguments) - 1))
         end
     end
@@ -174,20 +172,20 @@ function info(opcode::OpCode, arguments::AbstractVector)
         category = kind_to_category[info.kind]
         update_infos!(op_infos, i, arg, category)
     end
-    op_infos
+    inst_info
 end
 
 """
-Information regarding the arguments of an `Instruction`, including extra operands.
+Information regarding an `Instruction` and its operands, including extra parameters.
 """
 function info(inst::Instruction, skip_ids::Bool = true)
-    op_infos = info(inst.opcode, inst.arguments)
-    skip_ids ? op_infos[start_idx(inst):end] : op_infos
+    inst_info = info(inst.opcode, inst.arguments)
+    inst_info
 end
 
 function Instruction(inst::PhysicalInstruction)
     opcode = OpCode(inst.opcode)
-    op_infos = copy(info(inst))
+    op_infos = copy(operand_infos(inst))
     operands = inst.operands
 
     arguments = []
@@ -196,22 +194,21 @@ function Instruction(inst::PhysicalInstruction)
         operand = length(arguments) + 1
         info = op_infos[operand]
         category = kind_to_category[info.kind]
-        if hasproperty(info, :quantifier)
-            quantifier = info.quantifier
-            if quantifier == "*"
+        (; quantifier) = info
+        @switch quantifier begin
+            @case "*"
                 arg = operands[i:end]
                 category == "Id" && (arg = SSAValue.(arg))
                 append!(arguments, arg)
                 break
-            elseif quantifier == "?"
+            @case "?"
                 error("Unhandled '?' quantifier")
-            end
-        else
-            j, arg = next_argument(operands[i:end], info, category)
-            category == "Id" && (arg = SSAValue(arg))
-            push!(arguments, arg)
-            update_infos!(op_infos, i, arg, category)
-            i += j
+            @case nothing
+                j, arg = next_argument(operands[i:end], info, category)
+                category == "Id" && (arg = SSAValue(arg))
+                push!(arguments, arg)
+                update_infos!(op_infos, i, arg, category)
+                i += j
         end
     end
     Instruction(opcode, inst.type_id, inst.result_id, arguments)
