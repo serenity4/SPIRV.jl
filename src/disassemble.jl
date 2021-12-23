@@ -58,21 +58,22 @@ show(io::IO, ::MIME"text/plain", inst::Instruction) = emit(io, inst)
 Transform the content of `spir_module` into a human-readable format and prints it to `io`.
 """
 function disassemble(io::IO, mod::Module)
-    if mod.magic_number == magic_number
+    (; meta, bound) = mod
+    if meta.magic_number == magic_number
         println(io, "SPIR-V")
     else
-        println(io, "Magic number: ", mod.magic_number)
+        println(io, "Magic number: ", meta.magic_number)
     end
-    println(io, "Version: ", join([mod.version.major, mod.version.minor], "."))
-    println(io, "Generator: ", hex(mod.generator_magic_number))
-    println(io, "Bound: ", mod.bound)
-    println(io, "Schema: ", mod.schema)
+    println(io, "Version: ", join([meta.version.major, meta.version.minor], "."))
+    println(io, "Generator: ", hex(meta.generator_magic_number))
+    println(io, "Bound: ", bound)
+    println(io, "Schema: ", meta.schema)
     println(io)
 
-    padding(id) = length(string(mod.bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
+    padding(id) = length(string(bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
     for inst ∈ mod.instructions
         print(io, ' '^padding(inst.result_id))
-        emit(io, inst, mod.bound)
+        emit(io, inst, bound)
         println(io)
     end
 end

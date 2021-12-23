@@ -9,7 +9,7 @@ using AutoHashEquals
 using Accessors
 
 using CodeInfoTools
-using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, method_instances, MethodInstance, InferenceResult, typeinf, InferenceState, retrieve_code_info, lock_mi_inference, AbstractInterpreter
+using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, method_instances, MethodInstance, InferenceResult, typeinf, InferenceState, retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView
 
 import SPIRV_Tools_jll
 const spirv_val = SPIRV_Tools_jll.spirv_val(identity)

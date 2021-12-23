@@ -78,7 +78,7 @@ cache_inferred!(mi::MethodInstance, code::CodeInfo) = insert!(INFERRED_CODE_CACH
 "Run type inference on the given `MethodInstance`."
 function infer!(mi::MethodInstance)
     haskey(INFERRED_CODE_CACHE, mi) && return INFERRED_CODE_CACHE[mi]
-    interp = Core.Compiler.NativeInterpreter()
+    interp = SPIRVInterpreter()
     result = InferenceResult(mi)
     src = get(LOWERED_CODE_CACHE, mi, nothing)
     src = !isnothing(src) ? copy(src) : retrieve_code_info(result.linfo)

@@ -39,7 +39,8 @@ end
 
 function FunctionType(mi::MethodInstance)
     argtypes = map(SPIRType, Base.tuple_type_tail(mi.specTypes).types)
-    FunctionType(SPIRType(mi.cache.rettype), argtypes)
+    ci = GLOBAL_CI_CACHE[mi]
+    FunctionType(SPIRType(ci.rettype), argtypes)
 end
 
 function emit!(ir::IR, irmap::IRMapping, type::FunctionType)
