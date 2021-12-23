@@ -177,3 +177,8 @@ function julia_type(@nospecialize(t::SPIRType), ir::IR)
         &(FloatType(64)) => Float64
     end
 end
+
+function emit_extinst!(ir::IR, extinst)
+    haskey(ir.extinst_imports.backward, extinst) && return ir.extinst_imports[extinst]
+    insert!(ir.extinst_imports, next!(ir.ssacounter), extinst)
+end

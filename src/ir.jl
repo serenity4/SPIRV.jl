@@ -52,7 +52,7 @@ mutable struct IR
     meta::Metadata
     capabilities::Vector{Capability}
     extensions::Vector{String}
-    extinst_imports::SSADict{String}
+    extinst_imports::BijectiveMapping{SSAValue,String}
     addressing_model::AddressingModel
     memory_model::MemoryModel
     entry_points::SSADict{EntryPoint}
@@ -86,7 +86,7 @@ function IR(; meta::Metadata = Metadata(), addressing_model::AddressingModel = A
             push!(required_caps, CapabilityAddresses)
     end
 
-    IR(meta, union(capabilities, required_caps), union(extensions, required_exts), SSADict(), addressing_model, memory_model,
+    IR(meta, union(capabilities, required_caps), union(extensions, required_exts), BijectiveMapping(), addressing_model, memory_model,
         SSADict(), SSADict(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), SSADict(), DebugInfo(), SSACounter(0))
 end
 

@@ -63,17 +63,18 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
         _ => begin
           @tryswitch f begin
             @case ::GlobalRef && if f.mod == Base end
-              f.name in (:mul_float, :mul_add, :add_float, :rint_llvm) && (f = :(Core.Intrinsics.$(f.name)))
+              f.name in (:mul_float, :mul_add, :add_float, :rint_llvm, :fptosi, :muladd_float) && (f = :(Core.Intrinsics.$(f.name)))
           end
           opcode = nothing
+          extinst = nothing
           @switch f begin
             @case :($Core.Intrinsics.$_f)
               opcode = @match _f begin
                 if haskey(direct_translations, _f) end => direct_translations[_f]
                 _ => begin
-                  (extinst, _opcode) = @switch _f begin
-                    # @case :rint_llvm
-                      # (Symbol("GLSL.std.450"), )
+                  extinst = @switch _f begin
+                    @case :rint_llvm
+                      OpGLSLRound
                     @case _
                       error("Unmapped core instrinsic $_f")
                     end
@@ -88,12 +89,7 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
             @case &OpFConvert
               args = (args[2],)
             @case &OpExtInst
-              @switch f begin
-                @case :rint_llvm
-                  emit_extinst!(ir, "GLSL.std.450")
-                @case _
-                  error("Unhandled extended instruction $f")
-              end
+              args = (emit_extinst!(ir, "GLSL.std.450"), args...)
           end
           (opcode, args)
         end
