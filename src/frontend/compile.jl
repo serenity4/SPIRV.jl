@@ -8,6 +8,7 @@ end
 function IR(cfg::CFG)
     ir = IR()
     emit!(ir, cfg)
+    satisfy_requirements!(ir)
     ir
 end
 

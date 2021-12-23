@@ -39,6 +39,7 @@ include("ir.jl")
 include("cfg.jl")
 include("assemble.jl")
 include("validate.jl")
+include("requirements.jl")
 
 include("frontend/deltagraph.jl")
 include("frontend/interpreter.jl")
@@ -78,6 +79,7 @@ export
         Metadata,
         SSADict,
         @inst,
+        FeatureRequirements,
 
         # CFG
         control_flow_graph,
