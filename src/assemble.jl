@@ -159,7 +159,7 @@ function Base.read(::Type{Module}, io::IO)
                             &LiteralExtInstInteger => parse(Int, op)
                             &LiteralInteger || &LiteralSpecConstantOpInteger => parse(UInt32, op)
                             &LiteralContextDependentNumber => contains(op, '.') ? reinterpret(UInt32, parse(Float32, op)) : parse(UInt32, op)
-                            &LiteralString => strip(op, '"')
+                            &LiteralString => String(strip(op, '"'))
                         end
                         :Composite => error("Composites are not supported yet.")
                         _ => getproperty(@__MODULE__, Symbol(name, op))

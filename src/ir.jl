@@ -3,7 +3,7 @@ struct Source
     version::VersionNumber
     file::Optional{String}
     code::Optional{String}
-    extensions::Vector{Symbol}
+    extensions::Vector{String}
 end
 
 @broadcastref struct EntryPoint
@@ -122,7 +122,7 @@ function IR(mod::Module; satisfy_requirements = true)
                         debug.source = Source(language, source_version(language, version), file, code, [])
                     @case &OpSourceExtension
                         !isnothing(debug.source) || error("Source extension was declared before the source, or the source was not declared at all.")
-                        push!(debug.source.extensions, Symbol(arguments[1]))
+                        push!(debug.source.extensions, arguments[1])
                     @case &OpName
                         id, name = arguments
                         insert!(debug.names, id, Symbol(name))
@@ -249,7 +249,7 @@ function Module(ir::IR)
     append!(insts, @inst(id = OpExtInstImport(extinst)) for (id, extinst) in pairs(ir.extinst_imports))
     push!(insts, @inst OpMemoryModel(ir.addressing_model, ir.memory_model))
     for entry in ir.entry_points
-        push!(insts, @inst OpEntryPoint(entry.model, entry.func, string(entry.name), entry.interfaces...))
+        push!(insts, @inst OpEntryPoint(entry.model, entry.func, String(entry.name), entry.interfaces...))
         append!(insts, entry.modes)
     end
     append_debug_instructions!(insts, ir)
@@ -268,7 +268,7 @@ function append_debug_instructions!(insts, ir::IR)
         !isnothing(source.file) && push!(args, source.file)
         !isnothing(source.code) && push!(args, source.code)
         push!(insts, @inst OpSource(args...))
-        append!(insts, @inst(OpSourceExtension(string(ext))) for ext in source.extensions)
+        append!(insts, @inst(OpSourceExtension(ext)) for ext in source.extensions)
     end
 
     for (id, filename) in pairs(debug.filenames)
@@ -276,13 +276,13 @@ function append_debug_instructions!(insts, ir::IR)
     end
 
     for (id, name) in pairs(debug.names)
-        push!(insts, @inst OpName(id, string(name)))
+        push!(insts, @inst OpName(id, String(name)))
     end
 
     for (id, type) in pairs(ir.types)
         if type isa StructType
             for (member, name) in pairs(type.member_names)
-                push!(insts, @inst OpMemberName(id, UInt32(member - 1), string(name)))
+                push!(insts, @inst OpMemberName(id, UInt32(member - 1), String(name)))
             end
         end
     end

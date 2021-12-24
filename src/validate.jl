@@ -16,7 +16,10 @@ function validate_types(mod::Module)
     for inst in mod
         for arg in [inst.arguments; filter(!isnothing, [inst.type_id, inst.result_id])]
             T = typeof(arg)
-            T in spirv_types || throw(ValidationError("Type $T is not a SPIR-V type.\nOffending instruction: $inst"))
+            T in spirv_types || throw(ValidationError("""
+                Argument $(repr(arg)) of type $(repr(T)) is not a SPIR-V type.
+                Offending instruction: $(sprint(emit, inst; context = :color => true))
+                """))
         end
     end
     true

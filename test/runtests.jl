@@ -75,6 +75,7 @@ modules = [
 
     @testset "Parsing human-readable SPIR-V assembly (.spvasm)" begin
         mod = read(SPIRV.Module, spvasm("simple"))
+        @test validate(mod)
         ir = IR(mod)
         @test SPIRV.Module(ir) ≈ mod
 
@@ -89,4 +90,4 @@ modules = [
         include("frontend/restructuring.jl")
         include("frontend/compile.jl")
     end
-end
+end;
