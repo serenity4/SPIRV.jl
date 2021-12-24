@@ -204,7 +204,7 @@ function Instruction(inst::PhysicalInstruction)
             @case "?"
                 error("Unhandled '?' quantifier")
             @case nothing
-                j, arg = next_argument(operands[i:end], info, category)
+                j, arg = next_argument(operands[i:end], info)
                 category == "Id" && (arg = SSAValue(arg))
                 push!(arguments, arg)
                 update_infos!(op_infos, i, arg, category)
@@ -214,7 +214,7 @@ function Instruction(inst::PhysicalInstruction)
     Instruction(opcode, inst.type_id, inst.result_id, arguments)
 end
 
-function next_argument(operands, info, category)
+function next_argument(operands, info)
     (; kind) = info
     (nwords, val) = if kind == LiteralString
         bytes = reinterpret(UInt8, operands)
@@ -225,7 +225,7 @@ function next_argument(operands, info, category)
         arg = first(operands)
         sizeof(arg) <= 4 || error("Literals with a size greater than 32 bits are not supported.")
         1, arg
-    elseif is_enum(category)
+    elseif kind isa DataType && is_enum(kind)
         1, kind(first(operands))
     else
         1, first(operands)
@@ -241,7 +241,12 @@ function parse_bytes_for_utf8_string(bytes)
     error("String is not NUL-terminated")
 end
 
-is_enum(category) = category in ("ValueEnum", "BitEnum")
+is_enum(category::AbstractString) = category in ("ValueEnum", "BitEnum")
+
+const enum_types = Set(map(first, filter!(is_enum ∘ last, collect(pairs(kind_to_category)))))
+
+is_enum(val) = is_enum(typeof(val))
+is_enum(t::DataType) = t in enum_types
 
 struct Metadata
     magic_number::UInt32
