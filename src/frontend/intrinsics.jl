@@ -86,20 +86,26 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
               emit!(ir, irmap, :($(GlobalRef(Base, :add_float))($a, $(mulinst.result_id))), jtype)
               return
             end
-            _ => error("Unknown function $f")
+            _ => error("Unknown function $(repr(f))")
           end
         end
       end
       (opcode, args)
     end
     Expr(:invoke, mi, f, args...) => begin
-      display(mi)
-      cfg = CFG(mi; inferred = true)
-      fid = emit!(ir, cfg)
-      args = (fid, args...)
-      OpFunctionCall
+      @assert isa(f, GlobalRef)
+      @match (f.mod, f.name) begin
+        (&SPIRV, :FMul) => (OpFMul, args)
+        (&SPIRV, :FAdd) => (OpFAdd, args)
+        _ => begin
+          cfg = infer(CFG(mi))
+          fid = emit!(ir, cfg)
+          args = (fid, args...)
+          (OpFunctionCall, args)
+        end
+      end
     end
-    _ => error("Expected call or invoke expression, got $ex")
+    _ => error("Expected call or invoke expression, got $(repr(ex))")
   end
 
   @tryswitch opcode begin
@@ -125,3 +131,9 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
 
   @inst next!(ir.ssacounter) = opcode(args...)::type_id
 end
+
+# ===============
+
+# #TODO: Add all SPIR-V intrinsics.
+FAdd(x::T, y::T) where {T<:Union{Float16,Float32,Float64}} = placeholder(x, y)::T
+FMul(x::T, y::T) where {T<:Union{Float16,Float32,Float64}} = placeholder(x, y)::T
