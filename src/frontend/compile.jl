@@ -1,8 +1,11 @@
 function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
-    original = CFG(f, argtypes)
-    inferred = infer!(original)
-    ir = IR(inferred)
-    ir
+    compile(CFG(f, argtypes))
+end
+
+function compile(cfg::CFG)
+    # TODO: restructure CFG
+    inferred = infer(cfg)
+    IR(inferred)
 end
 
 function IR(cfg::CFG)
@@ -182,4 +185,9 @@ end
 function emit_extinst!(ir::IR, extinst)
     haskey(ir.extinst_imports.backward, extinst) && return ir.extinst_imports[extinst]
     insert!(ir.extinst_imports, next!(ir.ssacounter), extinst)
+end
+
+macro compile(ex)
+    compile_args = map(esc, get_signature(ex))
+    :(compile($(compile_args...)))
 end

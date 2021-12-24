@@ -14,7 +14,7 @@ function f_extinst(x)
 end
 
 @testset "Compilation to SPIR-V" begin
-  ir = compile(f_straightcode, Tuple{Float32})
+  ir = @compile f_straightcode(3f0)
   @testset "Intrinsics" begin
     @test only(only(values(ir.fdefs)).blocks)[2] == @inst SSAValue(8) = OpFAdd(SSAValue(5), SSAValue(7))::SSAValue(2)
     @test only(only(values(ir.fdefs)).blocks)[3] == @inst SSAValue(10) = OpFMul(SSAValue(9), SSAValue(8))::SSAValue(2)
@@ -43,4 +43,25 @@ end
   @test_throws SPIRV.ValidationError("""
     error: line 0: No OpEntryPoint instruction was found. This is only allowed if the Linkage capability is being used.
     """) validate(ir)
+
+  @testset "Cache invalidation" begin
+    SPIRV.invalidate_all()
+    tcompile = @elapsed @compile f_straightcode(3f0)
+    tcached = @elapsed @compile f_straightcode(3f0)
+    @test tcompile/tcached > 2
+
+    @eval function f_straightcode(x)
+      y = x + 1
+      z = 3y
+      z^2
+    end
+    tinvalidated = @elapsed @compile f_straightcode(3f0)
+
+    @test tinvalidated/tcached > 2
+  end
+
+  # cfg = @cfg f_straightcode(3f0)
+  # cfg = @cfg f_extinst(3f0)
+  # cfg = @cfg exp(1)
+  # cfg = @cfg exp(3f0)
 end

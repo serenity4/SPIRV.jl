@@ -1,75 +1,58 @@
 struct SPIRVInterpreter <: AbstractInterpreter
-    cache::Vector{InferenceResult}
+    "Global cache used for memoizing the results of type inference."
+    global_cache::CodeInstanceCache
+    """
+    Custom method table to redirect Julia builtin functions to SPIR-V builtins.
+    Can also be used to redirect certain function calls to use extended instruction sets instead.
+    """
+    method_table::Union{Nothing,Core.MethodTable}
+    "Cache used locally within a particular type inference run."
+    local_cache::Vector{InferenceResult}
+    "Maximum world in which functions can be used in."
     world::UInt
     inf_params::InferenceParams
     opt_params::OptimizationParams
 end
 
-# Constructor adapted from Julia's `NativeInterpreter`.
-function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = InferenceParams(), opt_params = OptimizationParams())
-    current_world = get_world_counter()
+function cap_world(world, max_world)
     if world == typemax(UInt)
         # Sometimes the caller is lazy and passes typemax(UInt).
         # We cap it to the current world age.
-        world = current_world
+        max_world
     else
-        world ≤ current_world || error("The provided world is too new, expected world ≤ $current_world")
+        world ≤ max_world || error("The provided world is too new, expected world ≤ $current_world")
+        world
     end
+end
 
-    return SPIRVInterpreter(
+# Constructor adapted from Julia's `NativeInterpreter`.
+function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = InferenceParams(),
+        opt_params = OptimizationParams(), global_cache = GLOBAL_CI_CACHE, method_table = SPIRV_METHOD_TABLE)
+    SPIRVInterpreter(
+        global_cache,
+        method_table,
         InferenceResult[],
-        world,
+        cap_world(world, get_world_counter()),
         inf_params,
         opt_params,
     )
 end
 
-struct CodeInstanceCache
-    dict::Dict{MethodInstance,Vector{CodeInstance}}
-end
-CodeInstanceCache() = CodeInstanceCache(Dict())
+#=
 
-@forward CodeInstanceCache.dict (Base.get, Base.haskey)
+Integration with the compiler through the `AbstractInterpreter` interface.
 
-Base.getindex(cache::CodeInstanceCache, mi::MethodInstance) = WorldView(cache, Core.Compiler.WorldRange(mi.def.primary_world, mi.def.deleted_world))[mi]
+Custom caches and a custom method table are used.
+Everything else is similar to the `NativeInterpreter`.
 
-function Base.setindex!(cache::CodeInstanceCache, ci::CodeInstance, mi::MethodInstance)
-    push!(get!(Vector{CodeInstance}, cache.dict, mi), ci)
-end
-
-Base.haskey(wvc::WorldView{CodeInstanceCache}, mi::MethodInstance) = !isnothing(get(wvc, mi, nothing))
-
-function Base.get(wvc::WorldView{CodeInstanceCache}, mi::MethodInstance, default)
-    cis = get(wvc.cache, mi, CodeInstance[])
-    # Iterate code instances in reverse, as the most recent ones
-    # are more likely to be valid.
-    for ci in reverse(cis)
-        if ci.min_world ≤ Core.Compiler.first(wvc.worlds) && Core.Compiler.last(wvc.worlds) ≤ ci.max_world
-            return ci
-        end
-    end
-    default
-end
-
-function Base.getindex(wvc::WorldView{CodeInstanceCache}, mi::MethodInstance)
-    ci = get(wvc, mi, nothing)
-    isnothing(ci) && throw(KeyError(mi))
-    ci
-end
-
-Base.setindex!(wvc::WorldView{CodeInstanceCache}, args...) = setindex!(wvc.cache, args...)
-
-Core.Compiler.get(wvc::WorldView{CodeInstanceCache}, args...) = get(wvc, args...)
-Core.Compiler.haskey(wvc::WorldView{CodeInstanceCache}, args...) = haskey(wvc, args...)
-Core.Compiler.setindex!(wvc::WorldView{CodeInstanceCache}, args...) = setindex!(wvc, args...)
-
-const GLOBAL_CI_CACHE = CodeInstanceCache()
+=#
 
 Core.Compiler.InferenceParams(si::SPIRVInterpreter) = si.inf_params
 Core.Compiler.OptimizationParams(si::SPIRVInterpreter) = si.opt_params
 Core.Compiler.get_world_counter(si::SPIRVInterpreter) = si.world
-Core.Compiler.get_inference_cache(si::SPIRVInterpreter) = si.cache
-Core.Compiler.code_cache(si::SPIRVInterpreter) = WorldView(GLOBAL_CI_CACHE, get_world_counter(si))
+Core.Compiler.get_inference_cache(si::SPIRVInterpreter) = si.local_cache
+Core.Compiler.code_cache(si::SPIRVInterpreter) = WorldView(si.global_cache, si.world)
+Core.Compiler.method_table(si::SPIRVInterpreter, ::InferenceState) = Core.Compiler.OverlayMethodTable(si.world, si.method_table)
 
 function Core.Compiler.inlining_policy(si::SPIRVInterpreter, @nospecialize(src), stmt_flag::UInt8,
     mi::MethodInstance, argtypes::Vector{Any})

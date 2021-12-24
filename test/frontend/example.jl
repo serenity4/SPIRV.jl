@@ -32,7 +32,7 @@ end
 cfg = CFG(f, Tuple{Float64})
 modified = merge_return_blocks(cfg)
 replace_code!(cfg.mi, modified.code)
-cfg2 = infer!(cfg)
+cfg2 = infer(cfg)
 cfg2.code
 cfg.mi.uninferred
 cfg.code

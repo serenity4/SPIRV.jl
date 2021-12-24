@@ -1,0 +1,1 @@
+@MethodTable(SPIRV_METHOD_TABLE)

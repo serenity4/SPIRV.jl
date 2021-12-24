@@ -6,6 +6,8 @@ Collection of tools for processing [SPIR-V](https://www.khronos.org/spir/) binar
 
 This is currently a work in progress. A basic disassembler and assembler are currently available. An Intermediate Representation (IR) is currently being developed with the purpose of interpreting SPIR-V modules globally, instead of a simple stream of instructions. Such IR is designed to easily map to SPIR-V modules for introspection and modification of SPIR-V programs.
 
+This library contains a very experimental Julia to SPIR-V compiler, built as an alternative SPIR-V backend to the Julia compilation pipeline. Some of the internal code used for integrating with the compilation pipeline was inspired from [GPUCompiler.jl](https://github.com/JuliaGPU/GPUCompiler.jl); however, since we do not go through LLVM at all, most other things from GPUCompiler are not applicable.
+
 ## Regenerate package files
 
 A portion of this package relies on static code generation. To re-generate the files, execute `gen/generator.jl` in the environment specified in `gen`:

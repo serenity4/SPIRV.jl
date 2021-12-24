@@ -54,53 +54,65 @@ const direct_translations = dictionary([
 
 function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
   type = SPIRType(jtype)
+  extinst = nothing
   (opcode, args) = @match ex begin
     :($f($(args...))) => begin
-      @match ex begin
-        :(Base.fptrunc(Float32, $arg)) => (OpFConvert, [arg])
-        :(Base.fptrunc(Float16, $arg)) => (OpQuantizeToF16, [arg])
-        :(Core.bitcast(Float16, $arg)) => (OpBitcast, [arg])
+      opcode = @match ex begin
+        :(Base.fptrunc($T, $arg)) => OpFConvert
+        :(Base.fptrunc(Float16, $arg)) => OpQuantizeToF16
+        :(Core.bitcast($T, $arg)) => OpBitcast
         _ => begin
           @tryswitch f begin
             @case ::GlobalRef && if f.mod == Base end
-              f.name in (:mul_float, :mul_add, :add_float, :rint_llvm, :fptosi, :muladd_float) && (f = :(Core.Intrinsics.$(f.name)))
+              f.name in (:mul_float, :mul_add, :add_float, :rint_llvm, :fptosi) && (f = GlobalRef(Core.Intrinsics, f.name))
           end
-          opcode = nothing
-          extinst = nothing
-          @switch f begin
-            @case :($Core.Intrinsics.$_f)
-              opcode = @match _f begin
-                if haskey(direct_translations, _f) end => direct_translations[_f]
-                _ => begin
-                  extinst = @switch _f begin
-                    @case :rint_llvm
-                      OpGLSLRound
-                    @case _
-                      error("Unmapped core instrinsic $_f")
-                    end
-                  OpExtInst
-                end
+          @assert f isa GlobalRef
+          @match (f.mod, f.name) begin
+            (&Core.Intrinsics, _f) => @match _f begin
+              if haskey(direct_translations, _f) end => direct_translations[_f]
+              _ => begin
+                extinst = @switch _f begin
+                  @case :rint_llvm
+                    OpGLSLRound
+                  @case _
+                    error("Unmapped core instrinsic $_f")
+                  end
+                OpExtInst
               end
-            @case _
-              error("Unknown function $f")
+            end
+            (&Base, :muladd_float) => begin
+              (a, b, c) = args
+              mulinst = emit!(ir, irmap, :($(GlobalRef(Base, :mul_float))($b, $c)), jtype)
+              emit!(ir, irmap, :($(GlobalRef(Base, :add_float))($a, $(mulinst.result_id))), jtype)
+              return
+            end
+            _ => error("Unknown function $f")
           end
-
-          @tryswitch opcode begin
-            @case &OpFConvert
-              args = (args[2],)
-            @case &OpExtInst
-              args = (emit_extinst!(ir, "GLSL.std.450"), args...)
-          end
-          (opcode, args)
         end
       end
+      (opcode, args)
     end
     Expr(:invoke, mi, f, args...) => begin
-      cfg = infer!(CFG(mi))
+      display(mi)
+      cfg = CFG(mi; inferred = true)
       fid = emit!(ir, cfg)
-      (OpFunctionCall, [fid; args])
+      args = (fid, args...)
+      OpFunctionCall
     end
     _ => error("Expected call or invoke expression, got $ex")
+  end
+
+  @tryswitch opcode begin
+    @case &OpSConvert || &OpUConvert || &OpFConvert || &OpConvertFToU || &OpConvertFToS || &OpConvertSToF || &OpConvertUToF || &OpQuantizeToF16 || &OpBitcast
+      # The first argument is the type of the conversion.
+      # The type ID will be implicitly used.
+      args = args[2:end]
+    @case &OpExtInst
+      extinst_import_id = @match extinst begin
+        ::OpCodeGLSL => emit_extinst!(ir, "GLSL.std.450")
+        _ => error("Unrecognized extended instruction set for instruction $extinst")
+      end
+      args = (extinst_import_id, args...)
   end
 
   type_id = emit!(ir, irmap, type)
@@ -110,5 +122,6 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
     (isa(arg, AbstractFloat) || isa(arg, Integer)) && return emit!(ir, irmap, Constant(arg))
     arg
   end
+
   @inst next!(ir.ssacounter) = opcode(args...)::type_id
 end

@@ -13,18 +13,6 @@ struct CFG
     code::CodeInfo
 end
 
-@forward CFG.mi (cache_lowered!, cache_inferred!)
-
-struct CodeCache
-    dict::Dictionary{MethodInstance,CodeInfo}
-end
-CodeCache() = CodeCache(Dictionary())
-
-@forward CodeCache.dict (Base.haskey, Base.get, Base.insert!, Base.getindex)
-
-const LOWERED_CODE_CACHE = CodeCache()
-const INFERRED_CODE_CACHE = CodeCache()
-
 function CFG(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false)
     mis = method_instances(f, argtypes)
     if length(mis) > 1
@@ -36,14 +24,24 @@ function CFG(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false)
 end
 
 function CFG(mi::MethodInstance; inferred = false)
-    code = get(INFERRED_CODE_CACHE, mi, nothing)
-    inferred && error("Could not get inferred code from cache.")
-    code = @something(code, get(LOWERED_CODE_CACHE, mi, nothing), lowered_code(mi))
-    CFG(mi, code)
+    if inferred
+        code = get(GLOBAL_CI_CACHE, mi, nothing)
+        if isnothing(code)
+            # Run type inference on lowered code.
+            cfg = CFG(mi)
+            infer(cfg)
+        else
+            CFG(mi, code)
+        end
+    else
+        CFG(mi, lowered_code(mi))
+    end
 end
 
 lowered_code(mi::MethodInstance) = uncompressed_ir(mi.def::Method)
+inferred_code(ci::CodeInstance) = Core.Compiler._uncompressed_ir(ci, ci.inferred)
 
+CFG(mi::MethodInstance, ci::CodeInstance) = CFG(mi, inferred_code(ci))
 function CFG(mi::MethodInstance, code::CodeInfo)
     stmts = code.code
     bbs = compute_basic_blocks(stmts)
@@ -72,21 +70,13 @@ end
 
 exit_blocks(cfg::CFG) = BasicBlock.(sinks(cfg.graph))
 
-cache_lowered!(mi::MethodInstance, code::CodeInfo) = insert!(LOWERED_CODE_CACHE, mi, code)
-cache_inferred!(mi::MethodInstance, code::CodeInfo) = insert!(INFERRED_CODE_CACHE, mi, code)
-
 "Run type inference on the given `MethodInstance`."
-function infer!(mi::MethodInstance)
-    haskey(INFERRED_CODE_CACHE, mi) && return INFERRED_CODE_CACHE[mi]
+function infer(mi::MethodInstance)
+    haskey(GLOBAL_CI_CACHE, mi) && return false
     interp = SPIRVInterpreter()
-    result = InferenceResult(mi)
-    src = get(LOWERED_CODE_CACHE, mi, nothing)
-    src = !isnothing(src) ? copy(src) : retrieve_code_info(result.linfo)
-    frame = InferenceState(result, src, :global, interp)
-    lock_mi_inference(interp, result.linfo)
-    typeinf(interp, frame)
-    cache_inferred!(mi, src)
-    src
+    src = Core.Compiler.typeinf_ext_toplevel(interp, mi)
+    haskey(GLOBAL_CI_CACHE, mi) || error("Could not get inferred code from cache.")
+    true
 end
 
 """
@@ -94,13 +84,10 @@ Run type inference on the provided CFG and wrap inferred code with a new CFG.
 
 The internal `MethodInstance` of the original CFG gets mutated in the process.
 """
-function infer!(cfg::CFG)
-    code = infer!(cfg.mi)
-    CFG(cfg.mi, code)
+function infer(cfg::CFG)
+    infer(cfg.mi)
+    CFG(cfg.mi, inferred = true)
 end
-
-inferred_code(cfg::CFG) = inferred_code(cfg.mi)
-inferred_code(mi::MethodInstance) = Core.Compiler._uncompressed_ir(mi.cache, mi.cache.inferred)
 
 function Base.show(io::IO, cfg::CFG)
     print(io, "CFG ($(nv(cfg.graph)) nodes, $(ne(cfg.graph)) edges, $(sum(length, cfg.instructions)) instructions)")
@@ -108,4 +95,17 @@ end
 
 function block_ranges(cfg::CFG)
     map(Base.splat(UnitRange), zip(cfg.indices[1:end-1], cfg.indices[2:end] .- 1))
+end
+
+get_signature(f::Symbol) = (f,)
+function get_signature(ex::Expr)
+    @match ex begin
+        :($f($(args...))) => (f, :(Tuple{typeof.($(eval.(args)))...}))
+        _ => error("Malformed expression: $ex")
+    end
+end
+
+macro cfg(ex)
+    cfg_args = map(esc, get_signature(ex))
+    :(CFG($(cfg_args...); inferred = true))
 end
