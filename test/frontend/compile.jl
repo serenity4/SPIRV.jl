@@ -55,10 +55,10 @@ end
 
   @testset "Cache invalidation" begin
     SPIRV.invalidate_all()
-    tcompile = @elapsed @compile f_straightcode(3f0)
-    tcached = @elapsed @compile f_straightcode(3f0)
-    @test tcompile > tcached
-    @test_broken tcompile/tcached > 5
+    tinfer = @elapsed @cfg f_straightcode(3f0)
+    tcached = @elapsed @cfg f_straightcode(3f0)
+    @test tinfer > tcached
+    @test tinfer/tcached > 5
 
     @eval function f_straightcode(x)
       y = x + 1f0
@@ -69,10 +69,10 @@ end
     # created before the method redefinition, it would still appear as valid
     cfg = CFG(f_straightcode, Tuple{Float32})
     @test !haskey(SPIRV.GLOBAL_CI_CACHE, cfg.mi)
-    tinvalidated = @elapsed @compile f_straightcode(3f0)
+    tinvalidated = @elapsed @cfg f_straightcode(3f0)
     @test haskey(SPIRV.GLOBAL_CI_CACHE, cfg.mi)
     @test tinvalidated > tcached
-    @test_broken tinvalidated/tcached > 5
+    @test tinvalidated/tcached > 5
   end
 
   # WIP
