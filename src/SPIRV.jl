@@ -44,14 +44,14 @@ include("requirements.jl")
 
 include("frontend/deltagraph.jl")
 include("frontend/cache.jl")
-include("frontend/method_table.jl")
+include("frontend/intrinsics.jl")
 include("frontend/interpreter.jl")
 include("frontend/cfg.jl")
 include("frontend/basicblocks.jl")
 include("frontend/reflection.jl")
 include("frontend/restructuring.jl")
 include("frontend/compile.jl")
-include("frontend/intrinsics.jl")
+include("frontend/codegen.jl")
 
 export
         # parse
