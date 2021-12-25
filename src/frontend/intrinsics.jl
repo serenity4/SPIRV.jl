@@ -10,39 +10,7 @@ consists of one or more calls to declared intrinsic functions (see [`@intrinsic`
 The method will always be inlined.
 """
 macro override(ex)
-
   esc(:(@overlay SPIRV.INTRINSICS_METHOD_TABLE @inline $ex))
-end
-
-strip_typedecl(arg) = @match arg begin
-  ::Symbol => arg
-  :($arg::$type) => arg
-  _ => error("Cannot extract argument name from $arg")
-end
-
-function intrinsic_impl(ex)
-  @match ex begin
-    :($f($(args...))::$T where $typedecl) => begin
-        f = esc(f); sigargs = esc.(args); args = esc.(strip_typedecl.(args)); T = esc(T); typedecl = esc(typedecl)
-        :($f($(sigargs...)) where $typedecl = $(esc(:placeholder))($(args...))::$T)
-      end
-    :($f($(args...))::$T) => begin
-        f = esc(f); sigargs = esc.(args); args = esc.(strip_typedecl.(args)); T = esc(T)
-        :($f($(sigargs...)) = $(esc(:placeholder))($(args...))::$T)
-      end
-    _ => error("Expected type asserted function call, got $(repr(ex))")
-  end
-end
-
-"""
-Declare a new intrinsic.
-
-`ex` must be a type asserted function call, which will define a new method whose
-return type is hinted to be that of the asserted type. The implementation itself
-is opaque, similar to core intrinsic functions.
-"""
-macro intrinsic(ex)
-  intrinsic_impl(ex)
 end
 
 using Base: IEEEFloat,
@@ -57,57 +25,72 @@ const IEEEFloat_types = (Float16, Float32, Float64)
 # incompatible with SPIR-V semantics should not be redirected to any of these intrinsics.
 
 @override (-)(x::IEEEFloat) = FNegate(x)
-@intrinsic FNegate(x::T)::T where {T<:IEEEFloat}
+@noinline FNegate(x::T) where {T<:IEEEFloat} = Base.neg_float(x)
 
 @override (+)(x::T, y::T) where {T<:IEEEFloat} = FAdd(x, y)
-@intrinsic FAdd(x::T, y::T)::T where {T<:IEEEFloat}
+@noinline FAdd(x::T, y::T) where {T<:IEEEFloat} = Base.add_float(x, y)
 @override (*)(x::T, y::T) where {T<:IEEEFloat} = FMul(x, y)
-@intrinsic FMul(x::T, y::T)::T where {T<:IEEEFloat}
+@noinline FMul(x::T, y::T) where {T<:IEEEFloat} = Base.mul_float(x, y)
 @override (-)(x::T, y::T) where {T<:IEEEFloat} = FSub(x, y)
-@intrinsic FSub(x::T, y::T)::T where {T<:IEEEFloat}
+@noinline FSub(x::T, y::T) where {T<:IEEEFloat} = Base.sub_float(x, y)
 @override (/)(x::T, y::T) where {T<:IEEEFloat} = FDiv(x, y)
-@intrinsic FDiv(x::T, y::T)::T where {T<:IEEEFloat}
+@noinline FDiv(x::T, y::T) where {T<:IEEEFloat} = Base.div_float(x, y)
 @override muladd(x::T, y::T, z::T) where {T<:IEEEFloat} = FAdd(x, FMul(y, z))
 
 for to in IEEEFloat_types, from in IEEEFloat_types
   if to.size ≠ from.size
-    @eval @override $to(x::$from) = FConvert(to, x)
+    @eval @override $to(x::$from) = FConvert($to, x)
+    if to.size < from.size
+      @eval @noinline FConvert(::Type{$to}, x::$from) = Base.fptrunc($to, x)
+    else
+      @eval @noinline FConvert(::Type{$to}, x::$from) = Base.fpext($to, x)
+    end
   end
 end
-@intrinsic FConvert(to::Type{T}, x::IEEEFloat)::T where {T<:IEEEFloat}
 
 #TODO: add override
-@intrinsic QuantizeToF16(x::Float32)::Float32
+# @intrinsic QuantizeToF16(x::Float32)::Float32
 
-@override unsafe_trunc(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = ConvertFtoS(T, x)
-@intrinsic ConvertFtoS(to::Type{T}, x::IEEEFloat)::T where {T<:BitSigned}
+@override unsafe_trunc(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = ConvertFToS(T, x)
+@noinline ConvertFToS(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = Base.fptosi(T, x)
 
-@override unsafe_trunc(::Type{T}, x::IEEEFloat) where {T<:BitUnsigned} = ConvertFtoU(T, x)
-@intrinsic ConvertFtoU(to::Type{T}, x::IEEEFloat)::T where {T<:BitUnsigned}
+@override unsafe_trunc(::Type{T}, x::IEEEFloat) where {T<:BitUnsigned} = ConvertFToU(T, x)
+@noinline ConvertFToU(::Type{T}, x::IEEEFloat) where {T<:BitUnsigned} = Base.fptoui(T, x)
 
-for T in IEEEFloat_types
-  @eval @override $T(x::BitSigned) = ConvertSToF($T, x)
-  @eval @override $T(x::BitUnsigned) = ConvertUToF($T, x)
-end
-@intrinsic ConvertStoF(to::Type{T}, x::BitSigned)::T where {T<:IEEEFloat}
-@intrinsic ConvertUtoF(to::Type{T}, x::BitUnsigned)::T where {T<:IEEEFloat}
+@override (::Type{T})(x::BitSigned) where {T<:IEEEFloat} = ConvertSToF(T, x)
+@noinline ConvertSToF(to::Type{T}, x::BitSigned) where {T<:IEEEFloat} = Base.sitofp(to, x)
+@override (::Type{T})(x::BitUnsigned) where {T<:IEEEFloat} = ConvertUToF(T, x)
+@noinline ConvertUToF(to::Type{T}, x::BitUnsigned) where {T<:IEEEFloat} = Base.uitofp(to, x)
 
+@override reinterpret(::Type{T}, x) where {T} = Bitcast(T, x)
+@override reinterpret(::Type{T}, x::T) where {T} = x
+@noinline Bitcast(T, x) = Base.bitcast(T, x)
 
 # Integers.
 
 ## Integer conversions.
 
 for to in BitInteger_types, from in BitInteger_types
-  if to.size ≠ from.size
+  if to.size < from.size
     if from <: Signed
-      @eval @override rem(x::$from, ::Type{$to}) = SConvert(to, from)
-    elseif to <: Unsigned
-      @eval @override rem(x::$from, ::Type{$to}) = UConvert(to, from)
+      @eval @override rem(x::$from, ::Type{$to}) = SConvert($to, x)
+      @eval @noinline SConvert(::Type{$to}, x::$from) = Base.trunc_int($to, x)
+    elseif from <: Unsigned && to <: Unsigned
+      @eval @override rem(x::$from, ::Type{$to}) = UConvert($to, x)
+      @eval @noinline UConvert(::Type{$to}, x::$from) = Base.trunc_int($to, x)
     end
+  elseif to.size > from.size
+    if from <: Signed
+      @eval @override rem(x::$from, ::Type{$to}) = SConvert($to, x)
+      @eval @noinline SConvert(::Type{$to}, x::$from) = Base.sext_int($to, x)
+    elseif from <: Unsigned && to <: Unsigned
+      # rem(::to, x::from) = convert(to, x)
+    end
+  else # to.size == from.size
+    # work around explicit call to bitcast intrinsic
+    @eval @override rem(x::$from, ::Type{$to}) = reinterpret($to, x)
   end
 end
-@intrinsic SConvert(to::Type{T}, x::BitSigned)::T where {T<:BitInteger}
-@intrinsic UConvert(to::Type{T}, x::BitUnsigned)::T where {T<:BitUnsigned}
 
 ## Integer comparisons.
 
@@ -116,62 +99,56 @@ end
 @override (<)(x::T, y::T) where {T<:BitUnsigned} = ULessThan(x, y)
 @override (<=)(x::T, y::T) where {T<:BitUnsigned} = ULessThanEqual(x, y)
 
-for intr in (:SLessThan, :SLessThanEqual, :ULessThan, :ULessThanEqual)
-  @eval @intrinsic $intr(x::BitInteger, y::BitInteger)::Bool
+for (intr, core_intr) in zip((:SLessThan, :SLessThanEqual, :ULessThan, :ULessThanEqual), (:slt_int, :sle_int, :ult_int, :ule_int))
+  @eval @noinline $intr(x::BitInteger, y::BitInteger) = Base.$core_intr(x, y)
 end
 
 ## Logical operators.
 
 @override (~)(x::BitInteger) = Not(x)
-@intrinsic Not(x::T)::T where {T<:BitInteger}
+@noinline Not(x::BitInteger) = Base.not_int(x)
 
 @override (&)(x::T, y::T) where {T<:BitInteger} = BitwiseAnd(x, y)
-@intrinsic BitwiseAnd(x::T, y::T)::T where {T<:BitInteger}
+@noinline BitwiseAnd(x::T, y::T) where {T<:BitInteger} = Base.and_int(x, y)
 
 @override (|)(x::T, y::T) where {T<:BitInteger} = BitwiseOr(x, y)
-@intrinsic BitwiseOr(x::T, y::T)::T where {T<:BitInteger}
+@noinline BitwiseOr(x::T, y::T) where {T<:BitInteger} = Base.or_int(x, y)
 
 @override xor(x::T, y::T) where {T<:BitInteger} = BitwiseXor(x, y)
-@intrinsic BitwiseXor(x::T, y::T)::T where {T<:BitInteger}
+@noinline BitwiseXor(x::T, y::T) where {T<:BitInteger} = Base.xor_int(x, y)
 
 ## Integer shifts.
 
-@override (>>)(x::BitSigned,   y::BitUnsigned) = ShiftRightArithmetic(x, y)
-@intrinsic ShiftRightArithmetic(x::T, y::BitUnsigned)::T where {T<:BitSigned}
+@override (>>)(x::BitSigned, y::BitUnsigned) = ShiftRightArithmetic(x, y)
+@noinline ShiftRightArithmetic(x::T, y::BitUnsigned) where {T<:BitSigned} = Base.ashr_int(x, y)
 
 @override (>>)(x::BitUnsigned, y::BitUnsigned) = ShiftRightLogical(x, y)
 @override (>>>)(x::BitInteger, y::BitUnsigned) = ShiftRightLogical(x, y)
-@intrinsic ShiftRightLogical(x::T, y::BitUnsigned)::T where {T<:BitInteger}
+@noinline ShiftRightLogical(x::T, y::BitUnsigned) where {T<:BitInteger} = Base.lshr_int(x, y)
 
-@override (<<)(x::BitInteger,  y::BitUnsigned) = ShiftLeft(x, y)
-@intrinsic ShiftLeft(x::T, y::BitUnsigned)::T where {T<:BitUnsigned}
+@override (<<)(x::BitInteger, y::BitUnsigned) = ShiftLeft(x, y)
+@noinline ShiftLeft(x::T, y::BitUnsigned) where {T<:BitUnsigned} = Base.shl_int(x, y)
 
 @override (-)(x::BitInteger) = SNegate(x)
-@intrinsic SNegate(x::T)::T where {T<:BitInteger}
+@noinline SNegate(x::T) where {T<:BitInteger} = Base.neg_int(x)
 
 @override (+)(x::T, y::T) where {T<:BitInteger} = IAdd(x, y)
 @override (-)(x::T, y::T) where {T<:BitInteger} = ISub(x, y)
 @override (*)(x::T, y::T) where {T<:BitInteger} = IMul(x, y)
 
-for intr in (:IAdd, :ISub, :IMul)
-  @eval @intrinsic $intr(x::T, y::T)::T where {T<:BitSigned}
-  @eval @intrinsic $intr(x::T, y::T)::T where {T<:BitUnsigned}
-  @eval @intrinsic $intr(x::BitUnsigned, y::I)::I where {I<:BitSigned}
-  @eval @intrinsic $intr(x::I, y::BitUnsigned)::I where {I<:BitSigned}
+for (intr, core_intr) in zip((:IAdd, :ISub, :IMul), (:add_int, :sub_int, :mul_int))
+  @eval @noinline $intr(x::T, y::T) where {T<:BitSigned} = Base.$core_intr(x, y)
+  @eval @noinline $intr(x::T, y::T) where {T<:BitUnsigned} = Base.$core_intr(x, y)
+  @eval @noinline $intr(x::BitUnsigned, y::I) where {I<:BitSigned} = Base.$core_intr(x, y)
+  @eval @noinline $intr(x::I, y::BitUnsigned) where {I<:BitSigned} = Base.$core_intr(x, y)
 end
 
 @override div(x::T, y::T) where {T<:BitUnsigned} = UDiv(x, y)
-@intrinsic UDiv(x::T, y::T)::T where {T<:BitUnsigned}
-
-for TX in BitInteger_types, TY in BitInteger_types
-  if TX.size == TY.size
-    #TODO: check this override
-    # @eval @override div(x::$TX, y::$TY) = SDiv(x, y)
-  end
-end
+@noinline UDiv(x::T, y::T) where {T<:BitUnsigned} = Base.udiv_int(x, y)
+@noinline SDiv(x::T, y::T) where {T<:BitSigned} = Base.sdiv_int(x, y)
 
 @override ifelse(cond::Bool, x, y) = Select(cond, x, y)
-@intrinsic Select(cond::Bool, x::T, y::T)::T where {T}
+@noinline Select(cond::Bool, x::T, y::T) where {T} = Core.ifelse(cond, x, y)
 
 @override flipsign(x::T, y::T) where {T<:BitSigned} = Select(y ≥ 0, x, -x)
 @override flipsign(x::BitSigned, y::BitSigned) = flipsign(promote(x, y)...) % typeof(x)

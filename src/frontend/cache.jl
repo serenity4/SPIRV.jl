@@ -36,7 +36,7 @@ function Base.get(wvc::WorldView{CodeInstanceCache}, mi::MethodInstance, default
     # Iterate code instances in reverse, as the most recent ones
     # are more likely to be valid.
     for ci in reverse(cis)
-        if ci.min_world ≤ Core.Compiler.first(wvc.worlds) && Core.Compiler.last(wvc.worlds) ≤ ci.max_world
+        if Core.Compiler.last(wvc.worlds) ≤ ci.max_world
             return ci
         end
     end

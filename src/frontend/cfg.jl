@@ -16,7 +16,12 @@ end
 function CFG(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false)
     mis = method_instances(f, argtypes)
     if length(mis) > 1
-        error("More than one method matches signature ($f, $argtypes).")
+        error("""
+            More than one method matches signature ($f, $argtypes):
+
+            Matching method instances:
+            $(join(string.(" └─ ", mis), "\n"))
+            """)
     elseif iszero(length(mis))
         error("No method matching the signature ($f, $argtypes).")
     end
@@ -98,9 +103,10 @@ function block_ranges(cfg::CFG)
 end
 
 get_signature(f::Symbol) = (f,)
+argtype(arg) = isa(arg, DataType) ? Type{arg} : typeof(arg)
 function get_signature(ex::Expr)
     @match ex begin
-        :($f($(args...))) => (f, :(Tuple{typeof.($(eval.(args)))...}))
+        :($f($(args...))) => (f, :(Tuple{$argtype.($(eval.(args)))...}))
         _ => error("Malformed expression: $ex")
     end
 end

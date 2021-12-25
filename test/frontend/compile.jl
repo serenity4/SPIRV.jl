@@ -2,8 +2,8 @@ using SPIRV, Test
 using SPIRV: OpFMul, OpFAdd
 
 function f_straightcode(x)
-  y = x + 1f0
-  z = 3f0y
+  y = x + 1
+  z = 3y
   z^2
 end
 
@@ -21,6 +21,12 @@ end
     @test Meta.isexpr(fadd, :invoke)
     @test fadd.args[2] == GlobalRef(SPIRV, :FAdd)
     @test cfg.code.ssavaluetypes[1] == Float32
+
+    cfg = @cfg f_straightcode(UInt64(0))
+    iadd = cfg.code.code[1]
+    @test Meta.isexpr(iadd, :invoke)
+    @test iadd.args[2] == GlobalRef(SPIRV, :IAdd)
+    @test cfg.code.ssavaluetypes[1] == UInt64
   end
 
   @testset "SPIR-V code generation" begin
@@ -63,8 +69,8 @@ end
     @test tinfer/tcached > 5
 
     @eval function f_straightcode(x)
-      y = x + 1f0
-      z = 3f0y
+      y = x + 1
+      z = 3y
       z^2
     end
     # Note: invalidation happens on new method instances, so if `cfg` was
@@ -80,7 +86,9 @@ end
   # WIP
   # cfg = @cfg f_straightcode(3f0)
   # (cfg = @cfg f_straightcode(3f0)).code
+  # (cfg = @cfg f_straightcode(3)).code
+  # (cfg = @cfg 1f0 + 1.0).code
   # cfg = @cfg f_extinst(3f0)
-  # cfg = @cfg exp(1)
-  # cfg = @cfg exp(3f0)
+  # (cfg = @cfg exp(1)).code
+  # (cfg = @cfg exp(3f0)).code
 end
