@@ -25,9 +25,11 @@ end
 
   @testset "SPIR-V code generation" begin
     ir = @compile f_straightcode(3f0)
-    @test only(only(values(ir.fdefs)).blocks)[2] == @inst SSAValue(8) = OpFAdd(SSAValue(5), SSAValue(7))::SSAValue(2)
-    @test only(only(values(ir.fdefs)).blocks)[3] == @inst SSAValue(10) = OpFMul(SSAValue(9), SSAValue(8))::SSAValue(2)
-    @test only(only(values(ir.fdefs)).blocks)[4] == @inst SSAValue(11) = OpFMul(SSAValue(10), SSAValue(10))::SSAValue(2)
+    fdef = only(values(ir.fdefs))
+    block = only(fdef.blocks)
+    @test block[2] == @inst SSAValue(8) = OpFAdd(SSAValue(5), SSAValue(7))::SSAValue(2)
+    @test block[3] == @inst SSAValue(10) = OpFMul(SSAValue(9), SSAValue(8))::SSAValue(2)
+    @test block[4] == @inst SSAValue(11) = OpFMul(SSAValue(10), SSAValue(10))::SSAValue(2)
     mod = SPIRV.Module(ir)
     @test mod == parse(SPIRV.Module, """
            OpCapability(VulkanMemoryModel)
