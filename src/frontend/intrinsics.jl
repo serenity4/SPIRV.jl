@@ -24,6 +24,14 @@ const IEEEFloat_types = (Float16, Float32, Float64)
 # Intrinsic definitions need not be applicable only to supported types. Any signature
 # incompatible with SPIR-V semantics should not be redirected to any of these intrinsics.
 
+@override reinterpret(::Type{T}, x) where {T} = Bitcast(T, x)
+@override reinterpret(::Type{T}, x::T) where {T} = x
+@noinline Bitcast(T, x) = Base.bitcast(T, x)
+
+# Floats.
+
+## Basic operations.
+
 @override (-)(x::IEEEFloat) = FNegate(x)
 @noinline FNegate(x::T) where {T<:IEEEFloat} = Base.neg_float(x)
 
@@ -36,6 +44,8 @@ const IEEEFloat_types = (Float16, Float32, Float64)
 @override (/)(x::T, y::T) where {T<:IEEEFloat} = FDiv(x, y)
 @noinline FDiv(x::T, y::T) where {T<:IEEEFloat} = Base.div_float(x, y)
 @override muladd(x::T, y::T, z::T) where {T<:IEEEFloat} = FAdd(x, FMul(y, z))
+
+## Conversions.
 
 for to in IEEEFloat_types, from in IEEEFloat_types
   if to.size ≠ from.size
@@ -62,35 +72,31 @@ end
 @override (::Type{T})(x::BitUnsigned) where {T<:IEEEFloat} = ConvertUToF(T, x)
 @noinline ConvertUToF(to::Type{T}, x::BitUnsigned) where {T<:IEEEFloat} = Base.uitofp(to, x)
 
-@override reinterpret(::Type{T}, x) where {T} = Bitcast(T, x)
-@override reinterpret(::Type{T}, x::T) where {T} = x
-@noinline Bitcast(T, x) = Base.bitcast(T, x)
-
 # Integers.
 
 ## Integer conversions.
 
-for to in BitInteger_types, from in BitInteger_types
-  if to.size < from.size
-    if from <: Signed
-      @eval @override rem(x::$from, ::Type{$to}) = SConvert($to, x)
-      @eval @noinline SConvert(::Type{$to}, x::$from) = Base.trunc_int($to, x)
-    elseif from <: Unsigned && to <: Unsigned
-      @eval @override rem(x::$from, ::Type{$to}) = UConvert($to, x)
-      @eval @noinline UConvert(::Type{$to}, x::$from) = Base.trunc_int($to, x)
+for to in BitInteger_types
+  constructor = GlobalRef(Core, Symbol(:to, nameof(to))) # toUInt16, toInt64, etc.
+  @eval @inline @override $constructor(x::BitInteger) = rem($to, x)
+  for from in BitInteger_types
+    convert = to <: Signed ? :SConvert : :UConvert
+    rem_f = to.size == from.size ? :reinterpret : convert
+    if to.size ≠ from.size
+      @eval @override rem(x::$from, ::Type{$to}) = $convert($to, x)
+      if to.size < from.size
+        @eval @noinline $convert(::Type{$to}, x::$from) = Base.trunc_int($to, x)
+      else # to.size > from.size
+        convert = to <: Signed ? :SConvert : :UConvert
+        method = to <: Signed ? :sext_int : :zext_int
+        @eval @noinline $convert(::Type{$to}, x::$from) = Base.$method($to, x)
+      end
     end
-  elseif to.size > from.size
-    if from <: Signed
-      @eval @override rem(x::$from, ::Type{$to}) = SConvert($to, x)
-      @eval @noinline SConvert(::Type{$to}, x::$from) = Base.sext_int($to, x)
-    elseif from <: Unsigned && to <: Unsigned
-      # rem(::to, x::from) = convert(to, x)
-    end
-  else # to.size == from.size
-    # work around explicit call to bitcast intrinsic
-    @eval @override rem(x::$from, ::Type{$to}) = reinterpret($to, x)
   end
 end
+
+@override Int(x::Ptr) = reinterpret(Int, x)
+@override UInt(x::Ptr) = reinterpret(UInt, x)
 
 ## Integer comparisons.
 
@@ -128,6 +134,8 @@ end
 
 @override (<<)(x::BitInteger, y::BitUnsigned) = ShiftLeft(x, y)
 @noinline ShiftLeft(x::T, y::BitUnsigned) where {T<:BitUnsigned} = Base.shl_int(x, y)
+
+## Basic operations.
 
 @override (-)(x::BitInteger) = SNegate(x)
 @noinline SNegate(x::T) where {T<:BitInteger} = Base.neg_int(x)

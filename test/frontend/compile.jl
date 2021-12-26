@@ -1,4 +1,4 @@
-using SPIRV, Test
+using SPIRV, Test, MLStyle
 using SPIRV: OpFMul, OpFAdd
 
 function f_straightcode(x)
@@ -13,20 +13,41 @@ function f_extinst(x)
   log(z)
 end
 
+function operation(ex::Expr)
+  @match ex begin
+    Expr(:invoke, _, f, args...) => @match f begin
+      ::GlobalRef => f.mod == SPIRV ? f.name : nothing
+      _ => nothing
+    end
+    _ => nothing
+  end
+end
+
 @testset "Compilation to SPIR-V" begin
   @testset "Intrinsics" begin
     # Test that SPIR-V intrinsics are picked up and infer correctly.
     cfg = @cfg f_straightcode(3f0)
-    fadd = cfg.code.code[1]
+    (; code, ssavaluetypes) = cfg.code
+    fadd = code[1]
     @test Meta.isexpr(fadd, :invoke)
     @test fadd.args[2] == GlobalRef(SPIRV, :FAdd)
-    @test cfg.code.ssavaluetypes[1] == Float32
+    @test ssavaluetypes[1] == Float32
 
     cfg = @cfg f_straightcode(UInt64(0))
-    iadd = cfg.code.code[1]
-    @test Meta.isexpr(iadd, :invoke)
-    @test iadd.args[2] == GlobalRef(SPIRV, :IAdd)
-    @test cfg.code.ssavaluetypes[1] == UInt64
+    (; code, ssavaluetypes) = cfg.code
+    @test operation(code[1]) == :IAdd
+    @test ssavaluetypes[1] == UInt64
+    @test all(==(:IMul), operation.(code[2:3]))
+    @test all(==(UInt64), ssavaluetypes[2:3])
+
+    cfg = @cfg f_straightcode(UInt32(0))
+    (; code, ssavaluetypes) = cfg.code
+    # Skip return node.
+    code = code[1:end-1]; ssavaluetypes = ssavaluetypes[1:end-1]
+    ops = [:SConvert, :IAdd, :IMul, :IMul]
+    types = fill(Int64, 4)
+    @test operation.(code) == ops
+    @test ssavaluetypes == types
   end
 
   @testset "SPIR-V code generation" begin
@@ -84,10 +105,6 @@ end
   end
 
   # WIP
-  # cfg = @cfg f_straightcode(3f0)
-  # (cfg = @cfg f_straightcode(3f0)).code
-  # (cfg = @cfg f_straightcode(3)).code
-  # (cfg = @cfg 1f0 + 1.0).code
   # cfg = @cfg f_extinst(3f0)
   # (cfg = @cfg exp(1)).code
   # (cfg = @cfg exp(3f0)).code
