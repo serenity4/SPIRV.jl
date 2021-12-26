@@ -115,3 +115,19 @@ macro cfg(ex)
     cfg_args = map(esc, get_signature(ex))
     :(CFG($(cfg_args...); inferred = true))
 end
+
+macro code_typed(debuginfo, ex)
+    cfg_args = map(esc, get_signature(ex))
+    debuginfo = @match debuginfo begin
+        :(debuginfo = $val) => val
+        _ => error("Expected 'debuginfo = <value>' where <value> is one of (:source, :none)")
+    end
+    quote
+        cfg = CFG($(cfg_args...), inferred = true)
+        code = cfg.code
+        $debuginfo == :none && Base.remove_linenums!(code)
+        code
+    end
+end
+
+macro code_typed(ex) :(@code_typed debuginfo = :source $ex) end

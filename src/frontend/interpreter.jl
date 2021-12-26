@@ -20,7 +20,7 @@ function cap_world(world, max_world)
         # We cap it to the current world age.
         max_world
     else
-        world ≤ max_world || error("The provided world is too new, expected world ≤ $current_world")
+        world ≤ max_world || error("The provided world is too new ($world), expected world ≤ $max_world")
         world
     end
 end

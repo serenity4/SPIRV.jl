@@ -1,5 +1,5 @@
 using SPIRV, Test, MLStyle
-using SPIRV: OpFMul, OpFAdd
+using SPIRV: OpFMul, OpFAdd, invalidate_all
 
 function f_straightcode(x)
   y = x + 1
@@ -83,29 +83,33 @@ end
   end
 
   @testset "Cache invalidation" begin
-    SPIRV.invalidate_all()
+    invalidate_all()
     tinfer = @elapsed @cfg f_straightcode(3f0)
     tcached = @elapsed @cfg f_straightcode(3f0)
     @test tinfer > tcached
     @test tinfer/tcached > 5
+    cfg_old = CFG(f_straightcode, Tuple{Float32})
 
     @eval function f_straightcode(x)
       y = x + 1
       z = 3y
       z^2
     end
-    # Note: invalidation happens on new method instances, so if `cfg` was
-    # created before the method redefinition, it would still appear as valid
     cfg = CFG(f_straightcode, Tuple{Float32})
     @test !haskey(SPIRV.GLOBAL_CI_CACHE, cfg.mi)
     tinvalidated = @elapsed @cfg f_straightcode(3f0)
-    @test haskey(SPIRV.GLOBAL_CI_CACHE, cfg.mi)
     @test tinvalidated > tcached
     @test tinvalidated/tcached > 5
+    @test haskey(SPIRV.GLOBAL_CI_CACHE, cfg.mi)
+    @test !haskey(SPIRV.GLOBAL_CI_CACHE, cfg_old.mi)
+    # Artifically increase the current world age.
+    @eval some_function() = something()
+    # Make sure world age bumps don't have any effect when there is no invalidation.
+    @test haskey(SPIRV.GLOBAL_CI_CACHE, cfg.mi)
   end
 
   # WIP
   # cfg = @cfg f_extinst(3f0)
-  # (cfg = @cfg exp(1)).code
-  # (cfg = @cfg exp(3f0)).code
+  # SPIRV.@code_typed exp(1)
+  # SPIRV.@code_typed exp(3f0)
 end

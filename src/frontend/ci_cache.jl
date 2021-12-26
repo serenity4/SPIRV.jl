@@ -11,7 +11,11 @@ CodeInstanceCache() = CodeInstanceCache(Dict())
 
 Base.show(io::IO, cache::CodeInstanceCache) = print(io, "CodeInstanceCache($(sum(length, values(cache.dict))) code instances for $(length(cache.dict)) method instances)")
 
-Core.Compiler.WorldView(cache::CodeInstanceCache, mi::MethodInstance) = WorldView(cache, Core.Compiler.WorldRange(mi.def.primary_world, mi.def.deleted_world))
+function Core.Compiler.WorldView(cache::CodeInstanceCache, mi::MethodInstance)
+    min_world = get_world_counter()
+    max_world = max(min_world, mi.def.deleted_world)
+    WorldView(cache, Core.Compiler.WorldRange(min_world, max_world))
+end
 Base.getindex(cache::CodeInstanceCache, mi::MethodInstance) = WorldView(cache, mi)[mi]
 
 function Base.setindex!(cache::CodeInstanceCache, ci::CodeInstance, mi::MethodInstance)
@@ -36,7 +40,8 @@ function Base.get(wvc::WorldView{CodeInstanceCache}, mi::MethodInstance, default
     # Iterate code instances in reverse, as the most recent ones
     # are more likely to be valid.
     for ci in reverse(cis)
-        if Core.Compiler.last(wvc.worlds) ≤ ci.max_world
+        (; min_world, max_world) = wvc.worlds
+        if ci.min_world ≤ min_world && max_world ≤ ci.max_world
             return ci
         end
     end
@@ -75,8 +80,11 @@ function invalidate(cache::CodeInstanceCache, mi::MethodInstance, max_world, inv
     end
 end
 
+"""
+Explicitly trigger invalidation of all previously inferred method instances.
+"""
 function invalidate_all(cache::CodeInstanceCache = GLOBAL_CI_CACHE)
-    for mi in keys(cache.dict)
+    for mi in eachindex(cache.dict)
         invalidate(cache, mi, get_world_counter() - 1)
     end
 end

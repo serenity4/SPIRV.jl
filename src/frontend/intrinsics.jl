@@ -78,7 +78,7 @@ end
 
 for to in BitInteger_types
   constructor = GlobalRef(Core, Symbol(:to, nameof(to))) # toUInt16, toInt64, etc.
-  @eval @inline @override $constructor(x::BitInteger) = rem($to, x)
+  @eval @inline @override $constructor(x::BitInteger) = rem(x, $to)
   for from in BitInteger_types
     convert = to <: Signed ? :SConvert : :UConvert
     rem_f = to.size == from.size ? :reinterpret : convert
@@ -130,10 +130,10 @@ end
 
 @override (>>)(x::BitUnsigned, y::BitUnsigned) = ShiftRightLogical(x, y)
 @override (>>>)(x::BitInteger, y::BitUnsigned) = ShiftRightLogical(x, y)
-@noinline ShiftRightLogical(x::T, y::BitUnsigned) where {T<:BitInteger} = Base.lshr_int(x, y)
+@noinline ShiftRightLogical(x::BitInteger, y::BitInteger) = Base.lshr_int(x, y)
 
-@override (<<)(x::BitInteger, y::BitUnsigned) = ShiftLeft(x, y)
-@noinline ShiftLeft(x::T, y::BitUnsigned) where {T<:BitUnsigned} = Base.shl_int(x, y)
+@override (<<)(x::BitInteger, y::BitUnsigned) = ShiftLeftLogical(x, y)
+@noinline ShiftLeftLogical(x::BitInteger, y::BitInteger) = Base.shl_int(x, y)
 
 ## Basic operations.
 
