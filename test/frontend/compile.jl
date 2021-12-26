@@ -83,6 +83,7 @@ end
     @test_throws SPIRV.ValidationError("""
       error: line 0: No OpEntryPoint instruction was found. This is only allowed if the Linkage capability is being used.
       """) validate(ir)
+    @test validate(ir; check_entrypoint = false)
 
     ir = @compile clamp(1.2, 0., 0.7)
     mod = SPIRV.Module(ir)
@@ -106,9 +107,7 @@ end
           OpReturnValue(%14)
           OpFunctionEnd()
       """)
-      @test_throws SPIRV.ValidationError("""
-      error: line 0: No OpEntryPoint instruction was found. This is only allowed if the Linkage capability is being used.
-      """) validate(ir)
+      @test validate(ir; check_entrypoint = false)
   end
 
   @testset "Cache invalidation" begin
