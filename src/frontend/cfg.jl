@@ -13,8 +13,8 @@ struct CFG
     code::CodeInfo
 end
 
-function CFG(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false)
-    mis = method_instances(f, argtypes)
+function CFG(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false, interp = SPIRVInterpreter())
+    mis = method_instances(f, argtypes, interp)
     if length(mis) > 1
         error("""
             More than one method matches signature ($f, $argtypes):
@@ -26,6 +26,12 @@ function CFG(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false)
         error("No method matching the signature ($f, $argtypes).")
     end
     CFG(only(mis); inferred)
+end
+
+function method_instances(@nospecialize(f), @nospecialize(t), interp::AbstractInterpreter)
+    sig = Base.signature_type(f, t)
+    (; matches) = Core.Compiler.findall(sig, interp.method_table, limit = -1)
+    map(Core.Compiler.specialize_method, matches)
 end
 
 function CFG(mi::MethodInstance; inferred = false)
@@ -44,7 +50,7 @@ function CFG(mi::MethodInstance; inferred = false)
 end
 
 lowered_code(mi::MethodInstance) = uncompressed_ir(mi.def::Method)
-inferred_code(ci::CodeInstance) = Core.Compiler._uncompressed_ir(ci, ci.inferred)
+inferred_code(ci::CodeInstance) = isa(ci.inferred, CodeInfo) ? ci.inferred : Core.Compiler._uncompressed_ir(ci, ci.inferred)
 
 CFG(mi::MethodInstance, ci::CodeInstance) = CFG(mi, inferred_code(ci))
 function CFG(mi::MethodInstance, code::CodeInfo)
@@ -85,6 +91,14 @@ function infer(mi::MethodInstance)
     haskey(GLOBAL_CI_CACHE, mi) && return false
     interp = SPIRVInterpreter()
     src = Core.Compiler.typeinf_ext_toplevel(interp, mi)
+
+    # If src is rettyp_const, the `CodeInfo` is dicarded after type inference
+    # (because it is normally not supposed to be used ever again).
+    # To avoid the need to re-infer to get the code, store it manually.
+    ci = GLOBAL_CI_CACHE[mi]
+    if ci !== nothing && ci.inferred === nothing
+        ci.inferred = src
+    end
     haskey(GLOBAL_CI_CACHE, mi) || error("Could not get inferred code from cache.")
     true
 end

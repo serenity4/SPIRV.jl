@@ -1,5 +1,5 @@
 using SPIRV, Test, MLStyle
-using SPIRV: OpFMul, OpFAdd, invalidate_all
+using SPIRV: OpFMul, OpFAdd, invalidate_all, @trymatch
 
 function f_straightcode(x)
   y = x + 1
@@ -13,13 +13,11 @@ function f_extinst(x)
   log(z)
 end
 
-function operation(ex::Expr)
-  @match ex begin
-    Expr(:invoke, _, f, args...) => @match f begin
-      ::GlobalRef => f.mod == SPIRV ? f.name : nothing
-      _ => nothing
+function operation(ex::Expr; mod = SPIRV)
+  @trymatch ex begin
+    Expr(:invoke, _, f, args...) => @trymatch f begin
+      ::GlobalRef => f.mod == mod ? f.name : nothing
     end
-    _ => nothing
   end
 end
 
@@ -39,18 +37,49 @@ end
     @test all(==(UInt64), ssavaluetypes[2:3])
 
     (; code, ssavaluetypes) = SPIRV.@code_typed f_straightcode(UInt32(0))
-    ops = [:SConvert, :IAdd, :IMul, :IMul]
-    types = fill(Int64, 4)
     # Skip return node.
-    @test operation.(code[1:end-1]) == ops
-    @test ssavaluetypes[1:end-1] == types
+    @test operation.(code[1:end-1]) == [:SConvert, :IAdd, :IMul, :IMul]
+    @test ssavaluetypes[1:end-1] == fill(Int64, 4)
 
     (; code, ssavaluetypes) = SPIRV.@code_typed clamp(1.2, 0., 0.7)
-    ops = [:FOrdLessThan, :FOrdLessThan, :Select, :Select]
-    types = [Bool, Bool, Float64, Float64]
-    # Skip return node.
-    @test operation.(code[1:end-1]) == ops
-    @test ssavaluetypes[1:end-1] == types
+    @test operation.(code[1:end-1]) == [:FOrdLessThan, :FOrdLessThan, :Select, :Select]
+    @test ssavaluetypes[1:end-1] == [Bool, Bool, Float64, Float64]
+
+    (; code, ssavaluetypes) = SPIRV.@code_typed exp(3)
+    @test operation(code[1]) == :ConvertSToF
+    @test operation(code[2]; mod = Base.Math) == :exp
+    @test ssavaluetypes[1:end-1] == fill(Float64, 2)
+
+    (; code, ssavaluetypes) = SPIRV.@code_typed exp(3f0)
+    @test operation(code[1]) == :Exp
+    @test ssavaluetypes[1] == Float32
+
+    function test_constprop()
+      x = 3
+      z = 10 + x
+      x + 2 + z
+    end
+
+    (; code) = SPIRV.@code_typed test_constprop()
+    @test code[1] == Core.ReturnNode(18)
+
+    function test_constprop2()
+      x = 3.
+      z = 10 + x
+      x + 2f0 + z
+    end
+
+    (; code) = SPIRV.@code_typed test_constprop2()
+    @test code[1] == Core.ReturnNode(18.)
+
+    function test_constprop3()
+      x = 3.
+      z = mod(10., x)
+      x + 2f0 + z
+    end
+
+    (; code) = SPIRV.@code_typed test_constprop3()
+    @test code[1] == Core.ReturnNode(6.)
   end
 
   @testset "SPIR-V code generation" begin

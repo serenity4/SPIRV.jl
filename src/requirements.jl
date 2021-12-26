@@ -1,11 +1,11 @@
 struct FeatureRequirements
-    extensions::Set{String}
-    capabilities::Set{Capability}
+    extensions::Vector{String}
+    capabilities::Vector{Capability}
 end
 
 function FeatureRequirements(mod::Module)
-    required_exts = Set{String}()
-    required_caps = Set{Capability}()
+    required_exts = String[]
+    required_caps = Capability[]
     for inst in mod
         inst_info = info(inst)
         union!(required_exts, inst_info.extensions)
@@ -21,7 +21,7 @@ function FeatureRequirements(mod::Module)
                         64 => CapabilityInt64
                     end
             end
-            !isnothing(cap) && push!(required_caps, cap)
+            !isnothing(cap) && union!(required_caps, [cap])
             category = kind_to_category[op_info.kind]
             @tryswitch category begin
                 @case "ValueEnum"
@@ -36,7 +36,7 @@ function FeatureRequirements(mod::Module)
             end
         end
     end
-    implicitly_declared = Set{Capability}()
+    implicitly_declared = Capability[]
     for cap in required_caps
         enum_info = enum_infos[cap]
         union!(implicitly_declared, enum_info.capabilities)

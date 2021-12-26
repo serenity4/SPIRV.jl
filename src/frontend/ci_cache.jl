@@ -14,7 +14,7 @@ Base.show(io::IO, cache::CodeInstanceCache) = print(io, "CodeInstanceCache($(sum
 function Core.Compiler.WorldView(cache::CodeInstanceCache, mi::MethodInstance)
     min_world = get_world_counter()
     max_world = max(min_world, mi.def.deleted_world)
-    WorldView(cache, Core.Compiler.WorldRange(min_world, max_world))
+    WorldView(cache, WorldRange(min_world, max_world))
 end
 Base.getindex(cache::CodeInstanceCache, mi::MethodInstance) = WorldView(cache, mi)[mi]
 

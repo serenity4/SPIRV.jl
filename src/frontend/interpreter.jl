@@ -5,7 +5,7 @@ struct SPIRVInterpreter <: AbstractInterpreter
     Custom method table to redirect Julia builtin functions to SPIR-V builtins.
     Can also be used to redirect certain function calls to use extended instruction sets instead.
     """
-    method_table::Union{Nothing,Core.MethodTable}
+    method_table::NOverlayMethodTable
     "Cache used locally within a particular type inference run."
     local_cache::Vector{InferenceResult}
     "Maximum world in which functions can be used in."
@@ -27,10 +27,10 @@ end
 
 # Constructor adapted from Julia's `NativeInterpreter`.
 function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = InferenceParams(),
-        opt_params = OptimizationParams(), global_cache = GLOBAL_CI_CACHE, method_table = INTRINSICS_METHOD_TABLE)
+        opt_params = OptimizationParams(), global_cache = GLOBAL_CI_CACHE, method_tables = [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE])
     SPIRVInterpreter(
         global_cache,
-        method_table,
+        NOverlayMethodTable(world, method_tables),
         InferenceResult[],
         cap_world(world, get_world_counter()),
         inf_params,
@@ -52,7 +52,7 @@ Core.Compiler.OptimizationParams(si::SPIRVInterpreter) = si.opt_params
 Core.Compiler.get_world_counter(si::SPIRVInterpreter) = si.world
 Core.Compiler.get_inference_cache(si::SPIRVInterpreter) = si.local_cache
 Core.Compiler.code_cache(si::SPIRVInterpreter) = WorldView(si.global_cache, si.world)
-Core.Compiler.method_table(si::SPIRVInterpreter, ::InferenceState) = Core.Compiler.OverlayMethodTable(si.world, si.method_table)
+Core.Compiler.method_table(si::SPIRVInterpreter, ::InferenceState) = si.method_table
 
 function Core.Compiler.inlining_policy(si::SPIRVInterpreter, @nospecialize(src), stmt_flag::UInt8,
     mi::MethodInstance, argtypes::Vector{Any})

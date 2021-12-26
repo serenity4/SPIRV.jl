@@ -45,7 +45,18 @@ const IEEEFloat_types = (Float16, Float32, Float64)
 @override rem(x::T, y::T) where {T<:IEEEFloat}  = FRem(x, y)
 @noinline FRem(x::T, y::T) where {T<:IEEEFloat} = Base.rem_float(x, y)
 @override mod(x::T, y::T) where {T<:IEEEFloat}  = FMod(x, y)
-@noinline FMod(x::T, y::T) where {T<:IEEEFloat} = invoke(mod, Tuple{T,T} where {T<:AbstractFloat}, x, y)
+#TODO: Find a better way of mixing overriden CPU implementations for constant propagation.
+# Currently, CPU definitions are copied here, for lack of a way to invoke them.
+@noinline function FMod(x::T, y::T) where {T<:IEEEFloat}
+  r = rem(x, y)
+  if r == 0
+    copysign(r, y)
+  elseif (r > 0) ⊻ (y > 0)
+    r + y
+  else
+    r
+  end
+end
 
 @override muladd(x::T, y::T, z::T) where {T<:IEEEFloat} = FAdd(x, FMul(y, z))
 
@@ -190,13 +201,15 @@ end
 
 # Booleans.
 
-@override (!)(x::Bool)             = LogicalNot(x)
-@noinline LogicalNot(x::Bool)      = Base.not_int(x)
-@override (&)(x::Bool)             = LogicalAnd(x)
-@noinline LogicalAnd(x::Bool)      = Base.and_int(x)
-@override (|)(x::Bool)             = LogicalOr(x)
-@noinline LogicalOr(x::Bool)       = Base.or_int(x)
-@override (==)(x::Bool, y::Bool)   = LogicalEqual(x, y)
-@noinline LogicalEqual(x::Bool)    = Base.eq_int(x)
-@override (!=)(x::Bool, y::Bool)   = LogicalNotEqual(x, y)
-@noinline LogicalNotEqual(x::Bool) = Base.ne_int(x)
+@override (!)(x::Bool)                 = LogicalNot(x)
+@noinline LogicalNot(x::Bool)          = Base.not_int(x)
+@override (&)(x::Bool)                 = LogicalAnd(x)
+@noinline LogicalAnd(x::Bool)          = Base.and_int(x)
+@override (|)(x::Bool)                 = LogicalOr(x)
+@noinline LogicalOr(x::Bool)           = Base.or_int(x)
+@override xor(x::Bool, y::Bool)        = BitwiseXor(x, y)
+@noinline BitwiseXor(x::Bool, y::Bool) = Base.xor_int(x, y)
+@override (==)(x::Bool, y::Bool)       = LogicalEqual(x, y)
+@noinline LogicalEqual(x::Bool)        = Base.eq_int(x)
+@override (!=)(x::Bool, y::Bool)       = LogicalNotEqual(x, y)
+@noinline LogicalNotEqual(x::Bool)     = Base.ne_int(x)
