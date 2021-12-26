@@ -11,6 +11,17 @@ function FeatureRequirements(mod::Module)
         union!(required_exts, inst_info.extensions)
         union!(required_caps, inst_info.capabilities)
         for (arg, op_info) in zip(inst.arguments, inst_info.operands)
+            cap = @trymatch inst.opcode begin
+                &OpTypeFloat => @trymatch Int(arg) begin
+                        16 => CapabilityFloat16
+                        64 => CapabilityFloat64
+                    end
+                &OpTypeInt => @trymatch Int(arg) begin
+                        8  => CapabilityInt8
+                        64 => CapabilityInt64
+                    end
+            end
+            !isnothing(cap) && push!(required_caps, cap)
             category = kind_to_category[op_info.kind]
             @tryswitch category begin
                 @case "ValueEnum"

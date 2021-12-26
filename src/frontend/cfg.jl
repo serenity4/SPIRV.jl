@@ -48,7 +48,7 @@ inferred_code(ci::CodeInstance) = Core.Compiler._uncompressed_ir(ci, ci.inferred
 
 CFG(mi::MethodInstance, ci::CodeInstance) = CFG(mi, inferred_code(ci))
 function CFG(mi::MethodInstance, code::CodeInfo)
-    stmts = code.code
+    stmts = copy(code.code)
     bbs = compute_basic_blocks(stmts)
 
     g = DeltaGraph(length(bbs.blocks))
@@ -64,6 +64,11 @@ function CFG(mi::MethodInstance, code::CodeInfo)
     indices = [1; bbs.index]
     insts = map(1:length(indices)-1) do i
         stmts[indices[i]:indices[i+1]-1]
+    end
+
+    # Strip remaining meta expressions if any.
+    if all(Meta.isexpr(st, :meta) for st in last(insts))
+        pop!(insts); deleteat!(code.code, pop!(indices))
     end
 
     CFG(mi, g, insts, indices, code)
@@ -111,10 +116,16 @@ function get_signature(ex::Expr)
     end
 end
 
-macro cfg(ex)
+macro cfg(infer, ex)
     cfg_args = map(esc, get_signature(ex))
-    :(CFG($(cfg_args...); inferred = true))
+    infer = @match infer begin
+        :(infer = $val) && if isa(val, Bool) end => val
+        _ => error("Invalid `infer` option, expected infer=<val> where <val> can be either true or false.")
+    end
+    :(CFG($(cfg_args...); inferred = $infer))
 end
+
+macro cfg(ex) esc(:(@cfg infer = true $ex)) end
 
 macro code_typed(debuginfo, ex)
     cfg_args = map(esc, get_signature(ex))
@@ -130,4 +141,4 @@ macro code_typed(debuginfo, ex)
     end
 end
 
-macro code_typed(ex) :(@code_typed debuginfo = :source $ex) end
+macro code_typed(ex) esc(:(SPIRV.@code_typed debuginfo = :source $ex)) end

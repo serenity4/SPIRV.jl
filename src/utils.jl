@@ -95,3 +95,10 @@ macro tryswitch(val, ex)
     res = MLStyle.MatchImpl.init_cfg(res)
     esc(res)
 end
+
+macro trymatch(val, ex)
+    push!(ex.args, :(_ => nothing))
+    res = MLStyle.MatchImpl.gen_match(val, ex, __source__, __module__)
+    res = MLStyle.MatchImpl.init_cfg(res)
+    esc(res)
+end

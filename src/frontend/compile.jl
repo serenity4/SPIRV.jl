@@ -111,15 +111,16 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG)
 end
 
 function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, range::UnitRange)
-    (; code) = cfg
+    (; code, ssavaluetypes, slottypes) = cfg.code
     blk = Block(next!(ir.ssacounter))
     push!(blk.insts, @inst blk.id = OpLabel())
     insert!(fdef.blocks, blk.id, blk)
     i = first(range)
     n = last(range)
     while i ≤ n
-        inst = code.code[i]
-        jtype = code.ssavaluetypes[i]
+        inst = code[i]
+        jtype = ssavaluetypes[i]
+        @assert !(jtype <: Core.IntrinsicFunction) "Encountered illegal core intrinsic $inst."
         @switch inst begin
             # Termination instructions.
             @case ::Core.GotoIfNot || ::Core.GotoNode || ::Core.ReturnNode
@@ -131,8 +132,8 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
     end
 
     # Process termination instructions.
-    i ≤ n || error("No termination instruction found. Last instruction: :($(code.code[n]))")
-    for inst in code.code[i:n]
+    i ≤ n || error("No termination instruction found. Last instruction: :($(code[n]))")
+    for inst in code[i:n]
         @switch inst begin
             @case ::Core.ReturnNode
                 spv_inst = @match inst.val begin

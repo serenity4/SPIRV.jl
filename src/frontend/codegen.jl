@@ -7,7 +7,7 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
         @match f begin
           ::GlobalRef => begin
               func = getfield(f.mod, f.name)
-              isa(func, Core.IntrinsicFunction) && error("Reached unexpected core intrinsic function '$func'.")
+              isa(func, Core.IntrinsicFunction) && error("Reached illegal core intrinsic function '$func'.")
               isa(func, Function) && error("Dynamic dispatch detected for function $func. All call sites must be resolved at compile time.")
             end
           _ => error("Call to unknown function $f")
@@ -15,28 +15,27 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
       end
     Expr(:invoke, mi, f, args...) => begin
         @assert isa(f, GlobalRef)
-        @match (f.mod, f.name) begin
-          (&SPIRV, :FMul) => (OpFMul, args)
-          (&SPIRV, :FAdd) => (OpFAdd, args)
-          _ => begin
-            cfg = infer(CFG(mi))
-            fid = emit!(ir, cfg)
-            args = (fid, args...)
-            (OpFunctionCall, args)
+        if f.mod == @__MODULE__
+          maybe_opname = Symbol(:Op, f.name)
+          maybe_op = isdefined(@__MODULE__, maybe_opname) ? getproperty(@__MODULE__, maybe_opname) : nothing
+          if maybe_op isa OpCode || maybe_op isa OpCodeGLSL
+            opcode = maybe_op
+            !isempty(args) && isa(first(args), DataType) && (args = args[2:end])
+            @switch opcode begin
+              @case ::OpCode
+                (opcode, args)
+              @case ::OpCodeGLSL
+                args = (emit_extinst!(ir, "GLSL.std.450"), args...)
+                (OpExtInst, args)
+            end
+          else
+            (OpFunctionCall, (emit_new!(ir, mi), args...))
           end
+        else
+          (OpFunctionCall, (emit_new!(ir, mi), args...))
         end
       end
     _ => error("Expected call or invoke expression, got $(repr(ex))")
-  end
-
-  !isempty(args) && isa(first(args), DataType) && (args = args[2:end])
-  @tryswitch opcode begin
-    @case &OpExtInst
-      extinst_import_id = @match extinst begin
-          ::OpCodeGLSL => emit_extinst!(ir, "GLSL.std.450")
-          _ => error("Unrecognized extended instruction set for instruction $extinst")
-        end
-      args = (extinst_import_id, args...)
   end
 
   args = map(args) do arg
@@ -56,8 +55,8 @@ function check_isvalid(jtype::Type)
       error("Found abstract type '$jtype' after type inference. All types must be concrete.")
     elseif !isconcretetype(jtype)
       error("Found non-concrete type '$jtype' after type inference. All types must be concrete.")
-    else
-      error("Found unknown type $jtype.")
     end
   end
 end
+
+emit_new!(ir::IR, mi::MethodInstance) = emit!(ir, CFG(mi; inferred = true))

@@ -30,20 +30,49 @@ const IEEEFloat_types = (Float16, Float32, Float64)
 
 # Floats.
 
-## Basic operations.
+## Arithmetic operations.
 
-@override (-)(x::IEEEFloat) = FNegate(x)
-@noinline FNegate(x::T) where {T<:IEEEFloat} = Base.neg_float(x)
-
-@override (+)(x::T, y::T) where {T<:IEEEFloat} = FAdd(x, y)
+@override (-)(x::IEEEFloat)                     = FNegate(x)
+@noinline FNegate(x::T) where {T<:IEEEFloat}    = Base.neg_float(x)
+@override (+)(x::T, y::T) where {T<:IEEEFloat}  = FAdd(x, y)
 @noinline FAdd(x::T, y::T) where {T<:IEEEFloat} = Base.add_float(x, y)
-@override (*)(x::T, y::T) where {T<:IEEEFloat} = FMul(x, y)
+@override (*)(x::T, y::T) where {T<:IEEEFloat}  = FMul(x, y)
 @noinline FMul(x::T, y::T) where {T<:IEEEFloat} = Base.mul_float(x, y)
-@override (-)(x::T, y::T) where {T<:IEEEFloat} = FSub(x, y)
+@override (-)(x::T, y::T) where {T<:IEEEFloat}  = FSub(x, y)
 @noinline FSub(x::T, y::T) where {T<:IEEEFloat} = Base.sub_float(x, y)
-@override (/)(x::T, y::T) where {T<:IEEEFloat} = FDiv(x, y)
+@override (/)(x::T, y::T) where {T<:IEEEFloat}  = FDiv(x, y)
 @noinline FDiv(x::T, y::T) where {T<:IEEEFloat} = Base.div_float(x, y)
+@override rem(x::T, y::T) where {T<:IEEEFloat}  = FRem(x, y)
+@noinline FRem(x::T, y::T) where {T<:IEEEFloat} = Base.rem_float(x, y)
+@override mod(x::T, y::T) where {T<:IEEEFloat}  = FMod(x, y)
+@noinline FMod(x::T, y::T) where {T<:IEEEFloat} = invoke(mod, Tuple{T,T} where {T<:AbstractFloat}, x, y)
+
 @override muladd(x::T, y::T, z::T) where {T<:IEEEFloat} = FAdd(x, FMul(y, z))
+
+## Comparisons.
+
+@override (==)(x::T, y::T) where {T<:IEEEFloat}              = FOrdEqual(x, y)
+@noinline FOrdEqual(x::T, y::T) where {T<:IEEEFloat}         = Base.eq_float(x, y)
+@override (!=)(x::T, y::T) where {T<:IEEEFloat}              = FUnordNotEqual(x, y)
+@noinline FUnordNotEqual(x::T, y::T) where {T<:IEEEFloat}    = Base.ne_float(x, y)
+@override (<)(x::T, y::T) where {T<:IEEEFloat}               = FOrdLessThan(x, y)
+@noinline FOrdLessThan(x::T, y::T) where {T<:IEEEFloat}      = Base.lt_float(x, y)
+@override (<=)(x::T, y::T) where {T<:IEEEFloat}              = FOrdLessThanEqual(x, y)
+@noinline FOrdLessThanEqual(x::T, y::T) where {T<:IEEEFloat} = Base.le_float(x, y)
+
+@override function isequal(x::T, y::T) where {T<:IEEEFloat}
+  IT = Base.inttype(T)
+  xi = reinterpret(IT, x)
+  yi = reinterpret(IT, y)
+  FUnordEqual(x, x) & FUnordEqual(y, y) | IEqual(xi, yi)
+end
+@inline function FUnordEqual(x::T, y::T) where {T<:IEEEFloat}
+  isnan(x) & isnan(y) | x == y
+end
+@override isnan(x::IEEEFloat)    = IsNan(x)
+@noinline IsNan(x::IEEEFloat)    = invoke(isnan, Tuple{AbstractFloat}, x)
+@override isfinite(x::IEEEFloat) = !IsInf(x)
+@noinline IsInf(x::IEEEFloat)    = !invoke(isfinite, Tuple{AbstractFloat}, x)
 
 ## Conversions.
 
@@ -57,9 +86,6 @@ for to in IEEEFloat_types, from in IEEEFloat_types
     end
   end
 end
-
-#TODO: add override
-# @intrinsic QuantizeToF16(x::Float32)::Float32
 
 @override unsafe_trunc(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = ConvertFToS(T, x)
 @noinline ConvertFToS(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = Base.fptosi(T, x)
@@ -98,7 +124,7 @@ end
 @override Int(x::Ptr) = reinterpret(Int, x)
 @override UInt(x::Ptr) = reinterpret(UInt, x)
 
-## Integer comparisons.
+## Comparisons.
 
 @override (<)(x::T, y::T) where {T<:BitSigned} = SLessThan(x, y)
 @override (<=)(x::T, y::T) where {T<:BitSigned} = SLessThanEqual(x, y)
@@ -111,16 +137,17 @@ end
 
 ## Logical operators.
 
-@override (~)(x::BitInteger) = Not(x)
-@noinline Not(x::BitInteger) = Base.not_int(x)
-
-@override (&)(x::T, y::T) where {T<:BitInteger} = BitwiseAnd(x, y)
+@override (==)(x::BitInteger, y::BitInteger)           = IEqual(x, y)
+@noinline IEqual(x::BitInteger, y::BitInteger)         = Base.eq_int(x, y)
+@override (!=)(x::BitInteger, y::BitInteger)           = INotEqual(x, y)
+@noinline INotEqual(x::BitInteger, y::BitInteger)      = Base.ne_int(x, y)
+@override (~)(x::BitInteger)                           = Not(x)
+@noinline Not(x::BitInteger)                           = Base.not_int(x)
+@override (&)(x::T, y::T) where {T<:BitInteger}        = BitwiseAnd(x, y)
 @noinline BitwiseAnd(x::T, y::T) where {T<:BitInteger} = Base.and_int(x, y)
-
-@override (|)(x::T, y::T) where {T<:BitInteger} = BitwiseOr(x, y)
-@noinline BitwiseOr(x::T, y::T) where {T<:BitInteger} = Base.or_int(x, y)
-
-@override xor(x::T, y::T) where {T<:BitInteger} = BitwiseXor(x, y)
+@override (|)(x::T, y::T) where {T<:BitInteger}        = BitwiseOr(x, y)
+@noinline BitwiseOr(x::T, y::T) where {T<:BitInteger}  = Base.or_int(x, y)
+@override xor(x::T, y::T) where {T<:BitInteger}        = BitwiseXor(x, y)
 @noinline BitwiseXor(x::T, y::T) where {T<:BitInteger} = Base.xor_int(x, y)
 
 ## Integer shifts.
@@ -135,7 +162,7 @@ end
 @override (<<)(x::BitInteger, y::BitUnsigned) = ShiftLeftLogical(x, y)
 @noinline ShiftLeftLogical(x::BitInteger, y::BitInteger) = Base.shl_int(x, y)
 
-## Basic operations.
+## Arithmetic operations.
 
 @override (-)(x::BitInteger) = SNegate(x)
 @noinline SNegate(x::T) where {T<:BitInteger} = Base.neg_int(x)
@@ -161,64 +188,15 @@ end
 @override flipsign(x::T, y::T) where {T<:BitSigned} = Select(y ≥ 0, x, -x)
 @override flipsign(x::BitSigned, y::BitSigned) = flipsign(promote(x, y)...) % typeof(x)
 
-#=
+# Booleans.
 
-Indicative mapping of core intrinsics.
-
-:fptoui => OpConvertFToU,
-:fptosi => OpConvertFToS,
-:sitofp => OpConvertSToF,
-:uitofp => OpConvertUToF,
-:trunc_int => OpUConvert,
-:sext_int => OpSConvert,
-:neg_int => OpSNegate,
-:add_int => OpIAdd,
-:neg_float => OpFNegate,
-:add_float => OpFAdd,
-:sub_int => OpISub,
-:sub_float => OpFSub,
-:mul_int => OpIMul,
-:mul_float => OpFMul,
-:udiv_int => OpUDiv,
-:sdiv_int => OpSDiv,
-:div_float => OpFDiv,
-:urem_int => OpUMod,
-:srem_int => OpSRem,
-# missing: OpSMod
-:rem_float => OpFRem,
-# missing: from OpFMod to OpSMulExtended
-:lshr_int => OpShiftRightLogical,
-:ashr_int => OpShiftRightArithmetic,
-:shl_int => OpShiftLeftLogical,
-:or_int => OpBitwiseOr,
-:xor_int => OpBitwiseXor,
-:and_int => OpBitwiseAnd,
-:not_int => OpNot,
-# missing: from OpBitFieldInsert to OpBitReverse
-:ctpop_int => OpBitCount,
-# missing: from OpAny to OpSelect
-:eq_int => OpIEqual,
-:ne_int => OpINotEqual,
-# Julia uses '<' for '>' operations
-# missing: OpUGreaterThan
-# missing: OpSGreaterThan
-# missing: OpUGreaterThanEqual
-# missing: OpSGreaterThanEqual
-:ult_int => OpULessThan,
-:slt_int => OpSLessThan,
-:ule_int => OpULessThanEqual,
-:sle_int => OpSLessThanEqual,
-# Julia does not emit special instructions
-# for ordered/unordered comparisons
-:eq_float => OpFOrdEqual,
-:ne_float => OpFOrdNotEqual,
-:lt_float => OpFOrdLessThan,
-# missing: OpFOrdGreaterThan
-:le_float => OpFOrdLessThanEqual,
-# missing: OpFOrdGreaterThanEqual
-
-:(Base.fptrunc($T, $arg)) => OpFConvert
-:(Base.fptrunc(Float16, $arg)) => OpQuantizeToF16
-:(Core.bitcast($T, $arg)) => OpBitcast
-
-=#
+@override (!)(x::Bool)             = LogicalNot(x)
+@noinline LogicalNot(x::Bool)      = Base.not_int(x)
+@override (&)(x::Bool)             = LogicalAnd(x)
+@noinline LogicalAnd(x::Bool)      = Base.and_int(x)
+@override (|)(x::Bool)             = LogicalOr(x)
+@noinline LogicalOr(x::Bool)       = Base.or_int(x)
+@override (==)(x::Bool, y::Bool)   = LogicalEqual(x, y)
+@noinline LogicalEqual(x::Bool)    = Base.eq_int(x)
+@override (!=)(x::Bool, y::Bool)   = LogicalNotEqual(x, y)
+@noinline LogicalNotEqual(x::Bool) = Base.ne_int(x)
