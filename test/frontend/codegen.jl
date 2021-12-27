@@ -33,7 +33,12 @@ using SPIRV: OpFMul, OpFAdd
     """) validate(ir)
   @test validate(ir; check_entrypoint = false)
 
-  ir = @compile clamp(1.2, 0., 0.7)
+  function my_clamp(x, lo, hi)
+    x_lo = ifelse(x < lo, lo, x)
+    ifelse(x_lo < hi, x_lo, hi)
+  end
+
+  ir = @compile my_clamp(1.2, 0., 0.7)
   mod = SPIRV.Module(ir)
   @test mod == parse(SPIRV.Module, """
         OpCapability(VulkanMemoryModel)
@@ -48,10 +53,10 @@ using SPIRV: OpFMul, OpFAdd
    %6 = OpFunctionParameter()::%2
    %7 = OpFunctionParameter()::%2
    %8 = OpLabel()
-  %11 = OpFOrdLessThan(%7, %5)::%10
-  %12 = OpFOrdLessThan(%5, %6)::%10
-  %13 = OpSelect(%12, %6, %5)::%2
-  %14 = OpSelect(%11, %7, %13)::%2
+  %11 = OpFOrdLessThan(%5, %6)::%10
+  %12 = OpSelect(%11, %6, %5)::%2
+  %13 = OpFOrdLessThan(%12, %7)::%10
+  %14 = OpSelect(%13, %12, %7)::%2
         OpReturnValue(%14)
         OpFunctionEnd()
     """)

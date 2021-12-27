@@ -29,10 +29,6 @@ end
     @test operation.(code[1:end-1]) == [:SConvert, :IAdd, :IMul, :IMul]
     @test ssavaluetypes[1:end-1] == fill(Int64, 4)
 
-    (; code, ssavaluetypes) = SPIRV.@code_typed clamp(1.2, 0., 0.7)
-    @test operation.(code[1:end-1]) == [:FOrdLessThan, :FOrdLessThan, :Select, :Select]
-    @test ssavaluetypes[1:end-1] == [Bool, Bool, Float64, Float64]
-
     (; code, ssavaluetypes) = SPIRV.@code_typed exp(3)
     @test operation(code[1]) == :ConvertSToF
     @test operation(code[2]; mod = Base.Math) == :exp
@@ -41,6 +37,10 @@ end
     (; code, ssavaluetypes) = SPIRV.@code_typed exp(3f0)
     @test operation(code[1]) == :Exp
     @test ssavaluetypes[1] == Float32
+
+    (; code, ssavaluetypes) = SPIRV.@code_typed clamp(1.2, 0., 0.7)
+    @test operation(code[1]) == :FClamp
+    @test ssavaluetypes[1] == Float64
 
     (; code, ssavaluetypes) = SPIRV.@code_typed f_extinst(3f0)
     @test operation.(code[1:end-1]) == [:Exp, :Sin, :FMul, :FAdd, :Log, :FAdd]
