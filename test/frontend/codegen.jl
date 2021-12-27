@@ -13,6 +13,8 @@ using SPIRV: OpFMul, OpFAdd
         OpCapability(VulkanMemoryModel)
         OpExtension("SPV_KHR_vulkan_memory_model")
         OpMemoryModel(Logical, Vulkan)
+        OpName(%4, "f_straightcode")
+        OpName(%5, "x")
    %2 = OpTypeFloat(32)
    %3 = OpTypeFunction(%2, %2)
    # Constant literals are not interpreted as floating point values.
@@ -28,10 +30,7 @@ using SPIRV: OpFMul, OpFAdd
         OpReturnValue(%11)
         OpFunctionEnd()
   """)
-  @test_throws SPIRV.ValidationError("""
-    error: line 0: No OpEntryPoint instruction was found. This is only allowed if the Linkage capability is being used.
-    """) validate(ir)
-  @test validate(ir; check_entrypoint = false)
+  validate(ir)
 
   function my_clamp(x, lo, hi)
     x_lo = ifelse(x < lo, lo, x)
@@ -45,6 +44,10 @@ using SPIRV: OpFMul, OpFAdd
         OpCapability(Float64)
         OpExtension("SPV_KHR_vulkan_memory_model")
         OpMemoryModel(Logical, Vulkan)
+        OpName(%4, "my_clamp")
+        OpName(%5, "x")
+        OpName(%6, "lo")
+        OpName(%7, "hi")
    %2 = OpTypeFloat(64)
    %3 = OpTypeFunction(%2, %2, %2, %2)
   %10 = OpTypeBool()
@@ -60,7 +63,7 @@ using SPIRV: OpFMul, OpFAdd
         OpReturnValue(%14)
         OpFunctionEnd()
     """)
-  @test validate(ir; check_entrypoint = false)
+  @test validate(ir)
 
   ir = @compile f_extinst(3f0)
   mod = SPIRV.Module(ir)
@@ -69,6 +72,8 @@ using SPIRV: OpFMul, OpFAdd
         OpExtension("SPV_KHR_vulkan_memory_model")
    %7 = OpExtInstImport("GLSL.std.450")
         OpMemoryModel(Logical, Vulkan)
+        OpName(%4, "f_extinst")
+        OpName(%5, "x")
    %2 = OpTypeFloat(0x00000020)
    %3 = OpTypeFunction(%2, %2)
   %10 = OpConstant(0x40400000)::%2
@@ -85,9 +90,26 @@ using SPIRV: OpFMul, OpFAdd
         OpReturnValue(%15)
         OpFunctionEnd()
     """)
-    @test validate(ir; check_entrypoint = false)
+    @test validate(ir)
 
     f_branch(x) = x > 0 ? x + 1 : x - 1
     ir = @compile f_branch(1f0)
-    @test validate(ir; check_entrypoint = false)
+    @test validate(ir)
+
+    function f_branches(x)
+      y = clamp(x, 0, 1)
+      if iszero(y)
+        z = x^2
+        z > 1 && return z
+        x += z
+      else
+        x -= 1
+      end
+      x < 0 && return y
+      x + y
+    end
+
+    SPIRV.@code_typed f_branches(4f0)
+    ir = @compile f_branches(4f0)
+    @test validate(ir)
 end

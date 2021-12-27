@@ -48,11 +48,9 @@ function validate_khronos(mod::Module)
     true
 end
 
-function validate(ir::IR; check_entrypoint = true)
-    if !check_entrypoint
-        # Insert Linkage capability to get around the related validation error.
-        ir = @set ir.capabilities = union(ir.capabilities, [SPIRV.CapabilityLinkage])
-    end
+function validate(ir::IR)
+    # Add the Linkage capability to work around the requirement for having at least one entry points.
+    ir = @set ir.capabilities = union!(ir.capabilities, [CapabilityLinkage])
     validate(Module(ir))
 end
 

@@ -9,10 +9,10 @@ function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
     print(io, '(')
 
     isfirst = true
-    for (arg, info) in zip(inst.arguments, operand_infos(inst))
-        !isfirst && print(io, ", ")
+    for (i, (arg, info)) in enumerate(zip(inst.arguments, operand_infos(inst)))
+        !isfirst && kind_to_category[info.kind] ≠ "Composite" && print(io, ", ")
         isfirst = false
-        emit_argument(io, arg, info.kind)
+        emit_argument(io, i, arg, info.kind)
     end
 
     print(io, ')')
@@ -23,7 +23,7 @@ function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
     end
 end
 
-function emit_argument(io, arg::AbstractVector, kind)
+function emit_argument(io, i, arg::AbstractVector, kind)
     category = kind_to_category[kind]
     args = copy(arg)
     emit_argument(io, popfirst!(args), kind, category)
@@ -33,12 +33,7 @@ function emit_argument(io, arg::AbstractVector, kind)
     end
 end
 
-function emit_argument(io, arg, kind)
-    category = kind_to_category[kind]
-    emit_argument(io, arg, kind, category)
-end
-
-function emit_argument(io, arg, kind, category)
+function emit_argument(io, i, arg, kind, category = kind_to_category[kind])
     @match category begin
         "ValueEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => ""); color=208)
         "BitEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => ""); color=:light_magenta)
@@ -49,6 +44,16 @@ function emit_argument(io, arg, kind, category)
             _ => printstyled(io, arg; color=153)
         end
         "Id" => printstyled(io, arg; color=:yellow)
+        "Composite" => begin
+            kinds = map(split(replace(string(kind), r"^Pair" => ""), "IdRef")[1:end-1]) do part
+                str = isempty(part) ? "IdRef" : part
+                getproperty(@__MODULE__, Symbol(str))
+            end
+            @assert length(kinds) == 2
+            i % 2 == 0 && print(io, " => ")
+            i ≠ 1 && i % 2 == 1 && print(io, ", ")
+            emit_argument(io, i, arg, kinds[1 + i % 2])
+        end
     end
 end
 

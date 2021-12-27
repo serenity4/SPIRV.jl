@@ -1,8 +1,9 @@
-function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
+function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type)
   check_isvalid(jtype)
   type = SPIRType(jtype)
   extinst = nothing
-  (opcode, args) = @match ex begin
+  (opcode, args) = @match jinst begin
+    ::Core.PhiNode => (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(cfg)), irmap) for e in jinst.edges)))
     :($f($(args...))) => begin
         @match f begin
           ::GlobalRef => begin
@@ -37,11 +38,12 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
           (OpFunctionCall, (emit_new!(ir, mi), args...))
         end
       end
-    _ => error("Expected call or invoke expression, got $(repr(ex))")
+    _ => error("Expected call or invoke expression, got $(repr(jinst))")
   end
 
   args = map(args) do arg
-    (isa(arg, Core.Argument) || isa(arg, Core.SSAValue)) && return SSAValue(arg, irmap)
+    # Phi nodes may have forward references.
+    isa(arg, Core.Argument) && opcode ≠ OpPhi && return SSAValue(arg, irmap)
     (isa(arg, AbstractFloat) || isa(arg, Integer)) && return emit!(ir, irmap, Constant(arg))
     arg
   end

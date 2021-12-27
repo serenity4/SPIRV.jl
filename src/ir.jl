@@ -6,7 +6,7 @@ struct Source
     extensions::Vector{String}
 end
 
-@broadcastref struct EntryPoint
+@broadcastref mutable struct EntryPoint
     name::Symbol
     func::SSAValue
     model::ExecutionModel

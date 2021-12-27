@@ -5,26 +5,23 @@ end
 function compile(cfg::CFG)
     # TODO: restructure CFG
     inferred = infer(cfg)
-    IR(inferred)
-end
-
-function IR(cfg::CFG)
     ir = IR()
-    emit!(ir, cfg)
+    fid = emit!(ir, inferred)
     satisfy_requirements!(ir)
-    ir
 end
 
 struct IRMapping
     args::Dictionary{Core.Argument,SSAValue}
     "SPIR-V SSA values for basic blocks from Julia IR."
     bbs::Dictionary{Int,SSAValue}
+    "SPIR-V SSA values for each `Core.SSAValue` that implicitly represents a basic block."
+    bb_ssavals::Dictionary{Core.SSAValue,SSAValue}
     "SPIR-V SSA values that correspond semantically to `Core.SSAValue`s."
     ssavals::Dictionary{Core.SSAValue,SSAValue}
     types::Dictionary{Type,SSAValue}
 end
 
-IRMapping() = IRMapping(Dictionary(), Dictionary(), Dictionary(), Dictionary())
+IRMapping() = IRMapping(Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary())
 
 SSAValue(arg::Core.Argument, irmap::IRMapping) = irmap.args[arg]
 SSAValue(bb::Int, irmap::IRMapping) = irmap.bbs[bb]
@@ -35,11 +32,13 @@ function emit!(ir::IR, cfg::CFG)
     fdef = FunctionDefinition(ftype, FunctionControlNone, [], SSADict())
     irmap = IRMapping()
     emit!(ir, irmap, ftype)
-    id = next!(ir.ssacounter)
-    insert!(ir.fdefs, id, fdef)
+    fid = next!(ir.ssacounter)
+    insert!(ir.fdefs, fid, fdef)
+    insert!(ir.debug.names, fid, cfg.mi.def.name)
     for n in eachindex(ftype.argtypes)
         id = next!(ir.ssacounter)
         insert!(irmap.args, Core.Argument(n + 1), id)
+        insert!(ir.debug.names, id, cfg.code.slotnames[n + 1])
         push!(fdef.args, id)
     end
     try
@@ -48,7 +47,7 @@ function emit!(ir::IR, cfg::CFG)
         println("Internal compilation error for method instance $(cfg.mi)")
         rethrow()
     end
-    id
+    fid
 end
 
 function FunctionType(mi::MethodInstance)
@@ -112,10 +111,21 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG)
     ranges = block_ranges(cfg)
     nodelist = topological_sort_by_dfs(bfs_tree(cfg.graph, 1))
     for node in nodelist
-        insert!(irmap.bbs, node, next!(ir.ssacounter))
+        id = next!(ir.ssacounter)
+        insert!(irmap.bbs, node, id)
+        insert!(irmap.bb_ssavals, Core.SSAValue(first(ranges[node])), id)
     end
     for node in nodelist
         emit!(fdef, ir, irmap, cfg, ranges[node], node)
+    end
+    for block in fdef.blocks
+        for inst in block.insts
+            for (i, arg) in enumerate(inst.arguments)
+                if isa(arg, Core.SSAValue)
+                    inst.arguments[i] = SSAValue(arg, irmap)
+                end
+            end
+        end
     end
 end
 
@@ -135,13 +145,20 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
             @case ::Core.GotoIfNot || ::Core.GotoNode || ::Core.ReturnNode
                 break
             @case _
-                spv_inst = emit!(blk, ir, irmap, i, inst, jtype)
+                spv_inst = emit_inst!(ir, irmap, cfg, inst, jtype)
+                push!(blk, irmap, spv_inst, i)
         end
         i += 1
     end
 
+    # Implicit `goto` to the next block.
+    if i > n
+        spv_inst = @inst OpBranch(SSAValue(node + 1, irmap))
+        push!(blk, irmap, spv_inst)
+        return
+    end
+
     # Process termination instructions.
-    i ≤ n || error("No termination instruction found. Last instruction: :($(code[n]))")
     for inst in code[i:n]
         @switch inst begin
             @case ::Core.ReturnNode
@@ -151,34 +168,29 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
                     # Assume returned value is a literal.
                     _ => begin
                         c = Constant(inst.val)
-                        c_inst = emit!(ir, irmap, c)::Instruction
-                        @inst OpReturnValue(c_inst.result_id::SSAValue)
+                        @inst OpReturnValue(emit!(ir, irmap, c))
                     end
                 end
-                emit!(blk, ir, irmap, n, spv_inst)
+                push!(blk, irmap, spv_inst, n)
             @case ::Core.GotoNode
-                spv_inst = @inst OpBranch(SSAValue(inst.label, irmap))
-                emit!(blk, ir, irmap, n, spv_inst)
+                dest = irmap.bb_ssavals[Core.SSAValue(inst.label)]
+                spv_inst = @inst OpBranch(dest)
+                push!(blk, irmap, spv_inst, n)
             @case ::Core.GotoIfNot
                 # Core.GotoIfNot uses the SSA value of the first instruction of the target
                 # block as its `dest`.
-                dest = findfirst(==(inst.dest), cfg.indices)::Int
-                spv_inst = @inst OpBranchConditional(SSAValue(inst.cond, irmap), SSAValue(node + 1, irmap), SSAValue(dest, irmap))
-                emit!(blk, ir, irmap, n, spv_inst)
+                dest = irmap.bb_ssavals[Core.SSAValue(inst.dest)]
+                spv_inst = @inst OpBranchConditional(SSAValue(inst.cond, irmap), SSAValue(node + 1, irmap), dest)
+                push!(blk, irmap, spv_inst, n)
         end
     end
 end
 
-function emit!(block::Block, ir::IR, irmap::IRMapping, i::Integer, args...)
-    emit!(block, ir, irmap, i, emit!(ir, irmap, args...))
-end
-
-function emit!(block::Block, ir::IR, irmap::IRMapping, i::Integer, inst::Instruction)
-    push!(block.insts, inst)
+function Base.push!(block::Block, irmap::IRMapping, inst::Instruction, i::Optional{Int} = nothing)
     if !isnothing(inst.result_id)
-        insert!(irmap.ssavals, Core.SSAValue(i), inst.result_id)
+        insert!(irmap.ssavals, Core.SSAValue(i::Int), inst.result_id)
     end
-    inst
+    push!(block.insts, inst)
 end
 
 function julia_type(@nospecialize(t::SPIRType), ir::IR)

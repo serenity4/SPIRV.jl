@@ -51,6 +51,7 @@ end
 macro broadcastref(ex)
     T = @match ex begin
         :(struct $T; $(fields...); end) => T
+        :(mutable struct $T; $(fields...); end) => T
         :(abstract type $T end) => T
     end
 
