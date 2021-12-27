@@ -86,4 +86,8 @@ using SPIRV: OpFMul, OpFAdd
         OpFunctionEnd()
     """)
     @test validate(ir; check_entrypoint = false)
+
+    f_branch(x) = x > 0 ? x + 1 : x - 1
+    ir = @compile f_branch(1f0)
+    @test validate(ir; check_entrypoint = false)
 end

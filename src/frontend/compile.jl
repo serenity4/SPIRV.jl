@@ -58,7 +58,7 @@ function FunctionType(mi::MethodInstance)
 end
 
 function emit!(ir::IR, irmap::IRMapping, type::FunctionType)
-    !haskey(ir.types.backward, type) || return ir.types[type]
+    haskey(ir.types, type) && return ir.types[type]
     emit!(ir, irmap, type.rettype)
     for t in type.argtypes
         emit!(ir, irmap, t)
@@ -67,8 +67,7 @@ function emit!(ir::IR, irmap::IRMapping, type::FunctionType)
 end
 
 function emit!(ir::IR, irmap::IRMapping, @nospecialize(type::SPIRType))
-    !haskey(ir.types.backward, type) || return ir.types[type]
-
+    haskey(ir.types, type) && return ir.types[type]
     @switch type begin
         @case ::PointerType
             emit!(ir, irmap, type.type)
@@ -95,6 +94,7 @@ function emit!(ir::IR, irmap::IRMapping, @nospecialize(type::SPIRType))
 end
 
 function emit!(ir::IR, irmap::IRMapping, c::Constant)
+    haskey(ir.constants, c) && return ir.constants[c]
     @switch c.value begin
         @case (::Nothing, type::SPIRType) || (::Vector{SSAValue}, type::SPIRType)
             emit!(ir, irmap, type)
@@ -110,14 +110,18 @@ end
 
 function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG)
     ranges = block_ranges(cfg)
-    for node in topological_sort_by_dfs(bfs_tree(cfg.graph, 1))
-        emit!(fdef, ir, irmap, cfg, ranges[node])
+    nodelist = topological_sort_by_dfs(bfs_tree(cfg.graph, 1))
+    for node in nodelist
+        insert!(irmap.bbs, node, next!(ir.ssacounter))
+    end
+    for node in nodelist
+        emit!(fdef, ir, irmap, cfg, ranges[node], node)
     end
 end
 
-function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, range::UnitRange)
+function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, range::UnitRange, node::Integer)
     (; code, ssavaluetypes, slottypes) = cfg.code
-    blk = Block(next!(ir.ssacounter))
+    blk = Block(SSAValue(node, irmap))
     push!(blk.insts, @inst blk.id = OpLabel())
     insert!(fdef.blocks, blk.id, blk)
     i = first(range)
@@ -143,7 +147,7 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
             @case ::Core.ReturnNode
                 spv_inst = @match inst.val begin
                     ::Nothing => @inst OpReturn()
-                    id::Core.SSAValue => @inst OpReturnValue(irmap.ssavals[id])
+                    id::Core.SSAValue => @inst OpReturnValue(SSAValue(id, irmap))
                     # Assume returned value is a literal.
                     _ => begin
                         c = Constant(inst.val)
@@ -153,9 +157,14 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
                 end
                 emit!(blk, ir, irmap, n, spv_inst)
             @case ::Core.GotoNode
-                emit!(blk, ir, irmap, n)
+                spv_inst = @inst OpBranch(SSAValue(inst.label, irmap))
+                emit!(blk, ir, irmap, n, spv_inst)
             @case ::Core.GotoIfNot
-                nothing
+                # Core.GotoIfNot uses the SSA value of the first instruction of the target
+                # block as its `dest`.
+                dest = findfirst(==(inst.dest), cfg.indices)::Int
+                spv_inst = @inst OpBranchConditional(SSAValue(inst.cond, irmap), SSAValue(node + 1, irmap), SSAValue(dest, irmap))
+                emit!(blk, ir, irmap, n, spv_inst)
         end
     end
 end
@@ -189,7 +198,7 @@ function julia_type(@nospecialize(t::SPIRType), ir::IR)
 end
 
 function emit_extinst!(ir::IR, extinst)
-    haskey(ir.extinst_imports.backward, extinst) && return ir.extinst_imports[extinst]
+    haskey(ir.extinst_imports, extinst) && return ir.extinst_imports[extinst]
     id = next!(ir.ssacounter)
     insert!(ir.extinst_imports, id, extinst)
     id

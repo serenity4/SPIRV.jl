@@ -41,8 +41,7 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
   end
 
   args = map(args) do arg
-    isa(arg, Core.Argument) && return irmap.args[arg]
-    isa(arg, Core.SSAValue) && return irmap.ssavals[arg]
+    (isa(arg, Core.Argument) || isa(arg, Core.SSAValue)) && return SSAValue(arg, irmap)
     (isa(arg, AbstractFloat) || isa(arg, Integer)) && return emit!(ir, irmap, Constant(arg))
     arg
   end

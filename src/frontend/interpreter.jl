@@ -27,7 +27,7 @@ end
 
 # Constructor adapted from Julia's `NativeInterpreter`.
 function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = InferenceParams(),
-        opt_params = OptimizationParams(), global_cache = GLOBAL_CI_CACHE, method_tables = [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE])
+        opt_params = OptimizationParams(inline_cost_threshold = 1000), global_cache = GLOBAL_CI_CACHE, method_tables = [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE])
     SPIRVInterpreter(
         global_cache,
         NOverlayMethodTable(world, method_tables),

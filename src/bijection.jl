@@ -23,6 +23,8 @@ end
 
 Base.getindex(bmap::BijectiveMapping{T1}, key::T1) where {T1} = bmap.forward[key]
 Base.getindex(bmap::BijectiveMapping{T1,T2}, key::T2) where {T1,T2} = bmap.backward[key]
+Base.haskey(bmap::BijectiveMapping{T1}, key::T1) where {T1,T2} = haskey(bmap.forward, key)
+Base.haskey(bmap::BijectiveMapping{T1,T2}, key::T2) where {T1,T2} = haskey(bmap.backward, key)
 
 function Dictionaries.sortkeys!(bmap::BijectiveMapping)
     sortkeys!(bmap.forward)
