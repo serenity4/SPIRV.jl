@@ -111,6 +111,7 @@ export
 
         verify,
         compile,
-        @compile
+        @compile,
+        invalidate_all
 
 end
