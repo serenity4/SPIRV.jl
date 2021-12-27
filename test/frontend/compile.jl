@@ -80,6 +80,15 @@ end
 
     (; code) = SPIRV.@code_typed test_constprop3()
     @test code[1] == Core.ReturnNode(6.)
+
+    function test_constprop4()
+      x = exp(3.)
+      z = 1 + x^2
+      x + 2f0 + floor(z)
+    end
+
+    (; code) = SPIRV.@code_typed test_constprop4()
+    @test code[1] == Core.ReturnNode(426.08553692318765)
   end
 
   @testset "SPIR-V code generation" begin

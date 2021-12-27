@@ -58,7 +58,7 @@ const IEEEFloat_types = (Float16, Float32, Float64)
   end
 end
 
-@override muladd(x::T, y::T, z::T) where {T<:IEEEFloat} = FAdd(x, FMul(y, z))
+@override muladd(x::T, y::T, z::T) where {T<:IEEEFloat} = FAdd(FMul(x, y), z)
 
 ## Comparisons.
 
