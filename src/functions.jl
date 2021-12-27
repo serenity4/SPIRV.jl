@@ -15,3 +15,9 @@ Block(id::SSAValue) = Block(id, [])
 end
 
 body(fdef::FunctionDefinition) = foldl(append!, map(x -> x.insts, values(fdef.blocks)); init=Instruction[])
+
+function new_block!(fdef::FunctionDefinition, id::SSAValue)
+    blk = Block(id, [@inst id = OpLabel()])
+    insert!(fdef.blocks, id, blk)
+    blk
+end

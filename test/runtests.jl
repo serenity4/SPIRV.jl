@@ -48,7 +48,7 @@ modules = [
             pmod = SPIRV.PhysicalModule(resource("vert.spv"))
             mod = SPIRV.Module(pmod)
             ir = IR(mod; satisfy_requirements = false)
-            f1 = ir.fdefs[4]
+            f1 = SPIRV.FunctionDefinition(ir, :main)
             cfg = control_flow_graph(f1)
             @test nv(cfg) == length(f1.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f1)))
             mod2 = SPIRV.Module(ir)
@@ -61,7 +61,7 @@ modules = [
             pmod = SPIRV.PhysicalModule(resource("comp.spv"))
             mod = SPIRV.Module(pmod)
             ir = IR(mod; satisfy_requirements = false)
-            f2 = ir.fdefs[52]
+            f2 = SPIRV.FunctionDefinition(ir, :main)
             cfg = control_flow_graph(f2)
             @test nv(cfg) == length(f2.blocks) == count(==(SPIRV.OpLabel), map(x -> x.opcode, SPIRV.body(f2)))
             mod2 = SPIRV.Module(ir)
@@ -89,5 +89,6 @@ modules = [
         include("frontend/reflection.jl")
         include("frontend/restructuring.jl")
         include("frontend/compile.jl")
+        include("frontend/shader.jl")
     end
 end;

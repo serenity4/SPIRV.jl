@@ -29,8 +29,7 @@ end
 
 DebugInfo() = DebugInfo(SSADict(), SSADict(), SSADict(), nothing)
 
-struct Variable
-    id::SSAValue
+mutable struct Variable
     type::SPIRType
     storage_class::StorageClass
     initializer::Optional{SSAValue}
@@ -45,7 +44,7 @@ function Variable(inst::Instruction, type::SPIRType)
         Found pointer storage class $(type.storage_class) and variable storage class $storage_class.
         """)
     end
-    Variable(inst.result_id, type, storage_class, initializer)
+    Variable(type, storage_class, initializer)
 end
 
 mutable struct IR
@@ -61,7 +60,7 @@ mutable struct IR
     "Constants, including specialization constants."
     constants::BijectiveMapping{SSAValue,Constant}
     global_vars::BijectiveMapping{SSAValue,Variable}
-    fdefs::SSADict{FunctionDefinition}
+    fdefs::BijectiveMapping{SSAValue,FunctionDefinition}
     results::SSADict{Any}
     debug::DebugInfo
     ssacounter::SSACounter
@@ -69,7 +68,7 @@ end
 
 function IR(; meta::Metadata = Metadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
     IR(meta, [], [], BijectiveMapping(), addressing_model, memory_model, SSADict(), SSADict(),
-        BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), SSADict(), DebugInfo(), SSACounter(0))
+        BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), DebugInfo(), SSACounter(0))
 end
 
 function IR(mod::Module; satisfy_requirements = true)

@@ -28,14 +28,14 @@ end
 """
 Validate a SPIR-V module using [Khronos' reference validator](https://github.com/KhronosGroup/SPIRV-Tools#validator).
 """
-function validate_khronos(mod::Module)
+function validate_khronos(mod::Module; flags = [])
     input = IOBuffer()
     write(input, mod)
     seekstart(input)
     err = IOBuffer()
 
     try
-        run(pipeline(`$spirv_val -`, stdin=input, stderr=err))
+        run(pipeline(`$spirv_val $flags -`, stdin=input, stderr=err))
     catch e
         if e isa ProcessFailedException
             err_str = String(take!(err))
@@ -49,9 +49,17 @@ function validate_khronos(mod::Module)
 end
 
 function validate(ir::IR)
-    # Add the Linkage capability to work around the requirement for having at least one entry points.
-    ir = @set ir.capabilities = union!(ir.capabilities, [CapabilityLinkage])
+    if isempty(ir.entry_points)
+        # Add the Linkage capability to work around the requirement of having at least one entry point.
+        ir = @set ir.capabilities = union!(ir.capabilities, [CapabilityLinkage])
+    end
     validate(Module(ir))
+end
+
+function validate_shader(ir::IR)
+    !isempty(ir.entry_points) || error("At least one entry point must be defined.")
+    mod = Module(ir)
+    validate_types(mod) && validate_khronos(mod; flags = ["--target-env", "vulkan1.2"])
 end
 
 struct ValidationError <: Exception

@@ -53,6 +53,7 @@ include("frontend/reflection.jl")
 include("frontend/restructuring.jl")
 include("frontend/compile.jl")
 include("frontend/codegen.jl")
+include("frontend/shader.jl")
 
 export
         # parse
@@ -90,6 +91,7 @@ export
 
         # validation
         validate,
+        validate_shader,
 
         # Front-end
         CFG,

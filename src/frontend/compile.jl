@@ -28,19 +28,18 @@ SSAValue(bb::Int, irmap::IRMapping) = irmap.bbs[bb]
 SSAValue(ssaval::Core.SSAValue, irmap::IRMapping) = irmap.ssavals[ssaval]
 
 function emit!(ir::IR, cfg::CFG)
+    # Declare a new function.
     ftype = FunctionType(cfg.mi)
     fdef = FunctionDefinition(ftype, FunctionControlNone, [], SSADict())
+    fid = emit!(ir, fdef)
+    insert!(ir.debug.names, fid, make_name(cfg.mi))
     irmap = IRMapping()
-    emit!(ir, irmap, ftype)
-    fid = next!(ir.ssacounter)
-    insert!(ir.fdefs, fid, fdef)
-    insert!(ir.debug.names, fid, cfg.mi.def.name)
-    for n in eachindex(ftype.argtypes)
-        id = next!(ir.ssacounter)
-        insert!(irmap.args, Core.Argument(n + 1), id)
-        insert!(ir.debug.names, id, cfg.code.slotnames[n + 1])
-        push!(fdef.args, id)
+    for (i, argid) in enumerate(fdef.args)
+        insert!(irmap.args, Core.Argument(i + 1), argid)
+        insert!(ir.debug.names, argid, cfg.code.slotnames[i + 1])
     end
+
+    # Fill it with instructions using the CFG.
     try
         emit!(fdef, ir, irmap, cfg)
     catch
@@ -50,41 +49,55 @@ function emit!(ir::IR, cfg::CFG)
     fid
 end
 
+function make_name(mi::MethodInstance)
+    Symbol(replace(string(mi.def.name, '_', Base.tuple_type_tail(mi.specTypes)), ' ' => ""))
+end
+
 function FunctionType(mi::MethodInstance)
     argtypes = map(SPIRType, Base.tuple_type_tail(mi.specTypes).types)
     ci = GLOBAL_CI_CACHE[mi]
     FunctionType(SPIRType(ci.rettype), argtypes)
 end
 
-function emit!(ir::IR, irmap::IRMapping, type::FunctionType)
-    haskey(ir.types, type) && return ir.types[type]
-    emit!(ir, irmap, type.rettype)
-    for t in type.argtypes
-        emit!(ir, irmap, t)
+function emit!(ir::IR, fdef::FunctionDefinition)
+    emit!(ir, fdef.type)
+    fid = next!(ir.ssacounter)
+    for n in eachindex(fdef.type.argtypes)
+        id = next!(ir.ssacounter)
+        push!(fdef.args, id)
     end
-    insert!(ir.types, next!(ir.ssacounter), type)
+    insert!(ir.fdefs, fid, fdef)
+    fid
 end
 
-function emit!(ir::IR, irmap::IRMapping, @nospecialize(type::SPIRType))
+emit!(ir::IR, irmap::IRMapping, c::Constant) = emit!(ir, c)
+emit!(ir::IR, irmap::IRMapping, @nospecialize(type::SPIRType)) = emit!(ir, type)
+
+function emit!(ir::IR, @nospecialize(type::SPIRType))
     haskey(ir.types, type) && return ir.types[type]
     @switch type begin
         @case ::PointerType
-            emit!(ir, irmap, type.type)
+            emit!(ir, type.type)
         @case (::ArrayType && GuardBy(isnothing ∘ Base.Fix2(getproperty, :size))) || ::VectorType || ::MatrixType
-            emit!(ir, irmap, type.eltype)
+            emit!(ir, type.eltype)
         @case ::ArrayType
-            emit!(ir, irmap, type.eltype)
-            emit!(ir, irmap, type.size)
+            emit!(ir, type.eltype)
+            emit!(ir, type.size)
         @case ::StructType
             for t in type.members
-                emit!(ir, irmap, t)
+                emit!(ir, t)
             end
         @case ::ImageType
-            emit!(ir, irmap, type.sampled_type)
+            emit!(ir, type.sampled_type)
         @case ::SampledImageType
-            emit!(ir, irmap, type.image_type)
+            emit!(ir, type.image_type)
         @case ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType
             next!(ir.ssacounter)
+        @case ::FunctionType
+            emit!(ir, type.rettype)
+            for t in type.argtypes
+                emit!(ir, t)
+            end
     end
 
     id = next!(ir.ssacounter)
@@ -92,18 +105,26 @@ function emit!(ir::IR, irmap::IRMapping, @nospecialize(type::SPIRType))
     id
 end
 
-function emit!(ir::IR, irmap::IRMapping, c::Constant)
+function emit!(ir::IR, c::Constant)
     haskey(ir.constants, c) && return ir.constants[c]
     @switch c.value begin
         @case (::Nothing, type::SPIRType) || (::Vector{SSAValue}, type::SPIRType)
-            emit!(ir, irmap, type)
+            emit!(ir, type)
         @case ::Bool
-            emit!(ir, irmap, BooleanType())
+            emit!(ir, BooleanType())
         @case val
-            emit!(ir, irmap, SPIRType(typeof(val)))
+            emit!(ir, SPIRType(typeof(val)))
     end
     id = next!(ir.ssacounter)
     insert!(ir.constants, id, c)
+    id
+end
+
+function emit!(ir::IR, var::Variable, decorations = DecorationData())
+    emit!(ir, var.type)
+    id = next!(ir.ssacounter)
+    insert!(ir.global_vars, id, var)
+    insert!(ir.decorations, id, decorations)
     id
 end
 
@@ -131,9 +152,7 @@ end
 
 function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, range::UnitRange, node::Integer)
     (; code, ssavaluetypes, slottypes) = cfg.code
-    blk = Block(SSAValue(node, irmap))
-    push!(blk.insts, @inst blk.id = OpLabel())
-    insert!(fdef.blocks, blk.id, blk)
+    blk = new_block!(fdef, SSAValue(node, irmap))
     i = first(range)
     n = last(range)
     while i ≤ n
