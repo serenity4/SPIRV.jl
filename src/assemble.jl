@@ -156,7 +156,14 @@ function Base.read(::Type{Module}, io::IO)
                     val = @match name = nameof(t) begin
                         :Id => parse(SSAValue, op)
                         :Literal => @match kind begin
-                            &LiteralExtInstInteger => parse(Int, op)
+                            &LiteralExtInstInteger => begin
+                                if isdigit(first(op))
+                                    parse(Int, op)
+                                elseif try_getopcode(op, :GLSL) ≠ nothing
+                                    #TODO: support arbitrary instruction sets, not just GLSL
+                                    try_getopcode(op, :GLSL)::OpCodeGLSL
+                                end
+                            end
                             &LiteralInteger || &LiteralSpecConstantOpInteger => parse(UInt32, op)
                             &LiteralContextDependentNumber => contains(op, '.') ? reinterpret(UInt32, parse(Float32, op)) : parse(UInt32, op)
                             &LiteralString => String(strip(op, '"'))

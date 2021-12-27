@@ -16,16 +16,18 @@ function emit!(ir::IR, irmap::IRMapping, ex::Expr, jtype::Type)
     Expr(:invoke, mi, f, args...) => begin
         @assert isa(f, GlobalRef)
         if f.mod == @__MODULE__
-          maybe_opname = Symbol(:Op, f.name)
-          maybe_op = isdefined(@__MODULE__, maybe_opname) ? getproperty(@__MODULE__, maybe_opname) : nothing
-          if maybe_op isa OpCode || maybe_op isa OpCodeGLSL
-            opcode = maybe_op
+          opcode = @when let op::OpCode = try_getopcode(f.name)
+              op
+            @when op::OpCodeGLSL = try_getopcode(f.name, :GLSL)
+              op
+            end
+          if !isnothing(opcode)
             !isempty(args) && isa(first(args), DataType) && (args = args[2:end])
             @switch opcode begin
               @case ::OpCode
                 (opcode, args)
               @case ::OpCodeGLSL
-                args = (emit_extinst!(ir, "GLSL.std.450"), args...)
+                args = (emit_extinst!(ir, "GLSL.std.450"), opcode, args...)
                 (OpExtInst, args)
             end
           else
@@ -57,6 +59,11 @@ function check_isvalid(jtype::Type)
       error("Found non-concrete type '$jtype' after type inference. All types must be concrete.")
     end
   end
+end
+
+function try_getopcode(name, prefix = "")
+  maybe_opname = Symbol(:Op, prefix, name)
+  isdefined(@__MODULE__, maybe_opname) ? getproperty(@__MODULE__, maybe_opname) : nothing
 end
 
 emit_new!(ir::IR, mi::MethodInstance) = emit!(ir, CFG(mi; inferred = true))

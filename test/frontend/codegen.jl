@@ -17,8 +17,8 @@ using SPIRV: OpFMul, OpFAdd
    %3 = OpTypeFunction(%2, %2)
    # Constant literals are not interpreted as floating point values.
    # Doing so would require the knowledge of types, expressed in the IR.
-   %7 = OpConstant(1065353216)::%2
-   %9 = OpConstant(1077936128)::%2
+   %7 = OpConstant(0x3f800000)::%2
+   %9 = OpConstant(0x40400000)::%2
    %4 = OpFunction(None, %3)::%2
    %5 = OpFunctionParameter()::%2
    %6 = OpLabel()
@@ -53,6 +53,31 @@ using SPIRV: OpFMul, OpFAdd
   %13 = OpSelect(%12, %6, %5)::%2
   %14 = OpSelect(%11, %7, %13)::%2
         OpReturnValue(%14)
+        OpFunctionEnd()
+    """)
+  @test validate(ir; check_entrypoint = false)
+
+  ir = @compile f_extinst(3f0)
+  mod = SPIRV.Module(ir)
+  @test mod == parse(SPIRV.Module, """
+        OpCapability(VulkanMemoryModel)
+        OpExtension("SPV_KHR_vulkan_memory_model")
+   %7 = OpExtInstImport("GLSL.std.450")
+        OpMemoryModel(Logical, Vulkan)
+   %2 = OpTypeFloat(0x00000020)
+   %3 = OpTypeFunction(%2, %2)
+  %10 = OpConstant(0x40400000)::%2
+  %12 = OpConstant(0x3f800000)::%2
+   %4 = OpFunction(None, %3)::%2
+   %5 = OpFunctionParameter()::%2
+   %6 = OpLabel()
+   %8 = OpExtInst(%7, Exp, %5)::%2
+   %9 = OpExtInst(%7, Sin, %5)::%2
+  %11 = OpFMul(%10, %9)::%2
+  %13 = OpFAdd(%12, %11)::%2
+  %14 = OpExtInst(%7, Log, %13)::%2
+  %15 = OpFAdd(%14, %8)::%2
+        OpReturnValue(%15)
         OpFunctionEnd()
     """)
     @test validate(ir; check_entrypoint = false)

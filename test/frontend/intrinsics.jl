@@ -68,7 +68,7 @@ end
 
     function test_constprop3()
       x = 3.
-      z = mod(10., x)
+      z = Base.mod(10., x)
       x + 2f0 + z
     end
 

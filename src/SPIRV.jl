@@ -112,6 +112,7 @@ export
         verify,
         compile,
         @compile,
-        invalidate_all
+        invalidate_all,
+        SPIRVInterpreter
 
 end

@@ -15,3 +15,12 @@ end
 @noinline      Log(x)                          = Base.Math._log(x, Val(:ℯ), :log)
 @override_glsl sin(x::SmallFloat)              = Sin(x)
 @noinline      Sin(x::T) where {T<:SmallFloat} = T(sin(Float64(x)))
+
+@override_glsl trunc(x::IEEEFloat, r::RoundingMode{:ToZero}) = Trunc(x)
+@noinline Trunc(x) = Base.trunc_llvm(x)
+@override_glsl round(x::IEEEFloat, r::RoundingMode{:Down})    = Floor(x)
+@noinline Floor(x) = Base.floor_llvm(x)
+@override_glsl round(x::IEEEFloat, r::RoundingMode{:Up}) = Ceil(x)
+@noinline Ceil(x) = Base.ceil_llvm(x)
+@override_glsl round(x::IEEEFloat, r::RoundingMode{:Nearest}) = Round(x)
+@noinline Round(x) = Base.rint_llvm(x)

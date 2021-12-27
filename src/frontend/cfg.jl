@@ -73,8 +73,9 @@ function CFG(mi::MethodInstance, code::CodeInfo)
     end
 
     # Strip remaining meta expressions if any.
-    if all(Meta.isexpr(st, :meta) for st in last(insts))
-        pop!(insts); deleteat!(code.code, pop!(indices))
+    if !isempty(last(insts)) && all(Meta.isexpr(st, :meta) for st in last(insts))
+        pop!(insts); deleteat!(code.code, pop!(indices) - 1)
+        rem_vertex!(g, nv(g))
     end
 
     CFG(mi, g, insts, indices, code)

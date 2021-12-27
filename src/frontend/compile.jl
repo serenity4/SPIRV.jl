@@ -42,7 +42,12 @@ function emit!(ir::IR, cfg::CFG)
         insert!(irmap.args, Core.Argument(n + 1), id)
         push!(fdef.args, id)
     end
-    emit!(fdef, ir, irmap, cfg)
+    try
+        emit!(fdef, ir, irmap, cfg)
+    catch
+        println("Internal compilation error for method instance $(cfg.mi)")
+        rethrow()
+    end
     id
 end
 
@@ -185,7 +190,9 @@ end
 
 function emit_extinst!(ir::IR, extinst)
     haskey(ir.extinst_imports.backward, extinst) && return ir.extinst_imports[extinst]
-    insert!(ir.extinst_imports, next!(ir.ssacounter), extinst)
+    id = next!(ir.ssacounter)
+    insert!(ir.extinst_imports, id, extinst)
+    id
 end
 
 macro compile(ex)
