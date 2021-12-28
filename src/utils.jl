@@ -91,15 +91,11 @@ function source_version(language::SourceLanguage, version::VersionNumber)::UInt3
 end
 
 macro tryswitch(val, ex)
-    push!(ex.args, Expr(:macrocall, Symbol("@case"), nothing, :_), nothing)
-    res = MLStyle.MatchImpl.gen_switch(val, ex, __source__, __module__)
-    res = MLStyle.MatchImpl.init_cfg(res)
-    esc(res)
+    push!(ex.args, Expr(:macrocall, Symbol("@case"), __source__, :_), nothing)
+    :($(esc(:(@switch $val $ex))))
 end
 
 macro trymatch(val, ex)
     push!(ex.args, :(_ => nothing))
-    res = MLStyle.MatchImpl.gen_match(val, ex, __source__, __module__)
-    res = MLStyle.MatchImpl.init_cfg(res)
-    esc(res)
+    :($(esc(:(@match $val $ex))))
 end

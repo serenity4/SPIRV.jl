@@ -126,34 +126,33 @@ get_signature(f::Symbol) = (f,)
 argtype(arg) = isa(arg, DataType) ? Type{arg} : typeof(arg)
 function get_signature(ex::Expr)
     @match ex begin
-        :($f($(args...))) => (f, :(Tuple{$argtype.($(eval.(args)))...}))
+        :($f($(args...))) => (f, :(Tuple{$argtype.([$(args...)])...}))
         _ => error("Malformed expression: $ex")
     end
 end
 
 macro cfg(infer, ex)
-    cfg_args = map(esc, get_signature(ex))
+    cfg_args = get_signature(ex)
     infer = @match infer begin
         :(infer = $val) && if isa(val, Bool) end => val
         _ => error("Invalid `infer` option, expected infer=<val> where <val> can be either true or false.")
     end
-    :(CFG($(cfg_args...); inferred = $infer))
+    :(CFG($(esc.(cfg_args)...); inferred = $infer))
 end
 
-macro cfg(ex) esc(:(@cfg infer = true $ex)) end
+macro cfg(ex) :($(esc(:($(@__MODULE__).@cfg infer = true $ex)))) end
 
 macro code_typed(debuginfo, ex)
-    cfg_args = map(esc, get_signature(ex))
     debuginfo = @match debuginfo begin
         :(debuginfo = $val) => val
         _ => error("Expected 'debuginfo = <value>' where <value> is one of (:source, :none)")
     end
-    quote
-        cfg = CFG($(cfg_args...), inferred = true)
+    ex = quote
+        cfg = $(esc(:(@cfg $ex)))
         code = cfg.code
         $debuginfo == :none && Base.remove_linenums!(code)
         code
     end
 end
 
-macro code_typed(ex) esc(:(SPIRV.@code_typed debuginfo = :source $ex)) end
+macro code_typed(ex) esc(:($(@__MODULE__).@code_typed debuginfo = :source $ex)) end

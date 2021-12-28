@@ -33,7 +33,9 @@ end
     @test operation(code[1]) == :ConvertSToF
     @test operation(code[2]; mod = Base.Math) == :exp
     @test ssavaluetypes[1:end-1] == fill(Float64, 2)
+  end
 
+  @testset "Extended instruction sets" begin
     (; code, ssavaluetypes) = SPIRV.@code_typed exp(3f0)
     @test operation(code[1]) == :Exp
     @test ssavaluetypes[1] == Float32
