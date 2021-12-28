@@ -49,6 +49,42 @@ end
     @test ssavaluetypes[1:end-1] == fill(Float32, 6)
   end
 
+  @testset "Array operations" begin
+    @testset "GenericVector" begin
+      v = SVec(1., 3., 1.)
+      @test v[2] == 3.
+      v[3] = 4
+      @test v[3] == last(v) == 4
+      @test first(v) == 1.
+      v2 = similar(v)
+      @test all(iszero, v2)
+    end
+
+    @testset "Basic operations" begin
+      v1 = SVec(0., 1., 0.)
+      v2 = SVec(1., 2., 1.)
+      v3 = SVec(3., 1., -1.)
+      f_vector(x, y, z) = (x + y) * (z - y)
+      @test f_vector(v1, v2, v3) == SVec(2., -3., -2.)
+
+      (; code, ssavaluetypes) = SPIRV.@code_typed f_vector(v1, v2, v3)
+      @test operation.(code[1:end-1]) == [:FAdd, :FSub, :FMul]
+      @test ssavaluetypes[1:end-1] == fill(SVec{Float64,3}, 3)
+
+      function f_vector_2(x)
+        x[3] = x[1] + x[2]
+      end
+
+      (; code, ssavaluetypes) = SPIRV.@code_typed f_vector_2(v1)
+      @test operation.(code[1:end-1]) == [:AccessChain, :Load, :AccessChain, :Load, :FAdd, :AccessChain, :Store]
+      @test ssavaluetypes[1:end-1] == [repeat([SPIRV.Pointer{Float64}, Float64], 2); Float64; SPIRV.Pointer{Float64}; Nothing]
+
+      (; code, ssavaluetypes) = SPIRV.@code_typed f_vector_2([1., 2., 3.])
+      @test operation.(code[1:end-1]) == [:AccessChain, :Load, :AccessChain, :Load, :FAdd, :AccessChain, :Store]
+      @test ssavaluetypes[1:end-1] == [repeat([SPIRV.Pointer{Float64}, Float64], 2); Float64; SPIRV.Pointer{Float64}; Nothing]
+    end
+  end
+
   @testset "Constant propagation" begin
     function test_constprop()
       x = 3

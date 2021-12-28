@@ -92,10 +92,10 @@ end
 
 macro tryswitch(val, ex)
     push!(ex.args, Expr(:macrocall, Symbol("@case"), __source__, :_), nothing)
-    :($(esc(:(@switch $val $ex))))
+    :($(esc(:($(@__MODULE__).@switch $val $ex))))
 end
 
 macro trymatch(val, ex)
     push!(ex.args, :(_ => nothing))
-    :($(esc(:(@match $val $ex))))
+    :($(esc(:($(@__MODULE__).@match $val $ex))))
 end

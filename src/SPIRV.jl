@@ -45,6 +45,7 @@ include("requirements.jl")
 include("frontend/ci_cache.jl")
 include("frontend/method_table.jl")
 include("frontend/intrinsics.jl")
+include("frontend/array.jl")
 include("frontend/intrinsics_glsl.jl")
 include("frontend/interpreter.jl")
 include("frontend/deltagraph.jl")
@@ -115,6 +116,11 @@ export
         compile,
         @compile,
         invalidate_all,
-        SPIRVInterpreter
+        SPIRVInterpreter,
+
+        # SPIR-V array/vector types
+        GenericVector,
+        ScalarVector, SVec,
+        ScalarMatrix, MVec
 
 end
