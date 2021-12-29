@@ -6,6 +6,23 @@ mutable struct GenericVector{T,N} <: AbstractVector{T}
 end
 GenericVector(args::Vararg{T}) where {T} = GenericVector{T,length(args)}(args)
 
+const Scalar = Union{Bool,Integer,AbstractFloat}
+
+"Statically sized vector with scalar values only."
+const ScalarVector{T<:Scalar,N} = GenericVector{T,N}
+ScalarVector(args::Vararg{T}) where {T<:Scalar} = GenericVector(args...)
+
+"""
+Statically sized scalar-valued matrix represented as a vector of column vectors.
+"""
+const ScalarMatrix{T<:Scalar,N,M} = GenericVector{ScalarVector{T,N},M}
+"Statically sized 1D array, whose element type can be anything, including scalars and structs."
+const SizedArray = GenericVector
+
+
+const SVec = ScalarVector
+const SMat = ScalarMatrix
+
 Base.length(::Type{GenericVector{T,N}}) where {T,N} = N
 Base.eltype(::Type{<:GenericVector{T}}) where {T} = T
 Base.size(T::Type{<:GenericVector{<:Scalar}}) = (length(T),)
@@ -21,23 +38,6 @@ Base.similar(T::Type{<:GenericVector}) = similar(T, eltype(T), size(T))
 for f in (:length, :eltype, :size, :lastindex, :firstindex, :zero, :one, :similar)
   @eval Base.$f(v::GenericVector) = $f(typeof(v))
 end
-
-
-const Scalar = Union{Bool,Integer,AbstractFloat}
-
-"Statically sized vector with scalar values only."
-const ScalarVector{T<:Scalar,N} = GenericVector{T,N}
-"""
-Statically sized scalar-valued matrix represented as a vector of column vectors.
-"""
-const ScalarMatrix{T<:Scalar,N,M} = GenericVector{ScalarVector{T,N},M}
-"Statically sized 1D array, whose element type can be anything, including scalars and structs."
-const SizedArray = GenericVector
-
-ScalarVector(args::Vararg{T}) where {T<:Scalar} = GenericVector(args...)
-
-const SVec = ScalarVector
-const SMat = ScalarMatrix
 
 """
 Pointer that keeps its parent around to make sure it stays valid.
@@ -71,10 +71,10 @@ end
 @override setindex!(v::Vector{T}, x::T, i::Integer) where {T} = Store(AccessChain(v, i), x)
 @override getindex(v::Vector, i::Integer) = Load(AccessChain(v, i))
 
-(+)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FAdd(v1, v2)
+Base.:(+)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FAdd(v1, v2)
 @noinline FAdd(v1, v2) = vectorize(+, v1, v2)
-(-)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FSub(v1, v2)
+Base.:(-)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FSub(v1, v2)
 @noinline FSub(v1, v2) = vectorize(-, v1, v2)
-(*)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FMul(v1, v2)
+Base.:(*)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FMul(v1, v2)
 @noinline FMul(v1, v2) = vectorize(*, v1, v2)
 vectorize(op, v1::T, v2::T) where {T<:GenericVector} = T(op.(v1.data, v2.data))
