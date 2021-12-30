@@ -3,6 +3,13 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type)
   type = SPIRType(jtype)
   extinst = nothing
   (opcode, args) = @match jinst begin
+    Expr(:new, T, args...) => begin
+      if any(isa(arg, Core.SSAValue) for arg in args) # not a constant
+        (OpCompositeConstruct, (T, args...))
+      else
+        return emit!(ir, Constant((remap_args!(ir, irmap, OpConstantComposite, args)::Vector{SSAValue}, SPIRType(T))))
+      end
+    end
     ::Core.PhiNode => (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(cfg)), irmap) for e in jinst.edges)))
     :($f($(args...))) => begin
         @match f begin
@@ -66,7 +73,7 @@ function remap_args!(ir::IR, irmap::IRMapping, opcode, args)
   map(args) do arg
     # Phi nodes may have forward references.
     isa(arg, Core.Argument) && opcode ≠ OpPhi && return SSAValue(arg, irmap)
-    (isa(arg, AbstractFloat) || isa(arg, Integer)) && return emit!(ir, irmap, Constant(arg))
+    (isa(arg, AbstractFloat) || isa(arg, Integer)) && return emit!(ir, irmap, Constant((@assert(sizeof(arg) == 4);arg)))
     arg
   end
 end

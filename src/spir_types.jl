@@ -213,11 +213,17 @@ function SPIRType(t::Type)
         ::Type{<:Tuple} => @match n = length(t.types) begin
                 GuardBy(>(1)) => begin
                     @match t begin
-                        ::Type{<:NTuple} => ArrayType(eltype(t), Constant(n))
+                        ::Type{<:NTuple} => ArrayType(SPIRType(eltype(t)), Constant(UInt32(n)))
                     end
                 end
                 _ => error("Unsupported $n-element tuple type $t")
             end
+        ::Type{<:Pointer} => PointerType(StorageClassFunction, SPIRType(eltype(t)))
+        ::Type{<:GenericVector} => @match (et, n) = (eltype(t), length(t)) begin
+            (::Type{<:Scalar}, GuardBy(≤(4))) => VectorType(SPIRType(et), n)
+            (::Type{<:GenericVector{<:Scalar}}, GuardBy(≤(4))) => MatrixType(SPIRType(eltype(et)), n)
+            _ => ArrayType(SPIRType(et), Constant(UInt32(n)))
+        end
         GuardBy(isstructtype) => StructType(SPIRType.(t.types), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
         _ => error("Type $t does not have a corresponding SPIR-V type.")
     end

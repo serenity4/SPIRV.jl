@@ -109,7 +109,13 @@ using SPIRV: OpFMul, OpFAdd
       x + y
     end
 
-    SPIRV.@code_typed f_branches(4f0)
     ir = @compile f_branches(4f0)
     @test validate(ir)
+
+    function unicolor(position)
+      SVec((position.x, position.y, 1f0, 1f0))
+    end
+
+    ir = @compile unicolor(SVec(1f0, 2f0, 3f0, 4f0))
+    @test_broken validate(ir)
 end

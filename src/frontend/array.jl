@@ -4,6 +4,8 @@ Statically sized mutable vector.
 mutable struct GenericVector{T,N} <: AbstractVector{T}
   data::NTuple{N,T}
 end
+GenericVector{T,N}(data::NTuple{N,T}) where {N,T} = CompositeConstruct(GenericVector{T,N}, data...)
+@noinline @generated CompositeConstruct(::Type{T}, data...) where {T<:GenericVector} = Expr(:new, T, :data)
 GenericVector(args::Vararg{T}) where {T} = GenericVector{T,length(args)}(args)
 
 const Scalar = Union{Bool,Integer,AbstractFloat}
@@ -22,7 +24,9 @@ const SizedArray = GenericVector
 
 
 const SVec = ScalarVector
+SVec(data::NTuple{N,T}) where {N,T<:Scalar} = GenericVector{T,N}(data)
 const SMat = ScalarMatrix
+MVec(data::NTuple{N,T}) where {N,T<:SVec} = GenericVector{T,N}(data)
 
 Base.length(::Type{GenericVector{T,N}}) where {T,N} = N
 Base.eltype(::Type{<:GenericVector{T}}) where {T} = T
@@ -50,19 +54,33 @@ end
 
 Base.setindex!(ptr::Pointer{T}, x::T) where {T} = Store(ptr, x)
 Base.setindex!(ptr::Pointer{T}, x) where {T} = Store(ptr, convert(T, x))
+Base.eltype(::Type{Pointer{T}}) where {T} = T
 Base.getindex(v::GenericVector, i) = Load(AccessChain(v, i))
 Base.setindex!(v::GenericVector{T}, x::T, i) where {T} = Store(AccessChain(v, i), x)
 Base.setindex!(v::GenericVector, x, i) = setindex!(v, convert(eltype(v), x), i)
 
-@noinline function AccessChain(v::AbstractVector, i = 1)
+@noinline function AccessChain(v::AbstractVector, i::UInt32)
   T = eltype(v)
   @assert isbitstype(T)
-  @boundscheck 1 ≤ i ≤ length(v) || throw(BoundsError(v, i))
+  @boundscheck 0 ≤ i ≤ length(v) - 1 || throw(BoundsError(v, i))
   GC.@preserve v begin
     addr = Base.unsafe_convert(Ptr{T}, pointer_from_objref(v))
-    Pointer(addr + (i - 1) * sizeof(T), v)
+    Pointer(addr + i * sizeof(T), v)
   end
 end
+
+"""
+    AccessChain(v, index)
+
+Get a [`Pointer`](@ref) to `v` using an indexing scheme that depends on the signedness of `index`:
+- An unsigned index will use 0-based indexing.
+- A signed index will use 1-based indexing, but will be explicitly converted to an 0-based unsigned index.
+
+"""
+function AccessChain end
+
+@inline AccessChain(v::AbstractVector, i::Unsigned) = AccessChain(v, convert(UInt32, i))
+@inline AccessChain(v::AbstractVector, i::Signed = 1) = AccessChain(v, UInt32(i - 1))
 
 @noinline Load(ptr::Pointer) = GC.@preserve ptr Base.unsafe_load(ptr.addr)
 
@@ -83,10 +101,10 @@ Base.:(*)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FMul(
 vectorize(op, v1::T, v2::T) where {T<:GenericVector} = T(op.(v1.data, v2.data))
 
 function Base.getproperty(x::GenericVector, prop::Symbol)
-  (prop === :x || prop === :r) && return x[1]
-  (prop === :y || prop === :g) && return x[2]
-  (prop === :z || prop === :b) && return x[3]
-  (prop === :w || prop === :a) && return x[4]
+  (prop === :x || prop === :r) && return x[UInt32(0)]
+  (prop === :y || prop === :g) && return x[UInt32(1)]
+  (prop === :z || prop === :b) && return x[UInt32(2)]
+  (prop === :w || prop === :a) && return x[UInt32(3)]
   getfield(x, prop)
 end
 
