@@ -48,6 +48,12 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type)
     _ => error("Expected call or invoke expression, got $(repr(jinst))")
   end
 
+  if opcode == OpAccessChain
+    args = map(args) do arg
+      isa(arg, Int) && return UInt32(arg)
+    end
+  end
+
   args = remap_args!(ir, irmap, opcode, args)
 
   type_id = emit!(ir, irmap, type)
@@ -73,7 +79,9 @@ function remap_args!(ir::IR, irmap::IRMapping, opcode, args)
   map(args) do arg
     # Phi nodes may have forward references.
     isa(arg, Core.Argument) && opcode ≠ OpPhi && return SSAValue(arg, irmap)
-    (isa(arg, AbstractFloat) || isa(arg, Integer)) && return emit!(ir, irmap, Constant((@assert(sizeof(arg) == 4);arg)))
+    if isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, Bool)
+      return emit!(ir, irmap, Constant(arg))
+    end
     arg
   end
 end

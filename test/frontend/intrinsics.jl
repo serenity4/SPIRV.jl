@@ -79,12 +79,12 @@ end
       end
 
       (; code, ssavaluetypes) = SPIRV.@code_typed f_vector_2(v1)
-      @test operation.(code[1:end-1]) == [:AccessChain, :Load, :AccessChain, :Load, :FAdd, :AccessChain, :Store]
-      @test ssavaluetypes[1:end-1] == [repeat([SPIRV.Pointer{Float64}, Float64], 2); Float64; SPIRV.Pointer{Float64}; Nothing]
+      @test operation.(code[1:end-1]) == [:ISub, :UConvert, :AccessChain, :Load, :ISub, :UConvert, :AccessChain, :Load, :FAdd, :ISub, :UConvert, :AccessChain, :Store]
+      @test ssavaluetypes[1:end-1] == [repeat([Int, UInt32, SPIRV.Pointer{Float64}, Float64], 2); Float64; Int; UInt32; SPIRV.Pointer{Float64}; Nothing]
 
       (; code, ssavaluetypes) = SPIRV.@code_typed f_vector_2([1., 2., 3.])
-      @test operation.(code[1:end-1]) == [:AccessChain, :Load, :AccessChain, :Load, :FAdd, :AccessChain, :Store]
-      @test ssavaluetypes[1:end-1] == [repeat([SPIRV.Pointer{Float64}, Float64], 2); Float64; SPIRV.Pointer{Float64}; Nothing]
+      @test operation.(code[1:end-1]) == [:ISub, :UConvert, :AccessChain, :Load, :ISub, :UConvert, :AccessChain, :Load, :FAdd, :ISub, :UConvert, :AccessChain, :Store]
+      @test ssavaluetypes[1:end-1] == [repeat([Int, UInt32, SPIRV.Pointer{Float64}, Float64], 2); Float64; Int; UInt32; SPIRV.Pointer{Float64}; Nothing]
     end
   end
 
