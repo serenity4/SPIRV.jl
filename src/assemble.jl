@@ -18,55 +18,48 @@ function physical_operands(inst::Instruction)
         @switch quantifier begin
             @case "*"
                 for arg in arguments[i:end]
-                    add_operand!(operands, arg, kind)
+                    add_operand!(operands, arg)
                 end
                 break
             @case "?"
                 nmissing = length(arguments) - (i - 1)
                 nopt = count(x -> hasproperty(x, :quantifier) && x.quantifier == "?", op_infos[i:end])
                 if nmissing == nopt
-                    add_operand!(operands, arg, kind)
+                    add_operand!(operands, arg)
                 elseif nmissing > 0
                     error("Unsupported number of values: found $nmissing values for $nopt optional arguments")
                 end
             @case nothing
-                add_operand!(operands, arg, kind)
+                kind == LiteralString && (arg = string(arg))
+                add_operand!(operands, arg)
         end
     end
     operands
 end
 
-function add_operand!(operands, arg, kind)
-    @match arg begin
-        ::SSAValue => (push!(operands, arg); return)
-        ::Vector{SSAValue} => (append!(operands, id.(arg)); return)
-        _ => nothing
-    end
-
-    @match kind begin
-        &LiteralString => begin
-            !isa(arg, Vector{UInt8}) && (arg = string(arg))
-            utf8_chars = collect(transcode(UInt8, arg))
-            push!(utf8_chars, '\0')
-            nrem = length(utf8_chars) % 4
-            if nrem ≠ 0
-                append!(utf8_chars, zeros(4 - nrem))
-            end
-            append!(operands, reinterpret(UInt32, utf8_chars))
-        end
-        _ => @match arg begin
-            ::Vector{Word} => append!(operands, arg)
-            _ => begin
-                if kind isa Literal
-                    sizeof(arg) <= 4 || error("Literals with a size greater than 32 bits are not supported.")
-                end
-                push!(operands, reinterpret(Word, arg))
-            end
-        end 
-    end
+struct SerializedArgument
+    words::Vector{Word}
+    SerializedArgument(words::Vector{Word}) = new(words)
+    SerializedArgument(arg) = SerializedArgument([arg])
 end
 
-function write(io::IO, mod::PhysicalModule)
+add_operand!(operands, arg::Union{SSAValue,Vector{SSAValue}}) = push!(operands, arg)
+add_operand!(operands, arg) = add_operand!(operands, SerializedArgument(arg))
+add_operand!(operands, arg::SerializedArgument) = append!(operands, arg.words)
+
+function SerializedArgument(arg::AbstractString)
+    utf8_chars = collect(transcode(UInt8, arg))
+    push!(utf8_chars, '\0')
+    nrem = length(utf8_chars) % 4
+    if nrem ≠ 0
+        append!(utf8_chars, zeros(4 - nrem))
+    end
+    SerializedArgument(utf8_chars)
+end
+
+SerializedArgument(arg::AbstractVector) = SerializedArgument(collect(reinterpret(Word, arg)))
+
+function Base.write(io::IO, mod::PhysicalModule)
     write(io, assemble(mod))
 end
 

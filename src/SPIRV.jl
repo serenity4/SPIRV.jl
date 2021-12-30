@@ -17,8 +17,6 @@ const spirv_val = SPIRV_Tools_jll.spirv_val(identity)
 
 const Optional{T} = Union{Nothing,T}
 
-import Base: write, show, showerror, ==
-
 const magic_number = 0x07230203
 const generator_magic_number = 0x12349876
 
@@ -32,9 +30,10 @@ include("generated/extinsts.jl")
 include("utils.jl")
 include("bijection.jl")
 include("ssa.jl")
+include("instructions.jl")
+include("spir_types.jl")
 include("parse.jl")
 include("disassemble.jl")
-include("spir_types.jl")
 include("functions.jl")
 include("ir.jl")
 include("cfg.jl")

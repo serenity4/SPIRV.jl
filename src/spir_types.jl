@@ -223,15 +223,9 @@ function SPIRType(t::Type)
     end
 end
 
-function children(@nospecialize(type::SPIRType))
-    @match type begin
-        ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType => SPIRType[]
-        ::PointerType => [type.type]
-        (::ArrayType && GuardBy(isnothing ∘ Base.Fix2(getproperty, :size))) || ::VectorType || ::MatrixType => [type.eltype]
-        ::ArrayType => [type.eltype; children(type.size)]
-        ::StructType => type.members
-        ::ImageType => [type.sampled_type]
-        ::SampledImageType => [type.image_type]
-        ::FunctionType => [type.rettype; type.argtypes]
+function SPIRType(c::Constant)
+    @match c.value begin
+        (_, type::SPIRType) || (_, type::SPIRType) => type
+        val => SPIRType(typeof(val))
     end
 end

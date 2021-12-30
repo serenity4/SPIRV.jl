@@ -1,8 +1,8 @@
-const Word = UInt32
-
 struct SPIRFormatError <: Exception
     msg
 end
+
+Base.showerror(io::IO, err::SPIRFormatError) = print(io, "Invalid SPIR-V format: ", err.msg)
 
 function defines_extra_operands(arg)
     val = get(enum_infos, arg, nothing)
@@ -18,14 +18,8 @@ function update_infos!(op_infos, i, arg, category)
     end
 end
 
-showerror(io::IO, err::SPIRFormatError) = print(io, "Invalid SPIR-V format: ", err.msg)
 
 invalid_format(msg) = throw(SPIRFormatError(msg))
-
-"""
-SPIR-V instruction. Must contain an opcode, and optionally a type id and a result id.
-"""
-@broadcastref abstract type AbstractInstruction end
 
 function info(opcode::Union{OpCode,OpCodeGLSL}, skip_ids::Bool = true)
     source = isa(opcode, OpCode) ? instruction_infos : instruction_infos_glsl
@@ -43,17 +37,6 @@ start_idx(inst::AbstractInstruction) = start_idx(inst.type_id, inst.result_id)
 
 operand_infos(args...) = info(args...).operands
 operand_kinds(args...) = getproperty.(operand_infos(args...), :kind)
-
-"""
-SPIR-V instruction in binary format.
-"""
-@auto_hash_equals struct PhysicalInstruction <: AbstractInstruction
-    word_count::UInt16
-    opcode::UInt16
-    type_id::Optional{Word}
-    result_id::Optional{Word}
-    operands::Vector{Word}
-end
 
 """
 SPIR-V module, as a series of headers followed by a stream of instructions.
@@ -142,18 +125,6 @@ function next_word_f(_magic_number::Word)
     end
 end
 
-"""
-Parsed SPIR-V instruction. It represents an instruction of the form `%result_id = %opcode(%arguments...)::%type_id`.
-"""
-@auto_hash_equals struct Instruction <: AbstractInstruction
-    opcode::OpCode
-    type_id::Optional{SSAValue}
-    result_id::Optional{SSAValue}
-    arguments::Vector{Any}
-    Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(opcode, type_id, result_id, arguments)
-end
-Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
-
 function info(opcode::OpCode, arguments::AbstractVector, skip_ids::Bool = true)
     inst_info = deepcopy(info(opcode, skip_ids))
     op_infos = inst_info.operands
@@ -223,7 +194,8 @@ function next_argument(operands, info)
         div(i, 4, RoundUp), str
     elseif kind isa Literal
         arg = first(operands)
-        sizeof(arg) <= 4 || error("Literals with a size greater than 32 bits are not supported.")
+        #FIXME: Literals that consume multiple words are not supported.
+        # We need a way to detect the number of words they take.
         1, arg
     elseif kind isa DataType && is_enum(kind)
         1, kind(first(operands))
@@ -280,7 +252,7 @@ function spirv_version(version::VersionNumber)
     version.major << 16 + version.minor << 8
 end
 
-show(io::IO, mod::Module) = print(io, "Module(#instructions=$(length(mod.instructions)))")
+Base.show(io::IO, mod::Module) = print(io, "Module(#instructions=$(length(mod.instructions)))")
 
 Base.write(io::IO, mod::Module) = write(io, assemble(mod))
 

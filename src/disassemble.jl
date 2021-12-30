@@ -57,7 +57,7 @@ function emit_argument(io, i, arg, kind, category = kind_to_category[kind])
     end
 end
 
-show(io::IO, ::MIME"text/plain", inst::Instruction) = emit(io, inst)
+Base.show(io::IO, ::MIME"text/plain", inst::Instruction) = emit(io, inst)
 
 """
     disassemble(io, spir_module)
@@ -90,4 +90,4 @@ hex(x) = "0x" * lpad(string(x, base=16), sizeof(x) * 2, '0')
 disassemble(obj) = disassemble(stdout, obj)
 disassemble(io::IO, mod::PhysicalModule) = disassemble(io, Module(mod))
 
-show(io::IO, ::MIME"text/plain", mod::Module) = disassemble(io, mod)
+Base.show(io::IO, ::MIME"text/plain", mod::Module) = disassemble(io, mod)

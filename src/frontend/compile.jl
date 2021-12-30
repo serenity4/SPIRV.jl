@@ -107,14 +107,7 @@ end
 
 function emit!(ir::IR, c::Constant)
     haskey(ir.constants, c) && return ir.constants[c]
-    @switch c.value begin
-        @case (::Nothing, type::SPIRType) || (::Vector{SSAValue}, type::SPIRType)
-            emit!(ir, type)
-        @case ::Bool
-            emit!(ir, BooleanType())
-        @case val
-            emit!(ir, SPIRType(typeof(val)))
-    end
+    emit!(ir, SPIRType(c))
     id = next!(ir.ssacounter)
     insert!(ir.constants, id, c)
     id
@@ -164,8 +157,12 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
             @case ::Core.GotoIfNot || ::Core.GotoNode || ::Core.ReturnNode
                 break
             @case _
-                spv_inst = emit_inst!(ir, irmap, cfg, inst, jtype)
-                push!(blk, irmap, spv_inst, i)
+                ret = emit_inst!(ir, irmap, cfg, inst, jtype)
+                if isa(ret, Instruction)
+                    push!(blk, irmap, ret, i)
+                elseif isa(ret, SSAValue)
+                    insert!(irmap.ssavals, Core.SSAValue(i), ret)
+                end
         end
         i += 1
     end

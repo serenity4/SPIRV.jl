@@ -22,7 +22,7 @@ function make_shader!(ir::IR, mi::MethodInstance, execution_model::ExecutionMode
     (; rettype, argtypes) = fdef.type
     input_vars = SSAValue[]
     for (i, (param, t)) in enumerate(zip(fdef.args, argtypes))
-        var_t = PointerType(StorageClassInput, t)
+        var_t = promote_to_pointer(t, StorageClassInput)
         var = Variable(var_t, StorageClassInput, nothing)
         #TODO: Compute location based on type size.
         decorations = dictionary([DecorationLocation => [UInt32(i - 1)]])
@@ -43,7 +43,7 @@ function make_shader!(ir::IR, mi::MethodInstance, execution_model::ExecutionMode
     fid = findfirst(==(fdef), ir.fdefs.forward)
 
     if rettype ≠ VoidType()
-        var_out_t = PointerType(StorageClassOutput, rettype)
+        var_out_t = promote_to_pointer(rettype, StorageClassOutput)
         var_out = Variable(var_out_t, StorageClassOutput, nothing)
         var_out_id = emit!(ir, var_out, dictionary([DecorationLocation => [UInt32(0)]]))
         push!(ep.interfaces, var_out_id)
@@ -61,3 +61,6 @@ function make_shader(cfg::CFG)
     ir = compile(cfg)
     make_shader!(ir, cfg.mi)
 end
+
+promote_to_pointer(t::SPIRType, storage_class) = PointerType(storage_class, t)
+promote_to_pointer(t::PointerType, storage_class) = @set t.storage_class = storage_class

@@ -331,7 +331,7 @@ function replace_name(val::SSAValue, names)
     "%$name"
 end
 
-function show(io::IO, mime::MIME"text/plain", ir::IR)
+function Base.show(io::IO, mime::MIME"text/plain", ir::IR)
     mod = Module(ir)
     isnothing(ir.debug) && return show(io, mime, mod)
     str = sprint(disassemble, mod; context = :color => true)

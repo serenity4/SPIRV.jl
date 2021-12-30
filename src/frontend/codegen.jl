@@ -41,12 +41,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type)
     _ => error("Expected call or invoke expression, got $(repr(jinst))")
   end
 
-  args = map(args) do arg
-    # Phi nodes may have forward references.
-    isa(arg, Core.Argument) && opcode ≠ OpPhi && return SSAValue(arg, irmap)
-    (isa(arg, AbstractFloat) || isa(arg, Integer)) && return emit!(ir, irmap, Constant(arg))
-    arg
-  end
+  args = remap_args!(ir, irmap, opcode, args)
 
   type_id = emit!(ir, irmap, type)
   @inst next!(ir.ssacounter) = opcode(args...)::type_id
@@ -65,6 +60,15 @@ end
 function try_getopcode(name, prefix = "")
   maybe_opname = Symbol(:Op, prefix, name)
   isdefined(@__MODULE__, maybe_opname) ? getproperty(@__MODULE__, maybe_opname) : nothing
+end
+
+function remap_args!(ir::IR, irmap::IRMapping, opcode, args)
+  map(args) do arg
+    # Phi nodes may have forward references.
+    isa(arg, Core.Argument) && opcode ≠ OpPhi && return SSAValue(arg, irmap)
+    (isa(arg, AbstractFloat) || isa(arg, Integer)) && return emit!(ir, irmap, Constant(arg))
+    arg
+  end
 end
 
 emit_new!(ir::IR, mi::MethodInstance) = emit!(ir, CFG(mi; inferred = true))

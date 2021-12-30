@@ -16,6 +16,7 @@ ScalarVector(args::Vararg{T}) where {T<:Scalar} = GenericVector(args...)
 Statically sized scalar-valued matrix represented as a vector of column vectors.
 """
 const ScalarMatrix{T<:Scalar,N,M} = GenericVector{ScalarVector{T,N},M}
+
 "Statically sized 1D array, whose element type can be anything, including scalars and structs."
 const SizedArray = GenericVector
 
@@ -47,6 +48,8 @@ struct Pointer{T}
   parent
 end
 
+Base.setindex!(ptr::Pointer{T}, x::T) where {T} = Store(ptr, x)
+Base.setindex!(ptr::Pointer{T}, x) where {T} = Store(ptr, convert(T, x))
 Base.getindex(v::GenericVector, i) = Load(AccessChain(v, i))
 Base.setindex!(v::GenericVector{T}, x::T, i) where {T} = Store(AccessChain(v, i), x)
 Base.setindex!(v::GenericVector, x, i) = setindex!(v, convert(eltype(v), x), i)
@@ -63,7 +66,7 @@ end
 
 @noinline Load(ptr::Pointer) = GC.@preserve ptr Base.unsafe_load(ptr.addr)
 
-@noinline function Store(ptr::Pointer, x)
+@noinline function Store(ptr::Pointer{T}, x::T) where {T}
   GC.@preserve ptr Base.unsafe_store!(ptr.addr, x)
   nothing
 end
@@ -78,3 +81,22 @@ Base.:(-)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FSub(
 Base.:(*)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FMul(v1, v2)
 @noinline FMul(v1, v2) = vectorize(*, v1, v2)
 vectorize(op, v1::T, v2::T) where {T<:GenericVector} = T(op.(v1.data, v2.data))
+
+function Base.getproperty(x::GenericVector, prop::Symbol)
+  (prop === :x || prop === :r) && return x[1]
+  (prop === :y || prop === :g) && return x[2]
+  (prop === :z || prop === :b) && return x[3]
+  (prop === :w || prop === :a) && return x[4]
+  getfield(x, prop)
+end
+
+Base.convert(::Type{Pointer{T}}, x::BitUnsigned) where {T} = UConvertToPtr(x)
+Pointer(T::Type, x::BitUnsigned) = Pointer(Base.reinterpret(Ptr{T}, x), nothing)
+@noinline ConvertUToPtr(T::Type, x) = Pointer(T, x)
+
+struct PerVertex
+  position::SVec{Float32,4}
+  point_size::Float32
+  clip_distance::SizedArray{Float32,1}
+  cull_distance::SizedArray{Float32,1}
+end
