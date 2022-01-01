@@ -173,12 +173,15 @@ function IR(mod::Module; satisfy_requirements = true)
                         if storage_class ≠ StorageClassFunction
                             insert!(ir.global_vars, result_id, Variable(inst, types[inst.type_id]))
                         end
+                        if !isnothing(current_function)
+                            push!(current_function.variables, inst)
+                        end
                 end
             @case "Function"
                 @tryswitch opcode begin
                     @case &OpFunction
                         control, ftype = arguments
-                        current_function = FunctionDefinition(types[ftype], control, [], SSADict())
+                        current_function = FunctionDefinition(types[ftype], control)
                         insert!(ir.fdefs, result_id, current_function)
                     @case &OpFunctionParameter
                         push!(current_function.args, result_id)
@@ -191,7 +194,7 @@ function IR(mod::Module; satisfy_requirements = true)
                     insert!(current_function.blocks, inst.result_id, Block(inst.result_id, []))
                 end
         end
-        if !isnothing(current_function) && !isempty(current_function.blocks)
+        if !isnothing(current_function) && !isempty(current_function.blocks) && opcode ≠ OpVariable
             push!(last(values(current_function.blocks)).insts, inst)
         end
         if !isnothing(result_id)
@@ -309,7 +312,14 @@ function instructions(ir::IR, fdef::FunctionDefinition, id::SSAValue)
     (; type) = fdef
     push!(insts, @inst id = OpFunction(fdef.control, ir.types[type])::ir.types[type.rettype])
     append!(insts, @inst(id = OpFunctionParameter()::ir.types[argtype]) for (id, argtype) in zip(fdef.args, type.argtypes))
-    append!(insts, body(fdef))
+    fbody = body(fdef)
+    if !isempty(fbody)
+        label = first(fbody)
+        @assert label.opcode == OpLabel
+        push!(insts, label)
+        append!(insts, fdef.variables)
+        append!(insts, fbody[2:end])
+    end
     push!(insts, @inst OpFunctionEnd())
     insts
 end
@@ -320,8 +330,8 @@ function append_globals!(insts, ir::IR)
     append!(insts, Instruction(val, id, globals) for (id, val) in pairs(globals))
 end
 
-function Instruction(var::Variable, id::SSAValue, id_map::BijectiveMapping)
-    inst = @inst id = OpVariable(var.storage_class)::id_map[var.type]
+function Instruction(var::Variable, id::SSAValue, types::BijectiveMapping)
+    inst = @inst id = OpVariable(var.storage_class)::types[var.type]
     !isnothing(var.initializer) && push!(inst.arguments, var.initializer)
     inst
 end

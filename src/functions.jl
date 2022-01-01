@@ -11,10 +11,17 @@ Block(id::SSAValue) = Block(id, [])
     type::FunctionType
     control::FunctionControl
     args::Vector{SSAValue}
+    variables::Vector{Instruction}
     blocks::SSADict{Block}
 end
 
-body(fdef::FunctionDefinition) = foldl(append!, map(x -> x.insts, values(fdef.blocks)); init=Instruction[])
+function FunctionDefinition(type::FunctionType, control::FunctionControl = FunctionControlNone)
+    FunctionDefinition(type, control, [], [], SSADict())
+end
+
+function body(fdef::FunctionDefinition)
+    foldl(append!, map(x -> x.insts, values(fdef.blocks)); init=Instruction[])
+end
 
 function new_block!(fdef::FunctionDefinition, id::SSAValue)
     blk = Block(id, [@inst id = OpLabel()])

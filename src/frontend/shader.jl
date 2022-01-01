@@ -15,7 +15,7 @@ FunctionDefinition(ir::IR, mi::MethodInstance) = FunctionDefinition(ir, make_nam
 function make_shader!(ir::IR, mi::MethodInstance, execution_model::ExecutionModel = ExecutionModelVertex)
     fdef = FunctionDefinition(ir, mi)
     main_t = FunctionType(VoidType(), [])
-    main = FunctionDefinition(main_t, FunctionControlNone, [], SSADict())
+    main = FunctionDefinition(main_t)
     ep = EntryPoint(:main, emit!(ir, main), execution_model, [], [])
     insert!(ir.entry_points, ep.func, ep)
 

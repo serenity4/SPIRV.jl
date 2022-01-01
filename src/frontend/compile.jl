@@ -18,19 +18,63 @@ struct IRMapping
     bb_ssavals::Dictionary{Core.SSAValue,SSAValue}
     "SPIR-V SSA values that correspond semantically to `Core.SSAValue`s."
     ssavals::Dictionary{Core.SSAValue,SSAValue}
+    "Intermediate results that correspond to SPIR-V `Variable`s. Typically, these results have a mutable Julia type."
+    variables::Dictionary{Core.SSAValue,Variable}
     types::Dictionary{Type,SSAValue}
 end
 
-IRMapping() = IRMapping(Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary())
+IRMapping() = IRMapping(Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary())
 
 SSAValue(arg::Core.Argument, irmap::IRMapping) = irmap.args[arg]
 SSAValue(bb::Int, irmap::IRMapping) = irmap.bbs[bb]
 SSAValue(ssaval::Core.SSAValue, irmap::IRMapping) = irmap.ssavals[ssaval]
 
+mutable struct CompilationError <: Exception
+    msg::String
+    mi::MethodInstance
+    jinst::Any
+    jtype::Type
+    inst::Instruction
+    CompilationError(msg::AbstractString) = (err = new(); err.msg = msg; err)
+end
+
+function throw_compilation_error(exc::Exception, fields::NamedTuple, msg = "Unknown internal compilation error")
+    if isa(exc, CompilationError)
+        for (prop, val) in pairs(fields)
+            setproperty!(exc, prop, val)
+        end
+        rethrow()
+    else
+        err = CompilationError(msg)
+        for (prop, val) in pairs(fields)
+            setproperty!(err, prop, val)
+        end
+        throw(err)
+    end
+end
+
+error_field(field) = string(Base.text_colors[:cyan], field, Base.text_colors[:default], ": ")
+
+function Base.showerror(io::IO, err::CompilationError)
+    print(io, "CompilationError")
+    if isdefined(err, :mi)
+        print(io, " (", err.mi, ")")
+    end
+    print(io, ": ", err.msg)
+    if isdefined(err, :jinst)
+        print(io, "\n", error_field("Julia instruction"), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
+    end
+    if isdefined(err, :inst)
+        print(io, "\n", error_field("Wrapped SPIR-V instruction"))
+        disassemble(io, err.inst)
+    end
+    println(io)
+end
+
 function emit!(ir::IR, cfg::CFG)
     # Declare a new function.
     ftype = FunctionType(cfg.mi)
-    fdef = FunctionDefinition(ftype, FunctionControlNone, [], SSADict())
+    fdef = FunctionDefinition(ftype)
     fid = emit!(ir, fdef)
     insert!(ir.debug.names, fid, make_name(cfg.mi))
     irmap = IRMapping()
@@ -39,12 +83,11 @@ function emit!(ir::IR, cfg::CFG)
         insert!(ir.debug.names, argid, cfg.code.slotnames[i + 1])
     end
 
-    # Fill it with instructions using the CFG.
     try
+        # Fill it with instructions using the CFG.
         emit!(fdef, ir, irmap, cfg)
-    catch
-        println("Internal compilation error for method instance $(cfg.mi)")
-        rethrow()
+    catch e
+        throw_compilation_error(e, (; cfg.mi), )
     end
     fid
 end
@@ -149,20 +192,48 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
     i = first(range)
     n = last(range)
     while i ≤ n
-        inst = code[i]
+        jinst = code[i]
         jtype = ssavaluetypes[i]
-        @assert !(jtype <: Core.IntrinsicFunction) "Encountered illegal core intrinsic $inst."
-        @switch inst begin
-            # Termination instructions.
-            @case ::Core.GotoIfNot || ::Core.GotoNode || ::Core.ReturnNode
-                break
-            @case _
-                ret = emit_inst!(ir, irmap, cfg, inst, jtype)
-                if isa(ret, Instruction)
-                    push!(blk, irmap, ret, i)
-                elseif isa(ret, SSAValue)
-                    insert!(irmap.ssavals, Core.SSAValue(i), ret)
-                end
+        spv_inst = nothing
+        @assert !(jtype <: Core.IntrinsicFunction) "Encountered illegal core intrinsic $jinst."
+        try
+            @switch jinst begin
+                # Termination instructions.
+                @case ::Core.GotoIfNot || ::Core.GotoNode || ::Core.ReturnNode
+                    break
+                @case _
+                    check_isvalid(jtype)
+                    if ismutabletype(jtype)
+                        # Create a SPIR-V variable to allow for future mutations.
+                        var_id = next!(ir.ssacounter)
+                        var = Variable(PointerType(StorageClassFunction, SPIRType(jtype)), StorageClassFunction, nothing)
+                        emit!(ir, var.type)
+                        spv_inst_var = Instruction(var, var_id, ir.types)
+                        insert!(irmap.variables, Core.SSAValue(i), var)
+                        insert!(irmap.ssavals, Core.SSAValue(i), var_id)
+                        push!(fdef.variables, spv_inst_var)
+                        # The current core SSAValue has already been assigned (to the variable).
+                    end
+                    ret = emit_inst!(ir, irmap, cfg, jinst, jtype, blk)
+                    if isa(ret, Instruction)
+                        if ismutabletype(jtype)
+                            if ret.opcode == OpCompositeConstruct
+                                push!(blk, irmap, ret, nothing)
+                                push!(blk, irmap, @inst OpStore(irmap.ssavals[Core.SSAValue(i)], ret.result_id))
+                            else
+                                push!(blk, irmap, ret, nothing)
+                            end
+                        else
+                            push!(blk, irmap, ret, i)
+                        end
+                    elseif isa(ret, SSAValue)
+                        insert!(irmap.ssavals, Core.SSAValue(i), ret)
+                    end
+            end
+        catch e
+            fields = (; jinst, jtype)
+            !isnothing(spv_inst) && (fields = (; fields..., inst = spv_inst))
+            throw_compilation_error(e, fields)
         end
         i += 1
     end
@@ -180,7 +251,7 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
             @case ::Core.ReturnNode
                 spv_inst = @match inst.val begin
                     ::Nothing => @inst OpReturn()
-                    id::Core.SSAValue => @inst OpReturnValue(SSAValue(id, irmap))
+                    id::Core.SSAValue => @inst OpReturnValue(load_if_variable!(blk, ir, irmap, id))
                     # Assume returned value is a literal.
                     _ => begin
                         c = Constant(inst.val)
@@ -203,7 +274,7 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
 end
 
 function Base.push!(block::Block, irmap::IRMapping, inst::Instruction, i::Optional{Int} = nothing)
-    if !isnothing(inst.result_id)
+    if !isnothing(inst.result_id) && !isnothing(i)
         insert!(irmap.ssavals, Core.SSAValue(i::Int), inst.result_id)
     end
     push!(block.insts, inst)
@@ -230,6 +301,16 @@ function emit_extinst!(ir::IR, extinst)
     id = next!(ir.ssacounter)
     insert!(ir.extinst_imports, id, extinst)
     id
+end
+
+function check_isvalid(jtype::Type)
+    if !in(jtype, spirv_types)
+        if isabstracttype(jtype)
+            throw(CompilationError("Found abstract type '$jtype' after type inference. All types must be concrete."))
+        elseif !isconcretetype(jtype)
+            throw(CompilationError("Found non-concrete type '$jtype' after type inference. All types must be concrete."))
+        end
+    end
 end
 
 macro compile(ex)

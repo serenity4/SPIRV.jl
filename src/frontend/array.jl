@@ -52,7 +52,12 @@ struct Pointer{T}
   parent
 end
 
-Base.setindex!(ptr::Pointer{T}, x::T) where {T} = Store(ptr, x)
+Base.:(==)(ptr1::Pointer, ptr2::Pointer) = PtrEqual(ptr1, ptr2)
+@noinline PtrEqual(ptr1, ptr2) = ptr1.addr == ptr2.addr
+Base.:(≠)(ptr1::Pointer, ptr2::Pointer) = PtrNotEqual(ptr1, ptr2)
+@noinline PtrNotEqual(ptr1, ptr2) = ptr1.addr ≠ ptr2.addr
+
+Base.setindex!(ptr::Pointer{T}, x::T) where {T} = (Store(ptr, x); x)
 Base.setindex!(ptr::Pointer{T}, x) where {T} = Store(ptr, convert(T, x))
 Base.eltype(::Type{Pointer{T}}) where {T} = T
 Base.getindex(v::GenericVector, i) = Load(AccessChain(v, i))

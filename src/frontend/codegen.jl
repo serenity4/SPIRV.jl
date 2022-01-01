@@ -1,12 +1,12 @@
-function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type)
-  check_isvalid(jtype)
+function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type, blk::Block)
   type = SPIRType(jtype)
   extinst = nothing
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => begin
-      if any(isa(arg, Core.SSAValue) for arg in args) # not a constant
+      if any(isa(arg, Core.SSAValue) for arg in args)
         (OpCompositeConstruct, (T, args...))
       else
+        # The value is a constant.
         return emit!(ir, Constant((remap_args!(ir, irmap, OpConstantComposite, args)::Vector{SSAValue}, SPIRType(T))))
       end
     end
@@ -15,10 +15,10 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type)
         @match f begin
           ::GlobalRef => begin
               func = getfield(f.mod, f.name)
-              isa(func, Core.IntrinsicFunction) && error("Reached illegal core intrinsic function '$func'.")
-              isa(func, Function) && error("Dynamic dispatch detected for function $func. All call sites must be resolved at compile time.")
+              isa(func, Core.IntrinsicFunction) && throw(CompilationError("Reached illegal core intrinsic function '$func'."))
+              isa(func, Function) && throw(CompilationError("Dynamic dispatch detected for function $func. All call sites must be statically resolved."))
             end
-          _ => error("Call to unknown function $f")
+          _ => throw(CompilationError("Call to unknown function $f"))
         end
       end
     Expr(:invoke, mi, f, args...) => begin
@@ -45,12 +45,23 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type)
           (OpFunctionCall, (emit_new!(ir, mi), args...))
         end
       end
-    _ => error("Expected call or invoke expression, got $(repr(jinst))")
+    _ => throw(CompilationError("Expected call or invoke expression, got $(repr(jinst))"))
   end
 
   if opcode == OpAccessChain
+    # Force literal in `getindex` to be 32-bit
     args = map(args) do arg
       isa(arg, Int) && return UInt32(arg)
+      arg
+    end
+  end
+
+  # Load all arguments that are wrapped with a variable.
+  if any(x -> isa(x, Core.SSAValue) && haskey(irmap.variables, x), args)
+    args = map(args) do arg
+      # Don't change the stored variable.
+      opcode == OpStore && arg == first(args) && return arg
+      load_if_variable!(blk, ir, irmap, arg)
     end
   end
 
@@ -60,14 +71,16 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type)
   @inst next!(ir.ssacounter) = opcode(args...)::type_id
 end
 
-function check_isvalid(jtype::Type)
-  if !in(jtype, spirv_types)
-    if isabstracttype(jtype)
-      error("Found abstract type '$jtype' after type inference. All types must be concrete.")
-    elseif !isconcretetype(jtype)
-      error("Found non-concrete type '$jtype' after type inference. All types must be concrete.")
+function load_if_variable!(blk, ir, irmap, arg)
+  if isa(arg, Core.SSAValue)
+    var = get(irmap.variables, arg, nothing)
+    if !isnothing(var)
+      load = @inst next!(ir.ssacounter) = OpLoad(irmap.ssavals[arg])::ir.types[var.type.type]
+      push!(blk, irmap, load)
+      return load.result_id
     end
   end
+  arg
 end
 
 function try_getopcode(name, prefix = "")
