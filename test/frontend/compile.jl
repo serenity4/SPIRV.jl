@@ -22,4 +22,4 @@ end
   # @compile f_extinst(3f0)
   # SPIRV.@code_typed exp(1)
   # SPIRV.@code_typed exp(3f0)
-end
+end;

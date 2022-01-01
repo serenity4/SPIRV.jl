@@ -1,13 +1,13 @@
 function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type, blk::Block)
   type = SPIRType(jtype)
-  extinst = nothing
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => begin
       if any(isa(arg, Core.SSAValue) for arg in args)
         (OpCompositeConstruct, (T, args...))
       else
         # The value is a constant.
-        return emit!(ir, Constant((remap_args!(ir, irmap, OpConstantComposite, args)::Vector{SSAValue}, SPIRType(T))))
+        args = remap_args!(ir, irmap, OpConstantComposite, args)::Vector{SSAValue}
+        return emit!(ir, Constant((args, type)))
       end
     end
     ::Core.PhiNode => (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(cfg)), irmap) for e in jinst.edges)))

@@ -38,7 +38,7 @@ mutable struct CompilationError <: Exception
     CompilationError(msg::AbstractString) = (err = new(); err.msg = msg; err)
 end
 
-function throw_compilation_error(exc::Exception, fields::NamedTuple, msg = "Unknown internal compilation error")
+function throw_compilation_error(exc::Exception, fields::NamedTuple, msg = "Internal compilation error")
     if isa(exc, CompilationError)
         for (prop, val) in pairs(fields)
             setproperty!(exc, prop, val)
@@ -66,7 +66,7 @@ function Base.showerror(io::IO, err::CompilationError)
     end
     if isdefined(err, :inst)
         print(io, "\n", error_field("Wrapped SPIR-V instruction"))
-        disassemble(io, err.inst)
+        emit(io, err.inst)
     end
     println(io)
 end
@@ -189,45 +189,55 @@ end
 function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, range::UnitRange, node::Integer)
     (; code, ssavaluetypes, slottypes) = cfg.code
     blk = new_block!(fdef, SSAValue(node, irmap))
-    i = first(range)
-    n = last(range)
-    while i ≤ n
+    for i in range
         jinst = code[i]
         jtype = ssavaluetypes[i]
+        core_ssaval = Core.SSAValue(i)
         spv_inst = nothing
         @assert !(jtype <: Core.IntrinsicFunction) "Encountered illegal core intrinsic $jinst."
         try
             @switch jinst begin
-                # Termination instructions.
-                @case ::Core.GotoIfNot || ::Core.GotoNode || ::Core.ReturnNode
-                    break
+                @case ::Core.ReturnNode
+                    spv_inst = @match jinst.val begin
+                        ::Nothing => @inst OpReturn()
+                        id::Core.SSAValue => @inst OpReturnValue(load_if_variable!(blk, ir, irmap, id))
+                        # Assume returned value is a literal.
+                        _ => begin
+                            c = Constant(jinst.val)
+                            @inst OpReturnValue(emit!(ir, irmap, c))
+                        end
+                    end
+                    push!(blk, irmap, spv_inst, core_ssaval)
+                @case ::Core.GotoNode
+                    dest = irmap.bb_ssavals[Core.SSAValue(jinst.label)]
+                    spv_inst = @inst OpBranch(dest)
+                    push!(blk, irmap, spv_inst, core_ssaval)
+                @case ::Core.GotoIfNot
+                    # Core.GotoIfNot uses the SSA value of the first instruction of the target
+                    # block as its `dest`.
+                    dest = irmap.bb_ssavals[Core.SSAValue(jinst.dest)]
+                    spv_inst = @inst OpBranchConditional(SSAValue(jinst.cond, irmap), SSAValue(node + 1, irmap), dest)
+                    push!(blk, irmap, spv_inst, core_ssaval)
                 @case _
                     check_isvalid(jtype)
                     if ismutabletype(jtype)
-                        # Create a SPIR-V variable to allow for future mutations.
-                        var_id = next!(ir.ssacounter)
-                        var = Variable(PointerType(StorageClassFunction, SPIRType(jtype)), StorageClassFunction, nothing)
-                        emit!(ir, var.type)
-                        spv_inst_var = Instruction(var, var_id, ir.types)
-                        insert!(irmap.variables, Core.SSAValue(i), var)
-                        insert!(irmap.ssavals, Core.SSAValue(i), var_id)
-                        push!(fdef.variables, spv_inst_var)
-                        # The current core SSAValue has already been assigned (to the variable).
+                        allocate_variable!(ir, irmap, fdef, jtype, core_ssaval)
                     end
                     ret = emit_inst!(ir, irmap, cfg, jinst, jtype, blk)
                     if isa(ret, Instruction)
                         if ismutabletype(jtype)
-                            if ret.opcode == OpCompositeConstruct
-                                push!(blk, irmap, ret, nothing)
-                                push!(blk, irmap, @inst OpStore(irmap.ssavals[Core.SSAValue(i)], ret.result_id))
-                            else
-                                push!(blk, irmap, ret, nothing)
-                            end
+                            # The current core SSAValue has already been assigned (to the variable).
+                            push!(blk, irmap, ret, nothing)
+                            # Store to the new variable.
+                            push!(blk, irmap, @inst OpStore(irmap.ssavals[core_ssaval], ret.result_id::SSAValue))
                         else
-                            push!(blk, irmap, ret, i)
+                            push!(blk, irmap, ret, core_ssaval)
                         end
                     elseif isa(ret, SSAValue)
-                        insert!(irmap.ssavals, Core.SSAValue(i), ret)
+                        # The value is a SPIR-V global (possibly a constant),
+                        # so no need to push a new function instruction.
+                        # Just map the current SSA value to the global.
+                        insert!(irmap.ssavals, core_ssaval, ret)
                     end
             end
         catch e
@@ -239,43 +249,36 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
     end
 
     # Implicit `goto` to the next block.
-    if i > n
+    if !is_termination_instruction(last(blk.insts))
         spv_inst = @inst OpBranch(SSAValue(node + 1, irmap))
         push!(blk, irmap, spv_inst)
-        return
-    end
-
-    # Process termination instructions.
-    for inst in code[i:n]
-        @switch inst begin
-            @case ::Core.ReturnNode
-                spv_inst = @match inst.val begin
-                    ::Nothing => @inst OpReturn()
-                    id::Core.SSAValue => @inst OpReturnValue(load_if_variable!(blk, ir, irmap, id))
-                    # Assume returned value is a literal.
-                    _ => begin
-                        c = Constant(inst.val)
-                        @inst OpReturnValue(emit!(ir, irmap, c))
-                    end
-                end
-                push!(blk, irmap, spv_inst, n)
-            @case ::Core.GotoNode
-                dest = irmap.bb_ssavals[Core.SSAValue(inst.label)]
-                spv_inst = @inst OpBranch(dest)
-                push!(blk, irmap, spv_inst, n)
-            @case ::Core.GotoIfNot
-                # Core.GotoIfNot uses the SSA value of the first instruction of the target
-                # block as its `dest`.
-                dest = irmap.bb_ssavals[Core.SSAValue(inst.dest)]
-                spv_inst = @inst OpBranchConditional(SSAValue(inst.cond, irmap), SSAValue(node + 1, irmap), dest)
-                push!(blk, irmap, spv_inst, n)
-        end
     end
 end
 
-function Base.push!(block::Block, irmap::IRMapping, inst::Instruction, i::Optional{Int} = nothing)
-    if !isnothing(inst.result_id) && !isnothing(i)
-        insert!(irmap.ssavals, Core.SSAValue(i::Int), inst.result_id)
+const termination_instructions = Set([
+    OpBranch, OpBranchConditional,
+    OpReturn, OpReturnValue,
+    OpUnreachable,
+    OpKill, OpTerminateInvocation,
+])
+
+is_termination_instruction(inst::Instruction) = inst.opcode in termination_instructions
+
+function allocate_variable!(ir::IR, irmap::IRMapping, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
+    # Create a SPIR-V variable to allow for future mutations.
+    id = next!(ir.ssacounter)
+    type = PointerType(StorageClassFunction, SPIRType(jtype))
+    emit!(ir, type)
+    var = Variable(type, StorageClassFunction, nothing)
+    spv_inst_var = Instruction(var, id, ir.types)
+    insert!(irmap.variables, core_ssaval, var)
+    insert!(irmap.ssavals, core_ssaval, id)
+    push!(fdef.variables, spv_inst_var)
+end
+
+function Base.push!(block::Block, irmap::IRMapping, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)
+    if !isnothing(inst.result_id) && !isnothing(core_ssaval)
+        insert!(irmap.ssavals, core_ssaval, inst.result_id)
     end
     push!(block.insts, inst)
 end

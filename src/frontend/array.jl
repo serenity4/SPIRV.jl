@@ -46,6 +46,8 @@ end
 
 """
 Pointer that keeps its parent around to make sure it stays valid.
+
+Used to represent the mutability of data structures in the type domain.
 """
 struct Pointer{T}
   addr::Ptr{T}
