@@ -99,7 +99,7 @@ end
 function FunctionType(mi::MethodInstance)
     argtypes = map(SPIRType, Base.tuple_type_tail(mi.specTypes).types)
     ci = GLOBAL_CI_CACHE[mi]
-    FunctionType(SPIRType(ci.rettype), argtypes)
+    FunctionType(SPIRType(ci.rettype, false), argtypes)
 end
 
 function emit!(ir::IR, fdef::FunctionDefinition)
@@ -267,13 +267,12 @@ is_termination_instruction(inst::Instruction) = inst.opcode in termination_instr
 function allocate_variable!(ir::IR, irmap::IRMapping, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
     # Create a SPIR-V variable to allow for future mutations.
     id = next!(ir.ssacounter)
-    type = PointerType(StorageClassFunction, SPIRType(jtype))
-    emit!(ir, type)
+    type = PointerType(StorageClassFunction, SPIRType(jtype, false))
     var = Variable(type, StorageClassFunction, nothing)
-    spv_inst_var = Instruction(var, id, ir.types)
+    emit!(ir, type)
     insert!(irmap.variables, core_ssaval, var)
     insert!(irmap.ssavals, core_ssaval, id)
-    push!(fdef.variables, spv_inst_var)
+    push!(fdef.variables, Instruction(var, id, ir.types))
 end
 
 function Base.push!(block::Block, irmap::IRMapping, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)

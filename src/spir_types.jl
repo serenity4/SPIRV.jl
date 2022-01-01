@@ -188,7 +188,8 @@ function Instruction(c::Constant, id::SSAValue, globals::BijectiveMapping)
     end
 end
 
-function SPIRType(t::Type)
+function SPIRType(t::Type, wrap_mutable = true)
+    wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, SPIRType(t, false))
     @match t begin
         &Float16 => FloatType(16)
         &Float32 => FloatType(32)

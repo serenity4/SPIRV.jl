@@ -1,5 +1,5 @@
 function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type, blk::Block)
-  type = SPIRType(jtype)
+  type = SPIRType(jtype, false)
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => begin
       if any(isa(arg, Core.SSAValue) for arg in args)
