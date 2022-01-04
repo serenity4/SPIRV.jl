@@ -1,5 +1,5 @@
-function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type, blk::Block)
-  type = SPIRType(jtype, false)
+function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
+  type = SPIRType(jtype)
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => begin
       if any(isa(arg, Core.SSAValue) for arg in args)
@@ -39,10 +39,10 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type, blk:
                 (OpExtInst, args)
             end
           else
-            (OpFunctionCall, (emit_new!(ir, mi), args...))
+            (OpFunctionCall, (emit_new!(ir, mi, fdef), args...))
           end
         else
-          (OpFunctionCall, (emit_new!(ir, mi), args...))
+          (OpFunctionCall, (emit_new!(ir, mi, fdef), args...))
         end
       end
     _ => throw(CompilationError("Expected call or invoke expression, got $(repr(jinst))"))
@@ -67,8 +67,14 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, jinst, jtype::Type, blk:
 
   args = remap_args!(ir, irmap, opcode, args)
 
-  type_id = emit!(ir, irmap, type)
-  @inst next!(ir.ssacounter) = opcode(args...)::type_id
+  if opcode == OpStore
+    result_id = type_id = nothing
+  else
+    type_id = emit!(ir, irmap, type)
+    result_id = next!(ir.ssacounter)
+  end
+
+  @inst result_id = opcode(args...)::type_id
 end
 
 function load_if_variable!(blk, ir, irmap, arg)
@@ -99,4 +105,13 @@ function remap_args!(ir::IR, irmap::IRMapping, opcode, args)
   end
 end
 
-emit_new!(ir::IR, mi::MethodInstance) = emit!(ir, CFG(mi; inferred = true))
+function emit_new!(ir::IR, mi::MethodInstance, fdef::FunctionDefinition)
+  storage_classes = Dictionary{Int,StorageClass}()
+  for (i, t) in fdef.type.argtypes
+    @tryswitch t begin
+      @case ::PointerType
+        insert!(storage_classes, i, t.storage_class)
+    end
+  end
+  emit!(ir, CFG(mi; inferred = true), storage_classes)
+end

@@ -2,11 +2,11 @@ function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
     compile(CFG(f, argtypes))
 end
 
-function compile(cfg::CFG)
+function compile(cfg::CFG, storage_classes = Dictionary{Int,StorageClass}())
     # TODO: restructure CFG
     inferred = infer(cfg)
     ir = IR()
-    fid = emit!(ir, inferred)
+    fid = emit!(ir, inferred, storage_classes)
     satisfy_requirements!(ir)
 end
 
@@ -71,9 +71,9 @@ function Base.showerror(io::IO, err::CompilationError)
     println(io)
 end
 
-function emit!(ir::IR, cfg::CFG)
+function emit!(ir::IR, cfg::CFG, storage_classes::Dictionary{Int,StorageClass})
     # Declare a new function.
-    ftype = FunctionType(cfg.mi)
+    ftype = FunctionType(cfg.mi, storage_classes)
     fdef = FunctionDefinition(ftype)
     fid = emit!(ir, fdef)
     insert!(ir.debug.names, fid, make_name(cfg.mi))
@@ -96,10 +96,20 @@ function make_name(mi::MethodInstance)
     Symbol(replace(string(mi.def.name, '_', Base.tuple_type_tail(mi.specTypes)), ' ' => ""))
 end
 
-function FunctionType(mi::MethodInstance)
-    argtypes = map(SPIRType, Base.tuple_type_tail(mi.specTypes).types)
+function FunctionType(mi::MethodInstance, storage_classes)
+    argtypes = map(enumerate(Base.tuple_type_tail(mi.specTypes).types)) do (i, t)
+        type = SPIRType(t, true)
+        sc = get(storage_classes, i, nothing)
+        @match sc begin
+            ::StorageClass => @match type begin
+                ::PointerType => @set type.storage_class = sc
+                _ => PointerType(type, sc)
+            end
+            _ => type
+        end
+    end
     ci = GLOBAL_CI_CACHE[mi]
-    FunctionType(SPIRType(ci.rettype, false), argtypes)
+    FunctionType(SPIRType(ci.rettype), argtypes)
 end
 
 function emit!(ir::IR, fdef::FunctionDefinition)
@@ -223,7 +233,7 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
                     if ismutabletype(jtype)
                         allocate_variable!(ir, irmap, fdef, jtype, core_ssaval)
                     end
-                    ret = emit_inst!(ir, irmap, cfg, jinst, jtype, blk)
+                    ret = emit_inst!(ir, irmap, cfg, fdef, jinst, jtype, blk)
                     if isa(ret, Instruction)
                         if ismutabletype(jtype)
                             # The current core SSAValue has already been assigned (to the variable).
@@ -267,7 +277,7 @@ is_termination_instruction(inst::Instruction) = inst.opcode in termination_instr
 function allocate_variable!(ir::IR, irmap::IRMapping, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
     # Create a SPIR-V variable to allow for future mutations.
     id = next!(ir.ssacounter)
-    type = PointerType(StorageClassFunction, SPIRType(jtype, false))
+    type = PointerType(StorageClassFunction, SPIRType(jtype))
     var = Variable(type, StorageClassFunction, nothing)
     emit!(ir, type)
     insert!(irmap.variables, core_ssaval, var)

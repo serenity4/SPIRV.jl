@@ -29,22 +29,27 @@ end
 
 DebugInfo() = DebugInfo(SSADict(), SSADict(), SSADict(), nothing)
 
+"""
+    Variable(type, initializer = nothing)
+
+Construct a variable that wraps a value of type `type` as a pointer.
+If `type` is already a `PointerType`, then its storage class is propagated
+to the variable; if not, then a specific storage class can be specified
+with the form `Variable(type, storage_class = StorageClassFunction, initializer = nothing)`.
+"""
 mutable struct Variable
-    type::SPIRType
+    type::PointerType
     storage_class::StorageClass
     initializer::Optional{SSAValue}
+    Variable(type::PointerType, initializer::Optional{SSAValue} = nothing) = new(type, type.storage_class, initializer)
 end
+Variable(type::SPIRType, storage_class::StorageClass = StorageClassFunction, initializer::Optional{SSAValue} = nothing) = Variable(PointerType(storage_class, type), initializer)
+Variable(type::PointerType, ::StorageClass, initializer::Optional{SSAValue} = nothing) = Variable(type, initializer)
 
 function Variable(inst::Instruction, type::SPIRType)
     storage_class = first(inst.arguments)
     initializer = length(inst.arguments) == 2 ? SSAValue(last(inst.arguments)) : nothing
-    if type isa PointerType && !isnothing(type.storage_class)
-        type.storage_class == storage_class || error("""
-        Storage classes for a variable and its type must be the same.
-        Found pointer storage class $(type.storage_class) and variable storage class $storage_class.
-        """)
-    end
-    Variable(type, storage_class, initializer)
+    Variable(type, initializer)
 end
 
 mutable struct IR

@@ -54,6 +54,11 @@ struct Pointer{T}
   parent
 end
 
+function Pointer(ref::Ref{T}) where {T}
+  @assert isbitstype(T)
+  Pointer(Base.unsafe_convert(Ptr{T}, ref), ref)
+end
+
 Base.:(==)(ptr1::Pointer, ptr2::Pointer) = PtrEqual(ptr1, ptr2)
 @noinline PtrEqual(ptr1, ptr2) = ptr1.addr == ptr2.addr
 Base.:(≠)(ptr1::Pointer, ptr2::Pointer) = PtrNotEqual(ptr1, ptr2)
@@ -63,6 +68,7 @@ Base.setindex!(ptr::Pointer{T}, x::T) where {T} = (Store(ptr, x); x)
 Base.setindex!(ptr::Pointer{T}, x) where {T} = Store(ptr, convert(T, x))
 Base.eltype(::Type{Pointer{T}}) where {T} = T
 Base.getindex(v::GenericVector, i) = Load(AccessChain(v, i))
+Base.setindex!(v::T, x::T) where {T<:GenericVector} = Store(v, x)
 Base.setindex!(v::GenericVector{T}, x::T, i) where {T} = Store(AccessChain(v, i), x)
 Base.setindex!(v::GenericVector, x, i) = setindex!(v, convert(eltype(v), x), i)
 
@@ -96,6 +102,12 @@ function AccessChain end
   nothing
 end
 
+@noinline function Store(v::T, x::T) where {T<:GenericVector}
+  obj_ptr = pointer_from_objref(v)
+  ptr = Pointer(Base.unsafe_convert(Ptr{T}, obj_ptr), v)
+  Store(ptr, x)
+end
+
 @override setindex!(v::Vector{T}, x::T, i::Integer) where {T} = Store(AccessChain(v, i), x)
 @override getindex(v::Vector, i::Integer) = Load(AccessChain(v, i))
 
@@ -108,11 +120,21 @@ Base.:(*)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FMul(
 vectorize(op, v1::T, v2::T) where {T<:GenericVector} = T(op.(v1.data, v2.data))
 
 function Base.getproperty(x::GenericVector, prop::Symbol)
-  (prop === :x || prop === :r) && return x[UInt32(0)]
-  (prop === :y || prop === :g) && return x[UInt32(1)]
-  (prop === :z || prop === :b) && return x[UInt32(2)]
-  (prop === :w || prop === :a) && return x[UInt32(3)]
-  getfield(x, prop)
+  i = to_index(prop)
+  isnothing(i) ? getfield(x, prop) : x[i]
+end
+
+function to_index(prop::Symbol)
+  (prop === :x || prop === :r) && return UInt32(0)
+  (prop === :y || prop === :g) && return UInt32(1)
+  (prop === :z || prop === :b) && return UInt32(2)
+  (prop === :w || prop === :a) && return UInt32(3)
+  nothing
+end
+
+function Base.setproperty!(x::GenericVector, prop::Symbol, val)
+  i = to_index(prop)
+  isnothing(i) ? setfield!(x, prop, val) : setindex!(x, val, i)
 end
 
 Base.convert(::Type{Pointer{T}}, x::BitUnsigned) where {T} = UConvertToPtr(x)
