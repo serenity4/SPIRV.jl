@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         julia-version: ['nightly']
-        julia-arch: [x86]
+        julia-arch: [x64]
         os: [ubuntu-latest]
         exclude:
           - os: macOS-latest
