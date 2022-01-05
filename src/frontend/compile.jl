@@ -263,7 +263,6 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
             !isnothing(spv_inst) && (fields = (; fields..., inst = spv_inst))
             throw_compilation_error(e, fields)
         end
-        i += 1
     end
 
     # Implicit `goto` to the next block.
