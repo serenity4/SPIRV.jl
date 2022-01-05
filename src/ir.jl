@@ -179,7 +179,7 @@ function IR(mod::Module; satisfy_requirements = true)
                             insert!(ir.global_vars, result_id, Variable(inst, types[inst.type_id]))
                         end
                         if !isnothing(current_function)
-                            push!(current_function.variables, inst)
+                            push!(current_function.local_vars, inst)
                         end
                 end
             @case "Function"
@@ -322,7 +322,7 @@ function instructions(ir::IR, fdef::FunctionDefinition, id::SSAValue)
         label = first(fbody)
         @assert label.opcode == OpLabel
         push!(insts, label)
-        append!(insts, fdef.variables)
+        append!(insts, fdef.local_vars)
         append!(insts, fbody[2:end])
     end
     push!(insts, @inst OpFunctionEnd())

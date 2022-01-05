@@ -10,13 +10,17 @@ Block(id::SSAValue) = Block(id, [])
 @auto_hash_equals struct FunctionDefinition
     type::FunctionType
     control::FunctionControl
+    "Function arguments, after promoting non-local pointer arguments to global variables. Argument types match the function `type`."
     args::Vector{SSAValue}
-    variables::Vector{Instruction}
+    "Declaration of variables which hold function-local pointers."
+    local_vars::Vector{Instruction}
     blocks::SSADict{Block}
+    "Arguments promoted to global variables."
+    global_vars::Vector{SSAValue}
 end
 
 function FunctionDefinition(type::FunctionType, control::FunctionControl = FunctionControlNone)
-    FunctionDefinition(type, control, [], [], SSADict())
+    FunctionDefinition(type, control, [], [], SSADict(), [])
 end
 
 function body(fdef::FunctionDefinition)

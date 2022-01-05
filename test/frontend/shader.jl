@@ -5,50 +5,49 @@ using SPIRV, Test, Dictionaries
     out_color.a = 1f0
   end
 
-  cfg = @cfg vert_shader!(similar(SVec{Float32,4}))
-  ir = @compile vert_shader!(similar(SVec{Float32,4}))
+  cfg = @cfg vert_shader!(zeros(SVec{Float32,4}))
+  ir = @compile vert_shader!(zeros(SVec{Float32,4}))
   @test validate(ir)
-  ir = SPIRV.make_shader(cfg; storage_classes = dictionary([1 => SPIRV.StorageClassOutput]))
+  ir = make_shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput]))
   mod = SPIRV.Module(ir)
   #FIXME: The conversion of operands from strings to concrete values
   # requires getting operand infos, which themselves rely
   # on arguments to determine if there are extra parameters.
   # The error is currently triggered on OpDecorate instructions.
-  @test_broken mod == parse(SPIRV.Module, """
-        OpCapability(VulkanMemoryModel)
-        OpCapability(Shader)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
-        OpEntryPoint(Vertex, %15, "main", %17, %21)
-        OpName(%5, "f_straightcode_Tuple{Float32}")
-        OpName(%4, "x")
-        OpDecorate(%17, Location, 0x00000000)
-        OpDecorate(%21, Location, 0x00000000)
-   %2 = OpTypeFloat(0x00000020)
-   %3 = OpTypeFunction(%2, %2)
-   %7 = OpConstant(0x3f800000)::%2
-   %9 = OpConstant(0x40400000)::%2
-  %13 = OpTypeVoid()
-  %14 = OpTypeFunction(%13)
-  %16 = OpTypePointer(Input, %2)
-  %17 = OpVariable(Input)::%16
-  %20 = OpTypePointer(Output, %2)
-  %21 = OpVariable(Output)::%20
-   %5 = OpFunction(None, %3)::%2
-   %4 = OpFunctionParameter()::%2
-   %6 = OpLabel()
-   %8 = OpFAdd(%4, %7)::%2
-  %10 = OpFMul(%9, %8)::%2
-  %11 = OpFMul(%10, %10)::%2
-        OpReturnValue(%11)
-        OpFunctionEnd()
-  %15 = OpFunction(None, %14)::%13
-  %18 = OpLabel()
-  %19 = OpLoad(%17)::%2
-  %22 = OpFunctionCall(%5, %19)::%2
-        OpStore(%21, %22)
-        OpReturn()
-        OpFunctionEnd()
+  @test mod == parse(SPIRV.Module, """
+    OpCapability(VulkanMemoryModel)
+    OpCapability(Shader)
+    OpExtension("SPV_KHR_vulkan_memory_model")
+    OpMemoryModel(Logical, Vulkan)
+    OpEntryPoint(Vertex, %18, "main", %5)
+    OpName(%7, "vert_shader!_Tuple{GenericVector{Float32,4}}")
+    OpName(%5, "out_color")
+  %2 = OpTypeFloat(0x00000020)
+  %3 = OpTypeVector(%2, 0x00000004)
+  %4 = OpTypePointer(Output, %3)
+  %5 = OpVariable(Output)::%4
+  %6 = OpTypeFunction(%2)
+  %10 = OpTypeInt(0x00000020, 0x00000000)
+  %11 = OpConstant(0x00000003)::%10
+  %12 = OpTypePointer(Output, %2)
+  %14 = OpConstant(0x3f800000)::%2
+  %16 = OpTypeVoid()
+  %17 = OpTypeFunction(%16)
+  %7 = OpFunction(None, %6)::%2
+  %8 = OpLabel()
+  %13 = OpAccessChain(%5, %11)::%12
+    OpStore(%13, %14)
+    OpReturnValue(%14)
+    OpFunctionEnd()
+  %18 = OpFunction(None, %17)::%16
+  %19 = OpLabel()
+  %20 = OpFunctionCall(%7)::%2
+    OpReturn()
+    OpFunctionEnd()
   """)
-  @test_broken validate_shader(ir)
+  # Make sure the absence of Location decoration raises an error.
+  @test_throws SPIRV.ValidationError validate_shader(ir)
+
+  ir = make_shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => dictionary([SPIRV.DecorationLocation => [UInt32(0)]])])))
+  @test validate_shader(ir)
 end

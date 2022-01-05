@@ -2,11 +2,11 @@ function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
     compile(CFG(f, argtypes))
 end
 
-function compile(cfg::CFG, storage_classes = Dictionary{Int,StorageClass}())
+function compile(cfg::CFG, variables = Dictionary{Int,Variable}())
     # TODO: restructure CFG
     inferred = infer(cfg)
     ir = IR()
-    fid = emit!(ir, inferred, storage_classes)
+    fid = emit!(ir, inferred, variables)
     satisfy_requirements!(ir)
 end
 
@@ -71,14 +71,16 @@ function Base.showerror(io::IO, err::CompilationError)
     println(io)
 end
 
-function emit!(ir::IR, cfg::CFG, storage_classes::Dictionary{Int,StorageClass})
+function emit!(ir::IR, cfg::CFG, variables = Dictionary{Int,Variable}())
     # Declare a new function.
-    ftype = FunctionType(cfg.mi, storage_classes)
-    fdef = FunctionDefinition(ftype)
+    fdef = define_function!(ir, cfg.mi, variables)
     fid = emit!(ir, fdef)
     insert!(ir.debug.names, fid, make_name(cfg.mi))
     irmap = IRMapping()
-    for (i, argid) in enumerate(fdef.args)
+    arg_idx = 0
+    gvar_idx = 0
+    for i in 1:(cfg.mi.def.nargs - 1)
+        argid = haskey(variables, i) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
         insert!(irmap.args, Core.Argument(i + 1), argid)
         insert!(ir.debug.names, argid, cfg.code.slotnames[i + 1])
     end
@@ -96,29 +98,34 @@ function make_name(mi::MethodInstance)
     Symbol(replace(string(mi.def.name, '_', Base.tuple_type_tail(mi.specTypes)), ' ' => ""))
 end
 
-function FunctionType(mi::MethodInstance, storage_classes)
-    argtypes = map(enumerate(Base.tuple_type_tail(mi.specTypes).types)) do (i, t)
+function define_function!(ir::IR, mi::MethodInstance, variables::Dictionary{Int,Variable})
+    argtypes = SPIRType[]
+    global_vars = SSAValue[]
+
+    for (i, t) in enumerate(mi.specTypes.types[2:end])
         type = SPIRType(t, true)
-        sc = get(storage_classes, i, nothing)
-        @match sc begin
-            ::StorageClass => @match type begin
-                ::PointerType => @set type.storage_class = sc
-                _ => PointerType(type, sc)
-            end
-            _ => type
+        var = get(variables, i, nothing)
+        @switch var begin
+            @case ::Nothing
+                push!(argtypes, type)
+            @case ::Variable
+                @switch var.storage_class begin
+                    @case &StorageClassFunction
+                        push!(argtypes, type)
+                    @case ::StorageClass
+                        push!(global_vars, emit!(ir, var))
+                end
         end
     end
     ci = GLOBAL_CI_CACHE[mi]
-    FunctionType(SPIRType(ci.rettype), argtypes)
+    ftype = FunctionType(SPIRType(ci.rettype), argtypes)
+    FunctionDefinition(ftype, FunctionControlNone, [], [], SSADict(), global_vars)
 end
 
 function emit!(ir::IR, fdef::FunctionDefinition)
     emit!(ir, fdef.type)
     fid = next!(ir.ssacounter)
-    for n in eachindex(fdef.type.argtypes)
-        id = next!(ir.ssacounter)
-        push!(fdef.args, id)
-    end
+    append!(fdef.args, next!(ir.ssacounter) for _ in 1:length(fdef.type.argtypes))
     insert!(ir.fdefs, fid, fdef)
     fid
 end
@@ -167,6 +174,7 @@ function emit!(ir::IR, c::Constant)
 end
 
 function emit!(ir::IR, var::Variable, decorations = DecorationData())
+    haskey(ir.global_vars, var) && return ir.global_vars[var]
     emit!(ir, var.type)
     id = next!(ir.ssacounter)
     insert!(ir.global_vars, id, var)
@@ -278,11 +286,11 @@ function allocate_variable!(ir::IR, irmap::IRMapping, fdef::FunctionDefinition, 
     # Create a SPIR-V variable to allow for future mutations.
     id = next!(ir.ssacounter)
     type = PointerType(StorageClassFunction, SPIRType(jtype))
-    var = Variable(type, StorageClassFunction, nothing)
+    var = Variable(type)
     emit!(ir, type)
     insert!(irmap.variables, core_ssaval, var)
     insert!(irmap.ssavals, core_ssaval, id)
-    push!(fdef.variables, Instruction(var, id, ir.types))
+    push!(fdef.local_vars, Instruction(var, id, ir.types))
 end
 
 function Base.push!(block::Block, irmap::IRMapping, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)

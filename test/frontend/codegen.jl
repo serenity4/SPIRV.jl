@@ -118,8 +118,4 @@ using SPIRV: OpFMul, OpFAdd
 
     ir = @compile unicolor(SVec(1f0, 2f0, 3f0, 4f0))
     @test validate(ir)
-
-    # cfg = @cfg unicolor(SVec(1f0, 2f0, 3f0, 4f0))
-    # ir = SPIRV.make_shader(cfg)
-    # validate(ir)
 end

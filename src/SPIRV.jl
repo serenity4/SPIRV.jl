@@ -113,6 +113,8 @@ export
 
         verify,
         compile,
+        make_shader,
+        ShaderInterface,
         @compile,
         invalidate_all,
         SPIRVInterpreter,

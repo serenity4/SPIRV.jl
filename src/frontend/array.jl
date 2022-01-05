@@ -39,6 +39,7 @@ Base.one(T::Type{<:GenericVector}) = one(eltype(T))
 Base.similar(::Type{<:GenericVector}, element_type, dims) = GenericVector(ntuple(Returns(zero(element_type)), first(dims)))
 Base.similar(::Type{<:ScalarMatrix}, element_type, dims) = GenericVector(ntuple(x -> similar(ScalarVector, element_type, first(dims)), last(dims)))
 Base.similar(T::Type{<:GenericVector}) = similar(T, eltype(T), size(T))
+Base.zeros(T::Type{<:GenericVector}) = similar(T)
 
 for f in (:length, :eltype, :size, :lastindex, :firstindex, :zero, :one, :similar)
   @eval Base.$f(v::GenericVector) = $f(typeof(v))
