@@ -189,7 +189,7 @@ function Instruction(c::Constant, id::SSAValue, globals::BijectiveMapping)
 end
 
 function SPIRType(t::Type, wrap_mutable = false)
-    wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, SPIRType(t))
+    wrap_mutable && ismutabletype(t) && !(t <: Base.RefValue) && return PointerType(StorageClassFunction, SPIRType(t))
     @match t begin
         &Float16 => FloatType(16)
         &Float32 => FloatType(32)
@@ -204,6 +204,7 @@ function SPIRType(t::Type, wrap_mutable = false)
         &Int16 => IntegerType(16, true)
         &Int32 => IntegerType(32, true)
         &Int64 => IntegerType(64, true)
+        ::Type{<:Base.RefValue} => PointerType(StorageClassFunction, SPIRType(eltype(t)))
         ::Type{<:Array} => begin
             eltype, n = t.parameters
             @match n begin

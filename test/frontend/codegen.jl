@@ -118,4 +118,11 @@ using SPIRV: OpFMul, OpFAdd
 
     ir = @compile unicolor(SVec(1f0, 2f0, 3f0, 4f0))
     @test validate(ir)
+
+    function store_ref(ref, x)
+      ref[] += x
+    end
+
+    ir = @compile store_ref(Ref(0f0), 3f0)
+    @test validate(ir)
 end

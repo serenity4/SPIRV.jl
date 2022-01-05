@@ -48,6 +48,11 @@ using SPIRV, Test, Dictionaries
   # Make sure the absence of Location decoration raises an error.
   @test_throws SPIRV.ValidationError validate_shader(ir)
 
+  function vert_shader_2!(out_color)
+    out_color[] = SVec(0.1f0, 0.1f0, 0.1f0, 1f0)
+  end
+
+  cfg = @cfg vert_shader_2!(zeros(SVec{Float32,4}))
   ir = make_shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => dictionary([SPIRV.DecorationLocation => [UInt32(0)]])])))
   @test validate_shader(ir)
 end

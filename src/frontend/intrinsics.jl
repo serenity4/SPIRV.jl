@@ -213,3 +213,10 @@ end
 @noinline LogicalEqual(x, y)     = Base.eq_int(x, y)
 @override (!=)(x::Bool, y::Bool) = LogicalNotEqual(x, y)
 @noinline LogicalNotEqual(x, y)  = Base.ne_int(x, y)
+
+# Refs.
+
+@override setindex!(r::Base.RefValue, x) = Store(r, x)
+@noinline Store(r::Base.RefValue, x) = setfield!(r, :x, x)
+@override getindex(r::Base.RefValue) = Load(r)
+@noinline Load(r::Base.RefValue) = r.x
