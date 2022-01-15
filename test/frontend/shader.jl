@@ -1,4 +1,4 @@
-using SPIRV, Test, Dictionaries
+using SPIRV, Test, Dictionaries, Accessors
 
 @testset "Shader interface" begin
   function vert_shader!(out_color)
@@ -85,6 +85,11 @@ using SPIRV, Test, Dictionaries
     ])
   )
 
+  ir = make_shader(cfg, interface)
+  @test validate_shader(ir)
+
+  # Let SPIRV figure out member offsets automatically.
+  interface = @set interface.type_decorations = dictionary([Point => dictionary([SPIRV.DecorationBlock => []])])
   ir = make_shader(cfg, interface)
   @test validate_shader(ir)
 end

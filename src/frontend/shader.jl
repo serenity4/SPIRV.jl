@@ -17,7 +17,11 @@ struct ShaderInterface
     storage_classes::Vector{StorageClass}
     variable_decorations::Dictionary{Int,DecorationData}
     type_decorations::Dictionary #= {Union{DataType,Pair{DataType,Symbol}},DecorationData} =#
-    ShaderInterface(execution_model::ExecutionModel, storage_classes = [], variable_decorations = Dictionary(), type_decorations = Dictionary()) = new(execution_model, storage_classes, variable_decorations, type_decorations)
+    align::AlignmentStrategy
+    function ShaderInterface(execution_model::ExecutionModel, storage_classes = [], variable_decorations = Dictionary(),
+                             type_decorations = Dictionary(), align = VulkanAlignment())
+        new(execution_model, storage_classes, variable_decorations, type_decorations, align)
+    end
 end
 
 """
@@ -36,6 +40,7 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
     insert!(ir.entry_points, ep.func, ep)
 
     add_variable_decorations!(ir, variables, interface)
+    add_field_offsets!(ir, interface.align)
     add_type_decorations!(ir, interface)
 
     # Fill function body.
@@ -82,7 +87,8 @@ function make_shader(cfg::CFG, interface::ShaderInterface)
     variables = Dictionary{Int,Variable}()
     for (i, sc) in enumerate(interface.storage_classes)
         if sc ≠ StorageClassFunction
-            var = Variable(PointerType(sc, spir_type!(ir, cfg.mi.specTypes.parameters[i+1], false)))
+            ptr_type = PointerType(sc, spir_type!(ir, cfg.mi.specTypes.parameters[i+1], false))
+            var = Variable(ptr_type)
             insert!(variables, i, var)
         end
     end
