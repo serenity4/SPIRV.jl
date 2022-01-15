@@ -69,11 +69,13 @@ end
     results::SSADict{Any}
     debug::DebugInfo
     ssacounter::SSACounter
+    "SPIR-V types derived from Julia types."
+    typerefs::Dictionary{DataType,SPIRType}
 end
 
 function IR(; meta::Metadata = Metadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
     IR(meta, [], [], BijectiveMapping(), addressing_model, memory_model, SSADict(), SSADict(),
-        BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), DebugInfo(), SSACounter(0))
+        BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), DebugInfo(), SSACounter(0), Dictionary())
 end
 
 function IR(mod::Module; satisfy_requirements = true)
@@ -248,6 +250,107 @@ function attach_member_names!(ir::IR, member_names::SSADict{Dictionary{Int,Symbo
     end
 end
 
+"""
+Get a SPIR-V type from a Julia type, optionally recording the mapping.
+
+If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
+"""
+function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true)
+    wrap_mutable && ismutabletype(t) && !(t <: Base.RefValue) && return PointerType(StorageClassFunction, spir_type!(ir, t; record_jtype))
+    haskey(ir.typerefs, t) && return ir.typerefs[t]
+    type = @match t begin
+        &Float16 => FloatType(16)
+        &Float32 => FloatType(32)
+        &Float64 => FloatType(64)
+        &Nothing => VoidType()
+        &Bool => BooleanType()
+        &UInt8 => IntegerType(8, false)
+        &UInt16 => IntegerType(16, false)
+        &UInt32 => IntegerType(32, false)
+        &UInt64 => IntegerType(64, false)
+        &Int8 => IntegerType(8, true)
+        &Int16 => IntegerType(16, true)
+        &Int32 => IntegerType(32, true)
+        &Int64 => IntegerType(64, true)
+        ::Type{<:Base.RefValue} => PointerType(StorageClassFunction, spir_type!(ir, eltype(t); record_jtype))
+        ::Type{<:Array} => begin
+            eltype, n = t.parameters
+            @match n begin
+                1 => ArrayType(spir_type!(ir, eltype; record_jtype), nothing)
+                _ => ArrayType(spir_type!(ir, Array{eltype,n-1}; record_jtype), nothing)
+            end
+        end
+        ::Type{<:Tuple} => @match (n = length(t.parameters), t) begin
+                (GuardBy(>(1)), ::Type{<:NTuple}) => ArrayType(spir_type!(ir, eltype(t); record_jtype), Constant(UInt32(n)))
+                # Generate structure on the fly.
+                _ => StructType(spir_type!.(ir, t.parameters); record_jtype)
+            end
+        ::Type{<:Pointer} => PointerType(StorageClassFunction, spir_type!(ir, eltype(t); record_jtype))
+        ::Type{<:GenericVector} => @match (et, n) = (eltype(t), length(t)) begin
+            (::Type{<:Scalar}, GuardBy(≤(4))) => VectorType(spir_type!(ir, et; record_jtype), n)
+            (::Type{<:GenericVector{<:Scalar}}, GuardBy(≤(4))) => MatrixType(spir_type!(ir, eltype(et); record_jtype), n)
+            _ => ArrayType(spir_type!(ir, et; record_jtype), Constant(UInt32(n)))
+        end
+        GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type!.(ir, t.types; record_jtype), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
+        _ => error("Type $t does not have a corresponding SPIR-V type.")
+    end
+    record_jtype && insert!(ir.typerefs, t, type)
+    type
+end
+
+Instruction(inst::Instruction, id::SSAValue, ::IR) = @set inst.result_id = id
+Instruction(::VoidType, id::SSAValue, ::IR) = @inst id = OpTypeVoid()
+Instruction(::BooleanType, id::SSAValue, ::IR) = @inst id = OpTypeBool()
+Instruction(t::IntegerType, id::SSAValue, ::IR) = @inst id = OpTypeInt(UInt32(t.width), UInt32(t.signed))
+Instruction(t::FloatType, id::SSAValue, ::IR) = @inst id = OpTypeFloat(UInt32(t.width))
+Instruction(t::VectorType, id::SSAValue, ir::IR) = @inst id = OpTypeVector(ir.types[t.eltype], UInt32(t.n))
+Instruction(t::MatrixType, id::SSAValue, ir::IR) = @inst id = OpTypeMatrix(ir.types[t.eltype], UInt32(t.n))
+function Instruction(t::ImageType, id::SSAValue, ir::IR)
+    inst = @inst id = OpTypeImage(ir.types[t.sampled_type], t.dim, UInt32(something(t.depth, 2)), UInt32(t.arrayed), UInt32(t.multisampled), UInt32(something(t.sampled, 2)), t.format)
+    !isnothing(t.access_qualifier) && push!(inst.arguments, t.access_qualifier)
+    inst
+end
+Instruction(t::SamplerType, id::SSAValue, ::IR) = @inst id = OpTypeSampler()
+Instruction(t::SampledImageType, id::SSAValue, ir::IR) = @inst id = OpTypeSampledImage(ir.types[t.image_type])
+function Instruction(t::ArrayType, id::SSAValue, ir::IR)
+    if isnothing(t.size)
+        @inst id = OpTypeRuntimeArray(ir.types[t.eltype])
+    else
+        @inst id = OpTypeArray(ir.types[t.eltype], ir.constants[t.size::Constant])
+    end
+end
+function Instruction(t::StructType, id::SSAValue, ir::IR)
+    inst = @inst id = OpTypeStruct()
+    append!(inst.arguments, ir.types[member] for member in t.members)
+    inst
+end
+Instruction(t::OpaqueType, id::SSAValue, ::IR) = @inst id = OpTypeOpaque(t.name)
+Instruction(t::PointerType, id::SSAValue, ir::IR) = @inst id = OpTypePointer(t.storage_class, ir.types[t.type])
+function Instruction(t::FunctionType, id::SSAValue, ir::IR)
+    inst = @inst id = OpTypeFunction(ir.types[t.rettype])
+    append!(inst.arguments, ir.types[argtype] for argtype in t.argtypes)
+    inst
+end
+function Instruction(c::Constant, id::SSAValue, ir::IR)
+    @match (c.value, c.is_spec_const) begin
+        ((::Nothing, type), false) => @inst id = OpConstantNull()::ir.types[type]
+        (true, false) => @inst id = OpConstantTrue()::ir.types[BooleanType()]
+        (true, true) => @inst id = OpSpecConstantTrue()::ir.types[BooleanType()]
+        (false, false) => @inst id = OpConstantFalse()::ir.types[BooleanType()]
+        (false, true) => @inst id = OpSpecConstantFalse()::ir.types[BooleanType()]
+        ((ids::Vector{SSAValue}, type), false) => @inst id = OpConstantComposite(ids...)::ir.types[type]
+        ((ids::Vector{SSAValue}, type), true) => @inst id = OpSpecConstantComposite(ids...)::ir.types[type]
+        (val, false) => @inst id = OpConstant(reinterpret(UInt32, val))::ir.types[spir_type!(ir, typeof(val); record_jtype = false)]
+    end
+end
+
+function SPIRType(c::Constant, ir::IR)
+    @match c.value begin
+        (_, type::SPIRType) || (_, type::SPIRType) => type
+        val => spir_type!(ir, typeof(val); record_jtype = false)
+    end
+end
+
 function Module(ir::IR)
     insts = Instruction[]
 
@@ -332,11 +435,11 @@ end
 function append_globals!(insts, ir::IR)
     globals = merge_unique!(BijectiveMapping{SSAValue,Any}(), ir.types, ir.constants, ir.global_vars)
     sortkeys!(globals)
-    append!(insts, Instruction(val, id, globals) for (id, val) in pairs(globals))
+    append!(insts, Instruction(val, id, ir) for (id, val) in pairs(globals))
 end
 
-function Instruction(var::Variable, id::SSAValue, types::BijectiveMapping)
-    inst = @inst id = OpVariable(var.storage_class)::types[var.type]
+function Instruction(var::Variable, id::SSAValue, ir::IR)
+    inst = @inst id = OpVariable(var.storage_class)::ir.types[var.type]
     !isnothing(var.initializer) && push!(inst.arguments, var.initializer)
     inst
 end

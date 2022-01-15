@@ -2,10 +2,11 @@ function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
     compile(CFG(f, argtypes))
 end
 
-function compile(cfg::CFG, variables = Dictionary{Int,Variable}())
+compile(cfg::CFG, variables = Dictionary{Int,Variable}()) = compile!(IR(), cfg, variables)
+
+function compile!(ir::IR, cfg::CFG, variables = Dictionary{Int,Variable}())
     # TODO: restructure CFG
     inferred = infer(cfg)
-    ir = IR()
     fid = emit!(ir, inferred, variables)
     satisfy_requirements!(ir)
 end
@@ -103,7 +104,7 @@ function define_function!(ir::IR, mi::MethodInstance, variables::Dictionary{Int,
     global_vars = SSAValue[]
 
     for (i, t) in enumerate(mi.specTypes.types[2:end])
-        type = SPIRType(t, true)
+        type = spir_type!(ir, t, true)
         var = get(variables, i, nothing)
         @switch var begin
             @case ::Nothing
@@ -118,7 +119,7 @@ function define_function!(ir::IR, mi::MethodInstance, variables::Dictionary{Int,
         end
     end
     ci = GLOBAL_CI_CACHE[mi]
-    ftype = FunctionType(SPIRType(ci.rettype), argtypes)
+    ftype = FunctionType(spir_type!(ir, ci.rettype), argtypes)
     FunctionDefinition(ftype, FunctionControlNone, [], [], SSADict(), global_vars)
 end
 
@@ -167,7 +168,7 @@ end
 
 function emit!(ir::IR, c::Constant)
     haskey(ir.constants, c) && return ir.constants[c]
-    emit!(ir, SPIRType(c))
+    emit!(ir, SPIRType(c, ir))
     id = next!(ir.ssacounter)
     insert!(ir.constants, id, c)
     id
@@ -213,12 +214,13 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
         core_ssaval = Core.SSAValue(i)
         spv_inst = nothing
         @assert !(jtype <: Core.IntrinsicFunction) "Encountered illegal core intrinsic $jinst."
+        jtype ≠ Union{} || throw(CompilationError("Encountered bottom type $jtype, which may indicate an error in the original code."))
         try
             @switch jinst begin
                 @case ::Core.ReturnNode
                     spv_inst = @match jinst.val begin
                         ::Nothing => @inst OpReturn()
-                        id::Core.SSAValue => @inst OpReturnValue(load_if_variable!(blk, ir, irmap, id))
+                        id::Core.SSAValue => @inst OpReturnValue(@something(load_if_variable!(blk, ir, irmap, id), SSAValue(id, irmap)))
                         # Assume returned value is a literal.
                         _ => begin
                             c = Constant(jinst.val)
@@ -284,12 +286,12 @@ is_termination_instruction(inst::Instruction) = inst.opcode in termination_instr
 function allocate_variable!(ir::IR, irmap::IRMapping, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
     # Create a SPIR-V variable to allow for future mutations.
     id = next!(ir.ssacounter)
-    type = PointerType(StorageClassFunction, SPIRType(jtype))
+    type = PointerType(StorageClassFunction, spir_type!(ir, jtype))
     var = Variable(type)
     emit!(ir, type)
     insert!(irmap.variables, core_ssaval, var)
     insert!(irmap.ssavals, core_ssaval, id)
-    push!(fdef.local_vars, Instruction(var, id, ir.types))
+    push!(fdef.local_vars, Instruction(var, id, ir))
 end
 
 function Base.push!(block::Block, irmap::IRMapping, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)

@@ -5,8 +5,8 @@ using SPIRV, Test, Dictionaries
     out_color.a = 1f0
   end
 
-  cfg = @cfg vert_shader!(zeros(SVec{Float32,4}))
-  ir = @compile vert_shader!(zeros(SVec{Float32,4}))
+  cfg = @cfg vert_shader!(::SVec{Float32,4})
+  ir = compile(cfg)
   @test validate(ir)
   ir = make_shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput]))
   mod = SPIRV.Module(ir)
@@ -52,7 +52,39 @@ using SPIRV, Test, Dictionaries
     out_color[] = SVec(0.1f0, 0.1f0, 0.1f0, 1f0)
   end
 
-  cfg = @cfg vert_shader_2!(zeros(SVec{Float32,4}))
-  ir = make_shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => dictionary([SPIRV.DecorationLocation => [UInt32(0)]])])))
+  cfg = @cfg vert_shader_2!(::SVec{Float32,4})
+  ir = compile(cfg)
+  @test validate(ir)
+  interface = ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => dictionary([SPIRV.DecorationLocation => [UInt32(0)]])]))
+  ir = make_shader(cfg, interface)
+  @test validate_shader(ir)
+
+  struct Point
+    x::Float32
+    y::Float32
+  end
+
+  function vert_shader_3!(out_pos, point)
+    out_pos.x = point.x
+    out_pos.y = point.y
+  end
+
+  cfg = @cfg vert_shader_3!(::SVec{Float32,4}, ::Point)
+  ir = compile(cfg)
+  @test validate(ir)
+  interface = ShaderInterface(SPIRV.ExecutionModelVertex,
+    [SPIRV.StorageClassOutput, SPIRV.StorageClassUniform],
+    dictionary([
+      1 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
+      2 => dictionary([SPIRV.DecorationUniform => [], SPIRV.DecorationDescriptorSet => UInt32[0], SPIRV.DecorationBinding => UInt32[0]]),
+    ]),
+    dictionary([
+      Point => dictionary([SPIRV.DecorationBlock => []]),
+      (Point => :x) => dictionary([SPIRV.DecorationOffset => UInt32[0]]),
+      (Point => :y) => dictionary([SPIRV.DecorationOffset => UInt32[4]]),
+    ])
+  )
+
+  ir = make_shader(cfg, interface)
   @test validate_shader(ir)
 end

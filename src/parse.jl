@@ -18,7 +18,6 @@ function update_infos!(op_infos, i, arg, category)
     end
 end
 
-
 invalid_format(msg) = throw(SPIRFormatError(msg))
 
 function info(opcode::Union{OpCode,OpCodeGLSL}, skip_ids::Bool = true)
@@ -34,6 +33,10 @@ info(inst::AbstractInstruction, args...) = info(inst.opcode, args...)
 
 start_idx(type_id, result_id) = 1 + !isnothing(type_id) + !isnothing(result_id)
 start_idx(inst::AbstractInstruction) = start_idx(inst.type_id, inst.result_id)
+function is_literal(opcode::OpCode, args, i)
+    kind = operand_infos(opcode, args)[i].kind
+    isa(kind, Literal) || (kind == PairIdRefLiteralInteger && i % 2 == 0) || (kind == PairLiteralIntegerIdRef && i % 2 == 1)
+end
 
 operand_infos(args...) = info(args...).operands
 operand_kinds(args...) = getproperty.(operand_infos(args...), :kind)

@@ -1,13 +1,20 @@
 function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
-  type = SPIRType(jtype)
+  type = spir_type!(ir, jtype)
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => (OpCompositeConstruct, (T, args...))
     ::Core.PhiNode => (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(cfg)), irmap) for e in jinst.edges)))
     :($f($(args...))) => @match f begin
-        ::GlobalRef => begin
-            func = getfield(f.mod, f.name)
-            isa(func, Core.IntrinsicFunction) && throw(CompilationError("Reached illegal core intrinsic function '$func'."))
-            isa(func, Function) && throw(CompilationError("Dynamic dispatch detected for function $func. All call sites must be statically resolved."))
+        ::GlobalRef => @match getfield(f.mod, f.name) begin
+            ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$func'."))
+            &getfield => begin
+              composite = args[1]
+              sym = (args[2]::QuoteNode).value::Symbol
+              T = get_type(composite, cfg)
+              field_idx = findfirst(==(sym), fieldnames(T))
+              !isnothing(field_idx) || throw(CompilationError("Symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))"))
+              (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
+            end
+            ::Function => throw(CompilationError("Dynamic dispatch detected for function $func. All call sites must be statically resolved."))
           end
         _ => throw(CompilationError("Call to unknown function $f"))
       end
@@ -40,11 +47,12 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
     _ => throw(CompilationError("Expected call or invoke expression, got $(repr(jinst))"))
   end
 
+  args = collect(args)
+
   if opcode == OpAccessChain
-    # Force literal in `getindex` to be 32-bit
-    args = map(args) do arg
-      isa(arg, Int) && return UInt32(arg)
-      arg
+    for (i, arg) in enumerate(args)
+      # Force literal in `getindex` to be 32-bit
+      isa(arg, Int) && (args[i] = UInt32(arg))
     end
   end
 
@@ -55,16 +63,8 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
     type = @set type.storage_class = sc
   end
 
-  # Load all arguments that are wrapped with a variable.
-  if any(x -> isa(x, Core.SSAValue) && haskey(irmap.variables, x), args)
-    args = map(args) do arg
-      # Don't change the stored variable.
-      opcode == OpStore && arg == first(args) && return arg
-      load_if_variable!(blk, ir, irmap, arg)
-    end
-  end
-
-  args = remap_args!(ir, irmap, opcode, args)
+  load_variables!(args, blk, ir, irmap, opcode)
+  remap_args!(ir, irmap, opcode, args)
 
   if opcode == OpStore
     result_id = type_id = nothing
@@ -76,16 +76,18 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
   @inst result_id = opcode(args...)::type_id
 end
 
-function load_if_variable!(blk, ir, irmap, arg)
-  if isa(arg, Core.SSAValue)
-    var = get(irmap.variables, arg, nothing)
-    if !isnothing(var)
-      load = @inst next!(ir.ssacounter) = OpLoad(irmap.ssavals[arg])::ir.types[var.type.type]
-      push!(blk, irmap, load)
-      return load.result_id
-    end
+function get_type(arg, cfg::CFG)
+  @match arg begin
+      ::Core.SSAValue => cfg.code.ssavaluetypes[arg.id]
+      ::Core.Argument => cfg.mi.specTypes.types[arg.n]
+      _ => throw(CompilationError("Cannot extract type from argument $arg"))
   end
-  arg
+end
+
+function load_variable!(blk::Block, ir::IR, irmap::IRMapping, var, ssaval)
+  load = @inst next!(ir.ssacounter) = OpLoad(ssaval)::ir.types[var.type.type]
+  push!(blk, irmap, load)
+  load.result_id
 end
 
 function storage_class(arg, ir::IR, irmap::IRMapping, fdef::FunctionDefinition)
@@ -130,13 +132,46 @@ function try_getopcode(name, prefix = "")
 end
 
 function remap_args!(ir::IR, irmap::IRMapping, opcode, args)
-  map(args) do arg
+  arguments_to_ssa!(args, irmap, opcode)
+  literals_to_const!(args, ir, irmap, opcode)
+  args
+end
+
+
+function load_variables!(args, blk::Block, ir::IR, irmap::IRMapping, opcode)
+  for (i, arg) in enumerate(args)
+    # Don't load pointers in pointer operations.
+    opcode in (OpStore, OpAccessChain) && i == 1 && continue
+    loaded_arg = load_if_variable!(blk, ir, irmap, arg)
+    !isnothing(loaded_arg) && (args[i] = loaded_arg)
+  end
+end
+
+function load_if_variable!(blk::Block, ir::IR, irmap::IRMapping, arg)
+  @trymatch arg begin
+    ::Core.SSAValue => @trymatch get(irmap.variables, arg, nothing) begin
+        var::Variable => load_variable!(blk, ir, irmap, var, irmap.ssavals[arg])
+      end
+    ::Core.Argument => @trymatch get(ir.global_vars, irmap.args[arg], nothing) begin
+        var::Variable => load_variable!(blk, ir, irmap, var, irmap.args[arg])
+      end
+  end
+end
+
+function arguments_to_ssa!(args, irmap::IRMapping, opcode)
+  for (i, arg) in enumerate(args)
     # Phi nodes may have forward references.
-    isa(arg, Core.Argument) && opcode ≠ OpPhi && return SSAValue(arg, irmap)
-    if isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, Bool)
-      return emit!(ir, irmap, Constant(arg))
+    if isa(arg, Core.Argument) && opcode ≠ OpPhi
+      args[i] = SSAValue(arg, irmap)
     end
-    arg
+  end
+end
+
+function literals_to_const!(args, ir::IR, irmap::IRMapping, opcode)
+  for (i, arg) in enumerate(args)
+    if isa(arg, Bool) || (isa(arg, AbstractFloat) || isa(arg, Integer)) && !is_literal(opcode, args, i)
+      args[i] = emit!(ir, irmap, Constant(arg))
+    end
   end
 end
 

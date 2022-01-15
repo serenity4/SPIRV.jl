@@ -123,10 +123,23 @@ function block_ranges(cfg::CFG)
 end
 
 get_signature(f::Symbol) = (f,)
-argtype(arg) = isa(arg, DataType) ? Type{arg} : typeof(arg)
+function argtype(arg)
+    @match arg begin
+        ::DataType => Type{arg}
+        _ => typeof(arg)
+    end
+end
 function get_signature(ex::Expr)
     @match ex begin
-        :($f($(args...))) => (f, :(Tuple{$argtype.([$(args...)])...}))
+        :($f($(args...))) => begin
+            atypes = map(args) do arg
+                @match arg begin
+                    :(::$T) => T
+                    _ => :($argtype($arg))
+                end
+            end
+            (f, :(Tuple{$(atypes...)}))
+        end
         _ => error("Malformed expression: $ex")
     end
 end
