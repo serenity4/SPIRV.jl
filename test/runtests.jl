@@ -74,13 +74,13 @@ modules = [
     end
 
     @testset "Parsing human-readable SPIR-V assembly (.spvasm)" begin
-        mod = read(SPIRV.Module, spvasm("simple"))
+        mod = read(SPIRV.Module, spvasm("test1"))
         @test validate(mod)
         ir = IR(mod)
         @test SPIRV.Module(ir) ≈ mod
 
         # Support for fancier (Julia style) .spvasm
-        mod2 = read(SPIRV.Module, spvasm("simple_fancy"))
+        mod2 = read(SPIRV.Module, spvasm("test1_fancy"))
         @test mod2 == mod
     end
 

@@ -98,6 +98,7 @@ function assemble!(words, mod::PhysicalModule)
 end
 
 assemble(mod::Module) = assemble(PhysicalModule(mod))
+assemble(ir::IR) = assemble(Module(ir))
 
 Base.read(::Type{Module}, filename::AbstractString) = open(Base.Fix1(read, Module), filename)
 
