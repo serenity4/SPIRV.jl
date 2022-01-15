@@ -48,7 +48,7 @@ function rmlines(ex)
     end
 end
 
-macro broadcastref(ex)
+macro refbroadcast(ex)
     T = @match ex begin
         :(struct $T; $(fields...); end) => T
         :(mutable struct $T; $(fields...); end) => T

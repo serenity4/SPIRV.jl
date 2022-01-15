@@ -1,4 +1,4 @@
-@broadcastref struct Block
+@refbroadcast struct Block
     id::SSAValue
     insts::Vector{Instruction}
 end

@@ -6,7 +6,7 @@ struct Source
     extensions::Vector{String}
 end
 
-@broadcastref mutable struct EntryPoint
+@refbroadcast mutable struct EntryPoint
     name::Symbol
     func::SSAValue
     model::ExecutionModel
@@ -52,7 +52,7 @@ function Variable(inst::Instruction, type::SPIRType)
     Variable(type, initializer)
 end
 
-mutable struct IR
+@refbroadcast mutable struct IR
     meta::Metadata
     capabilities::Vector{Capability}
     extensions::Vector{String}

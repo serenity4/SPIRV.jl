@@ -3,7 +3,7 @@ const Word = UInt32
 """
 SPIR-V instruction. Must contain an opcode, and optionally a type id and a result id.
 """
-@broadcastref abstract type AbstractInstruction end
+@refbroadcast abstract type AbstractInstruction end
 
 
 """
