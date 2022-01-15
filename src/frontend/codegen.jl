@@ -1,7 +1,7 @@
 function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
   type = spir_type!(ir, jtype)
   (opcode, args) = @match jinst begin
-    Expr(:new, T, args...) => (OpCompositeConstruct, (T, args...))
+    Expr(:new, T, args...) => (OpCompositeConstruct, args)
     ::Core.PhiNode => (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(cfg)), irmap) for e in jinst.edges)))
     :($f($(args...))) => @match f begin
         ::GlobalRef => @match getfield(f.mod, f.name) begin

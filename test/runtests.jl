@@ -89,6 +89,7 @@ modules = [
         include("frontend/reflection.jl")
         include("frontend/restructuring.jl")
         include("frontend/compile.jl")
+        include("frontend/alignment.jl")
         include("frontend/shader.jl")
     end
 end;

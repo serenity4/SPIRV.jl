@@ -125,4 +125,12 @@ using SPIRV: OpFMul, OpFAdd
 
     ir = @compile store_ref(Ref(0f0), 3f0)
     @test validate(ir)
+
+    struct StructWithBool
+      x::Bool
+      y::Int32
+    end
+
+    ir = @compile StructWithBool(::Bool, ::Int32)
+    @test validate(ir)
 end

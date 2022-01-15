@@ -221,11 +221,9 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
                     spv_inst = @match jinst.val begin
                         ::Nothing => @inst OpReturn()
                         id::Core.SSAValue => @inst OpReturnValue(@something(load_if_variable!(blk, ir, irmap, id), SSAValue(id, irmap)))
+                        node::QuoteNode => @inst(OpReturnValue(emit!(ir, irmap, Constant(node.value))))
                         # Assume returned value is a literal.
-                        _ => begin
-                            c = Constant(jinst.val)
-                            @inst OpReturnValue(emit!(ir, irmap, c))
-                        end
+                        _ => @inst OpReturnValue(emit!(ir, irmap, Constant(jinst.val)))
                     end
                     push!(blk, irmap, spv_inst, core_ssaval)
                 @case ::Core.GotoNode
@@ -238,6 +236,9 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
                     dest = irmap.bb_ssavals[Core.SSAValue(jinst.dest)]
                     spv_inst = @inst OpBranchConditional(SSAValue(jinst.cond, irmap), SSAValue(node + 1, irmap), dest)
                     push!(blk, irmap, spv_inst, core_ssaval)
+                @case ::GlobalRef
+                    jtype <: Type || throw(CompilationError("Unhandled global reference $(repr(jtype))"))
+                    insert!(irmap.ssavals, core_ssaval, emit!(ir, spir_type!(ir, only(jtype.parameters))))
                 @case _
                     check_isvalid(jtype)
                     if ismutabletype(jtype)

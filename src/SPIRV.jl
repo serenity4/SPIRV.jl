@@ -32,7 +32,6 @@ include("bijection.jl")
 include("ssa.jl")
 include("instructions.jl")
 include("spir_types.jl")
-include("alignment.jl")
 include("parse.jl")
 include("disassemble.jl")
 include("functions.jl")
@@ -40,6 +39,7 @@ include("ir.jl")
 include("cfg.jl")
 include("assemble.jl")
 include("validate.jl")
+include("alignment.jl")
 include("requirements.jl")
 
 include("frontend/ci_cache.jl")
@@ -116,6 +116,7 @@ export
         compile,
         make_shader,
         ShaderInterface,
+        AlignmentStrategy, VulkanAlignment,
         @compile,
         invalidate_all,
         SPIRVInterpreter,
