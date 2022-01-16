@@ -11,28 +11,8 @@ end
 
 function physical_operands(inst::Instruction)
     operands = Word[]
-    op_infos = operand_infos(inst)
-    (; arguments) = inst
-    for (i, (info, arg)) in enumerate(zip(op_infos, arguments))
-        (; kind, quantifier) = info
-        @switch quantifier begin
-            @case "*"
-                for arg in arguments[i:end]
-                    add_operand!(operands, arg)
-                end
-                break
-            @case "?"
-                nmissing = length(arguments) - (i - 1)
-                nopt = count(x -> hasproperty(x, :quantifier) && x.quantifier == "?", op_infos[i:end])
-                if nmissing == nopt
-                    add_operand!(operands, arg)
-                elseif nmissing > 0
-                    error("Unsupported number of values: found $nmissing values for $nopt optional arguments")
-                end
-            @case nothing
-                kind == LiteralString && (arg = string(arg))
-                add_operand!(operands, arg)
-        end
+    for arg in inst.arguments
+        add_operand!(operands, arg)
     end
     operands
 end

@@ -172,5 +172,5 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     features = SUPPORTED_FEATURES,
   )
   ir = make_shader(cfg, interface)
-  @test_broken validate_shader(ir)
+  @test validate_shader(ir)
 end

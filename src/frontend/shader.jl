@@ -48,6 +48,7 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
     add_variable_decorations!(ir, variables, interface)
     add_field_offsets!(ir, interface.align)
     add_type_decorations!(ir, interface)
+    add_align_operands!(ir, fdef)
 
     # Fill function body.
     blk = new_block!(main, next!(ir.ssacounter))
@@ -84,6 +85,42 @@ function add_type_decorations!(ir::IR, interface::ShaderInterface)
                     error("Type $T is mapped to a non-aggregate type $spv_t")
                 end
                 merge!(get!(DecorationData, spv_t.member_decorations, idx), decs)
+        end
+    end
+end
+
+function find_definition(id::SSAValue, insts)
+    idx = findfirst(x -> x.result_id == id, insts)
+    if !isnothing(idx)
+        insts[idx]
+    end
+end
+
+function add_align_operands!(ir::IR, fdef::FunctionDefinition)
+    insts = body(fdef)
+    for inst in insts
+        (; opcode, arguments) = inst
+        @tryswitch opcode begin
+            @case &OpLoad || &OpStore
+                pointer_id = first(inst.arguments)
+                def = @something(
+                    get(ir.global_vars, pointer_id, nothing),
+                    find_definition(pointer_id, fdef.local_vars),
+                    find_definition(pointer_id, insts),
+                )
+                isnothing(def) && error("Could not retrieve definition for $pointer_id")
+                pointer = @match def begin
+                    ::Instruction => ir.types[def.type_id::SSAValue]
+                    ::Variable => def.type
+                end
+                if pointer.storage_class == StorageClassPhysicalStorageBuffer
+                    (; type) = pointer
+                    push!(inst.arguments, MemoryAccessAligned, UInt32(scalar_alignment(type)))
+                end
+            @case &OpFunctionCall
+                # Recurse into function calls.
+                callee = ir.fdefs[first(arguments)]
+                add_align_operands!(ir, callee)
         end
     end
 end
