@@ -39,7 +39,7 @@ modules = [
             @test !in("SPV_KHR_vulkan_memory_model", ir.extensions)
             @test !in(SPIRV.CapabilityVulkanMemoryModel, ir.capabilities)
 
-            SPIRV.satisfy_requirements!(ir)
+            SPIRV.satisfy_requirements!(ir, AllSupported())
             @test in("SPV_KHR_vulkan_memory_model", ir.extensions)
             @test in(SPIRV.CapabilityVulkanMemoryModel, ir.capabilities)
         end
@@ -88,6 +88,7 @@ modules = [
         include("frontend/deltagraph.jl")
         include("frontend/reflection.jl")
         include("frontend/restructuring.jl")
+        include("frontend/pointer.jl")
         include("frontend/compile.jl")
         include("frontend/alignment.jl")
         include("frontend/shader.jl")

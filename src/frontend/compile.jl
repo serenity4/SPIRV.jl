@@ -1,14 +1,19 @@
-function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}))
-    compile(CFG(f, argtypes))
+function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}), args...; interp = SPIRVInterpreter())
+    compile(CFG(f, argtypes; interp), args...)
 end
 
-compile(cfg::CFG, variables = Dictionary{Int,Variable}()) = compile!(IR(), cfg, variables)
+compile(cfg::CFG, args...) = compile!(IR(), cfg, args...)
 
-function compile!(ir::IR, cfg::CFG, variables = Dictionary{Int,Variable}())
+function compile!(ir::IR, cfg::CFG, variables::Dictionary{Int,Variable} = Dictionary{Int,Variable}())
     # TODO: restructure CFG
     inferred = infer(cfg)
-    fid = emit!(ir, inferred, variables)
-    satisfy_requirements!(ir)
+    emit!(ir, inferred, variables)
+    ir
+end
+
+function compile!(ir::IR, cfg::CFG, features::FeatureSupport, variables = Dictionary{Int,Variable}())
+    ir = compile!(ir, cfg, variables)
+    satisfy_requirements!(ir, features)
 end
 
 struct IRMapping
@@ -74,7 +79,7 @@ end
 
 function emit!(ir::IR, cfg::CFG, variables = Dictionary{Int,Variable}())
     # Declare a new function.
-    fdef = define_function!(ir, cfg.mi, variables)
+    fdef = define_function!(ir, cfg, variables)
     fid = emit!(ir, fdef)
     insert!(ir.debug.names, fid, make_name(cfg.mi))
     irmap = IRMapping()
@@ -99,9 +104,10 @@ function make_name(mi::MethodInstance)
     Symbol(replace(string(mi.def.name, '_', Base.tuple_type_tail(mi.specTypes)), ' ' => ""))
 end
 
-function define_function!(ir::IR, mi::MethodInstance, variables::Dictionary{Int,Variable})
+function define_function!(ir::IR, cfg::CFG, variables::Dictionary{Int,Variable})
     argtypes = SPIRType[]
     global_vars = SSAValue[]
+    (; mi) = cfg
 
     for (i, t) in enumerate(mi.specTypes.types[2:end])
         type = spir_type!(ir, t, true)
@@ -118,7 +124,7 @@ function define_function!(ir::IR, mi::MethodInstance, variables::Dictionary{Int,
                 end
         end
     end
-    ci = GLOBAL_CI_CACHE[mi]
+    ci = cfg.interp.global_cache[mi]
     ftype = FunctionType(spir_type!(ir, ci.rettype), argtypes)
     FunctionDefinition(ftype, FunctionControlNone, [], [], SSADict(), global_vars)
 end
@@ -220,10 +226,12 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
                 @case ::Core.ReturnNode
                     spv_inst = @match jinst.val begin
                         ::Nothing => @inst OpReturn()
-                        id::Core.SSAValue => @inst OpReturnValue(@something(load_if_variable!(blk, ir, irmap, id), SSAValue(id, irmap)))
-                        node::QuoteNode => @inst(OpReturnValue(emit!(ir, irmap, Constant(node.value))))
-                        # Assume returned value is a literal.
-                        _ => @inst OpReturnValue(emit!(ir, irmap, Constant(jinst.val)))
+                        val => begin
+                            args = Any[val]
+                            load_variables!(args, blk, ir, irmap, OpReturnValue)
+                            remap_args!(args, ir, irmap, OpReturnValue)
+                            @inst OpReturnValue(only(args))
+                        end
                     end
                     push!(blk, irmap, spv_inst, core_ssaval)
                 @case ::Core.GotoNode
@@ -335,7 +343,10 @@ function check_isvalid(jtype::Type)
     end
 end
 
-macro compile(ex)
+macro compile(features, interp, ex)
     compile_args = map(esc, get_signature(ex))
-    :(compile($(compile_args...)))
+    :(compile($(compile_args...), $(esc(features)); interp = $interp))
 end
+
+macro compile(interp, ex) esc(:($(@__MODULE__).@compile $(AllSupported()) $interp $ex)) end
+macro compile(ex) esc(:($(@__MODULE__).@compile $(AllSupported()) $(SPIRVInterpreter()) $ex)) end

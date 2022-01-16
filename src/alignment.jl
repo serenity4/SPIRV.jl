@@ -48,13 +48,14 @@ function add_field_offsets!(ir::IR, align::AlignmentStrategy)
     parent_decs = get(DecorationData, ir.decorations, ir.types[t])
     storage_classes = Set(type.storage_class for type in ir.types if isa(type, PointerType) && type.type == t)
     current_offset = 0
-    for (i, name, subT) in zip(1:fieldcount(T), fieldnames(T), fieldtypes(T))
+    n = fieldcount(T)
+    for (i, name, subT) in zip(1:n, fieldnames(T), fieldtypes(T))
       subt = (t::StructType).members[i]
       member_decs = get!(DecorationData, t.member_decorations, i)
       alignment = align(subT, subt, current_offset, member_decs, parent_decs, storage_classes)
       current_offset = alignment * cld(current_offset, alignment)
       insert!(member_decs, DecorationOffset, [UInt32(current_offset)])
-      current_offset += size(subT, ir, align)
+      i ≠ n && (current_offset += size(subT, ir, align))
     end
   end
 end

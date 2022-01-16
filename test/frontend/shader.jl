@@ -1,12 +1,27 @@
 using SPIRV, Test, Dictionaries, Accessors
 
+SUPPORTED_FEATURES = SupportedFeatures(
+  [
+    "SPV_KHR_vulkan_memory_model",
+    "SPV_EXT_physical_storage_buffer"
+  ],
+  [
+    SPIRV.CapabilityVulkanMemoryModel,
+    SPIRV.CapabilityShader,
+    SPIRV.CapabilityInt64,
+    SPIRV.CapabilityPhysicalStorageBufferAddresses
+  ]
+)
+
+interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE])
+
 @testset "Shader interface" begin
   function vert_shader!(out_color)
     out_color.a = 1f0
   end
 
   cfg = @cfg vert_shader!(::SVec{Float32,4})
-  ir = compile(cfg)
+  ir = compile(cfg, AllSupported())
   @test validate(ir)
   ir = make_shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput]))
   mod = SPIRV.Module(ir)
@@ -53,7 +68,7 @@ using SPIRV, Test, Dictionaries, Accessors
   end
 
   cfg = @cfg vert_shader_2!(::SVec{Float32,4})
-  ir = compile(cfg)
+  ir = compile(cfg, AllSupported())
   @test validate(ir)
   interface = ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => dictionary([SPIRV.DecorationLocation => [UInt32(0)]])]))
   ir = make_shader(cfg, interface)
@@ -70,7 +85,7 @@ using SPIRV, Test, Dictionaries, Accessors
   end
 
   cfg = @cfg vert_shader_3!(::SVec{Float32,4}, ::Point)
-  ir = compile(cfg)
+  ir = compile(cfg, AllSupported())
   @test validate(ir)
   interface = ShaderInterface(SPIRV.ExecutionModelVertex,
     [SPIRV.StorageClassOutput, SPIRV.StorageClassUniform],
@@ -92,4 +107,70 @@ using SPIRV, Test, Dictionaries, Accessors
   interface = @set interface.type_decorations = dictionary([Point => dictionary([SPIRV.DecorationBlock => []])])
   ir = make_shader(cfg, interface)
   @test validate_shader(ir)
+
+  # Test built-in logic.
+  function vert_shader_4!(frag_color, index, position)
+    frag_color.x = index
+    position.x = index
+  end
+
+  cfg = @cfg vert_shader_4!(::SVec{Float32, 4}, ::UInt32, ::SVec{Float32, 4})
+  SPIRV.@code_typed vert_shader_4!(::SVec{Float32, 4}, ::UInt32, ::SVec{Float32, 4})
+  ir = compile(cfg, AllSupported())
+  @test validate(ir)
+  interface = ShaderInterface(SPIRV.ExecutionModelVertex,
+    [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassOutput],
+    dictionary([
+      1 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
+      2 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInVertexIndex]]),
+      3 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInPosition]]),
+    ]),
+  )
+  ir = make_shader(cfg, interface)
+  @test validate_shader(ir)
+
+  struct DrawData
+    camera::UInt64
+    vbuffer::UInt64
+    material::UInt64
+  end
+
+  struct VertexData
+    pos::SVec{Float32,2}
+    color::NTuple{3,Float32}
+  end
+
+  function vert_shader_5!(frag_color, position, index, dd)
+    vd = Pointer{Vector{VertexData}}(dd.vbuffer)[index]
+    (; pos, color) = vd
+    position[] = SVec(pos.x, pos.y, 0f0, 1f0)
+    frag_color[] = SVec(color[1], color[2], color[3], 1f0)
+  end
+
+  # Non-Vulkan interpreter
+  cfg = @cfg interp_novulkan vert_shader_5!(::SVec{Float32, 4}, ::SVec{Float32, 4}, ::UInt32, ::DrawData)
+  ir = compile(cfg, AllSupported())
+  # Access to PhysicalStorageBuffer must use Aligned.
+  @test_throws SPIRV.ValidationError validate(ir)
+
+  # Default Vulkan interpreter
+  cfg = @cfg vert_shader_5!(::SVec{Float32, 4}, ::SVec{Float32, 4}, ::UInt32, ::DrawData)
+  ir = compile(cfg, AllSupported())
+  # Access to PhysicalStorageBuffer must use Aligned.
+  @test_throws SPIRV.ValidationError validate(ir)
+
+  interface = ShaderInterface(
+    storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassPushConstant],
+    variable_decorations = dictionary([
+      1 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
+      2 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInPosition]]),
+      3 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInVertexIndex]]),
+    ]),
+    type_decorations = dictionary([
+      DrawData => dictionary([SPIRV.DecorationBlock => []]),
+    ]),
+    features = SUPPORTED_FEATURES,
+  )
+  ir = make_shader(cfg, interface)
+  @test_broken validate_shader(ir)
 end

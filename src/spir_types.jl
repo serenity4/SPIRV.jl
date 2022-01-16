@@ -83,6 +83,7 @@ struct Constant
     is_spec_const::Bool
 end
 Constant(value) = Constant(value, false)
+Constant(node::QuoteNode) = Constant(node.value)
 
 struct ArrayType <: SPIRType
     eltype::SPIRType

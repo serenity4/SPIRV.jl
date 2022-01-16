@@ -45,6 +45,11 @@ for f in (:length, :eltype, :size, :lastindex, :firstindex, :zero, :one, :simila
   @eval Base.$f(v::GenericVector) = $f(typeof(v))
 end
 
+Base.getindex(v::GenericVector, i) = AccessChain(v, i)[]
+Base.setindex!(v::T, x::T) where {T<:GenericVector} = Store(v, x)
+Base.setindex!(v::GenericVector{T}, x::T, i) where {T} = Store(AccessChain(v, i), x)
+Base.setindex!(v::GenericVector, x, i) = setindex!(v, convert(eltype(v), x), i)
+
 """
 Pointer that keeps its parent around to make sure it stays valid.
 
@@ -56,7 +61,6 @@ struct Pointer{T}
 end
 
 function Pointer(ref::Ref{T}) where {T}
-  @assert isbitstype(T)
   Pointer(Base.unsafe_convert(Ptr{T}, ref), ref)
 end
 
@@ -68,20 +72,10 @@ Base.:(≠)(ptr1::Pointer, ptr2::Pointer) = PtrNotEqual(ptr1, ptr2)
 Base.setindex!(ptr::Pointer{T}, x::T) where {T} = (Store(ptr, x); x)
 Base.setindex!(ptr::Pointer{T}, x) where {T} = Store(ptr, convert(T, x))
 Base.eltype(::Type{Pointer{T}}) where {T} = T
-Base.getindex(v::GenericVector, i) = Load(AccessChain(v, i))
-Base.setindex!(v::T, x::T) where {T<:GenericVector} = Store(v, x)
-Base.setindex!(v::GenericVector{T}, x::T, i) where {T} = Store(AccessChain(v, i), x)
-Base.setindex!(v::GenericVector, x, i) = setindex!(v, convert(eltype(v), x), i)
+Base.getindex(ptr::Pointer) = Load(ptr)
+Base.getindex(ptr::Pointer, i::Integer, indices::Integer...) = Load(AccessChain(ptr, i, indices...))
 
-@noinline function AccessChain(v::AbstractVector, i::UInt32)
-  T = eltype(v)
-  @assert isbitstype(T)
-  @boundscheck 0 ≤ i ≤ length(v) - 1 || throw(BoundsError(v, i))
-  GC.@preserve v begin
-    addr = Base.unsafe_convert(Ptr{T}, pointer_from_objref(v))
-    Pointer(addr + i * sizeof(T), v)
-  end
-end
+@noinline Load(ptr::Pointer) = GC.@preserve ptr Base.unsafe_load(ptr.addr)
 
 """
     AccessChain(v, index)
@@ -93,10 +87,29 @@ Get a [`Pointer`](@ref) to `v` using an indexing scheme that depends on the sign
 """
 function AccessChain end
 
-@inline AccessChain(v::AbstractVector, i::Unsigned) = AccessChain(v, convert(UInt32, i))
-@inline AccessChain(v::AbstractVector, i::Signed = 1) = AccessChain(v, UInt32(i - 1))
+@inline AccessChain(v, i::Unsigned) = AccessChain(v, convert(UInt32, i))
+@inline AccessChain(v, i::Signed, indices::Signed...) = AccessChain(v, UInt32(i - 1), UInt32.(indices .- 1)...)
 
-@noinline Load(ptr::Pointer) = GC.@preserve ptr Base.unsafe_load(ptr.addr)
+@noinline function AccessChain(v::AbstractVector, i::UInt32)
+  T = eltype(v)
+  # Make sure `isbitstype(T)` holds if executing that on the CPU.
+  # @assert isbitstype(T)
+  @boundscheck 0 ≤ i ≤ length(v) - 1 || throw(BoundsError(v, i))
+  GC.@preserve v begin
+    addr = Base.unsafe_convert(Ptr{T}, pointer_from_objref(v))
+    Pointer(addr + i * sizeof(T), v)
+  end
+end
+
+@noinline function AccessChain(ptr::Pointer{T}, index::UInt32) where {T}
+  new_addr = ptr.addr + index * sizeof(eltype(T))
+  Pointer{eltype(T)}(new_addr, ptr.parent)
+end
+
+@noinline function AccessChain(ptr::Pointer{Tuple{T}}, i::UInt32, j::UInt32) where {T<:Vector}
+  @assert i == 0
+  AccessChain(Pointer{T}(ptr.addr, only(ptr.parent)), j)
+end
 
 @noinline function Store(ptr::Pointer{T}, x::T) where {T}
   GC.@preserve ptr Base.unsafe_store!(ptr.addr, x)
@@ -109,8 +122,13 @@ end
   Store(ptr, x)
 end
 
+Base.convert(::Type{Pointer{T}}, x::BitUnsigned) where {T} = ConvertUToPtr(x)
+@noinline ConvertUToPtr(T::Type, x) = Pointer{T}(Base.reinterpret(Ptr{T}, x), x)
+Pointer{T}(x::BitUnsigned) where {T} = ConvertUToPtr(T, x)
+Pointer(T::Type, x::BitUnsigned) = Pointer{T}(x)
+
 @override setindex!(v::Vector{T}, x::T, i::Integer) where {T} = Store(AccessChain(v, i), x)
-@override getindex(v::Vector, i::Integer) = Load(AccessChain(v, i))
+@override getindex(v::Vector, i::Integer) = AccessChain(v, i)[]
 
 Base.:(+)(v1::ScalarVector{T}, v2::ScalarVector{T}) where {T<:IEEEFloat} = FAdd(v1, v2)
 @noinline FAdd(v1, v2) = vectorize(+, v1, v2)
@@ -136,15 +154,4 @@ end
 function Base.setproperty!(x::GenericVector, prop::Symbol, val)
   i = to_index(prop)
   isnothing(i) ? setfield!(x, prop, val) : setindex!(x, val, i)
-end
-
-Base.convert(::Type{Pointer{T}}, x::BitUnsigned) where {T} = UConvertToPtr(x)
-Pointer(T::Type, x::BitUnsigned) = Pointer(Base.reinterpret(Ptr{T}, x), nothing)
-@noinline ConvertUToPtr(T::Type, x) = Pointer(T, x)
-
-struct PerVertex
-  position::SVec{Float32,4}
-  point_size::Float32
-  clip_distance::SizedArray{Float32,1}
-  cull_distance::SizedArray{Float32,1}
 end

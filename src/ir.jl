@@ -78,7 +78,7 @@ function IR(; meta::Metadata = Metadata(), addressing_model::AddressingModel = A
         BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), DebugInfo(), SSACounter(0), Dictionary())
 end
 
-function IR(mod::Module; satisfy_requirements = true)
+function IR(mod::Module; satisfy_requirements = true, features #= ::FeatureSupport =# = AllSupported())
     ir = IR(; mod.meta)
     (; debug, decorations, types, results) = ir
 
@@ -212,7 +212,7 @@ function IR(mod::Module; satisfy_requirements = true)
     attach_member_decorations!(ir, member_decorations)
     attach_member_names!(ir, member_names)
     ir.ssacounter.val = SSAValue(maximum(id.(keys(ir.results))))
-    satisfy_requirements && satisfy_requirements!(ir)
+    satisfy_requirements && satisfy_requirements!(ir, features)
     ir
 end
 
@@ -283,9 +283,9 @@ function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true)
         ::Type{<:Tuple} => @match (n = length(t.parameters), t) begin
                 (GuardBy(>(1)), ::Type{<:NTuple}) => ArrayType(spir_type!(ir, eltype(t); record_jtype), Constant(UInt32(n)))
                 # Generate structure on the fly.
-                _ => StructType(spir_type!.(ir, t.parameters); record_jtype)
+                _ => StructType(spir_type!.(ir, t.parameters; record_jtype))
             end
-        ::Type{<:Pointer} => PointerType(StorageClassFunction, spir_type!(ir, eltype(t); record_jtype))
+        ::Type{<:Pointer} => PointerType(StorageClassPhysicalStorageBuffer, spir_type!(ir, eltype(t); record_jtype))
         ::Type{<:GenericVector} => @match (et, n) = (eltype(t), length(t)) begin
             (::Type{<:Scalar}, GuardBy(≤(4))) => VectorType(spir_type!(ir, et; record_jtype), n)
             (::Type{<:GenericVector{<:Scalar}}, GuardBy(≤(4))) => MatrixType(spir_type!(ir, eltype(et); record_jtype), n)

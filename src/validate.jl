@@ -9,7 +9,7 @@ const spirv_types = Set([
 ])
 
 function validate(mod::Module)
-    validate_types(mod) && validate_khronos(mod)
+    validate_types(mod) && validate_khronos(mod; flags = ["--target-env", "spv1.5"])
 end
 
 function validate_types(mod::Module)

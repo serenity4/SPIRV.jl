@@ -9,7 +9,7 @@ struct CodeInstanceCache
 end
 CodeInstanceCache() = CodeInstanceCache(Dict())
 
-Base.show(io::IO, cache::CodeInstanceCache) = print(io, "CodeInstanceCache($(sum(length, values(cache.dict))) code instances for $(length(cache.dict)) method instances)")
+Base.show(io::IO, cache::CodeInstanceCache) = print(io, "CodeInstanceCache($(sum(length, values(cache.dict); init = 0)) code instances for $(length(cache.dict)) method instances)")
 
 function Core.Compiler.WorldView(cache::CodeInstanceCache, mi::MethodInstance)
     min_world = get_world_counter()
@@ -61,7 +61,8 @@ Core.Compiler.haskey(wvc::WorldView{CodeInstanceCache}, args...) = haskey(wvc, a
 Core.Compiler.setindex!(wvc::WorldView{CodeInstanceCache}, args...) = setindex!(wvc, args...)
 Core.Compiler.getindex(wvc::WorldView{CodeInstanceCache}, args...) = getindex(wvc, args...)
 
-const GLOBAL_CI_CACHE = CodeInstanceCache()
+const DEFAULT_CI_CACHE = CodeInstanceCache()
+const VULKAN_CI_CACHE = CodeInstanceCache()
 
 function invalidate(cache::CodeInstanceCache, mi::MethodInstance, max_world, invalidated = Set{MethodInstance}())
     push!(invalidated, mi)
@@ -83,8 +84,8 @@ end
 """
 Explicitly trigger invalidation of all previously inferred method instances.
 """
-function invalidate_all(cache::CodeInstanceCache = GLOBAL_CI_CACHE)
+function invalidate_all(cache::CodeInstanceCache, world = get_world_counter())
     for mi in eachindex(cache.dict)
-        invalidate(cache, mi, get_world_counter() - 1)
+        invalidate(cache, mi, world - 1)
     end
 end

@@ -47,6 +47,7 @@ include("frontend/method_table.jl")
 include("frontend/intrinsics.jl")
 include("frontend/array.jl")
 include("frontend/intrinsics_glsl.jl")
+include("frontend/vulkan.jl")
 include("frontend/interpreter.jl")
 include("frontend/deltagraph.jl")
 include("frontend/cfg.jl")
@@ -86,6 +87,7 @@ export
         SSADict,
         @inst,
         FeatureRequirements,
+        FeatureSupport, AllSupported, SupportedFeatures,
 
         # CFG
         control_flow_graph,
@@ -118,12 +120,15 @@ export
         ShaderInterface,
         AlignmentStrategy, VulkanAlignment,
         @compile,
-        invalidate_all,
+        invalidate_all!,
         SPIRVInterpreter,
+        VULKAN_METHOD_TABLE, INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE,
+        DEFAULT_CI_CACHE, VULKAN_CI_CACHE,
 
         # SPIR-V array/vector types
         GenericVector,
         ScalarVector, SVec,
-        ScalarMatrix, MVec
+        ScalarMatrix, MVec,
+        Pointer
 
 end

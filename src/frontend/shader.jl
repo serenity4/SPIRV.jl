@@ -18,10 +18,16 @@ struct ShaderInterface
     variable_decorations::Dictionary{Int,DecorationData}
     type_decorations::Dictionary #= {Union{DataType,Pair{DataType,Symbol}},DecorationData} =#
     align::AlignmentStrategy
+    features::FeatureSupport
     function ShaderInterface(execution_model::ExecutionModel, storage_classes = [], variable_decorations = Dictionary(),
-                             type_decorations = Dictionary(), align = VulkanAlignment())
-        new(execution_model, storage_classes, variable_decorations, type_decorations, align)
+                             type_decorations = Dictionary(), align = VulkanAlignment(), features = AllSupported())
+        new(execution_model, storage_classes, variable_decorations, type_decorations, align, features)
     end
+end
+
+function ShaderInterface(; execution_model = ExecutionModelVertex, storage_classes = [], variable_decorations = Dictionary(),
+    type_decorations = Dictionary(), align = VulkanAlignment(), features = AllSupported())
+    ShaderInterface(execution_model, storage_classes, variable_decorations, type_decorations, align, features)
 end
 
 """
@@ -52,7 +58,7 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
 
     push!(blk.insts, @inst next!(ir.ssacounter) = OpFunctionCall(fid)::ir.types[fdef.type.rettype])
     push!(blk.insts, @inst OpReturn())
-    satisfy_requirements!(ir)
+    satisfy_requirements!(ir, interface.features)
 end
 
 function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)

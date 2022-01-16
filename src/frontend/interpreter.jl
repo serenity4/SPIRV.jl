@@ -1,4 +1,4 @@
-struct SPIRVInterpreter <: AbstractInterpreter
+mutable struct SPIRVInterpreter <: AbstractInterpreter
     "Global cache used for memoizing the results of type inference."
     global_cache::CodeInstanceCache
     """
@@ -27,7 +27,7 @@ end
 
 # Constructor adapted from Julia's `NativeInterpreter`.
 function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = InferenceParams(),
-        opt_params = OptimizationParams(inline_cost_threshold = 1000), global_cache = GLOBAL_CI_CACHE, method_tables = [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE])
+        opt_params = OptimizationParams(inline_cost_threshold = 1000), method_tables = [VULKAN_METHOD_TABLE, INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE], global_cache = VULKAN_METHOD_TABLE in method_tables ? VULKAN_CI_CACHE : DEFAULT_CI_CACHE)
     SPIRVInterpreter(
         global_cache,
         NOverlayMethodTable(world, method_tables),
@@ -36,6 +36,19 @@ function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = Infere
         inf_params,
         opt_params,
     )
+end
+
+SPIRVInterpreter(method_tables::Vector{Core.MethodTable}; world::UInt = get_world_counter(), kwargs...) = SPIRVInterpreter(world; method_tables, kwargs...)
+
+function invalidate_all!(interp::SPIRVInterpreter)
+    invalidate_all(interp.global_cache, interp.world)
+    nothing
+end
+
+function reset_world!(interp::SPIRVInterpreter)
+    interp.world = get_world_counter()
+    interp.method_table = NOverlayMethodTable(interp.world, interp.method_table.tables)
+    nothing
 end
 
 #=

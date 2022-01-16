@@ -8,10 +8,17 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
             ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$func'."))
             &getfield => begin
               composite = args[1]
-              sym = (args[2]::QuoteNode).value::Symbol
-              T = get_type(composite, cfg)
-              field_idx = findfirst(==(sym), fieldnames(T))
-              !isnothing(field_idx) || throw(CompilationError("Symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))"))
+              field_idx = @match args[2] begin
+                node::QuoteNode => begin
+                    node.value::Symbol
+                    sym = (args[2]::QuoteNode).value::Symbol
+                    T = get_type(composite, cfg)
+                    field_idx = findfirst(==(sym), fieldnames(T))
+                    !isnothing(field_idx) || throw(CompilationError("Symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))"))
+                    field_idx
+                  end
+                idx::Integer => idx
+              end
               (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
             end
             ::Function => throw(CompilationError("Dynamic dispatch detected for function $func. All call sites must be statically resolved."))
@@ -59,12 +66,16 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
   if isa(type, PointerType) && opcode in (OpAccessChain, OpPtrAccessChain)
     # Propagate storage class to the result.
     ptr = first(args)
-    sc = storage_class(ptr, ir, irmap, fdef)::StorageClass
-    type = @set type.storage_class = sc
+    sc = storage_class(ptr, ir, irmap, fdef)
+    if isnothing(sc)
+      @assert type.storage_class == StorageClassPhysicalStorageBuffer
+    else
+      type = @set type.storage_class = sc
+    end
   end
 
   load_variables!(args, blk, ir, irmap, opcode)
-  remap_args!(ir, irmap, opcode, args)
+  remap_args!(args, ir, irmap, opcode)
 
   if opcode == OpStore
     result_id = type_id = nothing
@@ -92,7 +103,7 @@ end
 
 function storage_class(arg, ir::IR, irmap::IRMapping, fdef::FunctionDefinition)
   var_or_type = @match arg begin
-    ::Core.SSAValue => get(irmap.variables, first(args), nothing)
+    ::Core.SSAValue => get(irmap.variables, arg, nothing)
     ::Core.Argument => begin
       id = get(irmap.args, arg, nothing)
       lvar_idx = findfirst(==(id), fdef.args)
@@ -131,17 +142,18 @@ function try_getopcode(name, prefix = "")
   isdefined(@__MODULE__, maybe_opname) ? getproperty(@__MODULE__, maybe_opname) : nothing
 end
 
-function remap_args!(ir::IR, irmap::IRMapping, opcode, args)
+function remap_args!(args, ir::IR, irmap::IRMapping, opcode)
   arguments_to_ssa!(args, irmap, opcode)
   literals_to_const!(args, ir, irmap, opcode)
   args
 end
 
-
 function load_variables!(args, blk::Block, ir::IR, irmap::IRMapping, opcode)
   for (i, arg) in enumerate(args)
     # Don't load pointers in pointer operations.
-    opcode in (OpStore, OpAccessChain) && i == 1 && continue
+    if i == 1 && opcode in (OpStore, OpAccessChain)
+      continue
+    end
     loaded_arg = load_if_variable!(blk, ir, irmap, arg)
     !isnothing(loaded_arg) && (args[i] = loaded_arg)
   end
@@ -169,7 +181,7 @@ end
 
 function literals_to_const!(args, ir::IR, irmap::IRMapping, opcode)
   for (i, arg) in enumerate(args)
-    if isa(arg, Bool) || (isa(arg, AbstractFloat) || isa(arg, Integer)) && !is_literal(opcode, args, i)
+    if isa(arg, Bool) || (isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, QuoteNode)) && !is_literal(opcode, args, i)
       args[i] = emit!(ir, irmap, Constant(arg))
     end
   end

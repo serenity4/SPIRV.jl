@@ -40,5 +40,5 @@ function merge_return_blocks(cfg::CFG)
     push!(b, Core.PhiNode(Int32.(getproperty.(redges, :id)), rvals))
     push!(b, Core.ReturnNode(Core.SSAValue(phi_id)))
     code = finish(b)
-    CFG(cfg.mi, code)
+    CFG(cfg.mi, code, cfg.interp)
 end
