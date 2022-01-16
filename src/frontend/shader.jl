@@ -130,7 +130,11 @@ function make_shader(cfg::CFG, interface::ShaderInterface)
     variables = Dictionary{Int,Variable}()
     for (i, sc) in enumerate(interface.storage_classes)
         if sc ≠ StorageClassFunction
-            ptr_type = PointerType(sc, spir_type!(ir, cfg.mi.specTypes.parameters[i+1], false))
+            t = spir_type!(ir, cfg.mi.specTypes.parameters[i+1], false; storage_class = sc)
+            if sc in (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer)
+                insert!(ir.decorations, emit!(ir, t), dictionary([DecorationBlock => []]))
+            end
+            ptr_type = PointerType(sc, t)
             var = Variable(ptr_type)
             insert!(variables, i, var)
         end

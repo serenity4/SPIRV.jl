@@ -255,9 +255,9 @@ Get a SPIR-V type from a Julia type, optionally recording the mapping.
 
 If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
 """
-function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true)
+function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true, storage_class = nothing)
     wrap_mutable && ismutabletype(t) && !(t <: Base.RefValue) && return PointerType(StorageClassFunction, spir_type!(ir, t; record_jtype))
-    haskey(ir.typerefs, t) && return ir.typerefs[t]
+    haskey(ir.typerefs, t) && isnothing(storage_class) && return ir.typerefs[t]
     type = @match t begin
         &Float16 => FloatType(16)
         &Float32 => FloatType(32)
@@ -294,7 +294,40 @@ function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true)
         GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type!.(ir, t.types; record_jtype), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
         _ => error("Type $t does not have a corresponding SPIR-V type.")
     end
-    record_jtype && insert!(ir.typerefs, t, type)
+
+    #TODO: WIP, need to insert an `OpCompositeExtract` for all uses if the type changed.
+    promoted_type = promote_to_interface_block(type, storage_class)
+    if type ≠ promoted_type
+        error("The provided type must be a struct or an array of structs. The automation of this requirement is a work in progress.")
+    end
+
+    if type == promoted_type && record_jtype
+        if isnothing(storage_class)
+            insert!(ir.typerefs, t, type)
+        else
+            set!(ir.typerefs, t, type)
+        end
+    end
+
+    promoted_type
+end
+
+function promote_to_interface_block(type, storage_class)
+    @tryswitch storage_class begin
+        @case &StorageClassPushConstant
+            # Type must be a struct.
+            !isa(type, StructType) && return StructType([type])
+        @case &StorageClassUniform || &StorageClassStorageBuffer
+            # Type must be a struct or an array of structs.
+            @tryswitch type begin
+                @case ::StructType
+                    nothing
+                @case ::ArrayType
+                    !isa(type.eltype, StructType) && return @set type.eltype = StructType([type.eltype])
+                @case _
+                    return StructType([type])
+            end
+    end
     type
 end
 

@@ -173,4 +173,14 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   )
   ir = make_shader(cfg, interface)
   @test validate_shader(ir)
+
+  # Test that `Block` decorations are inserted properly for the push constant.
+  interface = @set interface.type_decorations = Dictionary()
+  ir = make_shader(cfg, interface)
+  @test validate_shader(ir)
+
+  # WIP
+  # ir = IR()
+  # t = SPIRV.spir_type!(ir, Float32; storage_class = SPIRV.StorageClassPushConstant)
+  # @test isa(t, SPIRV.StructType)
 end
