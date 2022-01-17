@@ -3,13 +3,13 @@ using SPIRV, Test, Dictionaries, Accessors
 SUPPORTED_FEATURES = SupportedFeatures(
   [
     "SPV_KHR_vulkan_memory_model",
-    "SPV_EXT_physical_storage_buffer"
+    "SPV_EXT_physical_storage_buffer",
   ],
   [
     SPIRV.CapabilityVulkanMemoryModel,
     SPIRV.CapabilityShader,
     SPIRV.CapabilityInt64,
-    SPIRV.CapabilityPhysicalStorageBufferAddresses
+    SPIRV.CapabilityPhysicalStorageBufferAddresses,
   ]
 )
 
@@ -183,4 +183,20 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   # ir = IR()
   # t = SPIRV.spir_type!(ir, Float32; storage_class = SPIRV.StorageClassPushConstant)
   # @test isa(t, SPIRV.StructType)
+
+  function frag_shader!(out_color, frag_color)
+    out_color[] = frag_color
+  end
+
+  cfg = @cfg frag_shader!(::SVec{Float32, 4}, ::SVec{Float32, 4})
+  interface = ShaderInterface(
+    execution_model = SPIRV.ExecutionModelFragment,
+    storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput],
+    variable_decorations = dictionary([
+      1 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
+      2 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
+    ]),
+  )
+  ir = make_shader(cfg, interface)
+  @test validate_shader(ir)
 end

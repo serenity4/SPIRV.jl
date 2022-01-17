@@ -43,6 +43,7 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
     main_t = FunctionType(VoidType(), [])
     main = FunctionDefinition(main_t)
     ep = EntryPoint(:main, emit!(ir, main), interface.execution_model, [], fdef.global_vars)
+    interface.execution_model == ExecutionModelFragment && push!(ep.modes, @inst OpExecutionMode(ep.func, ExecutionModeOriginUpperLeft))
     insert!(ir.entry_points, ep.func, ep)
 
     add_variable_decorations!(ir, variables, interface)
