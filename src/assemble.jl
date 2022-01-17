@@ -20,12 +20,17 @@ end
 struct SerializedArgument
     words::Vector{Word}
     SerializedArgument(words::Vector{Word}) = new(words)
-    SerializedArgument(arg) = SerializedArgument([arg])
 end
 
-add_operand!(operands, arg::Union{SSAValue,Vector{SSAValue}}) = push!(operands, arg)
-add_operand!(operands, arg) = add_operand!(operands, SerializedArgument(arg))
-add_operand!(operands, arg::SerializedArgument) = append!(operands, arg.words)
+SerializedArgument(arg) = SerializedArgument([arg])
+
+function SerializedArgument(arg::AbstractVector)
+    words = Word[]
+    for el in arg
+        append!(words, reinterpret(Word, [el]))
+    end
+    SerializedArgument(words)
+end
 
 function SerializedArgument(arg::AbstractString)
     utf8_chars = collect(transcode(UInt8, arg))
@@ -34,10 +39,12 @@ function SerializedArgument(arg::AbstractString)
     if nrem ≠ 0
         append!(utf8_chars, zeros(4 - nrem))
     end
-    SerializedArgument(utf8_chars)
+    SerializedArgument(collect(reinterpret(Word, utf8_chars)))
 end
 
-SerializedArgument(arg::AbstractVector) = SerializedArgument(collect(reinterpret(Word, arg)))
+add_operand!(operands, arg::Union{SSAValue,Vector{SSAValue}}) = push!(operands, arg)
+add_operand!(operands, arg) = add_operand!(operands, SerializedArgument(arg))
+add_operand!(operands, arg::SerializedArgument) = append!(operands, arg.words)
 
 function Base.write(io::IO, mod::PhysicalModule)
     write(io, assemble(mod))
@@ -112,14 +119,15 @@ function Base.read(::Type{Module}, io::IO)
         opcode, rest = match(r"([a-zA-Z\d]+)\(?\s*(.*|$)", ex)
         opcode = getproperty(@__MODULE__, Symbol(opcode))::OpCode
         !isempty(rest) && append!(operands, split(rest, ' '))
-        op_infos = operand_infos(opcode, operands, false)
+        op_infos = copy(operand_infos(opcode, false))
         if length(op_infos) > 1 && first(op_infos).kind === IdResultType
             # The result ID is defined after the type ID, but parsed first.
             # Therefore they need to be switched.
             op_infos[1], op_infos[2] = op_infos[2], op_infos[1]
         end
-        for (op, op_info) in zip(operands, op_infos)
+        for (i, (op, op_info)) in enumerate(zip(operands, op_infos))
             (; kind) = op_info
+            category = kind_to_category[kind]
             @switch kind begin
                 @case &IdResult
                     result_id = parse(SSAValue, op)
@@ -127,14 +135,14 @@ function Base.read(::Type{Module}, io::IO)
                     type_id = parse(SSAValue, op)
                 @case _
                     t = isa(kind, DataType) ? kind : typeof(kind)
-                    val = @match name = nameof(t) begin
+                    arg = @match name = nameof(t) begin
                         :Id => parse(SSAValue, op)
                         :Literal => @match kind begin
                             &LiteralExtInstInteger => begin
                                 if isdigit(first(op))
                                     parse(Int, op)
                                 elseif try_getopcode(op, :GLSL) ≠ nothing
-                                    #TODO: support arbitrary instruction sets, not just GLSL
+                                    #TODO: Support arbitrary instruction sets, not just GLSL.
                                     try_getopcode(op, :GLSL)::OpCodeGLSL
                                 end
                             end
@@ -145,7 +153,9 @@ function Base.read(::Type{Module}, io::IO)
                         :Composite => error("Composites are not supported yet.")
                         _ => getproperty(@__MODULE__, Symbol(name, op))
                     end
-                    push!(arguments, val)
+                    push!(arguments, arg)
+                    add_extra_operands!(op_infos, i, arg, category)
+                    op_info.quantifier == "*" && length(operands) ≠ length(arguments) && push!(op_infos, last(op_infos))
             end
         end
         push!(insts, Instruction(opcode, type_id, result_id, arguments))

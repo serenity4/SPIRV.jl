@@ -12,6 +12,20 @@ modules = [
     "decorations.spv",
 ]
 
+function test_module(mod::SPIRV.Module)
+    @test validate(mod)
+    ir = IR(mod)
+    @test validate(ir)
+    @test SPIRV.Module(ir) ≈ mod
+    pmod = PhysicalModule(mod)
+    @test validate(pmod)
+    io = IOBuffer()
+    write(io, pmod)
+    seekstart(io)
+    @test PhysicalModule(io) == pmod
+    @test SPIRV.Module(pmod) == mod
+end
+
 @testset "SPIRV.jl" begin
     @testset "Testing SPIR-V module $file" for file in modules
         r = resource(file)
@@ -74,14 +88,15 @@ modules = [
     end
 
     @testset "Parsing human-readable SPIR-V assembly (.spvasm)" begin
-        mod = read(SPIRV.Module, spvasm("test1"))
-        @test validate(mod)
-        ir = IR(mod)
-        @test SPIRV.Module(ir) ≈ mod
+        mod1 = read(SPIRV.Module, spvasm("test1"))
+        test_module(mod1)
 
         # Support for fancier (Julia style) .spvasm
-        mod2 = read(SPIRV.Module, spvasm("test1_fancy"))
-        @test mod2 == mod
+        mod1_fancy = read(SPIRV.Module, spvasm("test1_fancy"))
+        @test mod1_fancy == mod1
+
+        mod2 = read(SPIRV.Module, spvasm("test2"))
+        test_module(mod2)
     end
 
     @testset "Front-end" begin

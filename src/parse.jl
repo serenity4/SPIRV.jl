@@ -9,8 +9,7 @@ function defines_extra_operands(arg)
     !isnothing(val) && !isempty(val.parameters)
 end
 
-function update_infos!(op_infos, i, arg, category)
-    # arg isa SSAValue && (arg = arg.id)
+function add_extra_operands!(op_infos, i, arg, category)
     if defines_extra_operands(arg)
         for info in reverse(enum_infos[arg].parameters)
             insert!(op_infos, i + 1, info)
@@ -144,7 +143,7 @@ function info(opcode::OpCode, arguments::AbstractVector, skip_ids::Bool = true)
     for (i, arg) in enumerate(arguments)
         info = op_infos[i]
         category = kind_to_category[info.kind]
-        update_infos!(op_infos, i, arg, category)
+        add_extra_operands!(op_infos, i, arg, category)
     end
     inst_info
 end
@@ -170,20 +169,16 @@ function Instruction(inst::PhysicalInstruction)
         category = kind_to_category[info.kind]
         (; quantifier) = info
         @switch quantifier begin
-            @case "*"
-                arg = operands[i:end]
-                category == "Id" && (arg = SSAValue.(arg))
-                append!(arguments, arg)
-                break
             @case "?"
                 error("Unhandled '?' quantifier")
-            @case nothing
+            @case "*" || nothing
                 j, arg = next_argument(operands[i:end], info)
                 category == "Id" && (arg = SSAValue(arg))
                 push!(arguments, arg)
-                update_infos!(op_infos, i, arg, category)
+                add_extra_operands!(op_infos, i, arg, category)
                 i += j
         end
+        quantifier == "*" && push!(op_infos, last(op_infos))
     end
     Instruction(opcode, inst.type_id, inst.result_id, arguments)
 end

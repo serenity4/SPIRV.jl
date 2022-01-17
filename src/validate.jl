@@ -25,12 +25,16 @@ function validate_types(mod::Module)
     true
 end
 
+validate_khronos(mod::Module; kwargs...) = validate_khronos(PhysicalModule(mod); kwargs...)
+
+validate(pmod::PhysicalModule) = validate_khronos(pmod; flags = ["--target-env", "spv1.5"])
+
 """
 Validate a SPIR-V module using [Khronos' reference validator](https://github.com/KhronosGroup/SPIRV-Tools#validator).
 """
-function validate_khronos(mod::Module; flags = [])
+function validate_khronos(pmod::PhysicalModule; flags = [])
     input = IOBuffer()
-    write(input, mod)
+    write(input, pmod)
     seekstart(input)
     err = IOBuffer()
 
