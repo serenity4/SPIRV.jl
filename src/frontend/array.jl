@@ -5,7 +5,7 @@ mutable struct GenericVector{T,N} <: AbstractVector{T}
   data::NTuple{N,T}
 end
 GenericVector{T,N}(data::NTuple{N,T}) where {N,T} = CompositeConstruct(GenericVector{T,N}, data...)
-@noinline @generated CompositeConstruct(::Type{T}, data...) where {T<:GenericVector} = Expr(:new, T, :data)
+@noinline (@generated CompositeConstruct(::Type{T}, data...) where {T<:GenericVector} = Expr(:new, T, :data))
 GenericVector(args::Vararg{T}) where {T} = GenericVector{T,length(args)}(args)
 
 const Scalar = Union{Bool,Integer,AbstractFloat}

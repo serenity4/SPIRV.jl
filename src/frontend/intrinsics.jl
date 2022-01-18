@@ -89,9 +89,9 @@ for to in IEEEFloat_types, from in IEEEFloat_types
   if to.size ≠ from.size
     @eval @override $to(x::$from) = FConvert($to, x)
     if to.size < from.size
-      @eval @noinline FConvert(::Type{$to}, x::$from) = Base.fptrunc($to, x)
+      @eval @noinline (FConvert(::Type{$to}, x::$from) = Base.fptrunc($to, x))
     else
-      @eval @noinline FConvert(::Type{$to}, x::$from) = Base.fpext($to, x)
+      @eval @noinline (FConvert(::Type{$to}, x::$from) = Base.fpext($to, x))
     end
   end
 end
@@ -113,18 +113,18 @@ end
 
 for to in BitInteger_types
   constructor = GlobalRef(Core, Symbol(:to, nameof(to))) # toUInt16, toInt64, etc.
-  @eval @inline @override $constructor(x::BitInteger) = rem(x, $to)
+  @eval @inline @override ($constructor(x::BitInteger) = rem(x, $to))
   for from in BitInteger_types
     convert = to <: Signed ? :SConvert : :UConvert
     rem_f = to.size == from.size ? :reinterpret : convert
     if to.size ≠ from.size
-      @eval @override rem(x::$from, ::Type{$to}) = $convert($to, x)
+      @eval @override (rem(x::$from, ::Type{$to}) = $convert($to, x))
       if to.size < from.size
-        @eval @noinline $convert(::Type{$to}, x::$from) = Base.trunc_int($to, x)
+        @eval @noinline ($convert(::Type{$to}, x::$from) = Base.trunc_int($to, x))
       else # to.size > from.size
         convert = to <: Signed ? :SConvert : :UConvert
         method = to <: Signed ? :sext_int : :zext_int
-        @eval @noinline $convert(::Type{$to}, x::$from) = Base.$method($to, x)
+        @eval @noinline ($convert(::Type{$to}, x::$from) = Base.$method($to, x))
       end
     end
   end
@@ -141,7 +141,7 @@ end
 @override (<=)(x::T, y::T) where {T<:BitUnsigned} = ULessThanEqual(x, y)
 
 for (intr, core_intr) in zip((:SLessThan, :SLessThanEqual, :ULessThan, :ULessThanEqual), (:slt_int, :sle_int, :ult_int, :ule_int))
-  @eval @noinline $intr(x::BitInteger, y::BitInteger) = Base.$core_intr(x, y)
+  @eval @noinline ($intr(x::BitInteger, y::BitInteger) = Base.$core_intr(x, y))
 end
 
 ## Logical operators.
@@ -181,10 +181,10 @@ end
 @override (*)(x::T, y::T) where {T<:BitInteger} = IMul(x, y)
 
 for (intr, core_intr) in zip((:IAdd, :ISub, :IMul), (:add_int, :sub_int, :mul_int))
-  @eval @noinline $intr(x::T, y::T) where {T<:BitSigned} = Base.$core_intr(x, y)
-  @eval @noinline $intr(x::T, y::T) where {T<:BitUnsigned} = Base.$core_intr(x, y)
-  @eval @noinline $intr(x::BitUnsigned, y::I) where {I<:BitSigned} = Base.$core_intr(x, y)
-  @eval @noinline $intr(x::I, y::BitUnsigned) where {I<:BitSigned} = Base.$core_intr(x, y)
+  @eval @noinline ($intr(x::T, y::T) where {T<:BitSigned} = Base.$core_intr(x, y))
+  @eval @noinline ($intr(x::T, y::T) where {T<:BitUnsigned} = Base.$core_intr(x, y))
+  @eval @noinline ($intr(x::BitUnsigned, y::I) where {I<:BitSigned} = Base.$core_intr(x, y))
+  @eval @noinline ($intr(x::I, y::BitUnsigned) where {I<:BitSigned} = Base.$core_intr(x, y))
 end
 
 @override div(x::T, y::T) where {T<:BitUnsigned} = UDiv(x, y)
