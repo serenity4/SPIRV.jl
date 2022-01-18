@@ -44,7 +44,7 @@ end
 
 custom_print(io::IO, expr::Expr) = println(io, prettify(expr))
 
-function format()
+function format_files()
     enum_file = src_dir("generated", "enums.jl")
     enum_info_file = src_dir("generated", "enum_infos.jl")
     inst_file = src_dir("generated", "instructions.jl")
@@ -53,10 +53,10 @@ function format()
     @info "Formatting."
 
     # initial formatting
-    format_file(enum_info_file, margin=92)
-    format_file(enum_file, margin=92)
-    format_file(inst_file, margin=92)
-    format_file(extinst_file, margin=92)
+    format(enum_info_file)
+    format(enum_file)
+    format(inst_file)
+    format(extinst_file)
 
     # align blocks
     align_block(enum_file)

@@ -1,6 +1,6 @@
 using JSON3
 using MacroTools
-using JuliaFormatter: format_text, format_file
+using JuliaFormatter: format
 
 import SPIRV_Headers_jll
 
@@ -11,4 +11,4 @@ includet("grammar.jl")
 
 mkpath(src_dir("generated"))
 
-generate() && format()
+generate() && format_files()
