@@ -1,6 +1,5 @@
 Manifest.toml
 docs/build
-/.JuliaFormatter.toml
 .vscode
 tmp.jl
 /scratch
