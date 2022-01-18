@@ -2,7 +2,7 @@ using SPIRV, Test
 
 @testset "Array operations" begin
   @testset "GenericVector" begin
-    v = SVec(1.0, 3.0, 1.0)
+    v = Vec(1.0, 3.0, 1.0)
     @test v[2] == 3.0
     v[3] = 4
     @test v[3] == last(v) == 4

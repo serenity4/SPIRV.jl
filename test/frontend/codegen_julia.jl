@@ -99,15 +99,15 @@ end
   end
 
   @testset "GenericVector" begin
-    v1 = SVec(0.0, 1.0, 0.0)
-    v2 = SVec(1.0, 2.0, 1.0)
-    v3 = SVec(3.0, 1.0, -1.0)
+    v1 = Vec(0.0, 1.0, 0.0)
+    v2 = Vec(1.0, 2.0, 1.0)
+    v3 = Vec(3.0, 1.0, -1.0)
     f_vector(x, y, z) = (x + y) * (z - y)
-    @test f_vector(v1, v2, v3) == SVec(2.0, -3.0, -2.0)
+    @test f_vector(v1, v2, v3) == Vec(2.0, -3.0, -2.0)
 
     (; code, ssavaluetypes) = SPIRV.@code_typed f_vector(v1, v2, v3)
     @test operation.(code[1:(end - 1)]) == [:FAdd, :FSub, :FMul]
-    @test ssavaluetypes[1:(end - 1)] == fill(SVec{Float64,3}, 3)
+    @test ssavaluetypes[1:(end - 1)] == fill(Vec{Float64,3}, 3)
 
     function f_vector_2(x)
       x[3] = x[1] + x[2]

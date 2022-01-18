@@ -53,7 +53,7 @@ end
   struct Align4
     x::Int64
     y::Int8
-    z::SVec{Int16,2}
+    z::Vec{Int16,2}
   end
 
   ir = ir_with_offsets(Align4)

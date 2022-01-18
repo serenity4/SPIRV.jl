@@ -1,7 +1,9 @@
+abstract type StaticallySizedArray{T,N} <: AbstractVector{T} end
+
 """
 Statically sized mutable vector.
 """
-mutable struct GenericVector{T,N} <: AbstractVector{T}
+mutable struct GenericVector{T,N} <: StaticallySizedArray{T,N}
   data::NTuple{N,T}
 end
 GenericVector{T,N}(data::NTuple{N,T}) where {N,T} = CompositeConstruct(GenericVector{T,N}, data...)
@@ -23,10 +25,10 @@ const ScalarMatrix{T<:Scalar,N,M} = GenericVector{ScalarVector{T,N},M}
 const SizedArray = GenericVector
 
 
-const SVec = ScalarVector
-SVec(data::NTuple{N,T}) where {N,T<:Scalar} = GenericVector{T,N}(data)
-const SMat = ScalarMatrix
-MVec(data::NTuple{N,T}) where {N,T<:SVec} = GenericVector{T,N}(data)
+const Vec = ScalarVector
+Vec(data::NTuple{N,T}) where {N,T<:Scalar} = GenericVector{T,N}(data)
+const Mat = ScalarMatrix
+MVec(data::NTuple{N,T}) where {N,T<:Vec} = GenericVector{T,N}(data)
 
 Base.length(::Type{GenericVector{T,N}}) where {T,N} = N
 Base.eltype(::Type{<:GenericVector{T}}) where {T} = T

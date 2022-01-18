@@ -125,7 +125,7 @@ export
 
   # SPIR-V array/vector types
   GenericVector,
-  ScalarVector, SVec,
+  ScalarVector, Vec,
   ScalarMatrix, MVec,
   Pointer
 
