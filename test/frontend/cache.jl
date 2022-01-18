@@ -7,7 +7,7 @@ using SPIRV, Test
   tinfer = @elapsed @cfg interp f_straightcode(::Float32)
   tcached = @elapsed @cfg interp f_straightcode(::Float32)
   @test tinfer > tcached
-  @test tinfer/tcached > 5
+  @test tinfer / tcached > 5
   cfg_old = @cfg infer = false interp f_straightcode(::Float32)
 
   @eval function f_straightcode(x)
@@ -20,7 +20,7 @@ using SPIRV, Test
   @test !haskey(global_cache, cfg.mi)
   tinvalidated = @elapsed @cfg interp f_straightcode(::Float32)
   @test tinvalidated > tcached
-  @test tinvalidated/tcached > 5
+  @test tinvalidated / tcached > 5
   @test haskey(global_cache, cfg.mi)
   @test !haskey(global_cache, cfg_old.mi)
   # Artifically increase the current world age.

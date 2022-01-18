@@ -23,9 +23,9 @@ end
 
 function f(x::AbstractFloat)
   if x == 2 || x == 3
-      3.
+    3.0
   else
-      4.
+    4.0
   end
 end
 
@@ -43,12 +43,12 @@ using Plots, GraphRecipes
 macro plot_cfg(ex)
   quote
     cfg = CFG(@code_lowered $ex)
-    plot(cfg.graph, names=1:length(cfg.graph), nodesize=0.5)
+    plot(cfg.graph, names = 1:length(cfg.graph), nodesize = 0.5)
   end
 end
 
-plot(cfg.graph, names=1:length(cfg.graph), nodesize=0.5)
-plot(cfg2.graph, names=1:length(cfg2.graph), nodesize=0.3)
+plot(cfg.graph, names = 1:length(cfg.graph), nodesize = 0.5)
+plot(cfg2.graph, names = 1:length(cfg2.graph), nodesize = 0.3)
 0
 
 #=

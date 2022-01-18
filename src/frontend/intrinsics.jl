@@ -13,10 +13,11 @@ macro override(ex)
   esc(:(@overlay SPIRV.INTRINSICS_METHOD_TABLE @inline $ex))
 end
 
-using Base: IEEEFloat,
-            BitSigned, BitSigned_types,
-            BitUnsigned, BitUnsigned_types,
-            BitInteger, BitInteger_types
+using Base:
+  IEEEFloat,
+  BitSigned, BitSigned_types,
+  BitUnsigned, BitUnsigned_types,
+  BitInteger, BitInteger_types
 
 const IEEEFloat_types = (Float16, Float32, Float64)
 

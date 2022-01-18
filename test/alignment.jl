@@ -1,6 +1,7 @@
 using SPIRV, Test, Dictionaries
 using SPIRV: emit!, spir_type!, PointerType
-using SPIRV: StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData
+using SPIRV:
+  StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData
 
 function test_has_offset(ir, T, field, offset)
   decs = ir.typerefs[T].member_decorations[field]

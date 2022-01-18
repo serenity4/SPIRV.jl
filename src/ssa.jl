@@ -5,7 +5,7 @@ Differs from `Core.SSAValue` in that all SPIR-V constructs will
 use this `SSAValue` type to differentiate with Julia SSA values.
 """
 struct SSAValue
-    id::UInt32
+  id::UInt32
 end
 
 Base.isless(val1::SSAValue, val2::SSAValue) = isless(id(val1), id(val2))
@@ -25,13 +25,13 @@ Base.show(io::IO, val::SSAValue) = print(io, string('%', val.id))
 const SSADict{T} = Dictionary{SSAValue,T}
 
 mutable struct SSACounter
-    val::SSAValue
+  val::SSAValue
 end
 
 Base.convert(::Type{SSAValue}, counter::SSACounter) = SSAValue(counter)
 SSAValue(counter::SSACounter) = counter.val
 function next!(counter::SSACounter)
-    counter.val = SSAValue(id(counter.val) + 1)
+  counter.val = SSAValue(id(counter.val) + 1)
 end
 
 max_id(x) = id(max_ssa(x))

@@ -9,7 +9,9 @@ using AutoHashEquals
 using Accessors
 
 using CodeInfoTools
-using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, MethodInstance, InferenceResult, typeinf, InferenceState, retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView, WorldRange, OverlayMethodTable
+using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, MethodInstance, InferenceResult, typeinf, InferenceState,
+  retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView,
+  WorldRange, OverlayMethodTable
 using Base.Experimental: @overlay, @MethodTable
 
 import SPIRV_Tools_jll
@@ -58,77 +60,73 @@ include("frontend/codegen.jl")
 include("frontend/shader.jl")
 
 export
-        # parse
-        PhysicalInstruction, PhysicalModule,
-        Instruction,
+  # parse
+  PhysicalInstruction, PhysicalModule,
+  Instruction,
 
-        # disassemble
-        disassemble,
+  # disassemble
+  disassemble,
 
-        # assemble
-        assemble,
+  # assemble
+  assemble,
 
-        # SPIR-V types
-        SPIRType,
-        VoidType,
-        ScalarType, BooleanType, IntegerType, FloatType,
-        VectorType, MatrixType,
-        ImageType,
-        SamplerType, SampledImageType,
-        ArrayType,
-        OpaqueType,
-        StructType,
-        PointerType,
+  # SPIR-V types
+  SPIRType,
+  VoidType,
+  ScalarType, BooleanType, IntegerType, FloatType,
+  VectorType, MatrixType,
+  ImageType,
+  SamplerType, SampledImageType,
+  ArrayType,
+  OpaqueType,
+  StructType,
+  PointerType,
 
-        # IR
-        IR,
-        SSAValue,
-        Metadata,
-        SSADict,
-        @inst,
-        FeatureRequirements,
-        FeatureSupport, AllSupported, SupportedFeatures,
+  # IR
+  IR,
+  SSAValue,
+  Metadata,
+  SSADict,
+  @inst,
+  FeatureRequirements,
+  FeatureSupport, AllSupported, SupportedFeatures,
 
-        # CFG
-        control_flow_graph,
+  # CFG
+  control_flow_graph,
 
-        # validation
-        validate,
-        validate_shader,
+  # validation
+  validate,
+  validate_shader,
 
-        # Front-end
-        CFG,
-        @cfg,
-        is_single_entry_single_exit,
-        is_tail_structured,
-        is_single_node,
-        rem_head_recursion!,
-        compact_reducible_bbs!,
-        compact_structured_branches!,
-        merge_mutually_recursive!,
-        merge_return_blocks,
-        compact,
-        sinks,
-        sources,
+  # Front-end
+  CFG,
+  @cfg,
+  is_single_entry_single_exit,
+  is_tail_structured,
+  is_single_node,
+  rem_head_recursion!,
+  compact_reducible_bbs!,
+  compact_structured_branches!,
+  merge_mutually_recursive!,
+  merge_return_blocks,
+  compact,
+  sinks,
+  sources, replace_code!,
+  infer, verify,
+  compile,
+  make_shader,
+  ShaderInterface,
+  AlignmentStrategy, VulkanAlignment,
+  @compile,
+  invalidate_all!,
+  SPIRVInterpreter,
+  VULKAN_METHOD_TABLE, INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE,
+  DEFAULT_CI_CACHE, VULKAN_CI_CACHE,
 
-        replace_code!,
-        infer,
-
-        verify,
-        compile,
-        make_shader,
-        ShaderInterface,
-        AlignmentStrategy, VulkanAlignment,
-        @compile,
-        invalidate_all!,
-        SPIRVInterpreter,
-        VULKAN_METHOD_TABLE, INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE,
-        DEFAULT_CI_CACHE, VULKAN_CI_CACHE,
-
-        # SPIR-V array/vector types
-        GenericVector,
-        ScalarVector, SVec,
-        ScalarMatrix, MVec,
-        Pointer
+  # SPIR-V array/vector types
+  GenericVector,
+  ScalarVector, SVec,
+  ScalarMatrix, MVec,
+  Pointer
 
 end

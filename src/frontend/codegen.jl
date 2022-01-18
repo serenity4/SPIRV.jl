@@ -2,55 +2,56 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
   type = spir_type!(ir, jtype)
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => (OpCompositeConstruct, args)
-    ::Core.PhiNode => (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(cfg)), irmap) for e in jinst.edges)))
+    ::Core.PhiNode =>
+      (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(cfg)), irmap) for e in jinst.edges)))
     :($f($(args...))) => @match f begin
-        ::GlobalRef => @match getfield(f.mod, f.name) begin
-            ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$func'."))
-            &getfield => begin
-              composite = args[1]
-              field_idx = @match args[2] begin
-                node::QuoteNode => begin
-                    node.value::Symbol
-                    sym = (args[2]::QuoteNode).value::Symbol
-                    T = get_type(composite, cfg)
-                    field_idx = findfirst(==(sym), fieldnames(T))
-                    !isnothing(field_idx) || throw(CompilationError("Symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))"))
-                    field_idx
-                  end
-                idx::Integer => idx
-              end
-              (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
+      ::GlobalRef => @match getfield(f.mod, f.name) begin
+        ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$func'."))
+        &getfield => begin
+          composite = args[1]
+          field_idx = @match args[2] begin
+            node::QuoteNode => begin
+              node.value::Symbol
+              sym = (args[2]::QuoteNode).value::Symbol
+              T = get_type(composite, cfg)
+              field_idx = findfirst(==(sym), fieldnames(T))
+              !isnothing(field_idx) || throw(CompilationError("Symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))"))
+              field_idx
             end
-            ::Function => throw(CompilationError("Dynamic dispatch detected for function $func. All call sites must be statically resolved."))
+            idx::Integer => idx
           end
-        _ => throw(CompilationError("Call to unknown function $f"))
+          (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
+        end
+        ::Function => throw(CompilationError("Dynamic dispatch detected for function $func. All call sites must be statically resolved."))
       end
+      _ => throw(CompilationError("Call to unknown function $f"))
+    end
     Expr(:invoke, mi, f, args...) => begin
-        @assert isa(f, GlobalRef)
-        if f.mod == @__MODULE__
-          opcode = @when let op::OpCode = try_getopcode(f.name)
-              op
-            @when op::OpCodeGLSL = try_getopcode(f.name, :GLSL)
-              op
-            end
-          if !isnothing(opcode)
-            !isempty(args) && isa(first(args), DataType) && (args = args[2:end])
-            @switch opcode begin
-              @case ::OpCode
-                (opcode, args)
-              @case ::OpCodeGLSL
-                args = (emit_extinst!(ir, "GLSL.std.450"), opcode, args...)
-                (OpExtInst, args)
-            end
-          else
-            args, variables = peel_global_vars(args, ir)
-            (OpFunctionCall, (emit_new!(ir, mi, fdef, variables), args...))
+      @assert isa(f, GlobalRef)
+      if f.mod == @__MODULE__
+        opcode = @when let op::OpCode = try_getopcode(f.name)
+          op
+          @when op::OpCodeGLSL = try_getopcode(f.name, :GLSL)
+          op
+        end
+        if !isnothing(opcode)
+          !isempty(args) && isa(first(args), DataType) && (args = args[2:end])
+          @switch opcode begin
+            @case ::OpCode
+            (opcode, args)
+            @case ::OpCodeGLSL
+            args = (emit_extinst!(ir, "GLSL.std.450"), opcode, args...)
+            (OpExtInst, args)
           end
         else
           args, variables = peel_global_vars(args, ir)
           (OpFunctionCall, (emit_new!(ir, mi, fdef, variables), args...))
         end
+      else
+        args, variables = peel_global_vars(args, ir)
+        (OpFunctionCall, (emit_new!(ir, mi, fdef, variables), args...))
       end
+    end
     _ => throw(CompilationError("Expected call or invoke expression, got $(repr(jinst))"))
   end
 
@@ -89,9 +90,9 @@ end
 
 function get_type(arg, cfg::CFG)
   @match arg begin
-      ::Core.SSAValue => cfg.code.ssavaluetypes[arg.id]
-      ::Core.Argument => cfg.mi.specTypes.types[arg.n]
-      _ => throw(CompilationError("Cannot extract type from argument $arg"))
+    ::Core.SSAValue => cfg.code.ssavaluetypes[arg.id]
+    ::Core.Argument => cfg.mi.specTypes.types[arg.n]
+    _ => throw(CompilationError("Cannot extract type from argument $arg"))
   end
 end
 
@@ -129,9 +130,9 @@ function peel_global_vars(args, ir::IR)
   for (i, arg) in enumerate(args)
     @switch storage_class(arg) begin
       @case ::Nothing || &StorageClassFunction
-        push!(fargs, arg)
+      push!(fargs, arg)
       @case ::StorageClass
-        insert!(variables, i, ir.global_vars[arg::SSAValue])
+      insert!(variables, i, ir.global_vars[arg::SSAValue])
     end
   end
   fargs, variables
@@ -162,11 +163,11 @@ end
 function load_if_variable!(blk::Block, ir::IR, irmap::IRMapping, arg)
   @trymatch arg begin
     ::Core.SSAValue => @trymatch get(irmap.variables, arg, nothing) begin
-        var::Variable => load_variable!(blk, ir, irmap, var, irmap.ssavals[arg])
-      end
+      var::Variable => load_variable!(blk, ir, irmap, var, irmap.ssavals[arg])
+    end
     ::Core.Argument => @trymatch get(ir.global_vars, irmap.args[arg], nothing) begin
-        var::Variable => load_variable!(blk, ir, irmap, var, irmap.args[arg])
-      end
+      var::Variable => load_variable!(blk, ir, irmap, var, irmap.args[arg])
+    end
   end
 end
 

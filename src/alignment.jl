@@ -35,9 +35,14 @@ Base.size(T::ScalarType) = scalar_alignment(T)
 function (align::VulkanAlignment)(T::DataType, t::SPIRType, current_offset, member_decs::DecorationData, parent_decs::DecorationData, storage_classes)
   @match t begin
     ::VectorType => scalar_alignment(t)
-    if align.scalar_block_layout && !isempty(intersect(storage_classes, [StorageClassUniform, StorageClassStorageBuffer,
-      StorageClassPhysicalStorageBuffer, StorageClassPushConstant])) end => scalar_alignment(t)
-    if !align.uniform_buffer_standard_layout && StorageClassUniform in storage_classes && haskey(parent_decs, DecorationBlock) end => extended_alignment(t)
+    if align.scalar_block_layout &&
+       !isempty(
+      intersect(storage_classes, [StorageClassUniform, StorageClassStorageBuffer,
+        StorageClassPhysicalStorageBuffer, StorageClassPushConstant]),
+    )
+    end => scalar_alignment(t)
+    if !align.uniform_buffer_standard_layout && StorageClassUniform in storage_classes && haskey(parent_decs, DecorationBlock)
+    end => extended_alignment(t)
     _ => base_alignment(t)
   end
 end
