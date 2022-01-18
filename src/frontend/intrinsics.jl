@@ -45,8 +45,6 @@ const IEEEFloat_types = (Float16, Float32, Float64)
 @override rem(x::T, y::T) where {T<:IEEEFloat}  = FRem(x, y)
 @noinline FRem(x::T, y::T) where {T<:IEEEFloat} = Base.rem_float(x, y)
 @override mod(x::T, y::T) where {T<:IEEEFloat}  = FMod(x, y)
-#TODO: Find a better way of mixing overriden CPU implementations for constant propagation.
-# Currently, CPU definitions are copied here, for lack of a way to invoke them.
 @noinline function FMod(x::T, y::T) where {T<:IEEEFloat}
   r = rem(x, y)
   if r == 0

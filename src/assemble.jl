@@ -142,7 +142,6 @@ function Base.read(::Type{Module}, io::IO)
                                 if isdigit(first(op))
                                     parse(Int, op)
                                 elseif try_getopcode(op, :GLSL) ≠ nothing
-                                    #TODO: Support arbitrary instruction sets, not just GLSL.
                                     try_getopcode(op, :GLSL)::OpCodeGLSL
                                 end
                             end
