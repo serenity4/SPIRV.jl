@@ -1,3 +1,5 @@
+using SPIRV, Test
+
 resource(filename) = joinpath(@__DIR__, "resources", filename)
 
 modules = [

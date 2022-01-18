@@ -1,4 +1,4 @@
-using SPIRV, Test
+using SPIRV, Test, Graphs
 
 @testset "Intermediate Representation" begin
   @testset "Initialization & mode-setting" begin

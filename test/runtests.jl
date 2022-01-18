@@ -1,6 +1,4 @@
-using SPIRV
-using Graphs
-using Test
+using SPIRV, Test
 
 function test_module(mod::SPIRV.Module)
   @test validate(mod)
