@@ -1,6 +1,22 @@
 using SPIRV, Test
 
 @testset "Array operations" begin
+  @testset "Pointers" begin
+    ptr = Pointer(Ref(5))
+    @test ptr[] == 5
+    ptr = Pointer(Ref((1, 2, 3)))
+    @test ptr[2] == 2
+
+    arr = [1, 2]
+    GC.@preserve arr begin
+      p = pointer(arr)
+      ptr = Pointer{Vector{Int64}}(convert(UInt, p))
+      @test eltype(ptr) == Vector{Int64}
+      @test ptr[1] == 1
+      @test ptr[2] == 2
+    end
+  end
+
   @testset "Vec" begin
     v = Vec(1.0, 3.0, 1.0, 2.0)
     @test v[2] === 3.0
@@ -11,6 +27,8 @@ using SPIRV, Test
     @test v.y === v.g === 3.0
     @test v.z === v.b === 4.0
     @test v.w === v.a === 2.0
+    v.x = 10
+    @test v.x === 10.0
     v2 = similar(v)
     @test all(iszero, v2)
     @test eltype(v2) == eltype(v)

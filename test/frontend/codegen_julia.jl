@@ -98,7 +98,7 @@ end
     end
   end
 
-  @testset "GenericVector" begin
+  @testset "Vec" begin
     v1 = Vec(0.0, 1.0, 0.0)
     v2 = Vec(1.0, 2.0, 1.0)
     v3 = Vec(3.0, 1.0, -1.0)
@@ -107,7 +107,7 @@ end
 
     (; code, ssavaluetypes) = SPIRV.@code_typed f_vector(v1, v2, v3)
     @test operation.(code[1:(end - 1)]) == [:FAdd, :FSub, :FMul]
-    @test ssavaluetypes[1:(end - 1)] == fill(Vec{Float64,3}, 3)
+    @test ssavaluetypes[1:(end - 1)] == fill(Vec{3, Float64}, 3)
 
     function f_vector_2(x)
       x[3] = x[1] + x[2]
@@ -115,14 +115,14 @@ end
 
     (; code, ssavaluetypes) = SPIRV.@code_typed f_vector_2(v1)
     @test operation.(code[1:(end - 1)]) ==
-          [:ISub, :UConvert, :AccessChain, :Load, :ISub, :UConvert, :AccessChain, :Load, :FAdd, :ISub, :UConvert, :AccessChain, :Store]
+          [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
     @test ssavaluetypes[1:(end - 1)] ==
-          [repeat([Int, UInt32, SPIRV.Pointer{Float64}, Float64], 2); Float64; Int; UInt32; SPIRV.Pointer{Float64}; Nothing]
+          [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
 
     (; code, ssavaluetypes) = SPIRV.@code_typed f_vector_2([1.0, 2.0, 3.0])
     @test operation.(code[1:(end - 1)]) ==
-          [:ISub, :UConvert, :AccessChain, :Load, :ISub, :UConvert, :AccessChain, :Load, :FAdd, :ISub, :UConvert, :AccessChain, :Store]
+          [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
     @test ssavaluetypes[1:(end - 1)] ==
-          [repeat([Int, UInt32, SPIRV.Pointer{Float64}, Float64], 2); Float64; Int; UInt32; SPIRV.Pointer{Float64}; Nothing]
+          [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
   end
 end

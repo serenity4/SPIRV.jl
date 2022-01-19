@@ -22,7 +22,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
           end
           (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
         end
-        ::Function => throw(CompilationError("Dynamic dispatch detected for function $func. All call sites must be statically resolved."))
+        ::Function => throw(CompilationError("Dynamic dispatch detected for function $f. All call sites must be statically resolved."))
       end
       _ => throw(CompilationError("Call to unknown function $f"))
     end

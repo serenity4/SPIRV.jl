@@ -20,7 +20,8 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     out_color.a = 1.0f0
   end
 
-  cfg = @cfg vert_shader!(::Vec{Float32,4})
+  cfg = @cfg vert_shader!(::Vec{4,Float32})
+  SPIRV.@code_typed vert_shader!(::Vec{4,Float32})
   ir = compile(cfg, AllSupported())
   @test validate(ir)
   ir = make_shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput]))
@@ -70,7 +71,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     out_color[] = Vec(0.1f0, 0.1f0, 0.1f0, 1.0f0)
   end
 
-  cfg = @cfg vert_shader_2!(::Vec{Float32,4})
+  cfg = @cfg vert_shader_2!(::Vec{4,Float32})
   ir = compile(cfg, AllSupported())
   @test validate(ir)
   interface =
@@ -88,7 +89,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     out_pos.y = point.y
   end
 
-  cfg = @cfg vert_shader_3!(::Vec{Float32,4}, ::Point)
+  cfg = @cfg vert_shader_3!(::Vec{4,Float32}, ::Point)
   ir = compile(cfg, AllSupported())
   @test validate(ir)
   interface = ShaderInterface(SPIRV.ExecutionModelVertex,
@@ -118,8 +119,8 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     position.x = index
   end
 
-  cfg = @cfg vert_shader_4!(::Vec{Float32,4}, ::UInt32, ::Vec{Float32,4})
-  SPIRV.@code_typed vert_shader_4!(::Vec{Float32,4}, ::UInt32, ::Vec{Float32,4})
+  cfg = @cfg vert_shader_4!(::Vec{4,Float32}, ::UInt32, ::Vec{4,Float32})
+  SPIRV.@code_typed vert_shader_4!(::Vec{4,Float32}, ::UInt32, ::Vec{4,Float32})
   ir = compile(cfg, AllSupported())
   @test validate(ir)
   interface = ShaderInterface(SPIRV.ExecutionModelVertex,
@@ -140,7 +141,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   end
 
   struct VertexData
-    pos::Vec{Float32,2}
+    pos::Vec{2,Float32}
     color::NTuple{3,Float32}
   end
 
@@ -152,13 +153,13 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   end
 
   # Non-Vulkan interpreter
-  cfg = @cfg interp_novulkan vert_shader_5!(::Vec{Float32,4}, ::Vec{Float32,4}, ::UInt32, ::DrawData)
+  cfg = @cfg interp_novulkan vert_shader_5!(::Vec{4,Float32}, ::Vec{4,Float32}, ::UInt32, ::DrawData)
   ir = compile(cfg, AllSupported())
   # Access to PhysicalStorageBuffer must use Aligned.
   @test_throws SPIRV.ValidationError validate(ir)
 
   # Default Vulkan interpreter
-  cfg = @cfg vert_shader_5!(::Vec{Float32,4}, ::Vec{Float32,4}, ::UInt32, ::DrawData)
+  cfg = @cfg vert_shader_5!(::Vec{4,Float32}, ::Vec{4,Float32}, ::UInt32, ::DrawData)
   ir = compile(cfg, AllSupported())
   # Access to PhysicalStorageBuffer must use Aligned.
   @test_throws SPIRV.ValidationError validate(ir)
@@ -192,7 +193,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     out_color[] = frag_color
   end
 
-  cfg = @cfg frag_shader!(::Vec{Float32,4}, ::Vec{Float32,4})
+  cfg = @cfg frag_shader!(::Vec{4,Float32}, ::Vec{4,Float32})
   interface = ShaderInterface(
     execution_model = SPIRV.ExecutionModelFragment,
     storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput],

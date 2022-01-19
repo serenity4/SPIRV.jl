@@ -19,7 +19,7 @@ Base.getindex(v::Vec, index::UInt32, other_index::UInt32, other_indices::UInt32.
 
 function Base.getproperty(v::Vec, prop::Symbol)
   i = to_index(prop)
-  isnothing(i) ? getfield(v, prop) : v[i]
+  isnothing(i) ? getfield(v, prop) : CompositeExtract(v, i)
 end
 
 function to_index(prop::Symbol)

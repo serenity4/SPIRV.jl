@@ -122,7 +122,7 @@ using SPIRV: OpFMul, OpFAdd
   @test validate(ir)
 
   function unicolor(position)
-    Vec((position.x, position.y, 1.0f0, 1.0f0))
+    Vec(position.x, position.y, 1.0f0, 1.0f0)
   end
 
   ir = @compile unicolor(Vec(1.0f0, 2.0f0, 3.0f0, 4.0f0))

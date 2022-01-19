@@ -288,11 +288,9 @@ function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true, 
       _ => StructType(spir_type!.(ir, t.parameters; record_jtype))
     end
     ::Type{<:Pointer} => PointerType(StorageClassPhysicalStorageBuffer, spir_type!(ir, eltype(t); record_jtype))
-    ::Type{<:GenericVector} => @match (et, n) = (eltype(t), length(t)) begin
-      (::Type{<:Scalar}, GuardBy(≤(4))) => VectorType(spir_type!(ir, et; record_jtype), n)
-      (::Type{<:GenericVector{<:Scalar}}, GuardBy(≤(4))) => MatrixType(spir_type!(ir, eltype(et); record_jtype), n)
-      _ => ArrayType(spir_type!(ir, et; record_jtype), Constant(UInt32(n)))
-    end
+    ::Type{<:Vec} => VectorType(spir_type!(ir, eltype(t); record_jtype), length(t))
+    ::Type{<:Mat} => MatrixType(spir_type!(ir, Vec{nrows(t),eltype(t)}; record_jtype), ncols(t))
+    ::Type{<:Arr} => ArrayType(spir_type!(ir, eltype(t); record_jtype), Constant(UInt32(length(t))))
     GuardBy(isstructtype) || ::Type{<:NamedTuple} =>
       StructType(spir_type!.(ir, t.types; record_jtype), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
     _ => error("Type $t does not have a corresponding SPIR-V type.")
