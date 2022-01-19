@@ -47,6 +47,7 @@ include("requirements.jl")
 include("frontend/ci_cache.jl")
 include("frontend/method_table.jl")
 include("frontend/intrinsics.jl")
+include("frontend/pointer.jl")
 include("frontend/array.jl")
 include("frontend/intrinsics_glsl.jl")
 include("frontend/vulkan.jl")
@@ -124,9 +125,8 @@ export
   DEFAULT_CI_CACHE, VULKAN_CI_CACHE,
 
   # SPIR-V array/vector types
-  GenericVector,
-  ScalarVector, Vec,
-  ScalarMatrix, MVec,
+  Vec,
+  Mat, @mat,
   Pointer
 
 end
