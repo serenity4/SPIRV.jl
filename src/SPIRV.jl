@@ -47,8 +47,11 @@ include("requirements.jl")
 include("frontend/ci_cache.jl")
 include("frontend/method_table.jl")
 include("frontend/intrinsics.jl")
-include("frontend/pointer.jl")
-include("frontend/array.jl")
+include("frontend/types/abstractarray.jl")
+include("frontend/types/pointer.jl")
+include("frontend/types/vector.jl")
+include("frontend/types/matrix.jl")
+include("frontend/types/array.jl")
 include("frontend/intrinsics_glsl.jl")
 include("frontend/vulkan.jl")
 include("frontend/interpreter.jl")
@@ -127,6 +130,7 @@ export
   # SPIR-V array/vector types
   Vec,
   Mat, @mat,
+  Arr,
   Pointer
 
 end
