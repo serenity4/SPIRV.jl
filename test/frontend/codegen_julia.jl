@@ -9,6 +9,10 @@ function operation(ex::Expr; mod = SPIRV)
   end
 end
 
+function store(x)
+  x[3] = x[1] + x[2]
+end
+
 @testset "Codegen - Julia" begin
   @testset "Intrinsics" begin
     @testset "Replacement of core intrinsics with SPIR-V intrinsics" begin
@@ -109,17 +113,24 @@ end
     @test operation.(code[1:(end - 1)]) == [:FAdd, :FSub, :FMul]
     @test ssavaluetypes[1:(end - 1)] == fill(Vec{3, Float64}, 3)
 
-    function f_vector_2(x)
-      x[3] = x[1] + x[2]
-    end
+    (; code, ssavaluetypes) = SPIRV.@code_typed store(v1)
+    @test operation.(code[1:(end - 1)]) ==
+          [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
+    @test ssavaluetypes[1:(end - 1)] ==
+          [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
+  end
 
-    (; code, ssavaluetypes) = SPIRV.@code_typed f_vector_2(v1)
+  @testset "Arrays" begin
+    arr = Arr(0.0, 1.0, 0.0)
+
+    (; code, ssavaluetypes) = SPIRV.@code_typed store(arr)
     @test operation.(code[1:(end - 1)]) ==
           [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
     @test ssavaluetypes[1:(end - 1)] ==
           [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
 
-    (; code, ssavaluetypes) = SPIRV.@code_typed f_vector_2([1.0, 2.0, 3.0])
+    arr = [1.0, 2.0, 3.0]
+    (; code, ssavaluetypes) = SPIRV.@code_typed store(arr)
     @test operation.(code[1:(end - 1)]) ==
           [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
     @test ssavaluetypes[1:(end - 1)] ==
