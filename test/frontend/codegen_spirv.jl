@@ -133,7 +133,9 @@ using SPIRV: OpFMul, OpFAdd
   end
 
   ir = @compile store_ref(Ref(0.0f0), 3.0f0)
-  @test !iserror(validate(ir))
+  # Loading from function pointer arguments is illegal in logical addressing mode.
+  @test contains(unwrap_error(validate(ir)).msg, "is not a logical pointer")
+  @test iserror(validate(ir))
 
   struct StructWithBool
     x::Bool

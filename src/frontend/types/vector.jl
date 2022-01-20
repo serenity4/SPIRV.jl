@@ -4,7 +4,7 @@ end
 
 Vec(components::Scalar...) = Vec(promote(components...)...)
 Vec(components::T...) where {T<:Scalar} = Vec{length(components),T}(components...)
-Vec{N,T}(components::T...) where {N, T} = CompositeConstruct(Vec{N,T}, components...)
+Vec{N,T}(components::T...) where {N,T} = CompositeConstruct(Vec{N,T}, components...)
 @noinline (@generated CompositeConstruct(::Type{Vec{N,T}}, data::T...) where {N,T} = Expr(:new, Vec{N,T}, :data))
 
 Base.length(::Type{<:Vec{N}}) where {N} = N
@@ -12,7 +12,8 @@ Base.size(T::Type{<:Vec}) = (length(T),)
 Base.zero(T::Type{<:Vec}) = T(ntuple(Returns(zero(eltype(T))), length(T)))
 Base.one(T::Type{<:Vec}) = T(ntuple(Returns(one(eltype(T))), length(T)))
 Base.promote_rule(::Type{Vec{N,T1}}, ::Type{Vec{N,T2}}) where {N,T1,T2} = Vec{N,promote_type(T1, T2)}
-Base.convert(::Type{Vec{N,T1}}, v::Vec{N,T2}) where {N,T1,T2} = Vec{N,T1}(convert(NTuple{N,T1}, v.data))
+Base.convert(::Type{Vec{N,T1}}, v::Vec{N,T2}) where {N,T1,T2} = Vec{N,T1}(ntuple(i -> convert(T1, v[i]), N)...)
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T} = v
 Base.getindex(v::Vec, index::UInt32, other_index::UInt32, other_indices::UInt32...) = v[index]
 
 @noinline CompositeExtract(v::Vec, index::UInt32) = v.data[index + 1]

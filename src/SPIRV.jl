@@ -10,7 +10,7 @@ using Accessors
 using ResultTypes: Result
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
-using CodeInfoTools
+using CodeInfoTools: Builder
 using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, MethodInstance, InferenceResult, typeinf, InferenceState,
   retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView,
   WorldRange, OverlayMethodTable

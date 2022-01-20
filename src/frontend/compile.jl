@@ -228,7 +228,7 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
           ::Nothing => @inst OpReturn()
           val => begin
             args = Any[val]
-            load_variables!(args, blk, ir, irmap, OpReturnValue)
+            load_variables!(args, blk, ir, irmap, fdef, OpReturnValue)
             remap_args!(args, ir, irmap, OpReturnValue)
             @inst OpReturnValue(only(args))
           end

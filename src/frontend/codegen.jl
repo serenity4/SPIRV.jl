@@ -75,7 +75,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
     end
   end
 
-  load_variables!(args, blk, ir, irmap, opcode)
+  load_variables!(args, blk, ir, irmap, fdef, opcode)
   remap_args!(args, ir, irmap, opcode)
 
   if opcode == OpStore
@@ -96,8 +96,9 @@ function get_type(arg, cfg::CFG)
   end
 end
 
-function load_variable!(blk::Block, ir::IR, irmap::IRMapping, var, ssaval)
-  load = @inst next!(ir.ssacounter) = OpLoad(ssaval)::ir.types[var.type.type]
+load_variable!(blk::Block, ir::IR, irmap::IRMapping, var::Variable, ssaval) = load_variable!(blk, ir, irmap, var.type, ssaval)
+function load_variable!(blk::Block, ir::IR, irmap::IRMapping, type::PointerType, ssaval)
+  load = @inst next!(ir.ssacounter) = OpLoad(ssaval)::ir.types[type.type]
   push!(blk, irmap, load)
   load.result_id
 end
@@ -106,7 +107,7 @@ function storage_class(arg, ir::IR, irmap::IRMapping, fdef::FunctionDefinition)
   var_or_type = @match arg begin
     ::Core.SSAValue => get(irmap.variables, arg, nothing)
     ::Core.Argument => begin
-      id = get(irmap.args, arg, nothing)
+      id = irmap.args[arg]
       lvar_idx = findfirst(==(id), fdef.args)
       if !isnothing(lvar_idx)
         fdef.type.argtypes[lvar_idx]
@@ -149,25 +150,34 @@ function remap_args!(args, ir::IR, irmap::IRMapping, opcode)
   args
 end
 
-function load_variables!(args, blk::Block, ir::IR, irmap::IRMapping, opcode)
+function load_variables!(args, blk::Block, ir::IR, irmap::IRMapping, fdef, opcode)
   for (i, arg) in enumerate(args)
     # Don't load pointers in pointer operations.
     if i == 1 && opcode in (OpStore, OpAccessChain)
       continue
     end
-    loaded_arg = load_if_variable!(blk, ir, irmap, arg)
+    loaded_arg = load_if_variable!(blk, ir, irmap, fdef, arg)
     !isnothing(loaded_arg) && (args[i] = loaded_arg)
   end
 end
 
-function load_if_variable!(blk::Block, ir::IR, irmap::IRMapping, arg)
+function load_if_variable!(blk::Block, ir::IR, irmap::IRMapping, fdef::FunctionDefinition, arg)
   @trymatch arg begin
     ::Core.SSAValue => @trymatch get(irmap.variables, arg, nothing) begin
-      var::Variable => load_variable!(blk, ir, irmap, var, irmap.ssavals[arg])
-    end
-    ::Core.Argument => @trymatch get(ir.global_vars, irmap.args[arg], nothing) begin
-      var::Variable => load_variable!(blk, ir, irmap, var, irmap.args[arg])
-    end
+        var::Variable => load_variable!(blk, ir, irmap, var, irmap.ssavals[arg])
+      end
+    ::Core.Argument => begin
+        id = irmap.args[arg]
+        var = get(ir.global_vars, id, nothing)
+        !isnothing(var) && return load_variable!(blk, ir, irmap, var, id)
+        index = findfirst(==(id), fdef.args)
+        if !isnothing(index)
+          type = fdef.type.argtypes[index]
+          if isa(type, PointerType)
+            load_variable!(blk, ir, irmap, type, id)
+          end
+        end
+      end
   end
 end
 

@@ -13,7 +13,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
   ],
 )
 
-interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE])
+interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE]);
 
 @testset "Shader interface" begin
   function vert_shader!(out_color)
@@ -26,10 +26,6 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   @test !iserror(validate(ir))
   ir = make_shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput]))
   mod = SPIRV.Module(ir)
-  #FIXME: The conversion of operands from strings to concrete values
-  # requires getting operand infos, which themselves rely
-  # on arguments to determine if there are extra parameters.
-  # The error is currently triggered on OpDecorate instructions.
   @test mod == parse(
     SPIRV.Module,
     """
@@ -38,7 +34,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   OpExtension("SPV_KHR_vulkan_memory_model")
   OpMemoryModel(Logical, Vulkan)
   OpEntryPoint(Vertex, %18, "main", %5)
-  OpName(%7, "vert_shader!_Tuple{GenericVector{Float32,4}}")
+  OpName(%7, "vert_shader!_Tuple{Vec{4,Float32}}")
   OpName(%5, "out_color")
 %2 = OpTypeFloat(0x00000020)
 %3 = OpTypeVector(%2, 0x00000004)
