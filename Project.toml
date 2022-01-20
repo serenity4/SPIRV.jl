@@ -12,6 +12,7 @@ Dictionaries = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+ResultTypes = "08a2b407-ddc3-586a-afd6-c784ad1fffe2"
 SPIRV_Tools_jll = "6ac6d60f-d740-5983-97d7-a4482c0689f4"
 
 [compat]

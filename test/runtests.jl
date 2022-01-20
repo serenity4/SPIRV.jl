@@ -1,12 +1,12 @@
 using SPIRV, Test
 
 function test_module(mod::SPIRV.Module)
-  @test validate(mod)
+  @test !iserror(validate(mod))
   ir = IR(mod)
-  @test validate(ir)
+  @test !iserror(validate(ir))
   @test SPIRV.Module(ir) ≈ mod
   pmod = PhysicalModule(mod)
-  @test validate(pmod)
+  @test !iserror(validate(pmod))
   io = IOBuffer()
   write(io, pmod)
   seekstart(io)

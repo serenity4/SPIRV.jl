@@ -1,4 +1,4 @@
-using SPIRV, Test
+using SPIRV, Test, Graphs
 
 @testset "DeltaGraph" begin
   @testset "Construction" begin

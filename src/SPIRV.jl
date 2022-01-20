@@ -7,6 +7,8 @@ using Reexport
 using Dictionaries
 using AutoHashEquals
 using Accessors
+using ResultTypes: Result
+@reexport using ResultTypes: iserror, unwrap, unwrap_error
 
 using CodeInfoTools
 using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, MethodInstance, InferenceResult, typeinf, InferenceState,

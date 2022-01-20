@@ -33,7 +33,7 @@ using SPIRV: OpFMul, OpFAdd
       OpFunctionEnd()
 """,
   )
-  validate(ir)
+  @test !iserror(validate(ir))
 
   function my_clamp(x, lo, hi)
     x_lo = ifelse(x < lo, lo, x)
@@ -69,7 +69,7 @@ using SPIRV: OpFMul, OpFAdd
       OpFunctionEnd()
   """,
   )
-  @test validate(ir)
+  @test !iserror(validate(ir))
 
   ir = @compile f_extinst(3.0f0)
   mod = SPIRV.Module(ir)
@@ -99,11 +99,11 @@ using SPIRV: OpFMul, OpFAdd
       OpFunctionEnd()
   """,
   )
-  @test validate(ir)
+  @test !iserror(validate(ir))
 
   f_branch(x) = x > 0 ? x + 1 : x - 1
   ir = @compile f_branch(1.0f0)
-  @test validate(ir)
+  @test !iserror(validate(ir))
 
   function f_branches(x)
     y = clamp(x, 0, 1)
@@ -119,21 +119,21 @@ using SPIRV: OpFMul, OpFAdd
   end
 
   ir = @compile f_branches(4.0f0)
-  @test validate(ir)
+  @test !iserror(validate(ir))
 
   function unicolor(position)
     Vec(position.x, position.y, 1.0f0, 1.0f0)
   end
 
   ir = @compile unicolor(Vec(1.0f0, 2.0f0, 3.0f0, 4.0f0))
-  @test validate(ir)
+  @test !iserror(validate(ir))
 
   function store_ref(ref, x)
     ref[] += x
   end
 
   ir = @compile store_ref(Ref(0.0f0), 3.0f0)
-  @test validate(ir)
+  @test !iserror(validate(ir))
 
   struct StructWithBool
     x::Bool
@@ -141,5 +141,5 @@ using SPIRV: OpFMul, OpFAdd
   end
 
   ir = @compile StructWithBool(::Bool, ::Int32)
-  @test validate(ir)
+  @test !iserror(validate(ir))
 end

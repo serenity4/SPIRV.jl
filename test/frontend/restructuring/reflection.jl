@@ -1,4 +1,4 @@
-using SPIRV, Test
+using SPIRV, Test, Graphs
 
 function f(x, sampler)
   intensity = sampler[x] * 2
