@@ -121,6 +121,7 @@ function Base.read(::Type{Module}, io::IO)
       end
       m = match(r"([a-zA-Z\d]+)\((.*)\)$", ex)::RegexMatch
       ex = replace(join(m, " "), ", " => " ")
+      ex = replace(ex, " => " => " ")
     end
     opcode, rest = match(r"([a-zA-Z\d]+)\(?\s*(.*|$)", ex)
     opcode = getproperty(@__MODULE__, Symbol(opcode))::OpCode
@@ -131,6 +132,7 @@ function Base.read(::Type{Module}, io::IO)
       # Therefore they need to be switched.
       op_infos[1], op_infos[2] = op_infos[2], op_infos[1]
     end
+    pair_info = nothing => 0
     for (i, (op, op_info)) in enumerate(zip(operands, op_infos))
       (; kind) = op_info
       category = kind_to_category[kind]
@@ -155,7 +157,18 @@ function Base.read(::Type{Module}, io::IO)
             &LiteralContextDependentNumber => contains(op, '.') ? reinterpret(UInt32, parse(Float32, op)) : parse(UInt32, op)
             &LiteralString => String(strip(op, '"'))
           end
-          :Composite => error("Composites are not supported yet.")
+          :Composite => begin
+              if first(pair_info) ≠ kind
+                pair_info = kind => 1
+              else
+                pair_info = kind => last(pair_info) + 1
+              end
+              @match kind begin
+                &PairLiteralIntegerIdRef => last(pair_info) % 2 == 0 ? parse(UInt32, op) : parse(SSAValue, op)
+                &PairIdRefLiteralInteger => last(pair_info) % 2 == 1 ? parse(UInt32, op) : parse(SSAValue, op)
+                &PairIdRefIdRef => parse(SSAValue, op)
+              end
+          end
           _ => getproperty(@__MODULE__, Symbol(name, op))
         end
         push!(arguments, arg)

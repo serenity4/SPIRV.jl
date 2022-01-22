@@ -62,7 +62,7 @@ end
 function validate(ir::IR)
   if isempty(ir.entry_points)
     # Add the Linkage capability to work around the requirement of having at least one entry point.
-    ir = @set ir.capabilities = union!(ir.capabilities, [CapabilityLinkage])
+    ir = @set ir.capabilities = union(ir.capabilities, [CapabilityLinkage])
   end
   validate(Module(ir))
 end

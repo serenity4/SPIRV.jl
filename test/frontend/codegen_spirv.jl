@@ -4,8 +4,8 @@ using SPIRV: OpFMul, OpFAdd
 @testset "SPIR-V code generation" begin
   @testset "Straight code functions" begin
     ir = @compile f_straightcode(3.0f0)
-    mod = SPIRV.Module(ir)
-    @test mod ≈ parse(
+    @test !iserror(validate(ir))
+    @test ir ≈ parse(
       SPIRV.Module,
       """
         OpCapability(VulkanMemoryModel)
@@ -27,11 +27,10 @@ using SPIRV: OpFMul, OpFAdd
         OpFunctionEnd()
   """,
     )
-    @test !iserror(validate(ir))
 
     ir = @compile SPIRVInterpreter([INTRINSICS_METHOD_TABLE]) clamp(1.2, 0.0, 0.7)
-    mod = SPIRV.Module(ir)
-    @test mod ≈ parse(
+    @test !iserror(validate(ir))
+    @test ir ≈ parse(
       SPIRV.Module,
       """
         OpCapability(VulkanMemoryModel)
@@ -54,11 +53,11 @@ using SPIRV: OpFMul, OpFAdd
         OpFunctionEnd()
     """,
     )
-    @test !iserror(validate(ir))
   end
 
   @testset "Intrinsics" begin
     ir = @compile clamp(1.2, 0.0, 0.7)
+    @test !iserror(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
       """
@@ -81,8 +80,8 @@ using SPIRV: OpFMul, OpFAdd
     )
 
     ir = @compile f_extinst(3.0f0)
-    mod = SPIRV.Module(ir)
-    @test mod ≈ parse(
+    @test !iserror(validate(ir))
+    @test ir ≈ parse(
       SPIRV.Module,
       """
         OpCapability(VulkanMemoryModel)
@@ -106,30 +105,96 @@ using SPIRV: OpFMul, OpFAdd
         OpFunctionEnd()
     """,
     )
-    @test !iserror(validate(ir))
   end
 
   @testset "Control flow" begin
     @testset "Branches" begin
-      f_branch(x) = x > 0 ? x + 1 : x - 1
+      f_branch(x) = x > 0f0 ? x + 1f0 : x - 1f0
       ir = @compile f_branch(1.0f0)
       @test !iserror(validate(ir))
 
+      @test ir ≈ parse(
+        SPIRV.Module,
+        """
+        OpCapability(VulkanMemoryModel)
+        OpExtension("SPV_KHR_vulkan_memory_model")
+        OpMemoryModel(Logical, Vulkan)
+   %2 = OpTypeFloat(0x00000020)
+   %3 = OpTypeFunction(%2, %2)
+   %9 = OpConstant(0x00000000)::%2
+  %11 = OpTypeBool()
+  %13 = OpConstant(0x3f800000)::%2
+   %4 = OpFunction(None, %3)::%2
+   %5 = OpFunctionParameter()::%2
+   %6 = OpLabel()
+  %12 = OpFOrdLessThan(%9, %5)::%11
+        OpBranchConditional(%12, %8, %7)
+   %7 = OpLabel()
+  %14 = OpFSub(%5, %13)::%2
+        OpReturnValue(%14)
+   %8 = OpLabel()
+  %15 = OpFAdd(%5, %13)::%2
+        OpReturnValue(%15)
+        OpFunctionEnd()
+        """
+        )
       function f_branches(x)
-        y = clamp(x, 0, 1)
+        y = clamp(x, 0f0, 1f0)
         if iszero(y)
           z = x^2
-          z > 1 && return z
+          z > 1f0 && return z
           x += z
         else
-          x -= 1
+          x -= 1f0
         end
-        x < 0 && return y
+        x < 0f0 && return y
         x + y
       end
 
       ir = @compile f_branches(4.0f0)
       @test !iserror(validate(ir))
+      @test ir ≈ parse(
+        SPIRV.Module,
+        """
+        OpCapability(VulkanMemoryModel)
+        OpExtension("SPV_KHR_vulkan_memory_model")
+  %14 = OpExtInstImport("GLSL.std.450")
+        OpMemoryModel(Logical, Vulkan)
+   %2 = OpTypeFloat(0x00000020)
+   %3 = OpTypeFunction(%2, %2)
+  %15 = OpConstant(0x00000000)::%2
+  %16 = OpConstant(0x3f800000)::%2
+  %19 = OpTypeBool()
+   %4 = OpFunction(None, %3)::%2
+   %5 = OpFunctionParameter()::%2
+   %6 = OpLabel()
+  %17 = OpExtInst(%14, FClamp, %5, %15, %16)::%2
+  %20 = OpFOrdEqual(%17, %15)::%19
+        OpBranchConditional(%20, %11, %7)
+   %7 = OpLabel()
+  %21 = OpFSub(%5, %16)::%2
+        OpBranch(%8)
+   %8 = OpLabel()
+  %22 = OpPhi(%27 => %12, %21 => %7)::%2
+  %23 = OpFOrdLessThan(%22, %15)::%19
+        OpBranchConditional(%23, %10, %9)
+   %9 = OpLabel()
+  %24 = OpFAdd(%22, %17)::%2
+        OpReturnValue(%24)
+  %10 = OpLabel()
+        OpReturnValue(%17)
+  %11 = OpLabel()
+  %25 = OpFMul(%5, %5)::%2
+  %26 = OpFOrdLessThan(%16, %25)::%19
+        OpBranchConditional(%26, %13, %12)
+  %12 = OpLabel()
+  %27 = OpFAdd(%5, %25)::%2
+        OpBranch(%8)
+  %13 = OpLabel()
+        OpReturnValue(%25)
+        OpFunctionEnd()
+        """
+      )
     end
   end
 
