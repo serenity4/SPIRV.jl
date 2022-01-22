@@ -393,7 +393,7 @@ function SPIRType(c::Constant, ir::IR)
   end
 end
 
-function Module(ir::IR)
+function Module(ir::IR; debug_info = true)
   insts = Instruction[]
 
   append!(insts, @inst(OpCapability(cap)) for cap in ir.capabilities)
@@ -404,7 +404,7 @@ function Module(ir::IR)
     push!(insts, @inst OpEntryPoint(entry.model, entry.func, String(entry.name), entry.interfaces...))
     append!(insts, entry.modes)
   end
-  append_debug_instructions!(insts, ir)
+  debug_info && append_debug_instructions!(insts, ir)
   append_annotations!(insts, ir)
   append_globals!(insts, ir)
   append_functions!(insts, ir)
@@ -509,3 +509,5 @@ function Base.show(io::IO, mime::MIME"text/plain", ir::IR)
   end
   print(io, join(lines, '\n'))
 end
+
+Base.isapprox(ir::IR, mod::Module) = Module(ir) ≈ mod

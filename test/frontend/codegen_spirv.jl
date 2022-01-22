@@ -3,20 +3,13 @@ using SPIRV: OpFMul, OpFAdd
 
 @testset "SPIR-V code generation" begin
   ir = @compile f_straightcode(3.0f0)
-  fdef = only(values(ir.fdefs))
-  block = only(fdef.blocks)
-  @test block[2] == @inst SSAValue(8) = OpFAdd(SSAValue(5), SSAValue(7))::SSAValue(2)
-  @test block[3] == @inst SSAValue(10) = OpFMul(SSAValue(9), SSAValue(8))::SSAValue(2)
-  @test block[4] == @inst SSAValue(11) = OpFMul(SSAValue(10), SSAValue(10))::SSAValue(2)
   mod = SPIRV.Module(ir)
-  @test mod == parse(
+  @test mod ≈ parse(
     SPIRV.Module,
     """
       OpCapability(VulkanMemoryModel)
       OpExtension("SPV_KHR_vulkan_memory_model")
       OpMemoryModel(Logical, Vulkan)
-      OpName(%4, "f_straightcode_Tuple{Float32}")
-      OpName(%5, "x")
  %2 = OpTypeFloat(32)
  %3 = OpTypeFunction(%2, %2)
  # Constant literals are not interpreted as floating point values.
@@ -35,24 +28,15 @@ using SPIRV: OpFMul, OpFAdd
   )
   @test !iserror(validate(ir))
 
-  function my_clamp(x, lo, hi)
-    x_lo = ifelse(x < lo, lo, x)
-    ifelse(x_lo < hi, x_lo, hi)
-  end
-
-  ir = @compile my_clamp(1.2, 0.0, 0.7)
+  ir = @compile SPIRVInterpreter([INTRINSICS_METHOD_TABLE]) clamp(1.2, 0.0, 0.7)
   mod = SPIRV.Module(ir)
-  @test mod == parse(
+  @test mod ≈ parse(
     SPIRV.Module,
     """
       OpCapability(VulkanMemoryModel)
       OpCapability(Float64)
       OpExtension("SPV_KHR_vulkan_memory_model")
       OpMemoryModel(Logical, Vulkan)
-      OpName(%4, "my_clamp_Tuple{Float64,Float64,Float64}")
-      OpName(%5, "x")
-      OpName(%6, "lo")
-      OpName(%7, "hi")
  %2 = OpTypeFloat(64)
  %3 = OpTypeFunction(%2, %2, %2, %2)
 %10 = OpTypeBool()
@@ -61,27 +45,47 @@ using SPIRV: OpFMul, OpFAdd
  %6 = OpFunctionParameter()::%2
  %7 = OpFunctionParameter()::%2
  %8 = OpLabel()
-%11 = OpFOrdLessThan(%5, %6)::%10
-%12 = OpSelect(%11, %6, %5)::%2
-%13 = OpFOrdLessThan(%12, %7)::%10
-%14 = OpSelect(%13, %12, %7)::%2
+%11 = OpFOrdLessThan(%7, %5)::%10
+%12 = OpFOrdLessThan(%5, %6)::%10
+%13 = OpSelect(%12, %6, %5)::%2
+%14 = OpSelect(%11, %7, %13)::%2
       OpReturnValue(%14)
       OpFunctionEnd()
   """,
   )
   @test !iserror(validate(ir))
 
+  ir = @compile clamp(1.2, 0.0, 0.7)
+  @test ir ≈ parse(
+    SPIRV.Module,
+    """
+      OpCapability(VulkanMemoryModel)
+      OpCapability(Float64)
+      OpExtension("SPV_KHR_vulkan_memory_model")
+ %9 = OpExtInstImport("GLSL.std.450")
+      OpMemoryModel(Logical, Vulkan)
+ %2 = OpTypeFloat(64)
+ %3 = OpTypeFunction(%2, %2, %2, %2)
+ %4 = OpFunction(None, %3)::%2
+ %5 = OpFunctionParameter()::%2
+ %6 = OpFunctionParameter()::%2
+ %7 = OpFunctionParameter()::%2
+ %8 = OpLabel()
+%10 = OpExtInst(%9, FClamp, %5, %6, %7)::%2
+      OpReturnValue(%10)
+      OpFunctionEnd()
+  """,
+  )
+
   ir = @compile f_extinst(3.0f0)
   mod = SPIRV.Module(ir)
-  @test mod == parse(
+  @test mod ≈ parse(
     SPIRV.Module,
     """
       OpCapability(VulkanMemoryModel)
       OpExtension("SPV_KHR_vulkan_memory_model")
  %7 = OpExtInstImport("GLSL.std.450")
       OpMemoryModel(Logical, Vulkan)
-      OpName(%4, "f_extinst_Tuple{Float32}")
-      OpName(%5, "x")
  %2 = OpTypeFloat(0x00000020)
  %3 = OpTypeFunction(%2, %2)
 %10 = OpConstant(0x40400000)::%2
