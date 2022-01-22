@@ -6,14 +6,14 @@ using SPIRV:
 function test_has_offset(ir, T, field, offset)
   decs = ir.typerefs[T].member_decorations[field]
   @test haskey(decs, SPIRV.DecorationOffset)
-  @test decs[SPIRV.DecorationOffset] == [offset]
+  @test only(decs[SPIRV.DecorationOffset]) === UInt32(offset)
 end
 
 function test_has_stride(ir, T, stride)
   decs = get(DecorationData, ir.decorations, ir.types[ir.typerefs[T]])
   dec = something(get(decs, SPIRV.DecorationArrayStride, nothing), get(decs, SPIRV.DecorationMatrixStride, nothing), Some(nothing))
   @test !isnothing(dec)
-  @test dec == [stride]
+  @test only(dec) === UInt32(stride)
 end
 
 function ir_with_layouts(T; layout = VulkanLayout(), storage_classes = [], decorations = [])
@@ -91,9 +91,9 @@ end
   end
 
   @testset "Array/Matrix layouts" begin
-    T = Arr{4, Float64}
+    T = Arr{4, Tuple{Float64, Float64}}
     ir = ir_with_layouts(T)
-    test_has_stride(ir, T, 8)
+    test_has_stride(ir, T, 16)
 
     T = Mat{4, 4, Float64}
     ir = ir_with_layouts(T)

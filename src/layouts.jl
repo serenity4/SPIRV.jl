@@ -56,30 +56,31 @@ function storage_classes(ir::IR, t::SPIRType)
 end
 
 function add_type_layouts!(ir::IR, jtypes, layout::LayoutStrategy)
-  for T in jtypes
+  for T in keys(ir.typerefs)
     t = ir.typerefs[T]
     @tryswitch t begin
       @case ::ArrayType
-      add_stride!(ir, t, layout)
+      add_stride!(ir, t, T, layout)
 
       @case ::MatrixType
-      add_stride!(ir, t, layout)
+      add_stride!(ir, t, T, layout)
       add_matrix_layout!(ir, t)
 
       @case ::StructType
+      # add_type_layouts!(ir, fieldtypes(T), layout)
       add_offsets!(ir, T, t, layout)
     end
   end
 end
 
-function add_stride!(ir, t::Union{ArrayType, MatrixType}, layout)
+function add_stride!(ir, t::Union{ArrayType, MatrixType}, T, layout)
   decs = get!(DecorationData, ir.decorations, ir.types[t])
-  if isa(t.eltype, StructType) && haskey(get(DecorationData, ir.decorations, t.eltype), DecorationBlock)
+  if isa(t.eltype, StructType) && haskey(get(DecorationData, ir.decorations, ir.types[t.eltype]), DecorationBlock)
     # Array of shader resources. Must not be decorated.
     return
   end
   dec = isa(t, ArrayType) ? DecorationArrayStride : DecorationMatrixStride
-  set!(decs, dec, [alignment(layout, t.eltype, storage_classes(ir, t), false)])
+  set!(decs, dec, [UInt32(size(eltype(T), ir, layout))])
 end
 
 function add_matrix_layout!(ir, t::MatrixType)

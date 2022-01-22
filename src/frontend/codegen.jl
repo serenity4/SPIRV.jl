@@ -6,7 +6,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
       (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(cfg)), irmap) for e in jinst.edges)))
     :($f($(args...))) => @match f begin
       ::GlobalRef => @match getfield(f.mod, f.name) begin
-        ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$func'."))
+        ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$f'."))
         &getfield => begin
           composite = args[1]
           field_idx = @match args[2] begin
