@@ -43,7 +43,7 @@ include("ir.jl")
 include("cfg.jl")
 include("assemble.jl")
 include("validate.jl")
-include("alignment.jl")
+include("layouts.jl")
 include("requirements.jl")
 
 include("frontend/ci_cache.jl")
@@ -122,7 +122,7 @@ export
   compile,
   make_shader,
   ShaderInterface,
-  AlignmentStrategy, VulkanAlignment,
+  LayoutStrategy, VulkanLayout,
   @compile,
   invalidate_all!,
   SPIRVInterpreter,

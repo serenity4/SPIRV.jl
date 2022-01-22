@@ -17,17 +17,17 @@ struct ShaderInterface
   storage_classes::Vector{StorageClass}
   variable_decorations::Dictionary{Int,DecorationData}
   type_decorations::Dictionary #= {Union{DataType,Pair{DataType,Symbol}},DecorationData} =#
-  align::AlignmentStrategy
+  layout::LayoutStrategy
   features::FeatureSupport
   function ShaderInterface(execution_model::ExecutionModel, storage_classes = [], variable_decorations = Dictionary(),
-    type_decorations = Dictionary(), align = VulkanAlignment(), features = AllSupported())
-    new(execution_model, storage_classes, variable_decorations, type_decorations, align, features)
+    type_decorations = Dictionary(), layout = VulkanLayout(), features = AllSupported())
+    new(execution_model, storage_classes, variable_decorations, type_decorations, layout, features)
   end
 end
 
 function ShaderInterface(; execution_model = ExecutionModelVertex, storage_classes = [], variable_decorations = Dictionary(),
-  type_decorations = Dictionary(), align = VulkanAlignment(), features = AllSupported())
-  ShaderInterface(execution_model, storage_classes, variable_decorations, type_decorations, align, features)
+  type_decorations = Dictionary(), layout = VulkanLayout(), features = AllSupported())
+  ShaderInterface(execution_model, storage_classes, variable_decorations, type_decorations, layout, features)
 end
 
 """
@@ -47,7 +47,7 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
   insert!(ir.entry_points, ep.func, ep)
 
   add_variable_decorations!(ir, variables, interface)
-  add_field_offsets!(ir, interface.align)
+  add_type_layouts!(ir, mi.specTypes.parameters[2:end], interface.layout)
   add_type_decorations!(ir, interface)
   add_align_operands!(ir, fdef)
 

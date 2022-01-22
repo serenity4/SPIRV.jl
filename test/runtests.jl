@@ -23,6 +23,6 @@ end
   include("modules.jl")
   include("ir.jl")
   include("spvasm.jl")
-  include("alignment.jl")
+  include("layouts.jl")
   include("frontend.jl")
 end;
