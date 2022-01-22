@@ -1,5 +1,6 @@
 margin = 150
 indent = 2
+align_matrix = true
 align_pair_arrow = true
 align_assignment = true
 align_conditional = true

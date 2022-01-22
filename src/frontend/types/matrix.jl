@@ -26,7 +26,6 @@ Base.length(::Type{<:Mat{N,M}}) where {N,M} = N * M
 Base.size(T::Type{<:Mat{N,M}}) where {N,M} = (N, M)
 Base.zero(T::Type{<:Mat}) = T(ntuple(Returns(ntuple(Returns(zero(eltype(T))), nrows(T))), ncols(T)))
 Base.one(T::Type{<:Mat}) = T(ntuple(Returns(one(eltype(T))), length(T)))
-Base.getindex(m::Mat, index::UInt32, second_index::UInt32) = Load(AccessChain(m, index + second_index * UInt32(ncols(m))))
-Base.setindex!(m::Mat{N,M,T}, value::T, index::UInt32, second_index::UInt32) where {N,M,T} = Store(AccessChain(m, index + second_index * UInt32(ncols(m))), value)
 
 @noinline CompositeExtract(m::Mat, i::UInt32, j::UInt32) = m.cols[j + 1][i + 1]
+@noinline AccessChain(m::Mat, index::UInt32, second_index::UInt32) = AccessChain(m, index + second_index * UInt32(ncols(m)))

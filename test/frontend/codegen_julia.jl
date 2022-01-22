@@ -13,6 +13,10 @@ function store(x)
   x[3] = x[1] + x[2]
 end
 
+function store(mat::Mat)
+  mat[1, 2] = mat[1, 1] + mat[3, 3]
+end
+
 @testset "Codegen - Julia" begin
   @testset "Intrinsics" begin
     @testset "Replacement of core intrinsics with SPIR-V intrinsics" begin
@@ -102,38 +106,56 @@ end
     end
   end
 
-  @testset "Vec" begin
-    v1 = Vec(0.0, 1.0, 0.0)
-    v2 = Vec(1.0, 2.0, 1.0)
-    v3 = Vec(3.0, 1.0, -1.0)
-    f_vector(x, y, z) = (x + y) * (z - y)
-    @test f_vector(v1, v2, v3) == Vec(2.0, -3.0, -2.0)
+  @testset "Custom SPIR-V types" begin
+    @testset "Vec" begin
+      v1 = Vec(0.0, 1.0, 0.0)
+      v2 = Vec(1.0, 2.0, 1.0)
+      v3 = Vec(3.0, 1.0, -1.0)
+      f_vector(x, y, z) = (x + y) * (z - y)
+      @test f_vector(v1, v2, v3) == Vec(2.0, -3.0, -2.0)
 
-    (; code, ssavaluetypes) = SPIRV.@code_typed f_vector(v1, v2, v3)
-    @test operation.(code[1:(end - 1)]) == [:FAdd, :FSub, :FMul]
-    @test ssavaluetypes[1:(end - 1)] == fill(Vec{3, Float64}, 3)
+      (; code, ssavaluetypes) = SPIRV.@code_typed f_vector(v1, v2, v3)
+      @test operation.(code[1:(end - 1)]) == [:FAdd, :FSub, :FMul]
+      @test ssavaluetypes[1:(end - 1)] == fill(Vec{3,Float64}, 3)
 
-    (; code, ssavaluetypes) = SPIRV.@code_typed store(v1)
-    @test operation.(code[1:(end - 1)]) ==
-          [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
-    @test ssavaluetypes[1:(end - 1)] ==
-          [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
-  end
+      (; code, ssavaluetypes) = SPIRV.@code_typed store(v1)
+      @test operation.(code[1:(end - 1)]) ==
+            [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
+      @test ssavaluetypes[1:(end - 1)] ==
+            [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
+    end
 
-  @testset "Arrays" begin
-    arr = Arr(0.0, 1.0, 0.0)
+    @testset "Arrays" begin
+      arr = Arr(0.0, 1.0, 0.0)
 
-    (; code, ssavaluetypes) = SPIRV.@code_typed store(arr)
-    @test operation.(code[1:(end - 1)]) ==
-          [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
-    @test ssavaluetypes[1:(end - 1)] ==
-          [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
+      (; code, ssavaluetypes) = SPIRV.@code_typed store(arr)
+      @test operation.(code[1:(end - 1)]) ==
+            [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
+      @test ssavaluetypes[1:(end - 1)] ==
+            [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
 
-    arr = [1.0, 2.0, 3.0]
-    (; code, ssavaluetypes) = SPIRV.@code_typed store(arr)
-    @test operation.(code[1:(end - 1)]) ==
-          [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
-    @test ssavaluetypes[1:(end - 1)] ==
-          [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
+      arr = [1.0, 2.0, 3.0]
+      (; code, ssavaluetypes) = SPIRV.@code_typed store(arr)
+      @test operation.(code[1:(end - 1)]) ==
+            [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
+      @test ssavaluetypes[1:(end - 1)] ==
+            [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
+    end
+
+    @testset "Matrix" begin
+      mat = @mat [
+        1.0  2.0  3.0  4.0
+        5.0  6.0  7.0  8.0
+        9.0  10.0 11.0 12.0
+        13.0 14.0 15.0 16.0
+      ]
+      (; code, ssavaluetypes) = SPIRV.@code_typed store(mat)
+      @test operation.(code[1:(end - 1)]) ==
+            [:UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :UConvert,
+        :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Store]
+      @test ssavaluetypes[1:(end - 1)] ==
+            [repeat([UInt32, UInt32, UInt32, UInt32, Pointer{Float64}, Float64], 2) Float64 UInt32
+        UInt32 UInt32 UInt32 Pointer{Float64} Nothing]
+    end
   end
 end
