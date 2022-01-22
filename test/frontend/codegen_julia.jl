@@ -154,8 +154,8 @@ end
             [:UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :UConvert,
         :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Store]
       @test ssavaluetypes[1:(end - 1)] ==
-            [repeat([UInt32, UInt32, UInt32, UInt32, Pointer{Float64}, Float64], 2) Float64 UInt32
-        UInt32 UInt32 UInt32 Pointer{Float64} Nothing]
+            [repeat([UInt32, UInt32, UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32;
+        UInt32; UInt32; UInt32; Pointer{Float64}; Nothing]
     end
   end
 end

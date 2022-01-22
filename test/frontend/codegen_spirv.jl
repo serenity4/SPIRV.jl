@@ -1,5 +1,4 @@
 using SPIRV, Test
-using SPIRV: OpFMul, OpFAdd
 
 @testset "SPIR-V code generation" begin
   @testset "Straight code functions" begin
@@ -239,5 +238,24 @@ using SPIRV: OpFMul, OpFAdd
 
     ir = @compile StructWithBool(::Bool, ::Int32)
     @test !iserror(validate(ir))
+    @test ir ≈ parse(
+      SPIRV.Module,
+      """
+      OpCapability(VulkanMemoryModel)
+      OpExtension("SPV_KHR_vulkan_memory_model")
+      OpMemoryModel(Logical, Vulkan)
+ %2 = OpTypeBool()
+ %4 = OpTypeInt(0x00000020, 0x00000001)
+ %5 = OpTypeStruct(%2, %4)
+ %6 = OpTypeFunction(%5, %2, %4)
+ %7 = OpFunction(None, %6)::%5
+ %8 = OpFunctionParameter()::%2
+ %9 = OpFunctionParameter()::%4
+%10 = OpLabel()
+%11 = OpCompositeConstruct(%8, %9)::%5
+      OpReturnValue(%11)
+      OpFunctionEnd()
+      """
+    )
   end
 end
