@@ -47,7 +47,7 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
   insert!(ir.entry_points, ep.func, ep)
 
   add_variable_decorations!(ir, variables, interface)
-  add_type_layouts!(ir, mi.specTypes.parameters[2:end], interface.layout)
+  add_type_layouts!(ir, interface.layout)
   add_type_decorations!(ir, interface)
   add_align_operands!(ir, fdef)
 

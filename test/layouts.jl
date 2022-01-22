@@ -24,7 +24,7 @@ function ir_with_layouts(T; layout = VulkanLayout(), storage_classes = [], decor
   for sc in storage_classes
     emit!(ir, PointerType(sc, type))
   end
-  SPIRV.add_type_layouts!(ir, [T], layout)
+  SPIRV.add_type_layouts!(ir, layout)
   ir
 end
 

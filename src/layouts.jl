@@ -55,9 +55,8 @@ function storage_classes(ir::IR, t::SPIRType)
   Set(type.storage_class for type in ir.types if isa(type, PointerType) && type.type == t)
 end
 
-function add_type_layouts!(ir::IR, jtypes, layout::LayoutStrategy)
-  for T in keys(ir.typerefs)
-    t = ir.typerefs[T]
+function add_type_layouts!(ir::IR, layout::LayoutStrategy)
+  for (T, t) in pairs(ir.typerefs)
     @tryswitch t begin
       @case ::ArrayType
       add_stride!(ir, t, T, layout)
