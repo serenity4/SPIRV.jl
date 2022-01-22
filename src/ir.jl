@@ -258,7 +258,7 @@ Get a SPIR-V type from a Julia type, optionally recording the mapping.
 If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
 """
 function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true, storage_class = nothing)
-  wrap_mutable && ismutabletype(t) && !(t <: Base.RefValue) && return PointerType(StorageClassFunction, spir_type!(ir, t; record_jtype))
+  wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, spir_type!(ir, t; record_jtype))
   haskey(ir.typerefs, t) && isnothing(storage_class) && return ir.typerefs[t]
   type = @match t begin
     &Float16 => FloatType(16)
@@ -274,7 +274,6 @@ function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true, 
     &Int16 => IntegerType(16, true)
     &Int32 => IntegerType(32, true)
     &Int64 => IntegerType(64, true)
-    ::Type{<:Base.RefValue} => PointerType(StorageClassFunction, spir_type!(ir, eltype(t); record_jtype))
     ::Type{<:Array} => begin
       eltype, n = t.parameters
       @match n begin

@@ -205,15 +205,32 @@ using SPIRV: OpFMul, OpFAdd
 
     ir = @compile unicolor(Vec(1.0f0, 2.0f0, 3.0f0, 4.0f0))
     @test !iserror(validate(ir))
-
-    function store_ref(ref, x)
-      ref[] += x
-    end
-
-    ir = @compile store_ref(Ref(0.0f0), 3.0f0)
-    # Loading from function pointer arguments is illegal in logical addressing mode.
-    @test contains(unwrap_error(validate(ir)).msg, "is not a logical pointer")
-    @test iserror(validate(ir))
+    @test ir ≈ parse(
+      SPIRV.Module,
+      """
+      OpCapability(VulkanMemoryModel)
+      OpExtension("SPV_KHR_vulkan_memory_model")
+      OpMemoryModel(Logical, Vulkan)
+ %2 = OpTypeFloat(0x00000020)
+ %3 = OpTypeVector(%2, 0x00000004)
+ %4 = OpTypePointer(Function, %3)
+ %5 = OpTypeFunction(%3, %4)
+%14 = OpConstant(0x3f800000)::%2
+ %6 = OpFunction(None, %5)::%3
+ %7 = OpFunctionParameter()::%4
+ %8 = OpLabel()
+%13 = OpVariable(Function)::%4
+ %9 = OpLoad(%7)::%3
+%10 = OpCompositeExtract(%9, 0x00000000)::%2
+%11 = OpLoad(%7)::%3
+%12 = OpCompositeExtract(%11, 0x00000001)::%2
+%15 = OpCompositeConstruct(%10, %12, %14, %14)::%3
+      OpStore(%13, %15)
+%16 = OpLoad(%13)::%3
+      OpReturnValue(%16)
+      OpFunctionEnd()
+      """
+    )
 
     struct StructWithBool
       x::Bool
