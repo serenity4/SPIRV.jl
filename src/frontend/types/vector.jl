@@ -24,10 +24,10 @@ function Base.getproperty(v::Vec, prop::Symbol)
 end
 
 function to_index(prop::Symbol)
-  (prop === :x || prop === :r) && return UInt32(0)
-  (prop === :y || prop === :g) && return UInt32(1)
-  (prop === :z || prop === :b) && return UInt32(2)
-  (prop === :w || prop === :a) && return UInt32(3)
+  (prop === :x || prop === :r) && return 0U
+  (prop === :y || prop === :g) && return 1U
+  (prop === :z || prop === :b) && return 2U
+  (prop === :w || prop === :a) && return 3U
   nothing
 end
 

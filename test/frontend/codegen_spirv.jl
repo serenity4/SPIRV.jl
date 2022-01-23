@@ -2,7 +2,7 @@ using SPIRV, Test
 
 @testset "SPIR-V code generation" begin
   @testset "Straight code functions" begin
-    ir = @compile f_straightcode(3.0f0)
+    ir = @compile f_straightcode(::Float32)
     @test !iserror(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
@@ -27,7 +27,7 @@ using SPIRV, Test
   """,
     )
 
-    ir = @compile SPIRVInterpreter([INTRINSICS_METHOD_TABLE]) clamp(1.2, 0.0, 0.7)
+    ir = @compile SPIRVInterpreter([INTRINSICS_METHOD_TABLE]) clamp(::Float64, ::Float64, ::Float64)
     @test !iserror(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
@@ -55,7 +55,7 @@ using SPIRV, Test
   end
 
   @testset "Intrinsics" begin
-    ir = @compile clamp(1.2, 0.0, 0.7)
+    ir = @compile clamp(::Float64, ::Float64, ::Float64)
     @test !iserror(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
@@ -78,7 +78,7 @@ using SPIRV, Test
     """,
     )
 
-    ir = @compile f_extinst(3.0f0)
+    ir = @compile f_extinst(::Float32)
     @test !iserror(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
@@ -108,8 +108,8 @@ using SPIRV, Test
 
   @testset "Control flow" begin
     @testset "Branches" begin
-      f_branch(x) = x > 0f0 ? x + 1f0 : x - 1f0
-      ir = @compile f_branch(1.0f0)
+      f_branch(x) = x > 0F ? x + 1F : x - 1F
+      ir = @compile f_branch(::Float32)
       @test !iserror(validate(ir))
 
       @test ir ≈ parse(
@@ -138,19 +138,19 @@ using SPIRV, Test
         """
         )
       function f_branches(x)
-        y = clamp(x, 0f0, 1f0)
+        y = clamp(x, 0F, 1F)
         if iszero(y)
           z = x^2
-          z > 1f0 && return z
+          z > 1F && return z
           x += z
         else
-          x -= 1f0
+          x -= 1F
         end
-        x < 0f0 && return y
+        x < 0F && return y
         x + y
       end
 
-      ir = @compile f_branches(4.0f0)
+      ir = @compile f_branches(::Float32)
       @test !iserror(validate(ir))
       @test ir ≈ parse(
         SPIRV.Module,
@@ -199,10 +199,10 @@ using SPIRV, Test
 
   @testset "Composite SPIR-V types" begin
     function unicolor(position)
-      Vec(position.x, position.y, 1.0f0, 1.0f0)
+      Vec(position.x, position.y, 1F, 1F)
     end
 
-    ir = @compile unicolor(Vec(1.0f0, 2.0f0, 3.0f0, 4.0f0))
+    ir = @compile unicolor(::Vec{4, Float32})
     @test !iserror(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,

@@ -21,19 +21,19 @@ end
   @testset "Intrinsics" begin
     @testset "Replacement of core intrinsics with SPIR-V intrinsics" begin
       # Test that SPIR-V intrinsics are picked up and infer correctly.
-      (; code, ssavaluetypes) = SPIRV.@code_typed f_straightcode(3.0f0)
+      (; code, ssavaluetypes) = SPIRV.@code_typed f_straightcode(::Float32)
       fadd = code[1]
       @test Meta.isexpr(fadd, :invoke)
       @test fadd.args[2] == GlobalRef(SPIRV, :FAdd)
       @test ssavaluetypes[1] == Float32
 
-      (; code, ssavaluetypes) = SPIRV.@code_typed f_straightcode(UInt64(0))
+      (; code, ssavaluetypes) = SPIRV.@code_typed f_straightcode(::UInt64)
       @test operation(code[1]) == :IAdd
       @test ssavaluetypes[1] == UInt64
       @test all(==(:IMul), operation.(code[2:3]))
       @test all(==(UInt64), ssavaluetypes[2:3])
 
-      (; code, ssavaluetypes) = SPIRV.@code_typed f_straightcode(UInt32(0))
+      (; code, ssavaluetypes) = SPIRV.@code_typed f_straightcode(::UInt32)
       # Skip return node.
       @test operation.(code[1:(end - 1)]) == [:SConvert, :IAdd, :IMul, :IMul]
       @test ssavaluetypes[1:(end - 1)] == fill(Int64, 4)
@@ -45,15 +45,15 @@ end
     end
 
     @testset "Extended instruction sets" begin
-      (; code, ssavaluetypes) = SPIRV.@code_typed exp(3.0f0)
+      (; code, ssavaluetypes) = SPIRV.@code_typed exp(::Float32)
       @test operation(code[1]) == :Exp
       @test ssavaluetypes[1] == Float32
 
-      (; code, ssavaluetypes) = SPIRV.@code_typed clamp(1.2, 0.0, 0.7)
+      (; code, ssavaluetypes) = SPIRV.@code_typed clamp(::Float64, ::Float64, ::Float64)
       @test operation(code[1]) == :FClamp
       @test ssavaluetypes[1] == Float64
 
-      (; code, ssavaluetypes) = SPIRV.@code_typed f_extinst(3.0f0)
+      (; code, ssavaluetypes) = SPIRV.@code_typed f_extinst(::Float32)
       @test operation.(code[1:(end - 1)]) == [:Exp, :Sin, :FMul, :FAdd, :Log, :FAdd]
       @test ssavaluetypes[1:(end - 1)] == fill(Float32, 6)
     end
@@ -71,7 +71,7 @@ end
       function test_constprop2()
         x = 3.0
         z = 10 + x
-        x + 2.0f0 + z
+        x + 2F + z
       end
 
       (; code) = SPIRV.@code_typed test_constprop2()
@@ -80,7 +80,7 @@ end
       function test_constprop3()
         x = 3.0
         z = Base.mod(10.0, x)
-        x + 2.0f0 + z
+        x + 2F + z
       end
 
       (; code) = SPIRV.@code_typed test_constprop3()
@@ -89,15 +89,15 @@ end
       function test_constprop4()
         x = exp(3.0)
         z = 1 + x^2
-        x + 2.0f0 + floor(z)
+        x + 2.0F + floor(z)
       end
 
       (; code) = SPIRV.@code_typed test_constprop4()
       @test code[1] == Core.ReturnNode(426.08553692318765)
 
       function test_constprop5()
-        y = exp(2.0f0)
-        z = 1 + 3sin(2.0f0)
+        y = exp(2F)
+        z = 1 + 3sin(2F)
         log(z) + y
       end
 
@@ -126,16 +126,13 @@ end
     end
 
     @testset "Arrays" begin
-      arr = Arr(0.0, 1.0, 0.0)
-
-      (; code, ssavaluetypes) = SPIRV.@code_typed store(arr)
+      (; code, ssavaluetypes) = SPIRV.@code_typed store(::Arr{3, Float64})
       @test operation.(code[1:(end - 1)]) ==
             [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
       @test ssavaluetypes[1:(end - 1)] ==
             [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
 
-      arr = [1.0, 2.0, 3.0]
-      (; code, ssavaluetypes) = SPIRV.@code_typed store(arr)
+      (; code, ssavaluetypes) = SPIRV.@code_typed store(::Vector{Float64})
       @test operation.(code[1:(end - 1)]) ==
             [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
       @test ssavaluetypes[1:(end - 1)] ==
@@ -143,13 +140,7 @@ end
     end
 
     @testset "Matrix" begin
-      mat = @mat [
-        1.0  2.0  3.0  4.0
-        5.0  6.0  7.0  8.0
-        9.0  10.0 11.0 12.0
-        13.0 14.0 15.0 16.0
-      ]
-      (; code, ssavaluetypes) = SPIRV.@code_typed store(mat)
+      (; code, ssavaluetypes) = SPIRV.@code_typed store(::Mat{4, 4, Float64})
       @test operation.(code[1:(end - 1)]) ==
             [:UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :UConvert,
         :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Store]

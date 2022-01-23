@@ -17,7 +17,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
 
 @testset "Shader interface" begin
   function vert_shader!(out_color)
-    out_color.a = 1.0f0
+    out_color.a = 1F
   end
 
   cfg = @cfg vert_shader!(::Vec{4,Float32})
@@ -64,14 +64,14 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   @test iserror(validate_shader(ir))
 
   function vert_shader_2!(out_color)
-    out_color[] = Vec(0.1f0, 0.1f0, 0.1f0, 1.0f0)
+    out_color[] = Vec(0.1F, 0.1F, 0.1F, 1F)
   end
 
   cfg = @cfg vert_shader_2!(::Vec{4,Float32})
   ir = compile(cfg, AllSupported())
   @test !iserror(validate(ir))
   interface =
-    ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => dictionary([SPIRV.DecorationLocation => [UInt32(0)]])]))
+    ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => dictionary([SPIRV.DecorationLocation => [0U]])]))
   ir = make_shader(cfg, interface)
   @test !iserror(validate_shader(ir))
 
@@ -91,13 +91,13 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   interface = ShaderInterface(SPIRV.ExecutionModelVertex,
     [SPIRV.StorageClassOutput, SPIRV.StorageClassUniform],
     dictionary([
-      1 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
-      2 => dictionary([SPIRV.DecorationUniform => [], SPIRV.DecorationDescriptorSet => UInt32[0], SPIRV.DecorationBinding => UInt32[0]]),
+      1 => dictionary([SPIRV.DecorationLocation => [0U]]),
+      2 => dictionary([SPIRV.DecorationUniform => [], SPIRV.DecorationDescriptorSet => [0U], SPIRV.DecorationBinding => [0U]]),
     ]),
     dictionary([
       Point => dictionary([SPIRV.DecorationBlock => []]),
-      (Point => :x) => dictionary([SPIRV.DecorationOffset => UInt32[0]]),
-      (Point => :y) => dictionary([SPIRV.DecorationOffset => UInt32[4]]),
+      (Point => :x) => dictionary([SPIRV.DecorationOffset => [0U]]),
+      (Point => :y) => dictionary([SPIRV.DecorationOffset => [4U]]),
     ]),
   )
 
@@ -122,7 +122,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   interface = ShaderInterface(SPIRV.ExecutionModelVertex,
     [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassOutput],
     dictionary([
-      1 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
+      1 => dictionary([SPIRV.DecorationLocation => [0U]]),
       2 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInVertexIndex]]),
       3 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInPosition]]),
     ]),
@@ -144,8 +144,8 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   function vert_shader_5!(frag_color, position, index, dd)
     vd = Pointer{Vector{VertexData}}(dd.vbuffer)[index]
     (; pos, color) = vd
-    position[] = Vec(pos.x, pos.y, 0.0f0, 1.0f0)
-    frag_color[] = Vec(color[1], color[2], color[3], 1.0f0)
+    position[] = Vec(pos.x, pos.y, 0F, 1F)
+    frag_color[] = Vec(color[1U], color[2U], color[3U], 1F)
   end
 
   # Non-Vulkan interpreter
@@ -163,7 +163,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   interface = ShaderInterface(
     storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassPushConstant],
     variable_decorations = dictionary([
-      1 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
+      1 => dictionary([SPIRV.DecorationLocation => [0U]]),
       2 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInPosition]]),
       3 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInVertexIndex]]),
     ]),
@@ -194,8 +194,8 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     execution_model = SPIRV.ExecutionModelFragment,
     storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput],
     variable_decorations = dictionary([
-      1 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
-      2 => dictionary([SPIRV.DecorationLocation => UInt32[0]]),
+      1 => dictionary([SPIRV.DecorationLocation => [0U]]),
+      2 => dictionary([SPIRV.DecorationLocation => [0U]]),
     ]),
   )
   ir = make_shader(cfg, interface)

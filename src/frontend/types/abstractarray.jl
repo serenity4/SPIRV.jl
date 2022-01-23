@@ -14,16 +14,16 @@ abstract type AbstractSPIRVArray{T,D} <: AbstractArray{T,D} end
 
 const Scalar = Union{Bool,BitInteger,IEEEFloat}
 
-Base.getindex(arr::AbstractSPIRVArray, indices::Signed...) = getindex(arr, (UInt32.(indices) .- UInt32(1))...)
+Base.getindex(arr::AbstractSPIRVArray, indices::Signed...) = getindex(arr, (UInt32.(indices) .- 1U)...)
 Base.getindex(arr::AbstractSPIRVArray, indices::UInt32...) = Load(AccessChain(arr, indices...))
 Base.setindex!(arr::AbstractSPIRVArray, value, indices...) = setindex!(arr, convert(eltype(arr), value), indices...)
-Base.setindex!(arr::AbstractSPIRVArray{T}, value::T, indices::Signed...) where {T} = setindex!(arr, value, (UInt32.(indices) .- UInt32(1))...)
+Base.setindex!(arr::AbstractSPIRVArray{T}, value::T, indices::Signed...) where {T} = setindex!(arr, value, (UInt32.(indices) .- 1U)...)
 Base.setindex!(arr::AbstractSPIRVArray{T}, value::T, indices::UInt32...) where {T} = Store(AccessChain(arr, indices...), value)
 Base.setindex!(arr1::AbstractSPIRVArray, arr2::AbstractSPIRVArray) = Store(arr1, convert(typeof(arr1), arr2))
 
-@override getindex(v::Vector, index::Signed) = getindex(v, UInt32(index) - UInt32(1))
+@override getindex(v::Vector, index::Signed) = getindex(v, UInt32(index) - 1U)
 @override getindex(v::Vector, index::UInt32) = AccessChain(v, index)[]
-@override setindex!(v::Vector{T}, value::T, index::Signed) where {T} = setindex!(v, value, UInt32(index) - UInt32(1))
+@override setindex!(v::Vector{T}, value::T, index::Signed) where {T} = setindex!(v, value, UInt32(index) - 1U)
 @override setindex!(v::Vector{T}, value::T, index::UInt32) where {T} = Store(AccessChain(v, index), value)
 
 Base.eltype(::Type{<:AbstractSPIRVArray{T}}) where {T} = T

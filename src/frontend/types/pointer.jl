@@ -71,6 +71,6 @@ function AccessChain end
   end
 end
 
-AccessChain(v::AbstractVector, index::Signed) = AccessChain(v, UInt32(index) - UInt32(1))
+AccessChain(v::AbstractVector, index::Signed) = AccessChain(v, UInt32(index) - 1U)
 AccessChain(x, index::Integer, second_index::Integer) = AccessChain(AccessChain(x, index), second_index)
 AccessChain(x, index::Integer, second_index::Integer, other_indices::Integer...) = AccessChain(AccessChain(x, index, second_index), other_indices...)

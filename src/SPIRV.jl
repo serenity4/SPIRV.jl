@@ -21,6 +21,12 @@ const spirv_val = SPIRV_Tools_jll.spirv_val(identity)
 
 const Optional{T} = Union{Nothing,T}
 
+struct CharacterLiteral{T} end
+Base.:(*)(x::Number, ::Type{CharacterLiteral{T}}) where {T} = T(x)
+
+const U = CharacterLiteral{UInt32}
+const F = CharacterLiteral{Float32}
+
 const magic_number = 0x07230203
 const generator_magic_number = 0x12349876
 
@@ -66,6 +72,9 @@ include("frontend/codegen.jl")
 include("frontend/shader.jl")
 
 export
+  # character literals
+  U, F,
+
   # parse
   PhysicalInstruction, PhysicalModule,
   Instruction,
