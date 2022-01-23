@@ -21,3 +21,5 @@ jobs:
           version: ${{ matrix.julia-version }}
       - run: julia --project -e 'using Pkg; Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:serenity4/Graphics")); Pkg.instantiate()'
       - run: julia --project -e 'using Pkg; Pkg.test(coverage = false)'
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
