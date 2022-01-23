@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.DOCUMENTER_KEY }}
       - uses: julia-actions/setup-julia@latest
         with:
           version: 'nightly'
