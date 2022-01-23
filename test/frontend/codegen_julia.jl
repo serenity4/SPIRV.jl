@@ -1,11 +1,13 @@
 using SPIRV, Test
 using SPIRV: @trymatch
 
-function operation(ex::Expr; mod = SPIRV)
+function operation(ex; mod = SPIRV)
   @trymatch ex begin
     Expr(:invoke, _, f, args...) => @trymatch f begin
       ::GlobalRef => f.mod == mod ? f.name : nothing
+      ::Core.SSAValue => f
     end
+    ::GlobalRef => ex.name
   end
 end
 
@@ -147,6 +149,18 @@ end
       @test ssavaluetypes[1:(end - 1)] ==
             [repeat([UInt32, UInt32, UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32;
         UInt32; UInt32; UInt32; Pointer{Float64}; Nothing]
+    end
+
+    @testset "Image" begin
+      function sample_some_image(img, sampler)
+        sampled_image = SPIRV.SampledImage(img, sampler)
+        sampled_image(1f0, 2f0)
+      end
+
+      T = SPIRV.Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}
+      (; code, ssavaluetypes) = SPIRV.@code_typed sample_some_image(::T, ::SPIRV.Sampler)
+      @test operation.(code[1:(end - 1)]) == [:SampledImage, Core.SSAValue(1), :CompositeConstruct, :ImageSampleImplicitLod]
+      @test ssavaluetypes[1:(end - 1)] == [Type{SPIRV.SampledImage}, SPIRV.SampledImage{T}, Vec{2,Float32}, Vec{4, Float32}]
     end
   end
 end

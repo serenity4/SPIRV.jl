@@ -70,4 +70,11 @@ using SPIRV, Test
     arr[] = arr2
     @test all(iszero, arr)
   end
+
+  @testset "Images" begin
+    img = SPIRV.Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}(nothing)
+    sampler = SPIRV.Sampler()
+    sampled = SPIRV.SampledImage(img, sampler)
+    @test sampled(1f0) == zero(Vec{4, eltype(img)})
+  end
 end

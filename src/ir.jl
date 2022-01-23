@@ -71,7 +71,7 @@ end
   debug::DebugInfo
   ssacounter::SSACounter
   "SPIR-V types derived from Julia types."
-  typerefs::Dictionary{DataType,SPIRType}
+  typerefs::Dictionary{Any,SPIRType}
 end
 
 function IR(; meta::Metadata = Metadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
@@ -290,6 +290,9 @@ function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true, 
     ::Type{<:Vec} => VectorType(spir_type!(ir, eltype(t); record_jtype), length(t))
     ::Type{<:Mat} => MatrixType(spir_type!(ir, Vec{nrows(t),eltype(t)}; record_jtype), ncols(t))
     ::Type{<:Arr} => ArrayType(spir_type!(ir, eltype(t); record_jtype), Constant(UInt32(length(t))))
+    ::Type{Sampler} => SamplerType()
+    ::Type{<:Image} => ImageType(spir_type!(ir, eltype(t)), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
+    ::Type{<:SampledImage} => SampledImageType(spir_type!(ir, image_type(t)))
     GuardBy(isstructtype) || ::Type{<:NamedTuple} =>
       StructType(spir_type!.(ir, t.types; record_jtype), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
     _ => error("Type $t does not have a corresponding SPIR-V type.")
@@ -345,7 +348,7 @@ function Instruction(t::ImageType, id::SSAValue, ir::IR)
     UInt32(something(t.depth, 2)),
     UInt32(t.arrayed),
     UInt32(t.multisampled),
-    UInt32(something(t.sampled, 2)),
+    UInt32(2 - something(t.sampled, 2)),
     t.format,
   )
   !isnothing(t.access_qualifier) && push!(inst.arguments, t.access_qualifier)

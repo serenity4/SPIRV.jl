@@ -258,4 +258,88 @@ using SPIRV, Test
       """
     )
   end
+
+  @testset "Images & textures" begin
+    function sample(sampled_image::SPIRV.SampledImage)
+      sampled_image(3f0, 4f0)
+    end
+
+    ir = @compile sample(::SPIRV.SampledImage{SPIRV.Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}})
+    @test !iserror(validate(ir))
+    @test ir ≈ parse(
+      SPIRV.Module,
+      """
+      OpCapability(VulkanMemoryModel)
+      OpCapability(Shader)
+      OpExtension("SPV_KHR_vulkan_memory_model")
+      OpMemoryModel(Logical, Vulkan)
+ %2 = OpTypeFloat(0x00000020)
+ %3 = OpTypeVector(%2, 0x00000004)
+ %4 = OpTypeImage(%2, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
+ %5 = OpTypeSampledImage(%4)
+ %6 = OpTypeFunction(%3, %5)
+%11 = OpTypeVector(%2, 0x00000002)
+%12 = OpTypePointer(Function, %11)
+%13 = OpConstant(0x40400000)::%2
+%14 = OpConstant(0x40800000)::%2
+%17 = OpTypePointer(Function, %3)
+ %7 = OpFunction(None, %6)::%3
+ %8 = OpFunctionParameter()::%5
+ %9 = OpLabel()
+%10 = OpVariable(Function)::%12
+%16 = OpVariable(Function)::%17
+%15 = OpCompositeConstruct(%13, %14)::%11
+      OpStore(%10, %15)
+%18 = OpLoad(%10)::%11
+%19 = OpImageSampleImplicitLod(%8, %18)::%3
+      OpStore(%16, %19)
+%20 = OpLoad(%16)::%3
+      OpReturnValue(%20)
+      OpFunctionEnd()
+      """
+    )
+
+    function sample(image, sampler)
+      sampled = SPIRV.SampledImage(image, sampler)
+      sampled(3f0, 4f0)
+    end
+
+    ir = @compile sample(::SPIRV.Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}, ::SPIRV.Sampler)
+    @test !iserror(validate(ir))
+    @test ir ≈ parse(
+      SPIRV.Module,
+      """
+      OpCapability(VulkanMemoryModel)
+      OpCapability(Shader)
+      OpExtension("SPV_KHR_vulkan_memory_model")
+      OpMemoryModel(Logical, Vulkan)
+ %2 = OpTypeFloat(0x00000020)
+ %3 = OpTypeVector(%2, 0x00000004)
+ %4 = OpTypeImage(%2, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
+ %6 = OpTypeSampler()
+ %7 = OpTypeFunction(%3, %4, %6)
+%12 = OpTypeSampledImage(%4)
+%15 = OpTypeVector(%2, 0x00000002)
+%16 = OpTypePointer(Function, %15)
+%17 = OpConstant(0x40400000)::%2
+%18 = OpConstant(0x40800000)::%2
+%21 = OpTypePointer(Function, %3)
+ %8 = OpFunction(None, %7)::%3
+ %9 = OpFunctionParameter()::%4
+%10 = OpFunctionParameter()::%6
+%11 = OpLabel()
+%14 = OpVariable(Function)::%16
+%20 = OpVariable(Function)::%21
+%13 = OpSampledImage(%9, %10)::%12
+%19 = OpCompositeConstruct(%17, %18)::%15
+      OpStore(%14, %19)
+%22 = OpLoad(%14)::%15
+%23 = OpImageSampleImplicitLod(%13, %22)::%3
+      OpStore(%20, %23)
+%24 = OpLoad(%20)::%3
+      OpReturnValue(%24)
+      OpFunctionEnd()
+      """
+    )
+  end
 end

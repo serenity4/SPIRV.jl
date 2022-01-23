@@ -27,9 +27,10 @@ struct IRMapping
   "Intermediate results that correspond to SPIR-V `Variable`s. Typically, these results have a mutable Julia type."
   variables::Dictionary{Core.SSAValue,Variable}
   types::Dictionary{Type,SSAValue}
+  globalrefs::Dictionary{Core.SSAValue,GlobalRef}
 end
 
-IRMapping() = IRMapping(Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary())
+IRMapping() = IRMapping(Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary())
 
 SSAValue(arg::Core.Argument, irmap::IRMapping) = irmap.args[arg]
 SSAValue(bb::Int, irmap::IRMapping) = irmap.bbs[bb]
@@ -158,7 +159,7 @@ function emit!(ir::IR, @nospecialize(type::SPIRType))
     emit!(ir, type.sampled_type)
     @case ::SampledImageType
     emit!(ir, type.image_type)
-    @case ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType
+    @case ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType || ::SamplerType
     next!(ir.ssacounter)
     @case ::FunctionType
     emit!(ir, type.rettype)
@@ -246,7 +247,7 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
         push!(blk, irmap, spv_inst, core_ssaval)
         @case ::GlobalRef
         jtype <: Type || throw(CompilationError("Unhandled global reference $(repr(jtype))"))
-        insert!(irmap.ssavals, core_ssaval, emit!(ir, spir_type!(ir, only(jtype.parameters))))
+        insert!(irmap.globalrefs, core_ssaval, jinst)
         @case _
         check_isvalid(jtype)
         if ismutabletype(jtype)

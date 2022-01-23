@@ -21,11 +21,11 @@ const spirv_val = SPIRV_Tools_jll.spirv_val(identity)
 
 const Optional{T} = Union{Nothing,T}
 
-struct CharacterLiteral{T} end
-Base.:(*)(x::Number, ::Type{CharacterLiteral{T}}) where {T} = T(x)
+struct LiteralType{T} end
+Base.:(*)(x::Number, ::Type{LiteralType{T}}) where {T} = T(x)
 
-const U = CharacterLiteral{UInt32}
-const F = CharacterLiteral{Float32}
+const U = LiteralType{UInt32}
+const F = LiteralType{Float32}
 
 const magic_number = 0x07230203
 const generator_magic_number = 0x12349876
@@ -60,6 +60,7 @@ include("frontend/types/pointer.jl")
 include("frontend/types/vector.jl")
 include("frontend/types/matrix.jl")
 include("frontend/types/array.jl")
+include("frontend/types/image.jl")
 include("frontend/intrinsics_glsl.jl")
 include("frontend/vulkan.jl")
 include("frontend/interpreter.jl")

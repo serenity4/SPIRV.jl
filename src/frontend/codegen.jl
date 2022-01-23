@@ -27,6 +27,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
       _ => throw(CompilationError("Call to unknown function $f"))
     end
     Expr(:invoke, mi, f, args...) => begin
+      isa(f, Core.SSAValue) && (f = irmap.globalrefs[f])
       @assert isa(f, GlobalRef)
       if f.mod == @__MODULE__
         opcode = @when let op::OpCode = try_getopcode(f.name)

@@ -43,51 +43,23 @@ end
 @auto_hash_equals struct ImageType <: SPIRType
   sampled_type::SPIRType
   dim::Dim
-  format::ImageFormat
-  arrayed::Int
-  multisampled::Bool
   depth::Optional{Bool}
-  access_qualifier::Optional{AccessQualifier}
+  arrayed::Bool
+  multisampled::Bool
   sampled::Optional{Bool}
-  function ImageType(
-    sampled_type::SPIRType,
-    dim::Dim,
-    format::ImageFormat,
-    arrayed::Int,
-    multisampled::Bool,
-    depth::Optional{Bool},
-    sampled::Optional{Bool},
-    access_qualifier::Optional{AccessQualifier},
-  )
-    if dim == DimSubpassData
-      !sampled || error("Subpass image cannot be sampled")
-      format == ImageFormatUnknown || error("Subpass image format must be unknown")
-    end
-    new(sampled_type, dim, format, arrayed, multisampled, depth, access_qualifier)
-  end
-  function ImageType(sampled_type, dim, format, arrayed, multisampled, depth, sampled, access_qualifier)
-    ImageType(
-      convert(SPIRType, sampled_type),
-      convert(Dim, dim),
-      convert(ImageFormat, format),
-      convert(Int, arrayed),
-      convert(Bool, multisampled),
-      convert(Optional{Bool}, depth),
-      convert(Optional{Bool}, sampled),
-      convert(Optional{AccessQualifier}, access_qualifier),
-    )
-  end
+  format::ImageFormat
+  access_qualifier::Optional{AccessQualifier}
 end
 
 function ImageType(inst::Instruction, sampled_type::SPIRType)
   @assert inst.opcode == OpTypeImage
   (sampled_type_id, dim, depth, arrayed, multisampled, sampled, format) = inst.arguments[1:7]
   access_qualifier = length(inst.arguments) > 7 ? last(inst.arguments) : nothing
-  sampled = sampled == 0 ? nothing : Bool(sampled - 1)
+  sampled = sampled == 0 ? nothing : Bool(2 - sampled)
   if depth == 2
     depth = nothing
   end
-  ImageType(sampled_type, dim, format, arrayed, multisampled, depth, sampled, access_qualifier)
+  ImageType(sampled_type, dim, depth, arrayed, multisampled, sampled, format, access_qualifier)
 end
 
 struct SamplerType <: SPIRType end
