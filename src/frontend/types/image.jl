@@ -41,6 +41,7 @@ struct SampledImage{I<:Image}
   image::I
 end
 
+combine(image::Image, sampler::Sampler) = SampledImage(image, sampler)
 @noinline SampledImage(image::Image, sampler::Sampler) = SampledImage(image)
 @noinline Image(sampled::SampledImage) = sampled.image
 

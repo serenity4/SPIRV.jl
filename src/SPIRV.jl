@@ -145,6 +145,7 @@ export
   Arr,
   Pointer,
   Image, Sampler,
-  SampledImage
+  SampledImage,
+  combine
 
 end

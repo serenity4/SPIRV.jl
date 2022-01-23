@@ -153,14 +153,14 @@ end
 
     @testset "Image" begin
       function sample_some_image(img, sampler)
-        sampled_image = SampledImage(img, sampler)
-        sampled_image(1f0, 2f0)
+        sampled_image = combine(img, sampler)
+        sampled_image(Vec(1f0, 2f0))
       end
 
       T = Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}
       (; code, ssavaluetypes) = SPIRV.@code_typed sample_some_image(::T, ::Sampler)
-      @test operation.(code[1:(end - 1)]) == [:SampledImage, Core.SSAValue(1), :CompositeConstruct, :ImageSampleImplicitLod]
-      @test ssavaluetypes[1:(end - 1)] == [Type{SampledImage}, SampledImage{T}, Vec{2,Float32}, Vec{4, Float32}]
+      @test operation.(code[1:(end - 1)]) == [:SampledImage, :CompositeConstruct, :ImageSampleImplicitLod]
+      @test ssavaluetypes[1:(end - 1)] == [SampledImage{T}, Vec{2,Float32}, Vec{4, Float32}]
     end
   end
 end

@@ -300,7 +300,7 @@ using SPIRV, Test
     )
 
     function sample(image, sampler)
-      sampled = SampledImage(image, sampler)
+      sampled = combine(image, sampler)
       sampled(3f0, 4f0)
     end
 
