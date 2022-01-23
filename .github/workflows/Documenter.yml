@@ -16,7 +16,10 @@ jobs:
       - uses: julia-actions/setup-julia@latest
         with:
           version: 'nightly'
-      - run: julia --project -e 'using Pkg; Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:serenity4/Graphics")); Pkg.instantiate()'
+      - run: julia --project -e 'using Pkg;
+               Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:serenity4/Graphics"));
+               Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:JuliaRegistries/General"));
+               Pkg.instantiate()'
       - uses: julia-actions/julia-docdeploy@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
