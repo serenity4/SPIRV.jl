@@ -58,7 +58,7 @@ end
 function add_type_layouts!(ir::IR, layout::LayoutStrategy)
   for (T, t) in pairs(ir.typerefs)
     @tryswitch t begin
-      @case ::ArrayType
+      @case ::ArrayType && if !isa(t.eltype, SampledImageType) && !isa(t.eltype, ImageType) && !isa(t.eltype, SamplerType) end
       add_stride!(ir, t, T, layout)
 
       @case ::MatrixType

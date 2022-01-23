@@ -64,7 +64,7 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
 end
 
 function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)
-  for (i, decs) in enumerate(interface.variable_decorations)
+  for (i, decs) in pairs(interface.variable_decorations)
     merge!(ir.decorations[ir.global_vars[variables[i]]], decs)
   end
 end

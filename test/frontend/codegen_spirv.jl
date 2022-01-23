@@ -260,11 +260,11 @@ using SPIRV, Test
   end
 
   @testset "Images & textures" begin
-    function sample(sampled_image::SPIRV.SampledImage)
+    function sample(sampled_image::SampledImage)
       sampled_image(3f0, 4f0)
     end
 
-    ir = @compile sample(::SPIRV.SampledImage{SPIRV.Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}})
+    ir = @compile sample(::SampledImage{Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}})
     @test !iserror(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
@@ -300,11 +300,11 @@ using SPIRV, Test
     )
 
     function sample(image, sampler)
-      sampled = SPIRV.SampledImage(image, sampler)
+      sampled = SampledImage(image, sampler)
       sampled(3f0, 4f0)
     end
 
-    ir = @compile sample(::SPIRV.Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}, ::SPIRV.Sampler)
+    ir = @compile sample(::Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}, ::Sampler)
     @test !iserror(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,

@@ -143,6 +143,8 @@ export
   Vec,
   Mat, @mat,
   Arr,
-  Pointer
+  Pointer,
+  Image, Sampler,
+  SampledImage
 
 end
