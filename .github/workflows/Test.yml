@@ -23,3 +23,4 @@ jobs:
       - run: julia --project -e 'using Pkg; Pkg.test(coverage = false)'
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
+      JULIA_PKG_USE_CLI_GIT: true
