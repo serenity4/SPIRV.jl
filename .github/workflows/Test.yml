@@ -22,10 +22,10 @@ jobs:
       - uses: julia-actions/setup-julia@latest
         with:
           version: ${{ matrix.julia-version }}
-      - run: julia --project -e 'using Pkg;
+      - run: julia --color --project -e 'using Pkg;
                Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:serenity4/Graphics"));
                Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:JuliaRegistries/General"));
                Pkg.instantiate()'
-      - run: julia --project -e 'using Pkg; Pkg.test(coverage = false)'
+      - run: julia --color --project -e 'using Pkg; Pkg.test(coverage = false)'
     env:
       JULIA_PKG_USE_CLI_GIT: true
