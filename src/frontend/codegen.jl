@@ -146,7 +146,8 @@ function try_getopcode(name, prefix = "")
 end
 
 function remap_args!(args, ir::IR, irmap::IRMapping, opcode)
-  arguments_to_ssa!(args, irmap, opcode)
+  arguments_to_ssa!(args, irmap)
+  replace_ssa!(args, irmap, opcode)
   literals_to_const!(args, ir, irmap, opcode)
   args
 end
@@ -182,12 +183,19 @@ function load_if_variable!(blk::Block, ir::IR, irmap::IRMapping, fdef::FunctionD
   end
 end
 
-function arguments_to_ssa!(args, irmap::IRMapping, opcode)
+function arguments_to_ssa!(args, irmap::IRMapping)
+  for (i, arg) in enumerate(args)
+    isa(arg, Core.Argument) && (args[i] = SSAValue(arg, irmap))
+  end
+end
+
+"""
+Replace `Core.SSAValue` by `SSAValue`, ignoring forward references.
+"""
+function replace_ssa!(args, irmap::IRMapping, opcode)
   for (i, arg) in enumerate(args)
     # Phi nodes may have forward references.
-    if isa(arg, Core.Argument) && opcode ≠ OpPhi
-      args[i] = SSAValue(arg, irmap)
-    end
+    isa(arg, Core.SSAValue) && opcode ≠ OpPhi && (args[i] = SSAValue(arg, irmap))
   end
 end
 

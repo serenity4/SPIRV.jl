@@ -193,20 +193,33 @@ end
 function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG)
   ranges = block_ranges(cfg)
   nodelist = topological_sort_by_dfs(bfs_tree(cfg.graph, 1))
+  add_mapping!(irmap, ir, ranges, nodelist)
+  emit_nodes!(fdef, ir, irmap, cfg, ranges, nodelist)
+  replace_forwarded_ssa!(fdef, irmap)
+end
+
+function add_mapping!(irmap::IRMapping, ir::IR, ranges, nodelist)
   for node in nodelist
     id = next!(ir.ssacounter)
     insert!(irmap.bbs, node, id)
     insert!(irmap.bb_ssavals, Core.SSAValue(first(ranges[node])), id)
   end
+end
+
+function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ranges, nodelist)
   for node in nodelist
     emit!(fdef, ir, irmap, cfg, ranges[node], node)
   end
+end
+
+"""
+Replace forward references to `Core.SSAValue`s by their appropriate `SSAValue`.
+"""
+function replace_forwarded_ssa!(fdef::FunctionDefinition, irmap::IRMapping)
   for block in fdef.blocks
     for inst in block.insts
       for (i, arg) in enumerate(inst.arguments)
-        if isa(arg, Core.SSAValue)
-          inst.arguments[i] = SSAValue(arg, irmap)
-        end
+        isa(arg, Core.SSAValue) && (inst.arguments[i] = SSAValue(arg, irmap))
       end
     end
   end
