@@ -4,3 +4,4 @@ docs/build
 tmp.jl
 /scratch
 /JuliaSysimage.so
+/test/plot.jl

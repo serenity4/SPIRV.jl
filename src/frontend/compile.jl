@@ -192,9 +192,10 @@ end
 
 function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG)
   ranges = block_ranges(cfg)
-  nodelist = topological_sort_by_dfs(bfs_tree(cfg.graph, 1))
+  graph, backedges = remove_backedges(cfg.graph)
+  nodelist = traverse(graph; has_backedges = false)
   add_mapping!(irmap, ir, ranges, nodelist)
-  emit_nodes!(fdef, ir, irmap, cfg, ranges, nodelist)
+  emit_nodes!(fdef, ir, irmap, cfg, ranges, nodelist, backedges)
   replace_forwarded_ssa!(fdef, irmap)
 end
 
@@ -206,9 +207,108 @@ function add_mapping!(irmap::IRMapping, ir::IR, ranges, nodelist)
   end
 end
 
-function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ranges, nodelist)
+function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ranges, nodelist, backedges)
   for node in nodelist
     emit!(fdef, ir, irmap, cfg, ranges[node], node)
+    ins = inneighbors(cfg.graph, node)
+    outs = outneighbors(cfg.graph, node)
+    local_backedges = filter(in(backedges), map(Base.Fix2(Edge, node), ins))
+    if !isempty(local_backedges)
+      # Must be a loop.
+      if length(local_backedges) > 1
+        throw(CompilationError("There is more than one backedge to a loop."))
+      end
+      vcont = only(local_backedges)
+      vmerge = nothing
+      vmerge_candidates = findall(v -> !has_path(cfg.graph, v, node), outs)
+      @switch length(vmerge_candidates) begin
+        @case 0
+        throw(CompilationError("No merge candidate found for a loop."))
+        @case 1
+        vmerge = outs[only(vmerge_candidates)]
+        @case GuardBy(>(1))
+        throw(CompilationError("More than one candidates found for a loop."))
+      end
+      header = @inst OpLoopMerge(irmap.bbs[vmerge], irmap.bbs[vcont], SelectionControlNone)
+      block = last(fdef.blocks)
+      insert!(block.insts, lastindex(block.insts), header)
+    elseif length(outs) > 1
+      # We're branching.
+      vmerge = postdominator(cfg, node)
+      merge_id = if isnothing(vmerge)
+        # All target blocks return.
+        # Any block is valid in that case.
+        irmap.bbs[last(outs)]
+      else
+        irmap.bbs[vmerge]
+      end
+      header = @inst OpSelectionMerge(merge_id, SelectionControlNone)
+      block = last(fdef.blocks)
+      insert!(block.insts, lastindex(block.insts), header)
+    end
+  end
+end
+
+function remove_backedges!(g::AbstractGraph, source)
+  dfs = dfs_tree(g, source)
+  visited = Int[]
+  backedges = Edge{Int}[]
+  for v in 1:nv(dfs)
+    push!(visited, v)
+    for dst in outneighbors(g, v)
+      if in(dst, visited)
+        rem_edge!(g, v, dst)
+        push!(backedges, Edge(v, dst))
+      end
+    end
+  end
+  g, backedges
+end
+remove_backedges(g::AbstractGraph, source = 1) = remove_backedges!(deepcopy(g), source)
+
+function traverse(g::AbstractGraph, source = 1; has_backedges = true)
+  has_backedges && (g = first(remove_backedges(g, source)))
+  topological_sort_by_dfs(g)
+end
+traverse(cfg::CFG) = traverse(cfg.graph)
+
+postdominator(cfg::CFG, source) = postdominator(cfg.graph, source)
+
+function postdominator(g::AbstractGraph, source)
+  vs = outneighbors(g, source)
+  @assert length(vs) > 1
+  postdominator!(Int[], vs, g, pop!(vs))
+end
+
+function postdominator!(traversed, vs, g::AbstractGraph, i)
+  ins = inneighbors(g, i)
+  if length(ins) > 1
+    if any(!in(traversed), ins)
+      if !isempty(vs)
+        # Kill the current path and start walking from another path vertex.
+        return postdominator!(traversed, vs, g, pop!(vs))
+      end
+    else
+      if isempty(vs)
+        # All paths converged to a single vertex.
+        return i
+      end
+    end
+  end
+  next = filter(!in(traversed), outneighbors(g, i))
+  if isempty(next)
+    if isempty(vs)
+      nothing
+    else
+      postdominator!(traversed, vs, g, pop!(vs))
+    end
+  else
+    if length(next) > 1
+      # Create new path vertices.
+      append!(vs, next[2:end])
+    end
+    push!(traversed, i)
+    postdominator!(traversed, vs, g, first(next))
   end
 end
 

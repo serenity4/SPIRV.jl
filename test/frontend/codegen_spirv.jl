@@ -127,12 +127,13 @@ using SPIRV, Test
    %5 = OpFunctionParameter()::%2
    %6 = OpLabel()
   %12 = OpFOrdLessThan(%9, %5)::%11
-        OpBranchConditional(%12, %8, %7)
+        OpSelectionMerge(%7, None)
+        OpBranchConditional(%12, %7, %8)
    %7 = OpLabel()
-  %14 = OpFSub(%5, %13)::%2
+  %14 = OpFAdd(%5, %13)::%2
         OpReturnValue(%14)
    %8 = OpLabel()
-  %15 = OpFAdd(%5, %13)::%2
+  %15 = OpFSub(%5, %13)::%2
         OpReturnValue(%15)
         OpFunctionEnd()
         """
@@ -169,28 +170,31 @@ using SPIRV, Test
    %6 = OpLabel()
   %17 = OpExtInst(%14, FClamp, %5, %15, %16)::%2
   %20 = OpFOrdEqual(%17, %15)::%19
-        OpBranchConditional(%20, %11, %7)
+        OpSelectionMerge(%11, None)
+        OpBranchConditional(%20, %7, %10)
    %7 = OpLabel()
-  %21 = OpFSub(%5, %16)::%2
-        OpBranch(%8)
+  %21 = OpFMul(%5, %5)::%2
+  %22 = OpFOrdLessThan(%16, %21)::%19
+        OpSelectionMerge(%8, None)
+        OpBranchConditional(%22, %8, %9)
    %8 = OpLabel()
-  %22 = OpPhi(%27 => %12, %21 => %7)::%2
-  %23 = OpFOrdLessThan(%22, %15)::%19
-        OpBranchConditional(%23, %10, %9)
+        OpReturnValue(%21)
    %9 = OpLabel()
-  %24 = OpFAdd(%22, %17)::%2
-        OpReturnValue(%24)
+  %23 = OpFAdd(%5, %21)::%2
+        OpBranch(%11)
   %10 = OpLabel()
-        OpReturnValue(%17)
+  %24 = OpFSub(%5, %16)::%2
+        OpBranch(%11)
   %11 = OpLabel()
-  %25 = OpFMul(%5, %5)::%2
-  %26 = OpFOrdLessThan(%16, %25)::%19
-        OpBranchConditional(%26, %13, %12)
+  %25 = OpPhi(%23 => %9, %24 => %10)::%2
+  %26 = OpFOrdLessThan(%25, %15)::%19
+        OpSelectionMerge(%12, None)
+        OpBranchConditional(%26, %12, %13)
   %12 = OpLabel()
-  %27 = OpFAdd(%5, %25)::%2
-        OpBranch(%8)
+        OpReturnValue(%17)
   %13 = OpLabel()
-        OpReturnValue(%25)
+  %27 = OpFAdd(%25, %17)::%2
+        OpReturnValue(%27)
         OpFunctionEnd()
         """
       )
