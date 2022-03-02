@@ -3,6 +3,10 @@ struct NOverlayMethodTable <: Core.Compiler.MethodTableView
   tables::Vector{Core.MethodTable}
 end
 
+@static if VERSION ≥ v"1.8-beta1"
+  Core.Compiler.isoverlayed(::NOverlayMethodTable) = true
+end
+
 function Core.Compiler.findall(@nospecialize(sig::Type), table::NOverlayMethodTable; limit::Int = typemax(Int))
   min_val = Ref(typemin(UInt))
   max_val = Ref(typemax(UInt))
