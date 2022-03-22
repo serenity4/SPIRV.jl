@@ -72,6 +72,8 @@ include("frontend/compile.jl")
 include("frontend/codegen.jl")
 include("frontend/shader.jl")
 
+include("precompile.jl")
+
 export
   # character literals
   U, F,
