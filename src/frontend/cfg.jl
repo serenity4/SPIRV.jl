@@ -33,7 +33,7 @@ end
 
 function method_instances(@nospecialize(f), @nospecialize(t), interp::AbstractInterpreter)
   sig = Base.signature_type(f, t)
-  (; matches) = Core.Compiler.findall(sig, interp.method_table, limit = -1)
+  (; matches) = first(Core.Compiler.findall(sig, interp.method_table, limit = -1))
   map(Core.Compiler.specialize_method, matches)
 end
 

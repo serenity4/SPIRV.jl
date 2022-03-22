@@ -40,7 +40,7 @@ end
       @test operation.(code[1:(end - 1)]) == [:SConvert, :IAdd, :IMul, :IMul]
       @test ssavaluetypes[1:(end - 1)] == fill(Int64, 4)
 
-      (; code, ssavaluetypes) = SPIRV.@code_typed exp(3)
+      (; code, ssavaluetypes) = SPIRV.@code_typed exp(::Int64)
       @test operation(code[1]) == :ConvertSToF
       @test operation(code[2]; mod = Base.Math) == :exp
       @test ssavaluetypes[1:(end - 1)] == fill(Float64, 2)
@@ -136,9 +136,9 @@ end
 
       (; code, ssavaluetypes) = SPIRV.@code_typed store(::Vector{Float64})
       @test operation.(code[1:(end - 1)]) ==
-            [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
+            [:AccessChain, :Load, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
       @test ssavaluetypes[1:(end - 1)] ==
-            [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
+            [repeat([Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
     end
 
     @testset "Matrix" begin

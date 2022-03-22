@@ -68,7 +68,7 @@ Core.Compiler.OptimizationParams(si::SPIRVInterpreter) = si.opt_params
 Core.Compiler.get_world_counter(si::SPIRVInterpreter) = si.world
 Core.Compiler.get_inference_cache(si::SPIRVInterpreter) = si.local_cache
 Core.Compiler.code_cache(si::SPIRVInterpreter) = WorldView(si.global_cache, si.world)
-Core.Compiler.method_table(si::SPIRVInterpreter, ::InferenceState) = si.method_table
+Core.Compiler.method_table(si::SPIRVInterpreter) = si.method_table
 
 function Core.Compiler.inlining_policy(si::SPIRVInterpreter, @nospecialize(src), stmt_flag::UInt8,
   mi::MethodInstance, argtypes::Vector{Any})

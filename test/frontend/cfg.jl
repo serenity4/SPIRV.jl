@@ -1,4 +1,4 @@
-using SPIRV, Test
+using SPIRV, Test, Graphs
 
 function test_traversal(g)
   visited = Int[]
