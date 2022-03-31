@@ -3,7 +3,7 @@ struct NOverlayMethodTable <: Core.Compiler.MethodTableView
   tables::Vector{Core.MethodTable}
 end
 
-if version ≥ v"1.8.0-beta1"
+if VERSION ≥ v"1.8.0-beta1"
   Core.Compiler.isoverlayed(::NOverlayMethodTable) = true
 end
 

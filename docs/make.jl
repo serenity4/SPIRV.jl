@@ -6,6 +6,7 @@ makedocs(;
   pages = [
     "Home" => "index.md",
     "Introduction" => "intro.md",
+    "Features" => "features.md",
     "API" => "api.md",
   ],
   repo = "https://github.com/serenity4/SPIRV.jl/blob/{commit}{path}#L{line}",

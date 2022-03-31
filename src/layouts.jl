@@ -21,8 +21,14 @@ base_alignment(T::MatrixType, is_column_major::Bool) = is_column_major ? base_al
 extended_alignment(T::SPIRType) = base_alignment(T)
 extended_alignment(T::Union{ArrayType,StructType}) = 16 * cld(base_alignment(T), 16)
 
+"""
+Layout strategy used to compute alignments, offsets and strides.
+"""
 abstract type LayoutStrategy end
 
+"""
+Vulkan-compatible layout strategy.
+"""
 Base.@kwdef struct VulkanLayout <: LayoutStrategy
   scalar_block_layout::Bool = false
   uniform_buffer_standard_layout::Bool = false
@@ -58,7 +64,8 @@ end
 function add_type_layouts!(ir::IR, layout::LayoutStrategy)
   for (T, t) in pairs(ir.typerefs)
     @tryswitch t begin
-      @case ::ArrayType && if !isa(t.eltype, SampledImageType) && !isa(t.eltype, ImageType) && !isa(t.eltype, SamplerType) end
+      @case ::ArrayType && if !isa(t.eltype, SampledImageType) && !isa(t.eltype, ImageType) && !isa(t.eltype, SamplerType)
+      end
       add_stride!(ir, t, T, layout)
 
       @case ::MatrixType
@@ -72,7 +79,7 @@ function add_type_layouts!(ir::IR, layout::LayoutStrategy)
   end
 end
 
-function add_stride!(ir, t::Union{ArrayType, MatrixType}, T, layout)
+function add_stride!(ir, t::Union{ArrayType,MatrixType}, T, layout)
   decs = get!(DecorationData, ir.decorations, ir.types[t])
   if isa(t.eltype, StructType) && haskey(get(DecorationData, ir.decorations, ir.types[t.eltype]), DecorationBlock)
     # Array of shader resources. Must not be decorated.
