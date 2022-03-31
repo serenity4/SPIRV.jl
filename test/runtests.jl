@@ -24,5 +24,7 @@ end
   include("ir.jl")
   include("spvasm.jl")
   include("layouts.jl")
-  include("frontend.jl")
+  if VERSION > v"1.9.0-DEV"
+    include("frontend.jl")
+  end
 end;
