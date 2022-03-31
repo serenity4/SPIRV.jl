@@ -3,7 +3,9 @@ struct NOverlayMethodTable <: Core.Compiler.MethodTableView
   tables::Vector{Core.MethodTable}
 end
 
-Core.Compiler.isoverlayed(::NOverlayMethodTable) = true
+if version ≥ v"1.8.0-beta1"
+  Core.Compiler.isoverlayed(::NOverlayMethodTable) = true
+end
 
 @static if VERSION < v"1.9.0-DEV.149"
   function Core.Compiler.findall(@nospecialize(sig::Type), table::NOverlayMethodTable; limit::Int = typemax(Int))
@@ -37,8 +39,8 @@ else
       if !isnothing(mt)
         nr = length(result.matches)
         if nr ≥ 1 && result.matches[nr].fully_covers
-            # no need to fall back to the internal method table
-            return result, true
+          # no need to fall back to the internal method table
+          return result, true
         end
       else
         return Core.Compiler.MethodLookupResult([matches; result.matches], WorldRange(min_world, max_world), ambig), !isempty(matches)
