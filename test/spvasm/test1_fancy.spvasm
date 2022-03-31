@@ -1,6 +1,6 @@
 # This format is closer to regular Julia syntax
 # than the standard .spvasm format.
-# Differences should be apparent by comparing with the file `simple.spvasm`.
+# Differences should be apparent by comparing with the file `test1.spvasm`.
 
 # Example extracted from https://github.com/google/spirv-tutor
 
