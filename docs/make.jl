@@ -8,6 +8,7 @@ makedocs(;
     "Introduction" => "intro.md",
     "Features" => "features.md",
     "API" => "api.md",
+    "Developer documentation" => "devdocs.md",
   ],
   repo = "https://github.com/serenity4/SPIRV.jl/blob/{commit}{path}#L{line}",
   sitename = "SPIRV.jl",
