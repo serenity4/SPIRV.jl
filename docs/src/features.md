@@ -21,7 +21,7 @@ This library contains an experimental Julia to SPIR-V compiler, which only suppo
 This compiler supports:
 - Basic SPIR-V instructions, requiring special types (`Arr`, `Vec`, `Mat`).
 - GLSL intrinsics (can be disabled).
-- Automatic computation of layout requirements according to an [`LayoutStrategy`](@ref).
+- Automatic computation of layout requirements according to a [`LayoutStrategy`](@ref).
 - Automatic declaration of SPIR-V capabilities and extensions based on a user-provided [`FeatureSupport`](@ref) (see [`SupportedFeatures`](@ref) to manually specify features).
 
 Current outstanding limitations are:
