@@ -49,7 +49,7 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
   add_variable_decorations!(ir, variables, interface)
   add_type_layouts!(ir, interface.layout)
   add_type_decorations!(ir, interface)
-  add_align_operands!(ir, fdef)
+  add_align_operands!(ir, fdef, interface.layout)
 
   # Fill function body.
   blk = new_block!(main, next!(ir.ssacounter))
@@ -97,7 +97,7 @@ function find_definition(id::SSAValue, insts)
   end
 end
 
-function add_align_operands!(ir::IR, fdef::FunctionDefinition)
+function add_align_operands!(ir::IR, fdef::FunctionDefinition, layout::LayoutStrategy)
   insts = body(fdef)
   for inst in insts
     (; opcode, arguments) = inst
@@ -114,14 +114,15 @@ function add_align_operands!(ir::IR, fdef::FunctionDefinition)
         ::Instruction => ir.types[def.type_id::SSAValue]
         ::Variable => def.type
       end
-      if pointer.storage_class == StorageClassPhysicalStorageBuffer
-        (; type) = pointer
-        push!(inst.arguments, MemoryAccessAligned, UInt32(scalar_alignment(type)))
+      (; type, storage_class) = pointer
+      if storage_class == StorageClassPhysicalStorageBuffer
+        # We assume that no other storage class uses the pointer.
+        push!(inst.arguments, MemoryAccessAligned, UInt32(alignment(layout, type, [storage_class], false)))
       end
       @case &OpFunctionCall
       # Recurse into function calls.
       callee = ir.fdefs[first(arguments)]
-      add_align_operands!(ir, callee)
+      add_align_operands!(ir, callee, layout)
     end
   end
 end

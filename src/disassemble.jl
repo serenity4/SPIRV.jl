@@ -1,4 +1,4 @@
-function emit(io::IO, inst::Instruction, id_bound = 999; pad_assignment = false)
+function emit(io::IO, inst::Instruction, id_bound = 999)
   if !isnothing(inst.result_id)
     printstyled(io, inst.result_id; color = :yellow)
     print(io, " = ")

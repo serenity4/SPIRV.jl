@@ -100,7 +100,7 @@ function add_offsets!(ir, T, t, layout)
   scs = storage_classes(ir, t)
   current_offset = 0
   n = fieldcount(T)
-  for (i, name, subT) in zip(1:n, fieldnames(T), fieldtypes(T))
+  for (i, subT) in enumerate(fieldtypes(T))
     subt = (t::StructType).members[i]
     member_decs = get!(DecorationData, t.member_decorations, i)
     alignmt = alignment(layout, subt, scs, haskey(parent_decs, DecorationBlock))
@@ -117,7 +117,7 @@ function Base.size(T::DataType, ir::IR, layout::LayoutStrategy)
   scs = storage_classes(ir, t)
   n = fieldcount(T)
   !isa(t, StructType) && return size(t)
-  for (i, name, subT) in zip(1:n, fieldnames(T), fieldtypes(T))
+  for (i, subT) in enumerate(fieldtypes(T))
     subt = (t::StructType).members[i]
     if i ≠ 1
       alignmt = alignment(layout, subt, scs, haskey(parent_decs, DecorationBlock))

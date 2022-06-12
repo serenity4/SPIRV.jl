@@ -103,8 +103,12 @@ end
         log(z) + y
       end
 
+      # FIXME: `Base.Math.exp_impl` is called with `x::Core.Const(2.0f0)` with
+      # the SPIR-V interpreter, which is invalid; the native interpreter seems
+      # to remove the `Core.Const` annotation and feeds in `x::Float32`.
+      # To replicate, use `f() = exp(2f0)` (or anything that passes a `Core.Const` to `exp`).
       (; code) = SPIRV.@code_typed test_constprop5()
-      @test code[1] == Core.ReturnNode(8.704899f0)
+      @test code[1] == Core.ReturnNode(8.704899f0) broken = VERSION > v"1.9.0-DEV.718" # version is not exact.
     end
   end
 
@@ -136,9 +140,9 @@ end
 
       (; code, ssavaluetypes) = SPIRV.@code_typed store(::Vector{Float64})
       @test operation.(code[1:(end - 1)]) ==
-            [:AccessChain, :Load, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
+            [:AccessChain, :Load, :AccessChain, :Load, :FAdd, :AccessChain, :Store]
       @test ssavaluetypes[1:(end - 1)] ==
-            [repeat([Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
+            [repeat([Pointer{Float64}, Float64], 2); Float64; Pointer{Float64}; Nothing]
     end
 
     @testset "Matrix" begin
