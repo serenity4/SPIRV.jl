@@ -220,23 +220,23 @@ const enum_types = Set(map(first, filter!(is_enum ∘ last, collect(pairs(kind_t
 is_enum(val) = is_enum(typeof(val))
 is_enum(t::DataType) = t in enum_types
 
-struct Metadata
+struct IRMetadata
   magic_number::UInt32
   generator_magic_number::UInt32
   version::VersionNumber
   schema::Int
 end
 
-Metadata() = Metadata(magic_number, generator_magic_number, v"1.5", 0)
+IRMetadata() = IRMetadata(magic_number, generator_magic_number, v"1.5", 0)
 
 @auto_hash_equals struct Module
-  meta::Metadata
+  meta::IRMetadata
   bound::Int
   instructions::Vector{Instruction}
 end
 
 Module(mod::PhysicalModule) =
-  Module(Metadata(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.schema), mod.bound, Instruction.(mod.instructions))
+  Module(IRMetadata(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.schema), mod.bound, Instruction.(mod.instructions))
 Module(source) = Module(PhysicalModule(source))
 
 function Base.isapprox(mod1::Module, mod2::Module; compare_debug_info = false)

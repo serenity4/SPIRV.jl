@@ -70,8 +70,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   cfg = @cfg vert_shader_2!(::Vec{4,Float32})
   ir = compile(cfg, AllSupported())
   @test !iserror(validate(ir))
-  interface =
-    ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => dictionary([SPIRV.DecorationLocation => [0U]])]))
+  interface = ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => Decorations(SPIRV.DecorationLocation, 0)]))
   ir = make_shader(cfg, interface)
   @test !iserror(validate_shader(ir))
 
@@ -91,13 +90,16 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   interface = ShaderInterface(SPIRV.ExecutionModelVertex,
     [SPIRV.StorageClassOutput, SPIRV.StorageClassUniform],
     dictionary([
-      1 => dictionary([SPIRV.DecorationLocation => [0U]]),
-      2 => dictionary([SPIRV.DecorationUniform => [], SPIRV.DecorationDescriptorSet => [0U], SPIRV.DecorationBinding => [0U]]),
+      1 => Decorations(SPIRV.DecorationLocation, 0),
+      2 => Decorations(SPIRV.DecorationUniform).
+        decorate!(SPIRV.DecorationDescriptorSet, 0).
+        decorate!(SPIRV.DecorationBinding, 0),
     ]),
     dictionary([
-      Point => dictionary([SPIRV.DecorationBlock => []]),
-      (Point => :x) => dictionary([SPIRV.DecorationOffset => [0U]]),
-      (Point => :y) => dictionary([SPIRV.DecorationOffset => [4U]]),
+      Point => Metadata().
+        decorate!(SPIRV.DecorationBlock).
+        decorate!(1, SPIRV.DecorationOffset, 0).
+        decorate!(2, SPIRV.DecorationOffset, 4)
     ]),
   )
 
@@ -105,7 +107,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   @test !iserror(validate_shader(ir))
 
   # Let SPIRV figure out member offsets automatically.
-  interface = @set interface.type_decorations = dictionary([Point => dictionary([SPIRV.DecorationBlock => []])])
+  interface = @set interface.type_metadata = dictionary([Point => Metadata().decorate!(SPIRV.DecorationBlock)])
   ir = make_shader(cfg, interface)
   @test !iserror(validate_shader(ir))
 
@@ -122,9 +124,9 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   interface = ShaderInterface(SPIRV.ExecutionModelVertex,
     [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassOutput],
     dictionary([
-      1 => dictionary([SPIRV.DecorationLocation => [0U]]),
-      2 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInVertexIndex]]),
-      3 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInPosition]]),
+      1 => Decorations(SPIRV.DecorationLocation, 0),
+      2 => Decorations(SPIRV.DecorationBuiltIn, SPIRV.BuiltInVertexIndex),
+      3 => Decorations(SPIRV.DecorationBuiltIn, SPIRV.BuiltInPosition),
     ]),
   )
   ir = make_shader(cfg, interface)
@@ -163,12 +165,12 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   interface = ShaderInterface(
     storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassPushConstant],
     variable_decorations = dictionary([
-      1 => dictionary([SPIRV.DecorationLocation => [0U]]),
-      2 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInPosition]]),
-      3 => dictionary([SPIRV.DecorationBuiltIn => [SPIRV.BuiltInVertexIndex]]),
+      1 => Decorations(SPIRV.DecorationLocation, 0),
+      2 => Decorations(SPIRV.DecorationBuiltIn, SPIRV.BuiltInPosition),
+      3 => Decorations(SPIRV.DecorationBuiltIn, SPIRV.BuiltInVertexIndex),
     ]),
-    type_decorations = dictionary([
-      DrawData => dictionary([SPIRV.DecorationBlock => []]),
+    type_metadata = dictionary([
+      DrawData => Metadata().decorate!(SPIRV.DecorationBlock),
     ]),
     features = SUPPORTED_FEATURES,
   )
@@ -176,7 +178,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   @test !iserror(validate_shader(ir))
 
   # Test that `Block` decorations are inserted properly for the push constant.
-  interface = @set interface.type_decorations = Dictionary()
+  interface = @set interface.type_metadata = Dictionary()
   ir = make_shader(cfg, interface)
   @test !iserror(validate_shader(ir))
 
@@ -194,8 +196,8 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     execution_model = SPIRV.ExecutionModelFragment,
     storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput],
     variable_decorations = dictionary([
-      1 => dictionary([SPIRV.DecorationLocation => [0U]]),
-      2 => dictionary([SPIRV.DecorationLocation => [0U]]),
+      1 => Decorations(SPIRV.DecorationLocation, 0),
+      2 => Decorations(SPIRV.DecorationLocation, 0),
     ]),
   )
   ir = make_shader(cfg, interface)

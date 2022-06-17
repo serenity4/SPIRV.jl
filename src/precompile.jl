@@ -45,7 +45,7 @@ while true
   #     2 => dictionary([DecorationBuiltIn => [BuiltInPosition]]),
   #     3 => dictionary([DecorationBuiltIn => [BuiltInVertexIndex]]),
   #   ]),
-  #   type_decorations = dictionary([
+  #   type_metadata = dictionary([
   #     PRECOMPILE_DrawData => dictionary([DecorationBlock => []]),
   #   ]),
   #   features = SUPPORTED_FEATURES,

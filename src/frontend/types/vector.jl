@@ -1,11 +1,15 @@
 mutable struct Vec{N,T<:Scalar} <: AbstractSPIRVArray{T,1}
   data::NTuple{N,T}
+  Vec{N,T}(components::T...) where {N,T} = CompositeConstruct(Vec{N,T}, components...)
 end
 
+Vec{N,T}(data::NTuple) where {N,T} = Vec{N,T}(data...)
 Vec(components::Scalar...) = Vec(promote(components...)...)
 Vec(components::T...) where {T<:Scalar} = Vec{length(components),T}(components...)
-Vec{N,T}(components::T...) where {N,T} = CompositeConstruct(Vec{N,T}, components...)
-@noinline (@generated CompositeConstruct(::Type{Vec{N,T}}, data::T...) where {N,T} = Expr(:new, Vec{N,T}, :data))
+@noinline (@generated function CompositeConstruct(::Type{Vec{N,T}}, data::T...) where {N,T}
+  2 ≤ N ≤ 4 || throw(ArgumentError("SPIR-V vectors must have between 2 and 4 components."))
+  Expr(:new, Vec{N,T}, :data)
+end)
 
 Base.length(::Type{<:Vec{N}}) where {N} = N
 Base.size(T::Type{<:Vec}) = (length(T),)

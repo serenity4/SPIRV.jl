@@ -178,7 +178,7 @@ function Base.read(::Type{Module}, io::IO)
     end
     push!(insts, Instruction(opcode, type_id, result_id, arguments))
   end
-  Module(Metadata(), max_id(insts) + 1, insts)
+  Module(IRMetadata(), max_id(insts) + 1, insts)
 end
 
 Base.parse(::Type{Module}, str::AbstractString) = read(Module, IOBuffer(str))

@@ -99,7 +99,7 @@ end
 
 load_variable!(blk::Block, ir::IR, irmap::IRMapping, var::Variable, ssaval) = load_variable!(blk, ir, irmap, var.type, ssaval)
 function load_variable!(blk::Block, ir::IR, irmap::IRMapping, type::PointerType, ssaval)
-  load = @inst next!(ir.ssacounter) = OpLoad(ssaval)::ir.types[type.type]
+  load = @inst next!(ir.ssacounter) = OpLoad(ssaval)::SSAValue(ir, type.type)
   push!(blk, irmap, load)
   load.result_id
 end

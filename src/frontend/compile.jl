@@ -82,14 +82,14 @@ function emit!(ir::IR, cfg::CFG, variables = Dictionary{Int,Variable}())
   # Declare a new function.
   fdef = define_function!(ir, cfg, variables)
   fid = emit!(ir, fdef)
-  insert!(ir.debug.names, fid, make_name(cfg.mi))
+  set_name!(ir, fid, make_name(cfg.mi))
   irmap = IRMapping()
   arg_idx = 0
   gvar_idx = 0
   for i = 1:(cfg.mi.def.nargs - 1)
     argid = haskey(variables, i) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
     insert!(irmap.args, Core.Argument(i + 1), argid)
-    insert!(ir.debug.names, argid, cfg.code.slotnames[i + 1])
+    set_name!(ir, argid, cfg.code.slotnames[i + 1])
   end
 
   try
@@ -181,12 +181,11 @@ function emit!(ir::IR, c::Constant)
   id
 end
 
-function emit!(ir::IR, var::Variable, decorations = DecorationData())
+function emit!(ir::IR, var::Variable)
   haskey(ir.global_vars, var) && return ir.global_vars[var]
   emit!(ir, var.type)
   id = next!(ir.ssacounter)
   insert!(ir.global_vars, id, var)
-  insert!(ir.decorations, id, decorations)
   id
 end
 

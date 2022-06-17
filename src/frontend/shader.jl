@@ -15,19 +15,19 @@ FunctionDefinition(ir::IR, mi::MethodInstance) = FunctionDefinition(ir, make_nam
 struct ShaderInterface
   execution_model::ExecutionModel
   storage_classes::Vector{StorageClass}
-  variable_decorations::Dictionary{Int,DecorationData}
-  type_decorations::Dictionary #= {Union{DataType,Pair{DataType,Symbol}},DecorationData} =#
+  variable_decorations::Dictionary{Int,Decorations}
+  type_metadata::Dictionary{DataType, Metadata}
   layout::LayoutStrategy
   features::FeatureSupport
   function ShaderInterface(execution_model::ExecutionModel, storage_classes = [], variable_decorations = Dictionary(),
-    type_decorations = Dictionary(), layout = VulkanLayout(), features = AllSupported())
-    new(execution_model, storage_classes, variable_decorations, type_decorations, layout, features)
+    type_metadata = Dictionary(), layout = VulkanLayout(), features = AllSupported())
+    new(execution_model, storage_classes, variable_decorations, type_metadata, layout, features)
   end
 end
 
 function ShaderInterface(; execution_model = ExecutionModelVertex, storage_classes = [], variable_decorations = Dictionary(),
-  type_decorations = Dictionary(), layout = VulkanLayout(), features = AllSupported())
-  ShaderInterface(execution_model, storage_classes, variable_decorations, type_decorations, layout, features)
+  type_metadata = Dictionary(), layout = VulkanLayout(), features = AllSupported())
+  ShaderInterface(execution_model, storage_classes, variable_decorations, type_metadata, layout, features)
 end
 
 """
@@ -48,7 +48,7 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
 
   add_variable_decorations!(ir, variables, interface)
   add_type_layouts!(ir, interface.layout)
-  add_type_decorations!(ir, interface)
+  add_type_metadata!(ir, interface)
   add_align_operands!(ir, fdef, interface.layout)
 
   # Fill function body.
@@ -58,35 +58,22 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
   #TODO: fix this hack in Dictionaries.jl
   fid = findfirst(==(fdef), ir.fdefs.forward)
 
-  push!(blk.insts, @inst next!(ir.ssacounter) = OpFunctionCall(fid)::ir.types[fdef.type.rettype])
+  push!(blk.insts, @inst next!(ir.ssacounter) = OpFunctionCall(fid)::SSAValue(ir, fdef.type.rettype))
   push!(blk.insts, @inst OpReturn())
   satisfy_requirements!(ir, interface.features)
 end
 
 function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)
   for (i, decs) in pairs(interface.variable_decorations)
-    merge!(ir.decorations[ir.global_vars[variables[i]]], decs)
+    meta = Metadata()
+    meta.decorations = decs
+    merge_metadata!(ir, ir.global_vars[variables[i]], meta)
   end
 end
 
-function add_type_decorations!(ir::IR, interface::ShaderInterface)
-  for (target, decs) in pairs(interface.type_decorations)
-    @switch target begin
-      @case ::DataType
-      spv_t = ir.typerefs[target]
-      merge!(get!(DecorationData, ir.decorations, ir.types[spv_t]), decs)
-      @case ::Pair{DataType,Symbol}
-      (T, field) = target
-      spv_t = ir.typerefs[T]
-      idx = findfirst(==(field), fieldnames(T))
-      if isnothing(idx)
-        error("Field $(repr(field)) is not a fieldname of $T")
-      end
-      if !isa(spv_t, StructType)
-        error("Type $T is mapped to a non-aggregate type $spv_t")
-      end
-      merge!(get!(DecorationData, spv_t.member_decorations, idx), decs)
-    end
+function add_type_metadata!(ir::IR, interface::ShaderInterface)
+  for (target, meta) in pairs(interface.type_metadata)
+    merge_metadata!(ir, target, meta)
   end
 end
 
@@ -134,7 +121,7 @@ function make_shader(cfg::CFG, interface::ShaderInterface)
     if sc ≠ StorageClassFunction
       t = spir_type(cfg.mi.specTypes.parameters[i + 1], ir; storage_class = sc)
       if sc in (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer)
-        insert!(ir.decorations, emit!(ir, t), dictionary([DecorationBlock => []]))
+        decorate!(ir, emit!(ir, t), DecorationBlock)
       end
       ptr_type = PointerType(sc, t)
       var = Variable(ptr_type)

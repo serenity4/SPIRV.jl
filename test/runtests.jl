@@ -20,11 +20,12 @@ function test_module(mod::SPIRV.Module)
 end
 
 @testset "SPIRV.jl" begin
-  include("modules.jl")
-  include("ir.jl")
-  include("spvasm.jl")
-  include("layouts.jl")
+  include("modules.jl");
+  include("metadata.jl");
+  include("ir.jl");
+  include("spvasm.jl");
+  include("layouts.jl");
   if VERSION > v"1.9.0-DEV"
-    include("frontend.jl")
+    include("frontend.jl");
   end
 end;

@@ -88,13 +88,3 @@ function source_version(language::SourceLanguage, version::VersionNumber)::UInt3
     end
   end
 end
-
-macro tryswitch(val, ex)
-  push!(ex.args, Expr(:macrocall, Symbol("@case"), __source__, :_), nothing)
-  :($(esc(:($(@__MODULE__).@switch $val $ex))))
-end
-
-macro trymatch(val, ex)
-  push!(ex.args, :(_ => nothing))
-  :($(esc(:($(@__MODULE__).@match $val $ex))))
-end

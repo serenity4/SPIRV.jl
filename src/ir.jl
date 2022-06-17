@@ -54,14 +54,14 @@ function Variable(inst::Instruction, type::SPIRType)
 end
 
 @refbroadcast mutable struct IR
-  meta::Metadata
+  ir_meta::IRMetadata
   capabilities::Vector{Capability}
   extensions::Vector{String}
   extinst_imports::BijectiveMapping{SSAValue,String}
   addressing_model::AddressingModel
   memory_model::MemoryModel
   entry_points::SSADict{EntryPoint}
-  decorations::SSADict{DecorationData}
+  metadata::SSADict{Metadata}
   types::BijectiveMapping{SSAValue,SPIRType}
   "Constants, including specialization constants."
   constants::BijectiveMapping{SSAValue,Constant}
@@ -74,17 +74,15 @@ end
   typerefs::Dictionary{Any,SPIRType}
 end
 
-function IR(; meta::Metadata = Metadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
-  IR(meta, [], [], BijectiveMapping(), addressing_model, memory_model, SSADict(), SSADict(),
+function IR(; ir_meta::IRMetadata = IRMetadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
+  IR(ir_meta, [], [], BijectiveMapping(), addressing_model, memory_model, SSADict(), SSADict(),
     BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), DebugInfo(), SSACounter(0), Dictionary())
 end
 
 function IR(mod::Module; satisfy_requirements = true, features = AllSupported()) #= ::FeatureSupport =#
-  ir = IR(; mod.meta)
-  (; debug, decorations, types, results) = ir
+  ir = IR(; ir_meta = mod.meta)
+  (; debug, metadata, types, results) = ir
 
-  member_decorations = SSADict{Dictionary{Int,DecorationData}}()
-  member_names = SSADict{Dictionary{Int,Symbol}}()
   current_function = nothing
 
   for inst in mod
@@ -131,25 +129,27 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
         !isnothing(debug.source) || error("Source extension was declared before the source, or the source was not declared at all.")
         push!(debug.source.extensions, arguments[1])
         @case &OpName
-        id, name = arguments
-        insert!(debug.names, id, Symbol(name))
+        id = arguments[1]::SSAValue
+        name = arguments[2]::String
+        set_name!(ir, id, Symbol(name))
         @case &OpMemberName
-        id, mindex, name = arguments
-        insert!(get!(Dictionary, member_names, id), mindex + 1, Symbol(name))
+        id = arguments[1]::SSAValue
+        member_index = arguments[2]::UInt32 + 1
+        name = arguments[3]::String
+        set_name!(ir, id, member_index, Symbol(name))
       end
       @case "Annotation"
       @tryswitch opcode begin
         @case &OpDecorate
-        id, decoration, args... = arguments
-        if haskey(decorations, id)
-          insert!(decorations[id], decoration, args)
-        else
-          insert!(decorations, id, dictionary([decoration => args]))
-        end
+        id = arguments[1]::SSAValue
+        dec = arguments[2]::Decoration
+        length(arguments) == 2 ? decorate!(ir, id, dec) : decorate!(ir, id, dec, arguments[3:end]...)
+
         @case &OpMemberDecorate
-        id, member, decoration, args... = arguments
-        member += 1 # convert to 1-based indexing
-        insert!(get!(DecorationData, get!(Dictionary{Int,DecorationData}, member_decorations, SSAValue(id)), member), decoration, args)
+        id = arguments[1]::SSAValue
+        member_index = arguments[2]::UInt32 + 1 # convert to 1-based indexing
+        dec = arguments[3]::Decoration
+        length(arguments) == 3 ? decorate!(ir, id, member_index, dec) : decorate!(ir, id, member_index, dec, arguments[4:end]...)
       end
       @case "Type-Declaration"
       @switch opcode begin
@@ -211,8 +211,6 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
     end
   end
 
-  attach_member_decorations!(ir, member_decorations)
-  attach_member_names!(ir, member_names)
   ir.ssacounter.val = SSAValue(maximum(id.(keys(ir.results))))
   satisfy_requirements && satisfy_requirements!(ir, features)
   ir
@@ -220,36 +218,52 @@ end
 
 max_ssa(ir::IR) = SSAValue(ir.ssacounter)
 
-"""
-Attach member decorations to SPIR-V types (see [`SPIRType`](@ref)).
-
-Member decorations are attached separately because they use forward references to decorated types.
-"""
-function attach_member_decorations!(ir::IR, member_decorations::SSADict{Dictionary{Int,DecorationData}})
-  for (id, decs) in pairs(member_decorations)
-    type = ir.types[id]
-    isa(type, StructType) || error("Unsupported member decoration on non-struct type $type")
-    for (member, decs) in pairs(decs)
-      for (dec, args) in pairs(decs)
-        insert!(get!(DecorationData, type.member_decorations, member), dec, args)
-      end
-    end
-  end
+function has_decoration(ir::IR, id::SSAValue, dec::Decoration)
+  meta = get(ir.metadata, id, nothing)
+  isnothing(meta) && return false
+  has_decoration(meta, dec)
 end
 
-"""
-Attach member names to SPIR-V aggregate types (see [`StructType`](@ref)).
+function has_decoration(ir::IR, id::SSAValue, member_index::Int, dec::Decoration)
+  meta = get(ir.metadata, id, nothing)
+  isnothing(meta) && return false
+  has_decoration(meta, dec, member_index)
+end
 
-Member names are attached separately because they use forward references to decorated types.
-"""
-function attach_member_names!(ir::IR, member_names::SSADict{Dictionary{Int,Symbol}})
-  for (id, names) in pairs(member_names)
-    type = ir.types[id]
-    isa(type, StructType) || error("Unsupported member name declaration on non-struct type $type")
-    for (member, name) in pairs(names)
-      insert!(type.member_names, member, name)
-    end
+function decorations(ir::IR, id::SSAValue)
+  meta = get(ir.metadata, id, nothing)
+  isnothing(meta) && return nothing
+  decorations(meta)
+end
+
+function decorations(ir::IR, id::SSAValue, member_index::Int)
+  meta = get(ir.metadata, id, nothing)
+  isnothing(meta) && return nothing
+  decorations(meta, member_index)
+end
+
+decorate!(ir::IR, id::SSAValue, member_index::Int, dec::Decoration, args...) = decorate!(get!(Metadata, ir.metadata, id), member_index, dec, args...)
+decorate!(ir::IR, id::SSAValue, dec::Decoration, args...) = decorate!(get!(Metadata, ir.metadata, id), dec, args...)
+
+function set_name!(ir::IR, id::SSAValue, name::Symbol)
+  set!(ir.debug.names, id, name)
+  set_name!(get!(Metadata, ir.metadata, id), name)
+end
+set_name!(ir::IR, id::SSAValue, member_index::Int, name::Symbol) = set_name!(get!(Metadata, ir.metadata, id), member_index, name)
+
+SSAValue(ir::IR, t::DataType) = SSAValue(ir, spir_type(t, ir))
+SSAValue(ir::IR, t::SPIRType) = ir.types[t]
+
+function merge_metadata!(ir::IR, id::SSAValue, meta::Metadata)
+  if isdefined(meta, :member_metadata) && !isempty(meta.member_metadata)
+    t = get(ir.types, id, nothing)
+    !isnothing(t) && !isa(t, StructType) && error("Trying to set metadata which contains member metadata on a non-aggregate type.")
   end
+  merge!(get!(Metadata, ir.metadata, id), meta)
+end
+
+for f in (:decorate!, :set_name!, :merge_metadata!, :decorations, :has_decoration)
+  @eval $f(ir::IR, key, args...) = $f(ir, SSAValue(ir, key), args...)
 end
 
 """
@@ -339,11 +353,11 @@ Instruction(::VoidType, id::SSAValue, ::IR) = @inst id = OpTypeVoid()
 Instruction(::BooleanType, id::SSAValue, ::IR) = @inst id = OpTypeBool()
 Instruction(t::IntegerType, id::SSAValue, ::IR) = @inst id = OpTypeInt(UInt32(t.width), UInt32(t.signed))
 Instruction(t::FloatType, id::SSAValue, ::IR) = @inst id = OpTypeFloat(UInt32(t.width))
-Instruction(t::VectorType, id::SSAValue, ir::IR) = @inst id = OpTypeVector(ir.types[t.eltype], UInt32(t.n))
-Instruction(t::MatrixType, id::SSAValue, ir::IR) = @inst id = OpTypeMatrix(ir.types[t.eltype], UInt32(t.n))
+Instruction(t::VectorType, id::SSAValue, ir::IR) = @inst id = OpTypeVector(SSAValue(ir, t.eltype), UInt32(t.n))
+Instruction(t::MatrixType, id::SSAValue, ir::IR) = @inst id = OpTypeMatrix(SSAValue(ir, t.eltype), UInt32(t.n))
 function Instruction(t::ImageType, id::SSAValue, ir::IR)
   inst = @inst id = OpTypeImage(
-    ir.types[t.sampled_type],
+    SSAValue(ir, t.sampled_type),
     t.dim,
     UInt32(something(t.depth, 2)),
     UInt32(t.arrayed),
@@ -355,36 +369,36 @@ function Instruction(t::ImageType, id::SSAValue, ir::IR)
   inst
 end
 Instruction(t::SamplerType, id::SSAValue, ::IR) = @inst id = OpTypeSampler()
-Instruction(t::SampledImageType, id::SSAValue, ir::IR) = @inst id = OpTypeSampledImage(ir.types[t.image_type])
+Instruction(t::SampledImageType, id::SSAValue, ir::IR) = @inst id = OpTypeSampledImage(SSAValue(ir, t.image_type))
 function Instruction(t::ArrayType, id::SSAValue, ir::IR)
   if isnothing(t.size)
-    @inst id = OpTypeRuntimeArray(ir.types[t.eltype])
+    @inst id = OpTypeRuntimeArray(SSAValue(ir, t.eltype))
   else
-    @inst id = OpTypeArray(ir.types[t.eltype], ir.constants[t.size::Constant])
+    @inst id = OpTypeArray(SSAValue(ir, t.eltype), ir.constants[t.size::Constant])
   end
 end
 function Instruction(t::StructType, id::SSAValue, ir::IR)
   inst = @inst id = OpTypeStruct()
-  append!(inst.arguments, ir.types[member] for member in t.members)
+  append!(inst.arguments, SSAValue(ir, member) for member in t.members)
   inst
 end
 Instruction(t::OpaqueType, id::SSAValue, ::IR) = @inst id = OpTypeOpaque(t.name)
-Instruction(t::PointerType, id::SSAValue, ir::IR) = @inst id = OpTypePointer(t.storage_class, ir.types[t.type])
+Instruction(t::PointerType, id::SSAValue, ir::IR) = @inst id = OpTypePointer(t.storage_class, SSAValue(ir, t.type))
 function Instruction(t::FunctionType, id::SSAValue, ir::IR)
-  inst = @inst id = OpTypeFunction(ir.types[t.rettype])
-  append!(inst.arguments, ir.types[argtype] for argtype in t.argtypes)
+  inst = @inst id = OpTypeFunction(SSAValue(ir, t.rettype))
+  append!(inst.arguments, SSAValue(ir, argtype) for argtype in t.argtypes)
   inst
 end
 function Instruction(c::Constant, id::SSAValue, ir::IR)
   @match (c.value, c.is_spec_const) begin
-    ((::Nothing, type), false) => @inst id = OpConstantNull()::ir.types[type]
-    (true, false) => @inst id = OpConstantTrue()::ir.types[BooleanType()]
-    (true, true) => @inst id = OpSpecConstantTrue()::ir.types[BooleanType()]
-    (false, false) => @inst id = OpConstantFalse()::ir.types[BooleanType()]
-    (false, true) => @inst id = OpSpecConstantFalse()::ir.types[BooleanType()]
-    ((ids::Vector{SSAValue}, type), false) => @inst id = OpConstantComposite(ids...)::ir.types[type]
-    ((ids::Vector{SSAValue}, type), true) => @inst id = OpSpecConstantComposite(ids...)::ir.types[type]
-    (val, false) => @inst id = OpConstant(reinterpret(UInt32, val))::ir.types[spir_type(typeof(val), ir)]
+    ((::Nothing, type), false) => @inst id = OpConstantNull()::SSAValue(ir, type)
+    (true, false) => @inst id = OpConstantTrue()::SSAValue(ir, BooleanType())
+    (true, true) => @inst id = OpSpecConstantTrue()::SSAValue(ir, BooleanType())
+    (false, false) => @inst id = OpConstantFalse()::SSAValue(ir, BooleanType())
+    (false, true) => @inst id = OpSpecConstantFalse()::SSAValue(ir, BooleanType())
+    ((ids::Vector{SSAValue}, type), false) => @inst id = OpConstantComposite(ids...)::SSAValue(ir, type)
+    ((ids::Vector{SSAValue}, type), true) => @inst id = OpSpecConstantComposite(ids...)::SSAValue(ir, type)
+    (val, false) => @inst id = OpConstant(reinterpret(UInt32, val))::SSAValue(ir, typeof(val))
   end
 end
 
@@ -411,7 +425,7 @@ function Module(ir::IR; debug_info = true)
   append_globals!(insts, ir)
   append_functions!(insts, ir)
 
-  Module(ir.meta, max_id(ir) + 1, insts)
+  Module(ir.ir_meta, max_id(ir) + 1, insts)
 end
 
 function append_debug_instructions!(insts, ir::IR)
@@ -428,32 +442,14 @@ function append_debug_instructions!(insts, ir::IR)
   for (id, filename) in pairs(debug.filenames)
     push!(insts, @inst OpString(id, filename))
   end
-
-  for (id, name) in pairs(debug.names)
-    push!(insts, @inst OpName(id, String(name)))
-  end
-
-  for (id, type) in pairs(ir.types)
-    if type isa StructType
-      for (member, name) in pairs(type.member_names)
-        push!(insts, @inst OpMemberName(id, UInt32(member - 1), String(name)))
-      end
-    end
+  for (id, meta) in pairs(ir.metadata)
+    append_debug_annotations!(insts, id, meta)
   end
 end
 
 function append_annotations!(insts, ir::IR)
-  for (id, decorations) in pairs(ir.decorations)
-    append!(insts, @inst(OpDecorate(id, dec, args...)) for (dec, args) in pairs(decorations))
-  end
-  for (id, type) in pairs(ir.types)
-    if type isa StructType
-      append!(
-        insts,
-        @inst(OpMemberDecorate(id, UInt32(member - 1), dec, args...)) for (member, decs) in pairs(type.member_decorations) for
-        (dec, args) in pairs(decs)
-      )
-    end
+  for (id, meta) in pairs(ir.metadata)
+    append_decorations!(insts, id, meta)
   end
 end
 
@@ -466,8 +462,8 @@ end
 function instructions(ir::IR, fdef::FunctionDefinition, id::SSAValue)
   insts = Instruction[]
   (; type) = fdef
-  push!(insts, @inst id = OpFunction(fdef.control, ir.types[type])::ir.types[type.rettype])
-  append!(insts, @inst(id = OpFunctionParameter()::ir.types[argtype]) for (id, argtype) in zip(fdef.args, type.argtypes))
+  push!(insts, @inst id = OpFunction(fdef.control, SSAValue(ir, type))::SSAValue(ir, type.rettype))
+  append!(insts, @inst(id = OpFunctionParameter()::SSAValue(ir, argtype)) for (id, argtype) in zip(fdef.args, type.argtypes))
   fbody = body(fdef)
   if !isempty(fbody)
     label = first(fbody)
@@ -487,7 +483,7 @@ function append_globals!(insts, ir::IR)
 end
 
 function Instruction(var::Variable, id::SSAValue, ir::IR)
-  inst = @inst id = OpVariable(var.storage_class)::ir.types[var.type]
+  inst = @inst id = OpVariable(var.storage_class)::SSAValue(ir, var.type)
   !isnothing(var.initializer) && push!(inst.arguments, var.initializer)
   inst
 end

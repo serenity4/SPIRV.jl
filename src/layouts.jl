@@ -4,8 +4,8 @@ scalar_alignment(T::Union{VectorType,MatrixType,ArrayType}) = scalar_alignment(T
 scalar_alignment(T::StructType) = maximum(scalar_alignment, T.members)
 
 base_alignment(T::ScalarType) = scalar_alignment(T)
-base_alignment(T::VectorType) = 2 * div(1 + T.n, 2) * scalar_alignment(T.eltype)
-base_alignment(T::ArrayType) = scalar_alignment(T)
+base_alignment(T::VectorType) = (T.n == 2 ? 2 : 4) * scalar_alignment(T.eltype)
+base_alignment(T::ArrayType) = base_alignment(T.eltype)
 function base_alignment(T::StructType)
   if isempty(T.members)
     # Requires knowing the smallest scalar type permitted
@@ -19,6 +19,7 @@ base_alignment(T::MatrixType, is_column_major::Bool) = is_column_major ? base_al
 
 extended_alignment(T::SPIRType) = base_alignment(T)
 extended_alignment(T::Union{ArrayType,StructType}) = 16 * cld(base_alignment(T), 16)
+extended_alignment(T::MatrixType, is_column_major::Bool) = is_column_major ? extended_alignment(T.eltype) : extended_alignment(VectorType(T.eltype.eltype, T.n))
 
 """
 Layout strategy used to compute alignments, offsets and strides.
@@ -72,39 +73,32 @@ function add_type_layouts!(ir::IR, layout::LayoutStrategy)
       add_matrix_layout!(ir, t)
 
       @case ::StructType
-      # add_type_layouts!(ir, fieldtypes(T), layout)
       add_offsets!(ir, T, t, layout)
     end
   end
 end
 
 function add_stride!(ir, t::Union{ArrayType,MatrixType}, T, layout)
-  decs = get!(DecorationData, ir.decorations, ir.types[t])
-  if isa(t.eltype, StructType) && haskey(get(DecorationData, ir.decorations, ir.types[t.eltype]), DecorationBlock)
-    # Array of shader resources. Must not be decorated.
-    return
-  end
-  dec = isa(t, ArrayType) ? DecorationArrayStride : DecorationMatrixStride
-  set!(decs, dec, [UInt32(size(eltype(T), ir, layout))])
+  # Array of shader resources. Must not be decorated.
+  isa(t.eltype, StructType) && has_decoration(ir, t.eltype, DecorationBlock) && return
+  stride = size(eltype(T), ir, layout)
+  isa(t, ArrayType) ? decorate!(ir, t, DecorationArrayStride, stride) : decorate!(ir, t, DecorationMatrixStride, stride)
 end
 
 function add_matrix_layout!(ir, t::MatrixType)
-  decs = get!(DecorationData, ir.decorations, ir.types[t])
   # The matrix must have come from `Mat` which is column-major.
-  set!(decs, DecorationColMajor, [])
+  decorate!(ir, t, DecorationColMajor)
 end
 
 function add_offsets!(ir, T, t, layout)
-  parent_decs = get(DecorationData, ir.decorations, ir.types[t])
   scs = storage_classes(ir, t)
   current_offset = 0
   n = fieldcount(T)
   for (i, subT) in enumerate(fieldtypes(T))
     subt = (t::StructType).members[i]
-    member_decs = get!(DecorationData, t.member_decorations, i)
-    alignmt = alignment(layout, subt, scs, haskey(parent_decs, DecorationBlock))
+    alignmt = alignment(layout, subt, scs, has_decoration(ir, t, DecorationBlock))
     current_offset = alignmt * cld(current_offset, alignmt)
-    insert!(member_decs, DecorationOffset, [UInt32(current_offset)])
+    decorate!(ir, t, i, DecorationOffset, current_offset)
     i ≠ n && (current_offset += size(subT, ir, layout))
   end
 end
@@ -112,14 +106,13 @@ end
 function Base.size(T::DataType, ir::IR, layout::LayoutStrategy)
   res = 0
   t = ir.typerefs[T]
-  parent_decs = get(DecorationData, ir.decorations, ir.types[t])
   scs = storage_classes(ir, t)
   n = fieldcount(T)
   !isa(t, StructType) && return size(t)
   for (i, subT) in enumerate(fieldtypes(T))
     subt = (t::StructType).members[i]
     if i ≠ 1
-      alignmt = alignment(layout, subt, scs, haskey(parent_decs, DecorationBlock))
+      alignmt = alignment(layout, subt, scs, has_decoration(ir, t, DecorationBlock))
       res = alignmt * cld(res, alignmt)
     end
     res += size(subT, ir, layout)

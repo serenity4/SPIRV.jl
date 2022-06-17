@@ -1,41 +1,41 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type, PointerType
-using SPIRV:
-  StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData
+using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData
 
 function test_has_offset(ir, T, field, offset)
-  decs = ir.typerefs[T].member_decorations[field]
-  @test haskey(decs, SPIRV.DecorationOffset)
-  @test only(decs[SPIRV.DecorationOffset]) === UInt32(offset)
+  decs = decorations(ir, T, field)
+  @test has_decoration(decs, SPIRV.DecorationOffset)
+  @test decs.offset == offset
 end
 
 function test_has_stride(ir, T, stride)
-  decs = get(DecorationData, ir.decorations, ir.types[ir.typerefs[T]])
-  dec = something(get(decs, SPIRV.DecorationArrayStride, nothing), get(decs, SPIRV.DecorationMatrixStride, nothing), Some(nothing))
-  @test !isnothing(dec)
-  @test only(dec) === UInt32(stride)
+  decs = decorations(ir, T)
+  @test !isnothing(decs)
+  @test has_decoration(decs, SPIRV.DecorationArrayStride) || has_decoration(decs, SPIRV.DecorationMatrixStride)
+  dec = has_decoration(decs, SPIRV.DecorationArrayStride) ? decs.array_stride : decs.matrix_stride
+  @test dec == stride
 end
 
-function ir_with_layouts(T; layout = VulkanLayout(), storage_classes = [], decorations = [])
+function ir_with_type(T; storage_classes = [])
   ir = IR()
   type = spir_type(T, ir)
   emit!(ir, type)
-  merge!(get!(DecorationData, ir.decorations, ir.types[type]), dictionary(decorations))
   for sc in storage_classes
     emit!(ir, PointerType(sc, type))
   end
-  SPIRV.add_type_layouts!(ir, layout)
   ir
 end
 
 @testset "Structure layouts" begin
+  layout = VulkanLayout()
+
   @testset "Alignments" begin
     struct Align1
       x::Int64
       y::Int64
     end
 
-    ir = ir_with_layouts(Align1)
+    ir = ir_with_type(Align1)
+    add_type_layouts!(ir, layout)
     test_has_offset(ir, Align1, 1, 0)
     test_has_offset(ir, Align1, 2, 8)
 
@@ -44,7 +44,8 @@ end
       y::Int64
     end
 
-    ir = ir_with_layouts(Align2)
+    ir = ir_with_type(Align2)
+    add_type_layouts!(ir, layout)
     test_has_offset(ir, Align2, 1, 0)
     test_has_offset(ir, Align2, 2, 8)
 
@@ -54,7 +55,8 @@ end
       z::Int32
     end
 
-    ir = ir_with_layouts(Align3)
+    ir = ir_with_type(Align3)
+    add_type_layouts!(ir, layout)
     test_has_offset(ir, Align3, 1, 0)
     test_has_offset(ir, Align3, 2, 8)
     test_has_offset(ir, Align3, 3, 12)
@@ -65,7 +67,8 @@ end
       z::Vec{2,Int16}
     end
 
-    ir = ir_with_layouts(Align4)
+    ir = ir_with_type(Align4)
+    add_type_layouts!(ir, layout)
     test_has_offset(ir, Align4, 1, 0)
     test_has_offset(ir, Align4, 2, 8)
     test_has_offset(ir, Align4, 3, 10)
@@ -77,13 +80,16 @@ end
       z::Int8
     end
 
-    ir = ir_with_layouts(Align5)
+    ir = ir_with_type(Align5)
+    add_type_layouts!(ir, layout)
     test_has_offset(ir, Align5, 1, 0)
     test_has_offset(ir, Align5, 2, 8)
     test_has_offset(ir, Align5, 3, 22)
     @test size(Align5, ir, VulkanLayout()) == 23
 
-    ir = ir_with_layouts(Align5; storage_classes = [StorageClassUniform], decorations = [DecorationBlock => []])
+    ir = ir_with_type(Align5; storage_classes = [StorageClassUniform])
+    decorate!(ir, Align5, DecorationBlock)
+    add_type_layouts!(ir, layout)
     test_has_offset(ir, Align5, 1, 0)
     test_has_offset(ir, Align5, 2, 16)
     test_has_offset(ir, Align5, 3, 30)
@@ -92,11 +98,13 @@ end
 
   @testset "Array/Matrix layouts" begin
     T = Arr{4, Tuple{Float64, Float64}}
-    ir = ir_with_layouts(T)
+    ir = ir_with_type(T)
+    add_type_layouts!(ir, layout)
     test_has_stride(ir, T, 16)
 
     T = Mat{4, 4, Float64}
-    ir = ir_with_layouts(T)
+    ir = ir_with_type(T)
+    add_type_layouts!(ir, layout)
     test_has_stride(ir, T, 8)
   end
 end

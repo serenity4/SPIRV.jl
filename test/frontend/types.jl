@@ -36,6 +36,9 @@ using SPIRV, Test
 
     v[] = v2
     @test all(iszero, v)
+
+    @test_throws ArgumentError Vec(1.0)
+    @test_throws ArgumentError Vec(1.0, 2.0, 3.0, 4.0, 5.0)
   end
 
   @testset "Mat" begin

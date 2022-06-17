@@ -45,6 +45,7 @@ include("spir_types.jl")
 include("parse.jl")
 include("disassemble.jl")
 include("functions.jl")
+include("metadata.jl")
 include("ir.jl")
 include("cfg.jl")
 include("assemble.jl")
@@ -104,11 +105,13 @@ export
   # IR
   IR,
   SSAValue,
-  Metadata,
+  IRMetadata,
   SSADict,
   @inst,
   FeatureRequirements,
   FeatureSupport, AllSupported, SupportedFeatures,
+  Decorations, has_decoration, decorate!, Metadata, decorations,
+  set_name!,
 
   # CFG
   control_flow_graph,
