@@ -302,7 +302,7 @@ function spir_type(t::Type, ir::Optional{IR} = nothing; wrap_mutable = false, st
       end
     end
     ::Type{<:Tuple} => @match (n = length(t.parameters), t) begin
-      (GuardBy(>(1)), ::Type{<:NTuple}) => ArrayType(spir_type(eltype(t), ir), Constant(UInt32(n), ir))
+      (GuardBy(>(1)), ::Type{<:NTuple}) => ArrayType(spir_type(eltype(t), ir), Constant(UInt32(n)))
       # Generate structure on the fly.
       _ => StructType(spir_type.(t.parameters, ir))
     end
@@ -313,8 +313,7 @@ function spir_type(t::Type, ir::Optional{IR} = nothing; wrap_mutable = false, st
     ::Type{Sampler} => SamplerType()
     ::Type{<:Image} => ImageType(spir_type(eltype(t), ir), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
     ::Type{<:SampledImage} => SampledImageType(spir_type(image_type(t), ir))
-    GuardBy(isstructtype) || ::Type{<:NamedTuple} =>
-      StructType(spir_type.(t.types, ir), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
+    GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type.(t.types, ir))
     _ => error("Type $t does not have a corresponding SPIR-V type.")
   end
 

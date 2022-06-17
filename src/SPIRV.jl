@@ -139,6 +139,7 @@ export
   make_shader,
   ShaderInterface,
   LayoutStrategy, VulkanLayout, alignment,
+  extract_bytes, align, aligned_size, payload_size,
   @compile,
   invalidate_all!,
   SPIRVInterpreter,

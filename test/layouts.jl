@@ -1,5 +1,5 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData
+using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData, getoffsets, payload_sizes
 
 function test_has_offset(ir, T, field, offset)
   decs = decorations(ir, T, field)
@@ -72,7 +72,7 @@ end
     test_has_offset(ir, Align4, 1, 0)
     test_has_offset(ir, Align4, 2, 8)
     test_has_offset(ir, Align4, 3, 10)
-    @test size(Align4, ir, VulkanLayout()) == 14
+    @test aligned_size(Align4, ir, layout) == 14
 
     struct Align5
       x::Int64
@@ -85,7 +85,7 @@ end
     test_has_offset(ir, Align5, 1, 0)
     test_has_offset(ir, Align5, 2, 8)
     test_has_offset(ir, Align5, 3, 22)
-    @test size(Align5, ir, VulkanLayout()) == 23
+    @test aligned_size(Align5, ir, layout) == 23
 
     ir = ir_with_type(Align5; storage_classes = [StorageClassUniform])
     decorate!(ir, Align5, DecorationBlock)
@@ -93,7 +93,7 @@ end
     test_has_offset(ir, Align5, 1, 0)
     test_has_offset(ir, Align5, 2, 16)
     test_has_offset(ir, Align5, 3, 30)
-    @test size(Align5, ir, VulkanLayout()) == 31
+    @test aligned_size(Align5, ir, layout) == 31
   end
 
   @testset "Array/Matrix layouts" begin
@@ -107,4 +107,51 @@ end
     add_type_layouts!(ir, layout)
     test_has_stride(ir, T, 8)
   end
-end
+
+  @testset "Byte extraction and alignment" begin
+    bytes = extract_bytes(Align1(1, 2))
+    @test bytes == reinterpret(UInt8, [1, 2])
+    ir = ir_with_type(Align1)
+    add_type_layouts!(ir, layout)
+    t = spir_type(Align1, ir)
+    @test getoffsets(ir, t) == [0, 8]
+    @test payload_sizes(t) == [8, 8]
+    @test align(bytes, t, ir) == bytes
+
+    bytes = extract_bytes(Align2(1, 2))
+    @test bytes == reinterpret(UInt8, [1U, 2U, 0U])
+    ir = ir_with_type(Align2)
+    add_type_layouts!(ir, layout)
+    t = spir_type(Align2, ir)
+    @test getoffsets(ir, t) == [0, 8]
+    @test payload_sizes(t) == [4, 8]
+    @test align(bytes, t, ir) == reinterpret(UInt8, [1, 2])
+
+    bytes = extract_bytes(Align3(1, 2, 3))
+    @test bytes == reinterpret(UInt8, [1U, 0U, 2U, 3U])
+    ir = ir_with_type(Align3)
+    add_type_layouts!(ir, layout)
+    t = spir_type(Align3, ir)
+    @test getoffsets(ir, t) == [0, 8, 12]
+    @test payload_sizes(t) == [8, 4, 4]
+    @test align(bytes, t, ir) == bytes
+
+    bytes = extract_bytes(Align4(1, 2, Vec(3, 4)))
+    @test bytes == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x00, 0x04, 0x00]
+    ir = ir_with_type(Align4)
+    add_type_layouts!(ir, layout)
+    t = spir_type(Align4, ir)
+    @test getoffsets(ir, t) == [0, 8, 10]
+    @test payload_sizes(t) == [8, 1, 4]
+    @test align(bytes, t, ir) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00]
+
+    bytes = extract_bytes(Align5(1, Align4(2, 3, Vec(4, 5)), 6))
+    @test bytes == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x00, 0x05, 0x00, 0x06]
+    ir = ir_with_type(Align5)
+    add_type_layouts!(ir, layout)
+    t = spir_type(Align5, ir)
+    @test getoffsets(ir, t) == [0, 8, 16, 18, 22]
+    @test payload_sizes(t) == [8, 8, 1, 4, 1]
+    @test align(bytes, t, ir) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06]
+  end
+end;

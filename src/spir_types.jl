@@ -95,11 +95,7 @@ types have in principle different semantics.
 """
 mutable struct StructType <: SPIRType
   members::Vector{SPIRType}
-  member_decorations::Dictionary{Int,DecorationData}
-  member_names::Dictionary{Int,Symbol}
 end
-
-StructType(members::AbstractVector) = StructType(members, Dictionary(), Dictionary())
 
 struct PointerType <: SPIRType
   storage_class::StorageClass
