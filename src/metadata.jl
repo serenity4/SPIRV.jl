@@ -156,7 +156,28 @@ mutable struct Metadata
   Metadata() = new()
 end
 
+function Metadata(decs::Decorations)
+  meta = Metadata()
+  meta.decorations = decs
+  meta
+end
+
+Metadata(name::Symbol, decs::Decorations) = Metadata(decs).set_name!(name)
+Metadata(name::Symbol) = Metadata().set_name!(name)
+
 Base.getproperty(meta::Metadata, symbol::Symbol) = symbol === :set_name! ? set_name!(meta) : symbol === :decorate! ? decorate!(meta) : getfield(meta, symbol)
+
+function decorations!(meta::Metadata)
+  isdefined(meta, :decorations) && return meta.decorations
+  setproperty!(meta, :decorations, Decorations())
+end
+
+decorations!(meta::Metadata, member_index::Int) = decorations!(metadata!(meta, member_index))
+
+function metadata!(meta::Metadata, member_index::Int)
+  !isdefined(meta, :member_metadata) && setproperty!(meta, :member_metadata, Dictionary{Int,Metadata}())
+  get!(Metadata, meta.member_metadata, member_index)
+end
 
 function decorate!(meta::Metadata)
   function _decorate!(args...)
@@ -173,8 +194,7 @@ end
 function Base.merge!(x::Metadata, y::Metadata)
   isdefined(y, :name) && setproperty!(x, :name, y.name)
   if isdefined(y, :decorations)
-    !isdefined(x, :decorations) && (x.decorations = Decorations())
-    merge!(x.decorations, y.decorations)
+    merge!(decorations!(x), y.decorations)
   end
   if isdefined(y, :member_metadata)
     !isdefined(x, :member_metadata) && setproperty!(x, :member_metadata, Dictionary{Int,Metadata}())
@@ -192,14 +212,12 @@ function Base.merge(xs::Metadata...)
 end
 
 function decorate!(meta::Metadata, dec::Decoration, args...)
-  !isdefined(meta, :decorations) && (meta.decorations = Decorations())
-  decorate!(meta.decorations, dec, args...)
+  decorate!(decorations!(meta), dec, args...)
   meta
 end
 
 function decorate!(meta::Metadata, member_index::Int, dec::Decoration, args...)
-  !isdefined(meta, :member_metadata) && setproperty!(meta, :member_metadata, Dictionary{Int,Metadata}())
-  decorate!(get!(Metadata, meta.member_metadata, member_index), dec, args...)
+  decorate!(decorations!(meta, member_index), dec, args...)
   meta
 end
 
@@ -245,7 +263,6 @@ function set_name!(meta::Metadata, name::Symbol)
 end
 
 function set_name!(meta::Metadata, member_index::Int, name::Symbol)
-  !isdefined(meta, :member_metadata) && setproperty!(meta, :member_metadata, Dictionary{Int,Metadata}())
-  set_name!(get!(Metadata, meta.member_metadata, member_index), name)
+  set_name!(metadata!(meta, member_index), name)
   meta
 end

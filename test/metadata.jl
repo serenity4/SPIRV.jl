@@ -75,8 +75,7 @@ using SPIRV: append_decorations!, append_debug_annotations!
       (@inst SPIRV.OpMemberDecorate(id, 0U, SPIRV.DecorationOffset, 4U)),
     ]
     insts = Instruction[]
-    meta = Metadata()
-    set_name!(meta, :debug)
+    meta = Metadata(:debug)
     append_debug_annotations!(insts, id, meta)
     @test insts == [@inst SPIRV.OpName(id, "debug")]
     insts = Instruction[]
@@ -104,13 +103,11 @@ using SPIRV: append_decorations!, append_debug_annotations!
       @test z.location == 2
     end
 
-    x = Metadata().
-      set_name!(:x).
+    x = Metadata(:x).
       decorate!(SPIRV.DecorationOffset, 4).
       decorate!(1, SPIRV.DecorationOffset, 12)
 
-    y = Metadata().
-      set_name!(:y).
+    y = Metadata(:y).
       decorate!(SPIRV.DecorationOffset, 8).
       set_name!(1, :y1).
       decorate!(1, SPIRV.DecorationComponent, 2)

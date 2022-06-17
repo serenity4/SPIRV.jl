@@ -65,9 +65,7 @@ end
 
 function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)
   for (i, decs) in pairs(interface.variable_decorations)
-    meta = Metadata()
-    meta.decorations = decs
-    merge_metadata!(ir, ir.global_vars[variables[i]], meta)
+    merge_metadata!(ir, ir.global_vars[variables[i]], Metadata(decs))
   end
 end
 

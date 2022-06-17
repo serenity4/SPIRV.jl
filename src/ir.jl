@@ -242,12 +242,18 @@ function decorations(ir::IR, id::SSAValue, member_index::Int)
   decorations(meta, member_index)
 end
 
-decorate!(ir::IR, id::SSAValue, member_index::Int, dec::Decoration, args...) = decorate!(get!(Metadata, ir.metadata, id), member_index, dec, args...)
-decorate!(ir::IR, id::SSAValue, dec::Decoration, args...) = decorate!(get!(Metadata, ir.metadata, id), dec, args...)
+decorations!(ir::IR, id::SSAValue) = decorations!(metadata!(ir, id))
+decorations!(ir::IR, id::SSAValue, member_index::Int) = decorations!(metadata!(ir, id, member_index))
+
+metadata!(ir::IR, id::SSAValue) = get!(Metadata, ir.metadata, id)
+metadata!(ir::IR, id::SSAValue, member_index::Int) = metadata!(metadata!(ir, id), member_index)
+
+decorate!(ir::IR, id::SSAValue, member_index::Int, dec::Decoration, args...) = decorate!(metadata!(ir, id, member_index), dec, args...)
+decorate!(ir::IR, id::SSAValue, dec::Decoration, args...) = decorate!(metadata!(ir, id), dec, args...)
 
 function set_name!(ir::IR, id::SSAValue, name::Symbol)
   set!(ir.debug.names, id, name)
-  set_name!(get!(Metadata, ir.metadata, id), name)
+  set_name!(metadata!(ir, id), name)
 end
 set_name!(ir::IR, id::SSAValue, member_index::Int, name::Symbol) = set_name!(get!(Metadata, ir.metadata, id), member_index, name)
 
@@ -259,10 +265,10 @@ function merge_metadata!(ir::IR, id::SSAValue, meta::Metadata)
     t = get(ir.types, id, nothing)
     !isnothing(t) && !isa(t, StructType) && error("Trying to set metadata which contains member metadata on a non-aggregate type.")
   end
-  merge!(get!(Metadata, ir.metadata, id), meta)
+  merge!(metadata!(ir, id), meta)
 end
 
-for f in (:decorate!, :set_name!, :merge_metadata!, :decorations, :has_decoration)
+for f in (:decorate!, :set_name!, :merge_metadata!, :decorations, :has_decoration, :decorations!, :metadata!)
   @eval $f(ir::IR, key, args...) = $f(ir, SSAValue(ir, key), args...)
 end
 
