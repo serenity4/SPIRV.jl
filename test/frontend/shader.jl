@@ -182,7 +182,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
 
   # WIP
   # ir = IR()
-  # t = SPIRV.spir_type!(ir, Float32; storage_class = SPIRV.StorageClassPushConstant)
+  # t = SPIRV.spir_type(Float32, ir; storage_class = SPIRV.StorageClassPushConstant)
   # @test isa(t, SPIRV.StructType)
 
   function frag_shader!(out_color, frag_color)

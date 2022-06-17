@@ -99,6 +99,7 @@ export
   OpaqueType,
   StructType,
   PointerType,
+  spir_type,
 
   # IR
   IR,
@@ -134,7 +135,7 @@ export
   compile,
   make_shader,
   ShaderInterface,
-  LayoutStrategy, VulkanLayout,
+  LayoutStrategy, VulkanLayout, alignment,
   @compile,
   invalidate_all!,
   SPIRVInterpreter,

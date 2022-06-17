@@ -1,6 +1,5 @@
 scalar_alignment(::BooleanType) = 0
 scalar_alignment(T::Union{IntegerType,FloatType}) = T.width ÷ 8
-scalar_alignment(T::ArrayType) = scalar_alignment(T.eltype)
 scalar_alignment(T::Union{VectorType,MatrixType,ArrayType}) = scalar_alignment(T.eltype)
 scalar_alignment(T::StructType) = maximum(scalar_alignment, T.members)
 

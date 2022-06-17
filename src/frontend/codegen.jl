@@ -1,5 +1,5 @@
 function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
-  type = spir_type!(ir, jtype)
+  type = spir_type(jtype, ir)
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => (OpCompositeConstruct, args)
     ::Core.PhiNode =>

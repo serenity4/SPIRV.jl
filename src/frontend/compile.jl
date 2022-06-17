@@ -111,7 +111,7 @@ function define_function!(ir::IR, cfg::CFG, variables::Dictionary{Int,Variable})
   (; mi) = cfg
 
   for (i, t) in enumerate(mi.specTypes.types[2:end])
-    type = spir_type!(ir, t, true)
+    type = spir_type(t, ir; wrap_mutable = true)
     var = get(variables, i, nothing)
     @switch var begin
       @case ::Nothing
@@ -126,7 +126,7 @@ function define_function!(ir::IR, cfg::CFG, variables::Dictionary{Int,Variable})
     end
   end
   ci = cfg.interp.global_cache[mi]
-  ftype = FunctionType(spir_type!(ir, ci.rettype), argtypes)
+  ftype = FunctionType(spir_type(ci.rettype, ir), argtypes)
   FunctionDefinition(ftype, FunctionControlNone, [], [], SSADict(), global_vars)
 end
 
@@ -409,7 +409,7 @@ is_termination_instruction(inst::Instruction) = inst.opcode in termination_instr
 function allocate_variable!(ir::IR, irmap::IRMapping, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
   # Create a SPIR-V variable to allow for future mutations.
   id = next!(ir.ssacounter)
-  type = PointerType(StorageClassFunction, spir_type!(ir, jtype))
+  type = PointerType(StorageClassFunction, spir_type(jtype, ir))
   var = Variable(type)
   emit!(ir, type)
   insert!(irmap.variables, core_ssaval, var)

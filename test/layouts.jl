@@ -1,5 +1,5 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type!, PointerType
+using SPIRV: emit!, spir_type, PointerType
 using SPIRV:
   StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData
 
@@ -18,7 +18,7 @@ end
 
 function ir_with_layouts(T; layout = VulkanLayout(), storage_classes = [], decorations = [])
   ir = IR()
-  type = spir_type!(ir, T)
+  type = spir_type(T, ir)
   emit!(ir, type)
   merge!(get!(DecorationData, ir.decorations, ir.types[type]), dictionary(decorations))
   for sc in storage_classes

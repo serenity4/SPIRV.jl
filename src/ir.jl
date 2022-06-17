@@ -253,13 +253,13 @@ function attach_member_names!(ir::IR, member_names::SSADict{Dictionary{Int,Symbo
 end
 
 """
-Get a SPIR-V type from a Julia type, optionally recording the mapping.
+Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is provided.
 
 If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
 """
-function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true, storage_class = nothing)
-  wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, spir_type!(ir, t; record_jtype))
-  haskey(ir.typerefs, t) && isnothing(storage_class) && return ir.typerefs[t]
+function spir_type(t::Type, ir::Optional{IR} = nothing; wrap_mutable = false, storage_class = nothing)
+  wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, spir_type(t, ir))
+  !isnothing(ir) && haskey(ir.typerefs, t) && isnothing(storage_class) && return ir.typerefs[t]
   type = @match t begin
     &Float16 => FloatType(16)
     &Float32 => FloatType(32)
@@ -277,24 +277,24 @@ function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true, 
     ::Type{<:Array} => begin
       eltype, n = t.parameters
       @match n begin
-        1 => ArrayType(spir_type!(ir, eltype; record_jtype), nothing)
-        _ => ArrayType(spir_type!(ir, Array{eltype,n - 1}; record_jtype), nothing)
+        1 => ArrayType(spir_type(eltype, ir), nothing)
+        _ => ArrayType(spir_type(Array{eltype,n - 1}, ir), nothing)
       end
     end
     ::Type{<:Tuple} => @match (n = length(t.parameters), t) begin
-      (GuardBy(>(1)), ::Type{<:NTuple}) => ArrayType(spir_type!(ir, eltype(t); record_jtype), Constant(UInt32(n)))
+      (GuardBy(>(1)), ::Type{<:NTuple}) => ArrayType(spir_type(eltype(t), ir), Constant(UInt32(n), ir))
       # Generate structure on the fly.
-      _ => StructType(spir_type!.(ir, t.parameters; record_jtype))
+      _ => StructType(spir_type.(t.parameters, ir))
     end
-    ::Type{<:Pointer} => PointerType(StorageClassPhysicalStorageBuffer, spir_type!(ir, eltype(t); record_jtype))
-    ::Type{<:Vec} => VectorType(spir_type!(ir, eltype(t); record_jtype), length(t))
-    ::Type{<:Mat} => MatrixType(spir_type!(ir, Vec{nrows(t),eltype(t)}; record_jtype), ncols(t))
-    ::Type{<:Arr} => ArrayType(spir_type!(ir, eltype(t); record_jtype), Constant(UInt32(length(t))))
+    ::Type{<:Pointer} => PointerType(StorageClassPhysicalStorageBuffer, spir_type(eltype(t), ir))
+    ::Type{<:Vec} => VectorType(spir_type(eltype(t), ir), length(t))
+    ::Type{<:Mat} => MatrixType(spir_type(Vec{nrows(t),eltype(t)}, ir), ncols(t))
+    ::Type{<:Arr} => ArrayType(spir_type(eltype(t), ir), Constant(UInt32(length(t))))
     ::Type{Sampler} => SamplerType()
-    ::Type{<:Image} => ImageType(spir_type!(ir, eltype(t)), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
-    ::Type{<:SampledImage} => SampledImageType(spir_type!(ir, image_type(t)))
+    ::Type{<:Image} => ImageType(spir_type(eltype(t), ir), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
+    ::Type{<:SampledImage} => SampledImageType(spir_type(image_type(t), ir))
     GuardBy(isstructtype) || ::Type{<:NamedTuple} =>
-      StructType(spir_type!.(ir, t.types; record_jtype), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
+      StructType(spir_type.(t.types, ir), Dictionary(), Dictionary(1:length(t.types), fieldnames(t)))
     _ => error("Type $t does not have a corresponding SPIR-V type.")
   end
 
@@ -304,7 +304,7 @@ function spir_type!(ir::IR, t::Type, wrap_mutable = false; record_jtype = true, 
     error("The provided type must be a struct or an array of structs. The automation of this requirement is a work in progress.")
   end
 
-  if type == promoted_type && record_jtype
+  if type == promoted_type && !isnothing(ir)
     if isnothing(storage_class)
       insert!(ir.typerefs, t, type)
     else
@@ -384,14 +384,14 @@ function Instruction(c::Constant, id::SSAValue, ir::IR)
     (false, true) => @inst id = OpSpecConstantFalse()::ir.types[BooleanType()]
     ((ids::Vector{SSAValue}, type), false) => @inst id = OpConstantComposite(ids...)::ir.types[type]
     ((ids::Vector{SSAValue}, type), true) => @inst id = OpSpecConstantComposite(ids...)::ir.types[type]
-    (val, false) => @inst id = OpConstant(reinterpret(UInt32, val))::ir.types[spir_type!(ir, typeof(val); record_jtype = false)]
+    (val, false) => @inst id = OpConstant(reinterpret(UInt32, val))::ir.types[spir_type(typeof(val), ir)]
   end
 end
 
 function SPIRType(c::Constant, ir::IR)
   @match c.value begin
     (_, type::SPIRType) || (_, type::SPIRType) => type
-    val => spir_type!(ir, typeof(val); record_jtype = false)
+    val => spir_type(typeof(val), ir)
   end
 end
 
