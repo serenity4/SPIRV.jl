@@ -11,6 +11,12 @@ using SPIRV: append_decorations!, append_debug_annotations!
     @test has_decoration(decs, SPIRV.DecorationOffset)
     @test has_decoration(decs, SPIRV.DecorationBlock)
     @test decs.offset == 4
+    # Fail on setting a decoration with invalid arguments.
+    @test_throws ArgumentError decorate!(decs, SPIRV.DecorationDescriptorSet, 1, 2, 3)
+    @test_throws ArgumentError decorate!(decs, SPIRV.DecorationDescriptorSet)
+    @test_throws ArgumentError decorate!(decs, SPIRV.DecorationUniform, 1)
+    @test !has_decoration(decs, SPIRV.DecorationDescriptorSet)
+    @test !has_decoration(decs, SPIRV.DecorationUniform)
 
     meta = Metadata()
     @test !isdefined(meta, :decorations)

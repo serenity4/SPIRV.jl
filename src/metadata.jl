@@ -40,12 +40,21 @@ end
 
 has_decoration(decs::Decorations, dec::Decoration) = dec in decs.defined
 
-function decorate!(decs::Decorations, dec::Decoration)
-  push!(decs.defined, dec)
-  decs
-end
+function decorate!(decs::Decorations, dec::Decoration, args...)
+  info = get(enum_infos, dec, nothing)
+  if isnothing(info)
+    @error "Unknown decoration $dec($(join([arg, args...], ", ")))"
+    return decs
+  end
+  if length(args) ≠ length(info.parameters)
+    # No variable-length parameters or optional parameters are available as of this writing in SPIR-V.
+    throw(ArgumentError(string("Invalid number of arguments for ", dec, ": expected ", iszero(length(info.parameters)) ? "no arguments" : join(format_parameter.(info.parameters), ", "), ", got ", length(args), " arguments")))
+  end
 
-function decorate!(decs::Decorations, dec::Decoration, arg, args...)
+  push!(decs.defined, dec)
+  isempty(args) && return decs
+
+  (arg, args...) = args
   @switch dec begin
     @case &DecorationSpecId              ; setproperty!(decs, :spec_id, arg)
     @case &DecorationArrayStride         ; setproperty!(decs, :array_stride, arg)
@@ -64,7 +73,7 @@ function decorate!(decs::Decorations, dec::Decoration, arg, args...)
     @case &DecorationFuncParamAttr       ; setproperty!(decs, :func_param_attr, arg)
     @case &DecorationFPRoundingMode      ; setproperty!(decs, :fp_rounding_mode, arg)
     @case &DecorationFPFastMathMode      ; setproperty!(decs, :fp_fast_math_mode, arg)
-    @case &DecorationLinkageAttributes   ; setproperty!(decs, :linkage_attribute, arg => only(args))
+    @case &DecorationLinkageAttributes   ; setproperty!(decs, :linkage_attribute, arg => first(args))
     @case &DecorationInputAttachmentIndex; setproperty!(decs, :input_attachment_index, arg)
     @case &DecorationAlignment           ; setproperty!(decs, :alignment, arg)
     @case &DecorationMaxByteOffset       ; setproperty!(decs, :max_byte_offset, arg)
@@ -72,12 +81,8 @@ function decorate!(decs::Decorations, dec::Decoration, arg, args...)
     @case &DecorationMaxByteOffsetId     ; setproperty!(decs, :max_byte_offset_id, arg)
     @case &DecorationCounterBuffer       ; setproperty!(decs, :counter_buffer, arg)
     @case &DecorationUserSemantic        ; setproperty!(decs, :user_semantic, arg)
-    @case _
-    info = get(enum_infos[Decoration].enumerants, dec, nothing)
-    !isnothing(info) && iszero(length(info.parameters)) && error("Decoration ", dec, " does not accept any parameters.")
-    @error "Unknown decoration $dec($(join([arg, args...], ", ")))"
+    @case _                              ; error("Not implemented for ", dec)
   end
-  push!(decs.defined, dec)
   decs
 end
 

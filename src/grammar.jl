@@ -46,3 +46,11 @@ function Base.getindex(infos::EnumInfos, index)
   isnothing(ret) && throw(KeyError(index))
   ret
 end
+
+function format_parameter(op::OperandInfo)
+  op.quantifier === '?' && return string('[', format_parameter(@set op.quantifier = nothing), ']')
+  sprint(; context = :color => true) do io
+    printstyled(io, '<', strip(something(op.name, ""), '''), '>'; color = :cyan)
+    printstyled(io, "::", op.kind, op.quantifier === '*' ? "..." : ""; color = :light_black)
+  end
+end
