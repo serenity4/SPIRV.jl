@@ -58,9 +58,10 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
   #TODO: fix this hack in Dictionaries.jl
   fid = findfirst(==(fdef), ir.fdefs.forward)
 
-  push!(blk.insts, @inst next!(ir.ssacounter) = OpFunctionCall(fid)::SSAValue(ir, fdef.type.rettype))
-  push!(blk.insts, @inst OpReturn())
+  push!(blk, @inst next!(ir.ssacounter) = OpFunctionCall(fid)::SSAValue(ir, fdef.type.rettype))
+  push!(blk, @inst OpReturn())
   satisfy_requirements!(ir, interface.features)
+  ep
 end
 
 function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)
@@ -112,7 +113,22 @@ function add_align_operands!(ir::IR, fdef::FunctionDefinition, layout::LayoutStr
   end
 end
 
-function make_shader(cfg::CFG, interface::ShaderInterface)
+struct MemoryResource
+  type::SPIRType
+  address::SSAValue
+end
+
+struct Shader
+  ir::IR
+  entry_point::EntryPoint
+  memory_resources::SSADict{MemoryResource}
+end
+
+@forward Shader.ir (Module,)
+
+validate(shader::Shader) = validate_shader(shader.ir)
+
+function Shader(cfg::CFG, interface::ShaderInterface)
   ir = IR()
   variables = Dictionary{Int,Variable}()
   for (i, sc) in enumerate(interface.storage_classes)
@@ -127,5 +143,37 @@ function make_shader(cfg::CFG, interface::ShaderInterface)
     end
   end
   compile!(ir, cfg, variables)
-  make_shader!(ir, cfg.mi, interface, variables)
+  ep = make_shader!(ir, cfg.mi, interface, variables)
+  Shader(ir, ep, memory_resources(ir, ep))
+end
+
+function memory_resources(ir::IR, ep::EntryPoint)
+  addresses = @NamedTuple{address::SSAValue, fid::SSAValue}[]
+  pointers = SSAValue[]
+
+  # for (id, fdef) in pairs(ir.fdefs)
+  #   for blk in fdef.blocks
+  #     for inst in blk
+  #       if inst.opcode == OpConvertUToPtr
+  #         push!(addresses, first(inst.arguments)::SSAValue)
+  #       end
+  #     end
+  #   end
+  # end
+
+  resources = SSADict{MemoryResource}()
+  defining_variables = SSADict{SSAValue}()
+  # for (; address, fid) in unique(addresses)
+  #   addr_var = nothing
+  #   for blk in fdef.blocks
+  #     for inst in blk
+  #       if inst.opcode == OpLoad && first(inst.arguments)::SSAValue in pointers
+  #         isnothing(addr_var) && (addr_var = defining_variable(ir, address, fid))
+  #         insert!(resources, address, MemoryResource(ir.types[inst.result_id], address))
+  #       end
+  #     end
+  #   end
+  # end
+
+  resources
 end

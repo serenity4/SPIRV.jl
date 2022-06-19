@@ -24,8 +24,8 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   SPIRV.@code_typed vert_shader!(::Vec{4,Float32})
   ir = compile(cfg, AllSupported())
   @test !iserror(validate(ir))
-  ir = make_shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput]))
-  mod = SPIRV.Module(ir)
+  shader = Shader(cfg, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput]))
+  mod = SPIRV.Module(shader)
   @test mod == parse(
     SPIRV.Module,
     """
@@ -61,7 +61,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
 """,
   )
   # Make sure the absence of Location decoration raises an error.
-  @test iserror(validate_shader(ir))
+  @test iserror(validate(shader))
 
   function vert_shader_2!(out_color)
     out_color[] = Vec(0.1F, 0.1F, 0.1F, 1F)
@@ -71,8 +71,8 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   ir = compile(cfg, AllSupported())
   @test !iserror(validate(ir))
   interface = ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => Decorations(SPIRV.DecorationLocation, 0)]))
-  ir = make_shader(cfg, interface)
-  @test !iserror(validate_shader(ir))
+  shader = Shader(cfg, interface)
+  @test !iserror(validate(shader))
 
   struct Point
     x::Float32
@@ -103,13 +103,13 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     ]),
   )
 
-  ir = make_shader(cfg, interface)
-  @test !iserror(validate_shader(ir))
+  shader = Shader(cfg, interface)
+  @test !iserror(validate(shader))
 
   # Let SPIRV figure out member offsets automatically.
   interface = @set interface.type_metadata = dictionary([Point => Metadata().decorate!(SPIRV.DecorationBlock)])
-  ir = make_shader(cfg, interface)
-  @test !iserror(validate_shader(ir))
+  shader = Shader(cfg, interface)
+  @test !iserror(validate(shader))
 
   # Test built-in logic.
   function vert_shader_4!(frag_color, index, position)
@@ -129,8 +129,8 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       3 => Decorations(SPIRV.DecorationBuiltIn, SPIRV.BuiltInPosition),
     ]),
   )
-  ir = make_shader(cfg, interface)
-  @test !iserror(validate_shader(ir))
+  shader = Shader(cfg, interface)
+  @test !iserror(validate(shader))
 
   struct DrawData
     camera::UInt64
@@ -174,13 +174,13 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     ]),
     features = SUPPORTED_FEATURES,
   )
-  ir = make_shader(cfg, interface)
-  @test !iserror(validate_shader(ir))
+  shader = Shader(cfg, interface)
+  @test !iserror(validate(shader))
 
   # Test that `Block` decorations are inserted properly for the push constant.
   interface = @set interface.type_metadata = Dictionary()
-  ir = make_shader(cfg, interface)
-  @test !iserror(validate_shader(ir))
+  shader = Shader(cfg, interface)
+  @test !iserror(validate(shader))
 
   # WIP
   # ir = IR()
@@ -200,6 +200,6 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       2 => Decorations(SPIRV.DecorationLocation, 0),
     ]),
   )
-  ir = make_shader(cfg, interface)
-  @test !iserror(validate_shader(ir))
+  shader = Shader(cfg, interface)
+  @test !iserror(validate(shader))
 end

@@ -23,6 +23,7 @@ end
   include("modules.jl");
   include("metadata.jl");
   include("ir.jl");
+  include("analysis.jl");
   include("spvasm.jl");
   include("layouts.jl");
   if VERSION > v"1.9.0-DEV"

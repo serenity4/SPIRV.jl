@@ -117,6 +117,7 @@ function rem_edges!(dg::DeltaGraph, v::Int)
     rem_edge!(dg, i, v)
   end
 end
+rem_edges!(dg::DeltaGraph, edges) = foreach(Base.Fix1(rem_edge!, dg), edges)
 
 function rem_vertex!(dg::DeltaGraph, i)
   idx = vertex_index(dg, i)

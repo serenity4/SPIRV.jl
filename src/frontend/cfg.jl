@@ -132,6 +132,9 @@ function block_ranges(cfg::CFG)
   map(Base.splat(UnitRange), zip(cfg.indices[1:(end - 1)], cfg.indices[2:end] .- 1))
 end
 
+traverse(cfg::CFG) = traverse(cfg.graph)
+postdominator(cfg::CFG, source) = postdominator(cfg.graph, source)
+
 get_signature(f::Symbol) = (f,)
 function argtype(arg)
   @match arg begin

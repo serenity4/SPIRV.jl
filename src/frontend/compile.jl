@@ -191,10 +191,12 @@ end
 
 function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG)
   ranges = block_ranges(cfg)
-  graph, backedges = remove_backedges(cfg.graph)
+  back_edges = backedges(cfg.graph)
+  graph = deepcopy(cfg.graph)
+  rem_edges!(graph, back_edges)
   nodelist = traverse(graph; has_backedges = false)
   add_mapping!(irmap, ir, ranges, nodelist)
-  emit_nodes!(fdef, ir, irmap, cfg, ranges, nodelist, backedges)
+  emit_nodes!(fdef, ir, irmap, cfg, ranges, nodelist, back_edges)
   replace_forwarded_ssa!(fdef, irmap)
 end
 
@@ -245,69 +247,6 @@ function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CF
       block = last(fdef.blocks)
       insert!(block.insts, lastindex(block.insts), header)
     end
-  end
-end
-
-function remove_backedges!(g::AbstractGraph, source)
-  dfs = dfs_tree(g, source)
-  visited = Int[]
-  backedges = Edge{Int}[]
-  for v in 1:nv(dfs)
-    push!(visited, v)
-    for dst in outneighbors(g, v)
-      if in(dst, visited)
-        rem_edge!(g, v, dst)
-        push!(backedges, Edge(v, dst))
-      end
-    end
-  end
-  g, backedges
-end
-remove_backedges(g::AbstractGraph, source = 1) = remove_backedges!(deepcopy(g), source)
-
-function traverse(g::AbstractGraph, source = 1; has_backedges = true)
-  has_backedges && (g = first(remove_backedges(g, source)))
-  topological_sort_by_dfs(g)
-end
-traverse(cfg::CFG) = traverse(cfg.graph)
-
-postdominator(cfg::CFG, source) = postdominator(cfg.graph, source)
-
-function postdominator(g::AbstractGraph, source)
-  vs = outneighbors(g, source)
-  @assert length(vs) > 1
-  postdominator!(Int[], vs, g, pop!(vs))
-end
-
-function postdominator!(traversed, vs, g::AbstractGraph, i)
-  ins = inneighbors(g, i)
-  if length(ins) > 1
-    if any(!in(traversed), ins)
-      if !isempty(vs)
-        # Kill the current path and start walking from another path vertex.
-        return postdominator!(traversed, vs, g, pop!(vs))
-      end
-    else
-      if isempty(vs)
-        # All paths converged to a single vertex.
-        return i
-      end
-    end
-  end
-  next = filter(!in(traversed), outneighbors(g, i))
-  if isempty(next)
-    if isempty(vs)
-      nothing
-    else
-      postdominator!(traversed, vs, g, pop!(vs))
-    end
-  else
-    if length(next) > 1
-      # Create new path vertices.
-      append!(vs, next[2:end])
-    end
-    push!(traversed, i)
-    postdominator!(traversed, vs, g, first(next))
   end
 end
 

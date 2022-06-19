@@ -8,6 +8,8 @@ using Dictionaries
 using AutoHashEquals
 using Accessors
 using ResultTypes: Result
+using AbstractTrees
+using AbstractTrees: parent
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
 using CodeInfoTools: CodeInfoTools, finish, verify, Builder
@@ -47,8 +49,9 @@ include("disassemble.jl")
 include("functions.jl")
 include("metadata.jl")
 include("ir.jl")
-include("cfg.jl")
 include("assemble.jl")
+include("analysis/call_tree.jl")
+include("analysis/control_flow.jl")
 include("validate.jl")
 include("layouts.jl")
 include("requirements.jl")
@@ -137,7 +140,8 @@ export
   infer, verify,
   compile,
   make_shader,
-  ShaderInterface,
+  ShaderInterface, Shader, MemoryResource,
+  dependent_functions,
   LayoutStrategy, VulkanLayout, alignment,
   extract_bytes, align, aligned_size, payload_size,
   @compile,
