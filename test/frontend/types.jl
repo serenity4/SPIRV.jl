@@ -80,4 +80,4 @@ using SPIRV, Test
     sampled = SampledImage(img, sampler)
     @test sampled(1f0) == zero(Vec{4, eltype(img)})
   end
-end
+end;

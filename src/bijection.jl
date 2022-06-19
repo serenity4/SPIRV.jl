@@ -32,7 +32,21 @@ function Dictionaries.sortkeys!(bmap::BijectiveMapping)
   sort!(bmap.backward)
 end
 
-@forward BijectiveMapping.forward (Base.pairs, Base.iterate)
+@forward BijectiveMapping.forward (Base.pairs, Base.iterate, Base.keys, Base.length)
+
+function Base.show(io::IO, ::MIME"text/plain", bmap::BijectiveMapping)
+  print(io, BijectiveMapping, " with ", length(bmap), " elements:")
+  dpheight = displaysize(io)[2]
+  keyvals = []
+  for (i, (key, val)) in enumerate(pairs(bmap.forward))
+    i < dpheight || break
+    push!(keyvals, string("  ", key) => string(val))
+  end
+  max_keylength = maximum(length ∘ first, keyvals)
+  for (key, val) in keyvals
+    print(io, '\n', lpad(key, max_keylength), " <=> ", val)
+  end
+end
 
 function merge_unique!(dict, ds...)
   for d in ds

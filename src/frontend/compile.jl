@@ -390,7 +390,7 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
   end
 
   # Implicit `goto` to the next block.
-  if !is_termination_instruction(last(blk.insts))
+  if !is_termination_instruction(last(blk))
     spv_inst = @inst OpBranch(SSAValue(node + 1, irmap))
     push!(blk, irmap, spv_inst)
   end
