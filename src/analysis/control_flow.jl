@@ -55,43 +55,17 @@ function traverse(g::AbstractGraph, source = 1; has_backedges = true)
 end
 
 function postdominator(g::AbstractGraph, source)
-  vs = outneighbors(g, source)
-  @assert length(vs) > 1
-  vcolor = zeros(UInt8, nv(g))
-  
-  postdominator!(Int[], vs, g, pop!(vs))
-end
-
-function postdominator!(traversed, vs, g::AbstractGraph, i)
-  ins = inneighbors(g, i)
-  if length(ins) > 1
-    if any(!in(traversed), ins)
-      if !isempty(vs)
-        # Kill the current path and start walking from another path vertex.
-        return postdominator!(traversed, vs, g, pop!(vs))
-      end
-    else
-      if isempty(vs)
-        # All paths converged to a single vertex.
-        return i
-      end
+  g = remove_backedges(g)
+  root_tree = DominatorTree(g)
+  tree = nothing
+  for subtree in PreOrderDFS(root_tree)
+    if nodevalue(subtree) == source
+      tree = subtree
     end
   end
-  next = filter(!in(traversed), outneighbors(g, i))
-  if isempty(next)
-    if isempty(vs)
-      nothing
-    else
-      postdominator!(traversed, vs, g, pop!(vs))
-    end
-  else
-    if length(next) > 1
-      # Create new path vertices.
-      append!(vs, next[2:end])
-    end
-    push!(traversed, i)
-    postdominator!(traversed, vs, g, first(next))
-  end
+  pdoms = findall(!in(nodevalue(subtree), outneighbors(g, nodevalue(tree))) for subtree in children(tree))
+  @assert length(pdoms) ≤ 1 "Found $(length(pdoms)) postdominator(s)"
+  isempty(pdoms) ? nothing : nodevalue(children(tree)[first(pdoms)])
 end
 
 struct DominatorTree

@@ -73,6 +73,9 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
         @test sort(dominated) == 2:nv(g)
       end
 
+      # All the following graphs are rooted in 1.
+
+      # Symmetric diverge/merge point.
       g = DeltaGraph(4, 1 => 2, 1 => 3, 2 => 4, 3 => 4)
       tree = DominatorTree(g)
       test_completeness(tree, g)
@@ -80,6 +83,7 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
       @test postdominator(g, 1) == 4
       test_traversal(g)
 
+      # No merge point, two sinks.
       g = DeltaGraph(4, 1 => 2, 1 => 3, 3 => 4)
       tree = DominatorTree(g)
       test_completeness(tree, g)
@@ -88,6 +92,7 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
       @test isnothing(postdominator(g, 1))
       test_traversal(g)
 
+      # Graph with a merge point that is the target of both a primary and a secondary branching construct (nested within the primary).
       g = DeltaGraph(6, 1 => 2, 1 => 3, 2 => 4, 2 => 5, 4 => 6, 5 => 6, 3 => 6)
       tree = DominatorTree(g)
       test_completeness(tree, g)
@@ -96,6 +101,7 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
       @test postdominator(g, 1) == 6
       test_traversal(g)
 
+      # Graph with a merge point dominated by a cycle.
       g = DeltaGraph(8, 1 => 2, 1 => 3, 2 => 4, 4 => 5, 4 => 7, 5 => 6, 6 => 4, 7 => 8, 3 => 8)
       tree = DominatorTree(g)
       test_completeness(tree, g)
@@ -105,6 +111,11 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
       @test dominated_nodes(tree[1][1][1]) == [6]
       @test postdominator(g, 1) == 8
       test_traversal(g)
+
+      # Graph with three sinks and a merge point dominated by branching construct wherein one branch is a sink.
+      g = DeltaGraph(8, 1 => 2, 2 => 3, 2 => 4, 4 => 6, 1 => 5, 5 => 6, 6 => 7, 6 => 8)
+      @test postdominator(g, 1) == 6
+      @test postdominator(g, 2) == nothing
     end
   end
 end;
