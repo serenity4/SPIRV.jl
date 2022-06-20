@@ -61,7 +61,7 @@ is_directed(dg::DeltaGraph) = is_directed(typeof(dg))
 is_directed(::Type{<:DeltaGraph}) = true
 
 has_edge(dg::DeltaGraph, e::Edge) = has_edge(dg, e.src, e.dst)
-has_edge(dg::DeltaGraph, src, dst) = has_vertex(dg, src) && has_vertex(dg, dst) && dst in _outneighbors(dg, src)
+has_edge(dg::DeltaGraph, src, dst) = has_vertex(dg, src) && has_vertex(dg, dst) && dst in outneighbors(dg, src)
 
 function edges(dg::DeltaGraph)
   edge_lists = map(enumerate(dg.fadjlist)) do (i, fadj)
@@ -70,10 +70,8 @@ function edges(dg::DeltaGraph)
   edgetype(dg)[edge_lists...;]
 end
 
-_inneighbors(dg::DeltaGraph, v) = dg.badjlist[vertex_index(dg, v)]
-_outneighbors(dg::DeltaGraph, v) = dg.fadjlist[vertex_index(dg, v)]
-inneighbors(dg::DeltaGraph, v) = copy(_inneighbors(dg, v))
-outneighbors(dg::DeltaGraph, v) = copy(_outneighbors(dg, v))
+inneighbors(dg::DeltaGraph, v) = dg.badjlist[vertex_index(dg, v)]
+outneighbors(dg::DeltaGraph, v) = dg.fadjlist[vertex_index(dg, v)]
 
 ne(dg::DeltaGraph) = sum(length, dg.fadjlist[vertices(dg)])
 nv(dg::DeltaGraph) = length(vertices(dg))
@@ -110,10 +108,10 @@ end
 Remove all edges from or to vertex `v`.
 """
 function rem_edges!(dg::DeltaGraph, v::Int)
-  for i in _outneighbors(dg, v)
+  for i in outneighbors(dg, v)
     rem_edge!(dg, v, i)
   end
-  for i in _inneighbors(dg, v)
+  for i in inneighbors(dg, v)
     rem_edge!(dg, i, v)
   end
 end
@@ -134,9 +132,9 @@ rem_edge!(dg::DeltaGraph, e::Edge) = rem_edge!(dg, e.src, e.dst)
 
 function rem_edge!(dg::DeltaGraph, src, dst)
   if has_edge(dg, src, dst)
-    outs = _outneighbors(dg, src)
+    outs = outneighbors(dg, src)
     deleteat!(outs, findfirst(==(dst), outs))
-    ins = _inneighbors(dg, dst)
+    ins = inneighbors(dg, dst)
     deleteat!(ins, findfirst(==(src), ins))
   end
   nothing
