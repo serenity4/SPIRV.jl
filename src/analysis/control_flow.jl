@@ -1,22 +1,42 @@
 entry_node(g::AbstractGraph) = only(sources(g))
 
-function control_flow_graph(f::FunctionDefinition)
-  cfg = SimpleDiGraph(length(f.blocks))
-  for (i, block) in enumerate(f.blocks)
-    for inst in block.insts
+control_flow_graph(fdef::FunctionDefinition) = control_flow_graph(collect(fdef.blocks))
+
+function control_flow_graph(insts)
+  first(insts).opcode == OpFunction || error("Expected OpFunction declaration, got $(first(insts))")
+  last(insts).opcode == OpFunctionEnd || error("Expected OpFunctionEnd declaration, got $(first(insts))")
+  control_flow_graph(parse_blocks(insts[begin+1:end-1]))
+end
+
+function parse_blocks(insts::AbstractVector{Instruction})
+  blocks = Block[]
+  current_block = nothing
+  for inst in insts
+    @switch inst.opcode begin
+      @case &OpLabel; current_block = Block(inst.result_id)
+      @case _; push!(current_block::Block, inst)
+    end
+  end
+  blocks
+end
+
+function control_flow_graph(blocks::AbstractVector{Block})
+  cfg = SimpleDiGraph(length(blocks))
+  for (i, block) in enumerate(blocks)
+    for inst in block
       (; opcode, arguments) = inst
       @tryswitch opcode begin
         @case &OpBranch
-        dst = arguments[1]
-        add_edge!(cfg, i, block_index(f, dst))
-        @case &OpBranchConditional
-        cond, dst1, dst2, weights... = arguments
-        add_edge!(cfg, i, block_index(f, dst1))
-        add_edge!(cfg, i, block_index(f, dst2))
+        dst = arguments[1]::SSAValue
+        add_edge!(cfg, i, block_index(blocks, dst))
         @case &OpSwitch
-        val, dsts... = arguments
-        for dst in dsts
-          add_edge!(cfg, i, block_index(f, dst))
+        cond, dst1, dst2 = arguments[1]::SSAValue, arguments[2]::SSAValue, arguments[3]::SSAValue
+        add_edge!(cfg, i, block_index(blocks, dst1))
+        add_edge!(cfg, i, block_index(blocks, dst2))
+        @case &OpSwitch
+        val = arguments[1]::SSAValue
+        for dst in arguments[2:end]
+          add_edge!(cfg, i, block_index(blocks, dst::SSAValue))
         end
       end
     end
@@ -24,7 +44,7 @@ function control_flow_graph(f::FunctionDefinition)
   cfg
 end
 
-block_index(f::FunctionDefinition, id::SSAValue) = findfirst(==(id), collect(keys(f.blocks)))
+block_index(blocks::AbstractVector{Block}, id::SSAValue) = findfirst(==(id) ∘ Base.Fix2(getproperty, :id), blocks)
 
 function backedges(g::AbstractGraph, source = 1)
   dfs = dfs_tree(g, source)
@@ -174,4 +194,4 @@ function find_parent(f, tree)
   end
 end
 
-traverse_cfg(fdef::FunctionDefinition) = PostOrderDFS(dominance_tree(fdef))
+traverse_cfg(fdef::FunctionDefinition) = (keys(fdef.blocks)[nodevalue(tree)] for tree in PreOrderDFS(dominance_tree(fdef)))

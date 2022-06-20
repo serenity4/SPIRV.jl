@@ -200,7 +200,7 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
       @case "Control-Flow"
       @assert !isnothing(current_function)
       if opcode == OpLabel
-        insert!(current_function.blocks, inst.result_id, Block(inst.result_id, []))
+        insert!(current_function.blocks, inst.result_id, Block(inst.result_id))
       end
     end
     if !isnothing(current_function) && !isempty(current_function.blocks) && opcode ≠ OpVariable
