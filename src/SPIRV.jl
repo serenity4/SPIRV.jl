@@ -42,6 +42,7 @@ include("generated/extinsts.jl")
 
 include("utils.jl")
 include("bijection.jl")
+include("cursor.jl")
 include("ssa.jl")
 include("instructions.jl")
 include("spir_types.jl")
