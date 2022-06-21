@@ -26,7 +26,7 @@ modules = [
       tmp = IOBuffer()
       write(tmp, pmod_reconstructed)
       seekstart(tmp)
-      @test PhysicalModule(tmp) == pmod_reconstructed
+      @test read(tmp, PhysicalModule) == pmod_reconstructed
     end
   end
 end

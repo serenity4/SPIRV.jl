@@ -17,7 +17,7 @@ function add_extra_operands!(op_infos, i, arg, category)
   end
 end
 
-invalid_format(msg) = throw(SPIRFormatError(msg))
+invalid_format(msg...) = throw(SPIRFormatError(string(msg...)))
 
 function info(opcode::Union{OpCode,OpCodeGLSL}, skip_ids::Bool = true)
   source = isa(opcode, OpCode) ? instruction_infos : instruction_infos_glsl
@@ -58,37 +58,50 @@ Base.isapprox(mod1::PhysicalModule, mod2::PhysicalModule) =
   mod1.schema == mod2.schema && mod1.version == mod2.version && Set(mod1.instructions) == Set(mod2.instructions)
 
 function PhysicalModule(file::AbstractString)
-  open(x -> PhysicalModule(x), file)
+  open(io -> read(io, PhysicalModule), file)
 end
 
-function PhysicalModule(io::IO)
+Base.read(io::IO, ::Type{PhysicalModule}) = read(IOBuffer(read(io)), PhysicalModule)
+Base.read(io::IOBuffer, ::Type{PhysicalModule}) = read(correct_endianess(io), PhysicalModule)
+
+"""
+Return an IO that will always read in the right endianness.
+"""
+function correct_endianess(io::IO)
+  magic = peek(io, UInt32)
+  swap = magic == magic_number ? false : magic == 0x30203270 ? true : invalid_format("Invalid SPIR-V magic number: expected ", repr(magic_number), " or 0x30203270, got ", repr(magic))
+  SwapStream(swap, io)
+end
+
+read_word(io::IO) = read(io, Word)
+
+function Base.read(io::SwapStream, ::Type{PhysicalModule})
   insts = PhysicalInstruction[]
-  _magic_number = read(io, Word)
-  next_word = next_word_f(_magic_number)
-  version = next_word(io)
-  generator_magic_number = next_word(io)
-  bound = next_word(io)
-  bound > 4_194_303 && invalid_format("ID bound above valid limit ($bound > $(4_194_303))")
-  schema = next_word(io)
+  _magic_number = read_word(io)
+  version = read_word(io)
+  generator_magic_number = read_word(io)
+  bound = read_word(io)
+  bound > 4_194_303 && invalid_format("ID bound above valid limit (", bound, " > ", 4_194_303)
+  schema = read_word(io)
   while !eof(io)
-    push!(insts, next_instruction(io, next_word))
+    push!(insts, next_instruction(io, read_word))
   end
 
   PhysicalModule(_magic_number, generator_magic_number, version, bound, schema, insts)
 end
 
-function next_id(io::IO, next_word, op_kinds, id_type)
+function next_id(io::IO, read_word, op_kinds, id_type)
   @match id_type begin
     &IdResultType => begin
       if length(op_kinds) ≠ 0 && id_type == first(op_kinds)
-        next_word(io)
+        read_word(io)
       else
         nothing
       end
     end
     &IdResult => begin
       if length(op_kinds) == 1 && id_type == first(op_kinds) || length(op_kinds) > 1 && id_type in op_kinds[1:2]
-        next_word(io)
+        read_word(io)
       else
         nothing
       end
@@ -96,8 +109,8 @@ function next_id(io::IO, next_word, op_kinds, id_type)
   end
 end
 
-function next_instruction(io::IO, next_word)
-  op_data = next_word(io)
+function next_instruction(io::IO, read_word)
+  op_data = read_word(io)
   word_count = op_data >> 2^4
 
   if word_count == 0
@@ -107,26 +120,15 @@ function next_instruction(io::IO, next_word)
   opcode = OpCode(op_data & 0xffff)
   op_kinds = operand_kinds(opcode, false)
 
-  type_id = next_id(io, next_word, op_kinds, IdResultType)
-  result_id = next_id(io, next_word, op_kinds, IdResult)
+  type_id = next_id(io, read_word, op_kinds, IdResultType)
+  result_id = next_id(io, read_word, op_kinds, IdResult)
 
   operands = Word[]
   for i = 1:(word_count - start_idx(type_id, result_id))
-    push!(operands, next_word(io))
+    push!(operands, read_word(io))
   end
 
   PhysicalInstruction(word_count, opcode, type_id, result_id, operands)
-end
-
-function next_word_f(_magic_number::Word)
-  if _magic_number == 0x30203270
-    swap_endianness = ENDIAN_BOM == 0x04030201 ? ntoh : ltoh
-    io::IO -> swap_endianness(read(io, Word))
-  elseif _magic_number == magic_number
-    io::IO -> read(io, Word)
-  else
-    error("Unknown magic number $_magic_number")
-  end
 end
 
 function info(opcode::OpCode, arguments::AbstractVector, skip_ids::Bool = true)

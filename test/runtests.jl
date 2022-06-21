@@ -14,7 +14,7 @@ function test_module(mod::SPIRV.Module)
   io = IOBuffer()
   write(io, pmod)
   seekstart(io)
-  @test PhysicalModule(io) == pmod
+  @test read(io, PhysicalModule) == pmod
 
   @test SPIRV.Module(pmod) == mod
 end

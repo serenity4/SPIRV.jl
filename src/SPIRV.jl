@@ -10,6 +10,7 @@ using Accessors
 using ResultTypes: Result
 using AbstractTrees
 using AbstractTrees: parent
+using SwapStreams: SwapStream
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
 using CodeInfoTools: CodeInfoTools, finish, verify, Builder
