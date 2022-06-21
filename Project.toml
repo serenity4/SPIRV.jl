@@ -20,6 +20,7 @@ SPIRV_Tools_jll = "6ac6d60f-d740-5983-97d7-a4482c0689f4"
 AbstractTrees = "0.4"
 CEnum = "0.4.1"
 MLStyle = "^0.4.11"
+ResultTypes = "3"
 julia = "1.7"
 
 [extras]
