@@ -6,15 +6,11 @@ function renumber_ssa(mod::Module)
   amod = AnnotatedModule(mod)
   c = cursor(amod)
 
-  while position(c) < amod.functions
+  while position(c) < amod.functions || opcode(peek(c)) ≠ OpLabel
     push!(new_insts, swap_result_id!(swaps, counter, read(c)))
   end
 
   while !eof(c)
-    while opcode(peek(c)) in (OpFunction, OpFunctionParameter)
-      push!(new_insts, swap_result_id!(swaps, counter, read(c)))
-    end
-
     blocks = read(c, Vector{Block})
     assert_opcode(OpFunctionEnd, read(c))
     cfg = control_flow_graph(blocks)
@@ -24,7 +20,6 @@ function renumber_ssa(mod::Module)
         push!(new_insts, swap_result_id!(swaps, counter, inst))
       end
     end
-
     push!(new_insts, @inst OpFunctionEnd())
   end
 
