@@ -112,7 +112,7 @@ export
   annotate, AnnotatedModule,
   IR,
   SSAValue,
-  IRMetadata,
+  ModuleMetadata,
   SSADict,
   @inst,
   FeatureRequirements,

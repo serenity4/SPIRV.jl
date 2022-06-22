@@ -54,7 +54,7 @@ function Variable(inst::Instruction, type::SPIRType)
 end
 
 @refbroadcast mutable struct IR
-  ir_meta::IRMetadata
+  ir_meta::ModuleMetadata
   capabilities::Vector{Capability}
   extensions::Vector{String}
   extinst_imports::BijectiveMapping{SSAValue,String}
@@ -74,7 +74,7 @@ end
   typerefs::Dictionary{Any,SPIRType}
 end
 
-function IR(; ir_meta::IRMetadata = IRMetadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
+function IR(; ir_meta::ModuleMetadata = ModuleMetadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
   IR(ir_meta, [], [], BijectiveMapping(), addressing_model, memory_model, SSADict(), SSADict(),
     BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), DebugInfo(), SSACounter(0), Dictionary())
 end

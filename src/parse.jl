@@ -222,23 +222,23 @@ const enum_types = Set(map(first, filter!(is_enum ∘ last, collect(pairs(kind_t
 is_enum(val) = is_enum(typeof(val))
 is_enum(t::DataType) = t in enum_types
 
-struct IRMetadata
+struct ModuleMetadata
   magic_number::UInt32
   generator_magic_number::UInt32
   version::VersionNumber
   schema::Int
 end
 
-IRMetadata() = IRMetadata(magic_number, generator_magic_number, v"1.5", 0)
+ModuleMetadata() = ModuleMetadata(magic_number, generator_magic_number, v"1.5", 0)
 
 @auto_hash_equals struct Module
-  meta::IRMetadata
+  meta::ModuleMetadata
   bound::Int
   instructions::Vector{Instruction}
 end
 
 Module(mod::PhysicalModule) =
-  Module(IRMetadata(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.schema), mod.bound, Instruction.(mod.instructions))
+  Module(ModuleMetadata(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.schema), mod.bound, Instruction.(mod.instructions))
 Module(source) = Module(PhysicalModule(source))
 
 Base.getindex(mod::Module, index::Integer) = mod.instructions[index]

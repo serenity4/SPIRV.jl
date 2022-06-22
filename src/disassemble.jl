@@ -1,4 +1,4 @@
-function emit(io::IO, inst::Instruction, id_bound = 999)
+function emit(io::IO, inst::Instruction)
   if !isnothing(inst.result_id)
     printstyled(io, inst.result_id; color = :yellow)
     print(io, " = ")
@@ -65,22 +65,27 @@ Base.show(io::IO, ::MIME"text/plain", inst::Instruction) = emit(io, inst)
 Transform the content of `spir_module` into a human-readable format and prints it to `io`.
 """
 function disassemble(io::IO, mod::Module)
-  (; meta, bound) = mod
-  if meta.magic_number == magic_number
-    println(io, "SPIR-V")
-  else
-    println(io, "Magic number: ", meta.magic_number)
-  end
-  println(io, "Version: ", join([meta.version.major, meta.version.minor], "."))
-  println(io, "Generator: ", hex(meta.generator_magic_number))
-  println(io, "Bound: ", bound)
-  println(io, "Schema: ", meta.schema)
+  println_metadata(io, mod.meta)
+  println(io, "Bound: ", mod.bound)
+
   println(io)
 
+  print_instructions(io, mod.instructions, mod.bound)
+end
+
+function println_metadata(io::IO, meta::ModuleMetadata)
+  @assert meta.magic_number == magic_number
+  println(io, "SPIR-V")
+  println(io, "Version: ", join([meta.version.major, meta.version.minor], "."))
+  println(io, "Generator: ", hex(meta.generator_magic_number))
+  println(io, "Schema: ", meta.schema)
+end
+
+function print_instructions(io::IO, insts::AbstractVector{Instruction}, bound = compute_bound(insts))
   padding(id) = length(string(bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
-  for inst ∈ mod.instructions
+  for inst ∈ insts
     print(io, ' '^padding(inst.result_id))
-    emit(io, inst, bound)
+    emit(io, inst)
     println(io)
   end
 end

@@ -53,4 +53,10 @@ using SPIRV, Test, Graphs
     @test pmod ≈ pmod2
     @test !iserror(validate(ir))
   end
+
+  @testset "Printing" begin
+    ir = IR(SPIRV.Module(PhysicalModule(resource("vert.spv"))))
+    # Simply make sure it does not error.
+    @test !isempty(sprint(show, MIME"text/plain"(), ir))
+  end
 end;

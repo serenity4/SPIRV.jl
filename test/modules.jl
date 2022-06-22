@@ -16,6 +16,9 @@ modules = [
     mod = SPIRV.Module(pmod)
     @test !iserror(validate(mod))
 
+    # Make sure it does not error when displayed.
+    @test !isempty(sprint(show, MIME"text/plain"(), mod))
+
     @testset "Assembly/disassembly isomorphisms" begin
       pmod_reconstructed = PhysicalModule(mod)
       @test pmod == pmod_reconstructed
@@ -29,4 +32,4 @@ modules = [
       @test read(tmp, PhysicalModule) == pmod_reconstructed
     end
   end
-end
+end;
