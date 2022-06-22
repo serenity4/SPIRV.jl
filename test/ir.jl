@@ -1,6 +1,21 @@
 using SPIRV, Test, Graphs
 
 @testset "Intermediate Representation" begin
+  @testset "Annotated module" begin
+    mod = SPIRV.Module(resource("vert.spv"))
+    amod = annotate(mod)
+    @test amod.capabilities == 1
+    @test amod.extensions == 2
+    @test amod.extended_instruction_sets == 2
+    @test amod.memory_model == 3
+    @test amod.entry_points == 4
+    @test amod.execution_modes == 5
+    @test amod.debug == 5
+    @test amod.annotations == 22
+    @test amod.globals == 42
+    @test amod.functions == 67
+  end
+
   @testset "Initialization & mode-setting" begin
     ir = IR(memory_model = SPIRV.MemoryModelVulkan)
     @test !in("SPV_KHR_vulkan_memory_model", ir.extensions)
@@ -38,4 +53,4 @@ using SPIRV, Test, Graphs
     @test pmod ≈ pmod2
     @test !iserror(validate(ir))
   end
-end
+end;

@@ -47,6 +47,7 @@ include("ssa.jl")
 include("instructions.jl")
 include("spir_types.jl")
 include("parse.jl")
+include("annotated_module.jl")
 include("disassemble.jl")
 include("functions.jl")
 include("metadata.jl")
@@ -86,7 +87,7 @@ export
 
   # parse
   PhysicalInstruction, PhysicalModule,
-  Instruction,
+  Instruction, InstructionCursor,
 
   # disassemble
   disassemble,
@@ -108,6 +109,7 @@ export
   spir_type,
 
   # IR
+  annotate, AnnotatedModule,
   IR,
   SSAValue,
   IRMetadata,

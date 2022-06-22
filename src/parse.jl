@@ -241,6 +241,8 @@ Module(mod::PhysicalModule) =
   Module(IRMetadata(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.schema), mod.bound, Instruction.(mod.instructions))
 Module(source) = Module(PhysicalModule(source))
 
+Base.getindex(mod::Module, index::Integer) = mod.instructions[index]
+
 function Base.isapprox(mod1::Module, mod2::Module; compare_debug_info = false)
   if !compare_debug_info
     mod1 = strip_debug_info(mod1)

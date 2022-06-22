@@ -5,6 +5,7 @@ SPIR-V instruction. Must contain an opcode, and optionally a type id and a resul
 """
 @refbroadcast abstract type AbstractInstruction end
 
+opcode(inst::AbstractInstruction) = inst.opcode
 
 """
 SPIR-V instruction in binary format.
@@ -28,3 +29,5 @@ Parsed SPIR-V instruction. It represents an instruction of the form `%result_id 
   Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(opcode, type_id, result_id, arguments)
 end
 Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
+
+const InstructionCursor = ArrayCursor{Instruction}
