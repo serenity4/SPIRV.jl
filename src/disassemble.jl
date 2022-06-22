@@ -40,7 +40,7 @@ function emit_argument(io, i, arg, kind, category = kind_to_category[kind])
     "Literal" => @match arg begin
       ::AbstractString => printstyled(io, '"', arg, '"'; color = 150)
       ::OpCodeGLSL => printstyled(io, replace(string(arg), "OpGLSL" => ""); color = 153)
-      ::Unsigned => printstyled(io, hex(arg); color = 153)
+      ::Unsigned => printstyled(io, repr(arg); color = 153)
       _ => printstyled(io, arg; color = 153)
     end
     "Id" => printstyled(io, arg; color = :yellow)
@@ -60,6 +60,29 @@ end
 Base.show(io::IO, ::MIME"text/plain", inst::Instruction) = emit(io, inst)
 
 """
+An `IO` object which always indents by `indent_level` after a newline character has been printed.
+"""
+struct IndentedIO{T<:IO} <: IO
+  io::T
+  indent_level::Int
+end
+
+@forward IndentedIO.io (Base.unsafe_read, Base.eof, Base.get)
+
+indent(io::IO, level) = IndentedIO(io, level)
+indent(io::IndentedIO, level) = indent(io.io, level + io.indent_level)
+
+function Base.write(io::IndentedIO, b::UInt8)
+  res = write(io.io, b)
+  if b === UInt8('\n')
+    for _ in 1:io.indent_level
+      res += write(io.io, ' ')
+    end
+  end
+  res
+end
+
+"""
     disassemble(io, spir_module)
 
 Transform the content of `spir_module` into a human-readable format and prints it to `io`.
@@ -73,26 +96,37 @@ function disassemble(io::IO, mod::Module)
   print_instructions(io, mod.instructions, mod.bound)
 end
 
+function disassemble(io::IO, amod::AnnotatedModule)
+  println_metadata(io, amod.mod.meta)
+  println(io, "Bound: ", amod.mod.bound)
+
+  print_instructions(io, amod.mod.instructions, amod.mod.bound)
+end
+
 function println_metadata(io::IO, meta::ModuleMetadata)
   @assert meta.magic_number == magic_number
   println(io, "SPIR-V")
   println(io, "Version: ", join([meta.version.major, meta.version.minor], "."))
-  println(io, "Generator: ", hex(meta.generator_magic_number))
+  println(io, "Generator: ", repr(meta.generator_magic_number))
   println(io, "Schema: ", meta.schema)
 end
 
+padding(id, bound) = length(string(bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
+
 function print_instructions(io::IO, insts::AbstractVector{Instruction}, bound = compute_bound(insts))
-  padding(id) = length(string(bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
   for inst ∈ insts
-    print(io, ' '^padding(inst.result_id))
-    emit(io, inst)
-    println(io)
+    print_instruction(io, inst, bound)
   end
 end
 
-hex(x) = "0x" * lpad(string(x, base = 16), sizeof(x) * 2, '0')
+function print_instruction(io::IO, inst::Instruction, bound)
+  io = indent(io, padding(inst.result_id, bound))
+  println(io)
+  emit(io, inst)
+end
 
 disassemble(obj) = disassemble(stdout, obj)
 disassemble(io::IO, mod::PhysicalModule) = disassemble(io, Module(mod))
 
-Base.show(io::IO, ::MIME"text/plain", mod::Module) = disassemble(io, mod)
+# Print the module as a single string to avoid the slowdown caused by a possible IO congestion.
+Base.show(io::IO, mime::MIME"text/plain", mod::Module) = print(io, sprint(disassemble, mod; context = :color => true))
