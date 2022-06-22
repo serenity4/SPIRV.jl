@@ -8,12 +8,14 @@ using SPIRV: ArrayCursor, write!
 
   @testset "Navigation & reading" begin
     @test position(c) == 1
+    @test !eof(c)
     @test read(c) === 4
     @test position(c) == 2
     @test read(c) === 5
     @test read(c) === 6
     @test read(c) === 7
     @test_throws ErrorException read(c)
+    @test eof(c)
 
     @test seekstart(c) == position(c) == 1
     @test isnothing(skip(c, 2))
