@@ -38,7 +38,7 @@ using SPIRV, Test, Graphs
     pmod2 = PhysicalModule(mod2)
     @test SPIRV.Module(pmod2) == mod2
     @test pmod ≈ pmod2
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
 
     pmod = SPIRV.PhysicalModule(resource("comp.spv"))
     mod = SPIRV.Module(pmod)
@@ -51,7 +51,7 @@ using SPIRV, Test, Graphs
     pmod2 = PhysicalModule(mod2)
     @test SPIRV.Module(pmod2) == mod2
     @test pmod ≈ pmod2
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
   end
 
   @testset "Printing" begin

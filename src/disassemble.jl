@@ -113,8 +113,8 @@ end
 
 padding(id, bound) = length(string(bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
 
-function print_instructions(io::IO, insts::AbstractVector{Instruction}, bound = compute_bound(insts))
-  for inst ∈ insts
+function print_instructions(io::IO, insts::AbstractVector{Instruction}, bound = id(compute_ssa_bound(insts)))
+  for inst in insts
     print_instruction(io, inst, bound)
   end
 end
@@ -129,4 +129,4 @@ disassemble(obj) = disassemble(stdout, obj)
 disassemble(io::IO, mod::PhysicalModule) = disassemble(io, Module(mod))
 
 # Print the module as a single string to avoid the slowdown caused by a possible IO congestion.
-Base.show(io::IO, mime::MIME"text/plain", mod::Module) = print(io, sprint(disassemble, mod; context = :color => true))
+Base.show(io::IO, mime::MIME"text/plain", mod::Union{AnnotatedModule,Module}) = print(io, sprint(disassemble, mod; context = :color => true))

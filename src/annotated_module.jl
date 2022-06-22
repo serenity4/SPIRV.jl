@@ -46,3 +46,4 @@ function AnnotatedModule(mod::Module)
 end
 
 annotate(mod::Module) = AnnotatedModule(mod)
+cursor(amod::AnnotatedModule) = amod.c

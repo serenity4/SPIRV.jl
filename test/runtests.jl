@@ -1,15 +1,15 @@
 using SPIRV, Test
 
 function test_module(mod::SPIRV.Module)
-  @test !iserror(validate(mod))
+  @test unwrap(validate(mod))
 
   ir = IR(mod)
-  @test !iserror(validate(ir))
+  @test unwrap(validate(ir))
 
   @test SPIRV.Module(ir) ≈ mod
 
   pmod = PhysicalModule(mod)
-  @test !iserror(validate(pmod))
+  @test unwrap(validate(pmod))
 
   io = IOBuffer()
   write(io, pmod)

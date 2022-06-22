@@ -14,7 +14,7 @@ modules = [
     r = resource(file)
     pmod = PhysicalModule(r)
     mod = SPIRV.Module(pmod)
-    @test !iserror(validate(mod))
+    @test unwrap(validate(mod))
 
     # Make sure it does not error when displayed.
     @test !isempty(sprint(show, MIME"text/plain"(), mod))

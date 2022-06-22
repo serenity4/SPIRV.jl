@@ -240,8 +240,7 @@ end
 Module(mod::PhysicalModule) =
   Module(ModuleMetadata(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.schema), mod.bound, Instruction.(mod.instructions))
 Module(source) = Module(PhysicalModule(source))
-
-Base.getindex(mod::Module, index::Integer) = mod.instructions[index]
+Module(meta::ModuleMetadata, insts::AbstractVector{Instruction}, bound = compute_ssa_bound(insts)) = Module(meta, bound, insts)
 
 function Base.isapprox(mod1::Module, mod2::Module; compare_debug_info = false)
   if !compare_debug_info
@@ -259,7 +258,7 @@ function strip_debug_info!(mod::Module)
 end
 strip_debug_info(mod::Module) = strip_debug_info!(@set mod.instructions = deepcopy(mod.instructions))
 
-@forward Module.instructions (Base.iterate,)
+@forward Module.instructions (Base.iterate, Base.getindex, Base.setindex!, Base.firstindex, Base.lastindex, Base.length)
 
 function spirv_version(word)
   major = (word & 0x00ff0000) >> 16
@@ -289,5 +288,5 @@ function print_diff(mod1::Module, mod2::Module)
   end
 end
 
-max_ssa(insts::Vector{Instruction}) = maximum(x -> something(x.result_id, SSAValue(0)), insts)
-max_ssa(mod::Union{PhysicalModule,Module}) = SSAValue(mod.bound)
+compute_ssa_bound(insts::Vector{Instruction}) = SSAValue(1 + id(maximum(x -> something(x.result_id, SSAValue(0)), insts)))
+ssa_bound(mod::Union{PhysicalModule,Module}) = SSAValue(mod.bound)

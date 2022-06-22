@@ -2,20 +2,28 @@ entry_node(g::AbstractGraph) = only(sources(g))
 
 control_flow_graph(fdef::FunctionDefinition) = control_flow_graph(collect(fdef.blocks))
 
-function control_flow_graph(insts)
-  first(insts).opcode == OpFunction || error("Expected OpFunction declaration, got $(first(insts))")
-  last(insts).opcode == OpFunctionEnd || error("Expected OpFunctionEnd declaration, got $(first(insts))")
-  control_flow_graph(parse_blocks(insts[begin+1:end-1]))
+function control_flow_graph(c::InstructionCursor)
+  inst = read(c)
+  opcode(inst) == OpFunction || error("Expected OpFunction declaration, got ", inst)
+  cfg = control_flow_graph(read(c, Vector{Block}))
+  skip(c, 1) # OpFunctionEnd
+  cfg
 end
 
-function parse_blocks(insts::AbstractVector{Instruction})
+function Base.read(c::InstructionCursor, ::Type{Block})
+  inst = read(c)
+  opcode(inst) == OpLabel || error("Expected OpLabel instruction, got ", inst)
+  block = Block(inst.result_id)
+  while !eof(c) && opcode(peek(c)) ≠ OpLabel
+    push!(block, read(c))
+  end
+  block
+end
+
+function Base.read(c::InstructionCursor, ::Type{Vector{Block}})
   blocks = Block[]
-  current_block = nothing
-  for inst in insts
-    @switch inst.opcode begin
-      @case &OpLabel; current_block = Block(inst.result_id)
-      @case _; push!(current_block::Block, inst)
-    end
+  while !eof(c) && opcode(peek(c)) == OpLabel
+    push!(blocks, read(c, Block))
   end
   blocks
 end

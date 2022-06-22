@@ -15,6 +15,8 @@ Base.convert(::Type{Core.SSAValue}, val::SSAValue) where {T<:Integer} = Core.SSA
 Base.convert(::Type{SSAValue}, val::Core.SSAValue) where {T<:Integer} = SSAValue(val.id)
 Base.convert(::Type{SSAValue}, id::Integer) = SSAValue(id)
 
+Base.zero(::Type{SSAValue}) = SSAValue(zero(UInt32))
+
 id(val::SSAValue) = val.id
 
 Base.tryparse(::Type{SSAValue}, id::AbstractString) = !isempty(id) && return SSAValue(parse(UInt32, id[2:end]))
@@ -28,10 +30,11 @@ mutable struct SSACounter
   val::SSAValue
 end
 
+SSACounter() = SSACounter(zero(SSAValue))
+
 Base.convert(::Type{SSAValue}, counter::SSACounter) = SSAValue(counter)
 SSAValue(counter::SSACounter) = counter.val
+
 function next!(counter::SSACounter)
   counter.val = SSAValue(id(counter.val) + 1)
 end
-
-max_id(x) = id(max_ssa(x))

@@ -3,7 +3,7 @@ using SPIRV, Test
 @testset "SPIR-V code generation" begin
   @testset "Straight code functions" begin
     ir = @compile f_straightcode(::Float32)
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
       """
@@ -28,7 +28,7 @@ using SPIRV, Test
     )
 
     ir = @compile SPIRVInterpreter([INTRINSICS_METHOD_TABLE]) clamp(::Float64, ::Float64, ::Float64)
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
       """
@@ -56,7 +56,7 @@ using SPIRV, Test
 
   @testset "Intrinsics" begin
     ir = @compile clamp(::Float64, ::Float64, ::Float64)
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
       """
@@ -79,7 +79,7 @@ using SPIRV, Test
     )
 
     ir = @compile f_extinst(::Float32)
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
       """
@@ -110,7 +110,7 @@ using SPIRV, Test
     @testset "Branches" begin
       f_branch(x) = x > 0F ? x + 1F : x - 1F
       ir = @compile f_branch(::Float32)
-      @test !iserror(validate(ir))
+      @test unwrap(validate(ir))
 
       @test ir ≈ parse(
         SPIRV.Module,
@@ -152,7 +152,7 @@ using SPIRV, Test
       end
 
       ir = @compile f_branches(::Float32)
-      @test !iserror(validate(ir))
+      @test unwrap(validate(ir))
       @test ir ≈ parse(
         SPIRV.Module,
         """
@@ -207,7 +207,7 @@ using SPIRV, Test
     end
 
     ir = @compile unicolor(::Vec{4, Float32})
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
       """
@@ -241,7 +241,7 @@ using SPIRV, Test
     end
 
     ir = @compile StructWithBool(::Bool, ::Int32)
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
       """
@@ -269,7 +269,7 @@ using SPIRV, Test
     end
 
     ir = @compile sample(::SampledImage{Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}})
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
       """
@@ -309,7 +309,7 @@ using SPIRV, Test
     end
 
     ir = @compile sample(::Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}, ::Sampler)
-    @test !iserror(validate(ir))
+    @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
       """

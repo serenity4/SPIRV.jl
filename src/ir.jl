@@ -216,7 +216,7 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
   ir
 end
 
-max_ssa(ir::IR) = SSAValue(ir.ssacounter)
+ssa_bound(ir::IR) = SSAValue(id(SSAValue(ir.ssacounter)) + 1)
 
 function has_decoration(ir::IR, id::SSAValue, dec::Decoration)
   meta = get(ir.metadata, id, nothing)
@@ -430,7 +430,7 @@ function Module(ir::IR; debug_info = true)
   append_globals!(insts, ir)
   append_functions!(insts, ir)
 
-  Module(ir.ir_meta, max_id(ir) + 1, insts)
+  Module(ir.ir_meta, ssa_bound(ir), insts)
 end
 
 function append_debug_instructions!(insts, ir::IR)
