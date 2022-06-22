@@ -12,4 +12,8 @@ using SPIRV: renumber_ssa, compute_ssa_bound, ssa_bound
   @test length(mod) == length(renumbered)
   @test renumbered[end - 8].result_id ≠ SSAValue(57)
   @test ssa_bound(renumbered) == compute_ssa_bound(renumbered.instructions) == ssa_bound(mod)
+
+  mod = SPIRV.Module(PhysicalModule(resource("comp.spv")))
+  renumbered = renumber_ssa(mod)
+  @test unwrap(validate(renumbered))
 end;

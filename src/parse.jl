@@ -260,6 +260,13 @@ strip_debug_info(mod::Module) = strip_debug_info!(@set mod.instructions = deepco
 
 @forward Module.instructions (Base.iterate, Base.getindex, Base.setindex!, Base.firstindex, Base.lastindex, Base.length)
 
+function Base.getindex(mod::Module, id::SSAValue)
+  for inst in mod.instructions
+    inst.result_id === id && return inst
+  end
+  throw(KeyError(id))
+end
+
 function spirv_version(word)
   major = (word & 0x00ff0000) >> 16
   minor = (word & 0x0000ff00) >> 8

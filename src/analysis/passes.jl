@@ -11,9 +11,12 @@ function renumber_ssa(mod::Module)
   end
 
   while !eof(c)
-    push!(new_insts, swap_result_id!(swaps, counter, read(c)))
+    while opcode(peek(c)) in (OpFunction, OpFunctionParameter)
+      push!(new_insts, swap_result_id!(swaps, counter, read(c)))
+    end
 
     blocks = read(c, Vector{Block})
+    assert_opcode(OpFunctionEnd, read(c))
     cfg = control_flow_graph(blocks)
     for block in blocks[traverse(cfg)]
       push!(new_insts, swap_result_id!(swaps, counter, @inst block.id = OpLabel()))
@@ -21,6 +24,8 @@ function renumber_ssa(mod::Module)
         push!(new_insts, swap_result_id!(swaps, counter, inst))
       end
     end
+
+    push!(new_insts, @inst OpFunctionEnd())
   end
 
   for (i, inst) in enumerate(new_insts)
@@ -41,7 +46,7 @@ function renumber_ssa(mod::Module)
 end
 
 function swap_result_id!(swaps::SSADict{SSAValue}, counter::SSACounter, inst::Instruction)
-  isnothing(inst.result_id) && return inst
+  isnothing(inst.result_id) && return @set inst.arguments = copy(inst.arguments)
   ssa = next!(counter)
   insert!(swaps, inst.result_id, ssa)
   @set inst.result_id = ssa

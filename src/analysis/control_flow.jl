@@ -4,17 +4,17 @@ control_flow_graph(fdef::FunctionDefinition) = control_flow_graph(collect(fdef.b
 
 function control_flow_graph(c::InstructionCursor)
   inst = read(c)
-  opcode(inst) == OpFunction || error("Expected OpFunction declaration, got ", inst)
+  assert_opcode(OpFunction, inst)
   cfg = control_flow_graph(read(c, Vector{Block}))
-  skip(c, 1) # OpFunctionEnd
+  assert_opcode(OpFunctionEnd, read(c, 1))
   cfg
 end
 
 function Base.read(c::InstructionCursor, ::Type{Block})
   inst = read(c)
-  opcode(inst) == OpLabel || error("Expected OpLabel instruction, got ", inst)
+  assert_opcode(OpLabel, inst)
   block = Block(inst.result_id)
-  while !eof(c) && opcode(peek(c)) ≠ OpLabel
+  while !eof(c) && !in(opcode(peek(c)), (OpLabel, OpFunctionEnd))
     push!(block, read(c))
   end
   block
@@ -22,7 +22,7 @@ end
 
 function Base.read(c::InstructionCursor, ::Type{Vector{Block}})
   blocks = Block[]
-  while !eof(c) && opcode(peek(c)) == OpLabel
+  while opcode(peek(c)) == OpLabel
     push!(blocks, read(c, Block))
   end
   blocks
@@ -32,12 +32,12 @@ function control_flow_graph(blocks::AbstractVector{Block})
   cfg = SimpleDiGraph(length(blocks))
   for (i, block) in enumerate(blocks)
     for inst in block
-      (; opcode, arguments) = inst
-      @tryswitch opcode begin
+      (; arguments) = inst
+      @tryswitch opcode(inst) begin
         @case &OpBranch
         dst = arguments[1]::SSAValue
         add_edge!(cfg, i, block_index(blocks, dst))
-        @case &OpSwitch
+        @case &OpBranchConditional
         cond, dst1, dst2 = arguments[1]::SSAValue, arguments[2]::SSAValue, arguments[3]::SSAValue
         add_edge!(cfg, i, block_index(blocks, dst1))
         add_edge!(cfg, i, block_index(blocks, dst2))

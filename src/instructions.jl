@@ -31,3 +31,5 @@ end
 Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type_id, result_id, collect(arguments))
 
 const InstructionCursor = ArrayCursor{Instruction}
+
+assert_opcode(opcode, inst) = opcode == inst.opcode || error("Expected $opcode instruction, got ", sprint(emit, inst; context = :color => true))
