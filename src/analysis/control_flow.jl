@@ -82,6 +82,34 @@ function traverse(g::AbstractGraph, source = 1; has_backedges = true)
   topological_sort_by_dfs(g)
 end
 
+"""
+Iterate through the graph `g` applying `f` until its application on the graph vertices
+reaches a fixed point.
+
+`f` must return a `Bool` value indicating whether a next iteration should be performed.
+If `false`, then the iteration will not be continued on outgoing nodes.
+
+# Flow Analysis
+
+- Nodes that are not part of a cyclic structure (i.e. have no back-edges and don't have a path from a node which has a back-edge) need only be traversed once.
+- Cyclic structures must be iterated on until convergence. On reducible control-flow graphs, it might be sufficient to iterate a given loop structure locally until convergence before iterating through nodes that are further apart in the cyclic structure. This optimization is not currently implemented.
+- Flow analysis should provide a framework suited for both abstract interpretation and data-flow algorithms.
+"""
+function flow_through(f, g::AbstractGraph, v; stop_at::Optional{Union{Int, Edge{Int}}} = nothing)
+  next = [Edge(v, v2) for v2 in outneighbors(g, v)]
+  while !isempty(next)
+    edge = popfirst!(next)
+    f(edge) || continue
+    stop_at isa Edge{Int} && edge === stop_at && continue
+    stop_at isa Int && dst(edge) === stop_at && continue
+
+    # Push all new edges to the end of the worklist.
+    new_edges = [Edge(dst(edge), v) for v in outneighbors(g, dst(edge))]
+    filter!(e -> !in(e, new_edges), next)
+    append!(next, new_edges)
+  end
+end
+
 function postdominator(g::AbstractGraph, source)
   g = remove_backedges(g)
   root_tree = DominatorTree(g)

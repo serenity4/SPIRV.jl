@@ -1,6 +1,6 @@
-using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals
+using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
 using AbstractTrees: parent
-using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator
+using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator, flow_through
 
 @testset "Function analysis" begin
   @testset "Static call graph traversal" begin
@@ -18,6 +18,21 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
     main = ir.fdefs[SSAValue(4)]
     @test !in(main, fdefs)
   end
+
+  # All the following graphs are rooted in 1.
+
+  # Symmetric diverge/merge point.
+  g1() = DeltaGraph(4, 1 => 2, 1 => 3, 2 => 4, 3 => 4)
+  # No merge point, two sinks.
+  g2() = DeltaGraph(4, 1 => 2, 1 => 3, 3 => 4)
+  # Graph with a merge point that is the target of both a primary and a secondary branching construct (nested within the primary).
+  g3() = DeltaGraph(6, 1 => 2, 1 => 3, 2 => 4, 2 => 5, 4 => 6, 5 => 6, 3 => 6)
+  # Graph with a merge point dominated by a cycle.
+  g4() = DeltaGraph(8, 1 => 2, 1 => 3, 2 => 4, 4 => 5, 4 => 7, 5 => 6, 6 => 4, 7 => 8, 3 => 8)
+  # Graph with three sinks and a merge point dominated by a branching construct wherein one branch is a sink.
+  g5() = DeltaGraph(8, 1 => 2, 2 => 3, 2 => 4, 4 => 6, 1 => 5, 5 => 6, 6 => 7, 6 => 8)
+  # Graph with a simple source, a central vertex and a simple sink. The central vertex contains two separate loops with one having a symmetric branching construct inside.
+  g6() = DeltaGraph(9, 1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 2, 2 => 9)
 
   @testset "Control flow graph" begin
     @testset "Dominance relationships" begin
@@ -73,18 +88,14 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
         @test sort(dominated) == 2:nv(g)
       end
 
-      # All the following graphs are rooted in 1.
-
-      # Symmetric diverge/merge point.
-      g = DeltaGraph(4, 1 => 2, 1 => 3, 2 => 4, 3 => 4)
+      g = g1()
       tree = DominatorTree(g)
       test_completeness(tree, g)
       @test all(isempty ∘ children, children(tree)) && dominated_nodes(tree) == [2, 3, 4]
       @test postdominator(g, 1) == 4
       test_traversal(g)
 
-      # No merge point, two sinks.
-      g = DeltaGraph(4, 1 => 2, 1 => 3, 3 => 4)
+      g = g2()
       tree = DominatorTree(g)
       test_completeness(tree, g)
       @test dominated_nodes(tree) == [2, 3]
@@ -92,8 +103,7 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
       @test isnothing(postdominator(g, 1))
       test_traversal(g)
 
-      # Graph with a merge point that is the target of both a primary and a secondary branching construct (nested within the primary).
-      g = DeltaGraph(6, 1 => 2, 1 => 3, 2 => 4, 2 => 5, 4 => 6, 5 => 6, 3 => 6)
+      g = g3()
       tree = DominatorTree(g)
       test_completeness(tree, g)
       @test dominated_nodes(tree) == [2, 3, 6]
@@ -101,8 +111,7 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
       @test postdominator(g, 1) == 6
       test_traversal(g)
 
-      # Graph with a merge point dominated by a cycle.
-      g = DeltaGraph(8, 1 => 2, 1 => 3, 2 => 4, 4 => 5, 4 => 7, 5 => 6, 6 => 4, 7 => 8, 3 => 8)
+      g = g4()
       tree = DominatorTree(g)
       test_completeness(tree, g)
       @test dominated_nodes(tree) == [2, 3, 8]
@@ -112,10 +121,78 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
       @test postdominator(g, 1) == 8
       test_traversal(g)
 
-      # Graph with three sinks and a merge point dominated by branching construct wherein one branch is a sink.
-      g = DeltaGraph(8, 1 => 2, 2 => 3, 2 => 4, 4 => 6, 1 => 5, 5 => 6, 6 => 7, 6 => 8)
+      g = g5()
       @test postdominator(g, 1) == 6
       @test postdominator(g, 2) == nothing
     end
+  end
+
+  @testset "Flow analysis" begin
+    "Record traversed edges, annotating them with the number of times they were traversed."
+    function make_analyze_f1(g, mapping)
+      function analyze_f1(e)
+        for v in (src(e), dst(e))
+          !haskey(mapping, v) || continue
+          add_vertex!(g) && (mapping[v] = nv(g))
+        end
+        e = Edge(mapping[src(e)], mapping[dst(e)])
+        if has_edge(g, e)
+          get_prop(g, e, :count) < 3 || return false
+          set_prop!(g, e, :count, get_prop(g, e, :count) + 1)
+        else
+          add_edge!(g, e)
+          set_prop!(g, e, :count, 1)
+          true
+        end
+      end
+    end
+
+    mapping = Dict()
+    mg = MetaDiGraph()
+    g = g1()
+    flow_through(make_analyze_f1(mg, mapping), g, 1)
+    @test all(k == v for (k, v) in mapping)
+    @test !is_cyclic(g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+
+    mapping = Dict()
+    mg = MetaDiGraph()
+    g = g2()
+    flow_through(make_analyze_f1(mg, mapping), g, 1)
+    @test all(k == v for (k, v) in mapping)
+    @test !is_cyclic(g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+
+    mapping = Dict()
+    mg = MetaDiGraph()
+    g = g3()
+    flow_through(make_analyze_f1(mg, mapping), g, 1)
+    @test all(k == v for (k, v) in mapping)
+    @test !is_cyclic(g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+
+    mapping = Dict()
+    mg = MetaDiGraph()
+    g = g4()
+    flow_through(make_analyze_f1(mg, mapping), g, 1)
+    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(g))
+    edges_nocycle = [Edge(mapping[src(e)], mapping[dst(e)]) for e in Edge.([1 => 2, 1 => 3, 2 => 4, 3 => 8])]
+    @test all(get_prop(mg, e, :count) == 1 for e in edges_nocycle)
+    edges_cycle = filter(!in(edges_nocycle), collect(edges(mg)))
+    @test all(get_prop(mg, e, :count) == 3 for e in edges_cycle)
+
+    mapping = Dict()
+    mg = MetaDiGraph()
+    g = g5()
+    flow_through(make_analyze_f1(mg, mapping), g, 1)
+    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(g))
+    @test !is_cyclic(g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+
+    mapping = Dict()
+    mg = MetaDiGraph()
+    g = g6()
+    flow_through(make_analyze_f1(mg, mapping), g, 1)
+    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(g))
+    edges_nocycle = [Edge(mapping[src(e)], mapping[dst(e)]) for e in Edge.([1 => 2])]
+    @test all(get_prop(mg, e, :count) == 1 for e in edges_nocycle)
+    edges_cycle = filter(!in(edges_nocycle), collect(edges(mg)))
+    @test all(get_prop(mg, e, :count) == 3 for e in edges_cycle)
   end
 end;

@@ -40,6 +40,12 @@ function Base.reset(c::AbstractCursor)
   position(c)
 end
 
+function read_prev(c::AbstractCursor)
+  position(c) == 1 && error("Reached start of cursor.")
+  seek(c, position(c) - 1)
+  peek(c)
+end
+
 mutable struct ArrayCursor{T,A<:AbstractArray{T}} <: AbstractCursor{Int,T}
   index::Int
   array::A

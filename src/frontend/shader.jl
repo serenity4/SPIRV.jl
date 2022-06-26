@@ -151,29 +151,42 @@ function memory_resources(ir::IR, ep::EntryPoint)
   addresses = @NamedTuple{address::SSAValue, fid::SSAValue}[]
   pointers = SSAValue[]
 
-  # for (id, fdef) in pairs(ir.fdefs)
-  #   for blk in fdef.blocks
-  #     for inst in blk
-  #       if inst.opcode == OpConvertUToPtr
-  #         push!(addresses, first(inst.arguments)::SSAValue)
-  #       end
-  #     end
-  #   end
-  # end
+  #=
+
+  Query:
+
+  Find all defining variables for loaded pointers originating from a conversion from an unsigned integer.
+
+  1. Find pointers that:
+    - Are the target of `OpLoad` or `OpAccessChain` instructions.
+    - Are traceable to the result of a conversion converted from an unsigned integer.
+  2. Iterate through their root variable, by propagating through (standard) pointer instructions and unsigned integer operations that involve constant arguments besides the defining variable.
+
+  =#
+
+  for (id, fdef) in pairs(ir.fdefs)
+    for blk in fdef.blocks
+      for inst in blk
+        if inst.opcode == OpConvertUToPtr
+          push!(addresses, first(inst.arguments)::SSAValue)
+        end
+      end
+    end
+  end
 
   resources = SSADict{MemoryResource}()
   defining_variables = SSADict{SSAValue}()
-  # for (; address, fid) in unique(addresses)
-  #   addr_var = nothing
-  #   for blk in fdef.blocks
-  #     for inst in blk
-  #       if inst.opcode == OpLoad && first(inst.arguments)::SSAValue in pointers
-  #         isnothing(addr_var) && (addr_var = defining_variable(ir, address, fid))
-  #         insert!(resources, address, MemoryResource(ir.types[inst.result_id], address))
-  #       end
-  #     end
-  #   end
-  # end
+  for (; address, fid) in unique(addresses)
+    addr_var = nothing
+    for blk in fdef.blocks
+      for inst in blk
+        if inst.opcode == OpLoad && first(inst.arguments)::SSAValue in pointers
+          isnothing(addr_var) && (addr_var = defining_variable(ir, address, fid))
+          insert!(resources, address, MemoryResource(ir.types[inst.result_id], address))
+        end
+      end
+    end
+  end
 
   resources
 end
