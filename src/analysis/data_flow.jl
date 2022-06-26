@@ -89,7 +89,7 @@ function UseDefChain(amod::AnnotatedModule, f::AnnotatedFunction, use::SSAValue,
   # but instead of inferring a particular quantity or value for each statement we just mutate
   # use-def chains.
 
-  @case &OpVariable
+  # @case &OpVariable
   # Follow store operations in control-flow order until the use.
   # This may yield multiple possible use-def chains, e.g. if the variable
   # has been stored to multiple times depending on control flow.
