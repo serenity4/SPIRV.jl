@@ -1,32 +1,5 @@
-struct AnnotatedFunction
-  start::Int
-  nparameters::Int
-  blocks::Vector{Int}
-  stop::Int
-end
-
-function annotate_function(c::InstructionCursor)
-  start = position(c)
-  assert_opcode(OpFunction, read(c))
-
-  nparameters = 0
-  while opcode(peek(c)) == OpFunctionParameter
-    nparameters += 1
-    skip(c, 1)
-  end
-
-  blocks = Int[]
-  while opcode(peek(c)) ≠ OpFunctionEnd
-    opcode(read(c)) == OpLabel && push!(blocks, position(c) - 1)
-  end
-
-  f = AnnotatedFunction(start, nparameters, blocks, position(c))
-  skip(c, 1)
-  f
-end
-
-function control_flow_graph(c::InstructionCursor, f::AnnotatedFunction)
-  seek(c, f.start)
+function control_flow_graph(c::InstructionCursor, af::AnnotatedFunction)
+  seek(c, af.start)
   control_flow_graph(c)
 end
 
@@ -37,7 +10,16 @@ end
 
 UseDefChain(use::Instruction) = UseDefChain(use, UseDefChain[])
 
-function expand_chains!(scan, target_defs::Dictionary{SSAValue,UseDefChain})
+struct StackFrame
+  callsite::Int
+  function_index::Int
+end
+
+struct StackTrace
+  frames::Vector{StackFrame}
+end
+
+function expand_chains!(scan, target_defs::Vector{Pair{SSAValue,UseDefChain}})
   any_expanded = false
 
   scan() do inst
@@ -51,113 +33,90 @@ function expand_chains!(scan, target_defs::Dictionary{SSAValue,UseDefChain})
       arguments = inst.arguments[2:end]
     end
     if isa(result_id, SSAValue)
-      if haskey(targets_defs, result_id)
-        any_expanded = true
-        chain = UseDefChain(result_id)
-        prev_chain = target_defs[result_id]
-        push!(prev_chain.defs, chain)
-        delete!(target_defs, result_id)
-        for arg in arguments
-          # TODO: Handle chains that depend on a common definition.
-          isa(arg, SSAValue) && insert!(target_defs, arg, chain)
+      for (target, prev_chain) in target_defs
+        if target == result_id
+          any_expanded = true
+          chain = UseDefChain(result_id)
+          push!(prev_chain.defs, chain)
+          for arg in arguments
+            isa(arg, SSAValue) && push!(target_defs, (arg, chain))
+          end
         end
       end
+      filter!(≠(result_id) ∘ first, target_defs)
     end
   end
 
   any_expanded
 end
 
-function UseDefChain(amod::AnnotatedModule, f::AnnotatedFunction, use::SSAValue, cfg::AbstractGraph = control_flow_graph(cursor(amod), f))
-  c = cursor(amod)
-  search_for = UseDefChain[]
-  seek_definition(c, use)
-  inst = peek(c)
-  chain = UseDefChain(use)
-
-  target_defs = Dictionary{SSAValue,UseDefChain}([use], [chain])
-
-  block = find_block(f, position(c))
-  expand_chains!(x -> scan_block(x, c, f, block; rev = true), target_defs)
-
-  # This should not involve any nested flow analysis.
-  # Maybe prefer a flat way of keeping track of uses.
-  # It can be a list of definitions yets unreached paired with their to-be use-def chain.
-  # The thing is we don't want to have to do a separate flow analysis. And if we pass
-  # a given block, no definition will require re-processing it, unless reached by a back-edge.
-  # This should be effectively some abstract interpretation where we execute all block statements,
-  # but instead of inferring a particular quantity or value for each statement we just mutate
-  # use-def chains.
-
-  # @case &OpVariable
-  # Follow store operations in control-flow order until the use.
-  # This may yield multiple possible use-def chains, e.g. if the variable
-  # has been stored to multiple times depending on control flow.
-  # Stores that are overriden during program execution until the use should be ignored.
-  # The OpVariable instruction should therefore be discarded in favor of the last live
-  # value that it was assigned to.
-  # TODO
-  flow_through(reverse(cfg), block) do e
-    # TODO: Target definitions must be duplicated at diverging program points.
-    # Otherwise, they will be resolved to the first block that provides them with a value.
-    # This is especially relevant for variables and (possibly) for OpPhi instructions.
-    expand_chains!(x -> scan_block(x, c, f, dst(e); rev = true), target_defs)
+function expand_chains_from_caller!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::AnnotatedModule, af::AnnotatedFunction, stacktrace::StackTrace)
+  isempty(stacktrace) && return
+  stackframe = pop!(stacktrace)
+  arg_indices = Dictionary{SSAValue,Int}()
+  i = 0
+  scan_parameters(amod, af) do inst
+    assert_opcode(inst, OpFunctionParameter)
+    insert!(arg_indices, inst.result_id, (i += 1))
   end
-  
+  c = cursor(amod)
+  seek(c, stackframe.callsite)
+  call = read_prev(c)
+  for (i, (target, chain)) in enumerate(target_defs)
+    if target in keys(arg_indices)
+      target_defs[i] = call.arguments[arg_indices[target]]::SSAValue => chain
+    end
+  end
+  expand_chains!(target_defs, amod, amod.functions[stackframe.function_index], stacktrace)
+end
+
+function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::AnnotatedModule, af::AnnotatedFunction, stacktrace::StackTrace, cfg::AbstractGraph = control_flow_graph(cursor(amod), af))
+  c = cursor(amod)
+  scan_function_body(has_result_id(use), amod, af)
+  block = find_block(af, position(c))
+  expand_chains!(x -> scan_block(x, amod, af, block; rev = true, start = position(c)), target_defs)
+
+  flow_through(reverse(cfg), block) do e
+    expand_chains!(x -> scan_block(x, amod, af, dst(e); rev = true), target_defs)
+  end
+
+  expand_chains_from_caller!(target_defs, amod, stacktrace)
+end
+
+function UseDefChain(amod::AnnotatedModule, af::AnnotatedFunction, use::SSAValue, stacktrace::StackTrace; warn_unresolved = true)
+  chain = UseDefChain(use)
+  target_defs = [use => chain]
+  expand_chains!(target_defs, amod, af, stacktrace)
   expand_chains!(x -> scan_globals(x, amod; rev = true), target_defs)
-  # Expand the analysis to the caller function.
-  # Impossible to do without having a back-edge to the caller.
-  # TODO
-  expand_chains!(x -> scan_parameters(x, c, f; rev = true), target_defs)
-
-  !isempty(target_defs) && @warn "Some use-def chains were not completely resolved."
-
+  !isempty(target_defs) && warn_unresolved && @warn "Some use-def chains were not completely resolved."
   chain
 end
 
-function seek_definition(c::InstructionCursor, id::SSAValue)
-  mark(c)
-  while !eof(c)
-    inst = read(c)
-    opcode(inst) == OpFunctionEnd && break
-    isa(inst.result_id, SSAValue) && id == inst.result_id && return seek(position(c) - 1)
-  end
-  reset(c)
-  error("Could not find definition for SSA ID ", id, " starting from cursor position ", position(c))
-end
+has_result_id(inst::Instruction, id::SSAValue) = inst.result_id === id
+has_result_id(id::SSAValue) = Base.Fix2(has_result_id, id)
 
-function seek_global(amod::AnnotatedModule, id::SSAValue)
-  c = cursor(amod)
-  mark(c)
-  seek(c, amod.globals)
-  while position(c) < amod.functions
-    inst = read(c)
-    if inst.result_id === id
-      unmark(c)
-      return seek(position(c) - 1)
-    end
-  end
-  reset(c)
-  nothing
-end
-
-function find_block(f::AnnotatedFunction, index::Integer)
-  index < f.start && error("Index ", index, " is not inside the provided function")
-  index < first(f.blocks) && error("Index ", index, " points to an instruction occurring before any block definition")
-  found = findlast(≤(index), f.blocks)
+function find_block(af::AnnotatedFunction, index::Integer)
+  index < af.start && error("Index ", index, " is not inside the provided function")
+  index < first(af.blocks) && error("Index ", index, " points to an instruction occurring before any block definition")
+  found = findlast(≤(index), af.blocks)
   isnothing(found) && error("Index ", index, " points to an instruction occurring after the function body")
   found
 end
 
-function scan_block(f, c::InstructionCursor, af::AnnotatedFunction, block::Integer; rev = false)
-  mark(c)
-  stop_at = block == lastindex(af.blocks) ? af.stop : af.blocks[block + 1] - 1
-  if rev
-    seek(c, stop_at)
-    while f(read_prev(c)) !== false && position(c) ≥ af.blocks[block] end
-  else
-    seek(c, af.blocks[block])
-    while f(read(c)) !== false && position(c) ≤ stop_at end
-  end
-  reset(c)
+function scan_parameters(f, amod::AnnotatedModule, af::AnnotatedFunction; rev = false)
+  scan(f, cursor(amod), (af.start + 1):(af.start + af.nparameters); rev)
+end
+
+function scan_block(f, amod::AnnotatedModule, af::AnnotatedFunction, block::Integer; rev = false, start = nothing)
+  start = af.blocks[block]
+  stop = block == lastindex(af.blocks) ? af.stop : af.blocks[block + 1] - 1
+  scan(f, cursor(amod), something(start, af.blocks[block]):stop; rev)
+end
+
+function scan_globals(f, amod::AnnotatedModule; rev = false)
+  scan(f, cursor(amod), amod.globals:(amod.functions - 1); rev)
+end
+
+function scan_function_body(f, amod::AnnotatedModule, af::AnnotatedFunction; rev = false)
+  scan(f, cursor(amod), af.start:af.stop; rev)
 end

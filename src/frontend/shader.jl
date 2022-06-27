@@ -164,17 +164,19 @@ function memory_resources(ir::IR, ep::EntryPoint)
 
   =#
 
-  for (id, fdef) in pairs(ir.fdefs)
-    for blk in fdef.blocks
-      for inst in blk
-        if inst.opcode == OpConvertUToPtr
-          push!(addresses, first(inst.arguments)::SSAValue)
-        end
-      end
-    end
-  end
+  # for (id, fdef) in pairs(ir.fdefs)
+  #   for blk in fdef.blocks
+  #     for inst in blk
+  #       if inst.opcode == OpConvertUToPtr
+  #         push!(addresses, first(inst.arguments)::SSAValue)
+  #       end
+  #     end
+  #   end
+  # end
 
   resources = SSADict{MemoryResource}()
+  return resources
+
   defining_variables = SSADict{SSAValue}()
   for (; address, fid) in unique(addresses)
     addr_var = nothing

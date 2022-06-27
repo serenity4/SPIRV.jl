@@ -46,6 +46,18 @@ function read_prev(c::AbstractCursor)
   peek(c)
 end
 
+function scan(f, c::AbstractCursor, range; rev = false)
+  found = false
+  if rev
+    seek(c, last(range) + 1)
+    while !(found |= f(read_prev(c)) !== false) && position(c) ≥ first(range) end
+  else
+    seek(c, first(range))
+    while !(found |= f(read(c)) !== false) && position(c) ≤ last(range) end
+  end
+  found
+end
+
 mutable struct ArrayCursor{T,A<:AbstractArray{T}} <: AbstractCursor{Int,T}
   index::Int
   array::A
