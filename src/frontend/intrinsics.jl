@@ -131,6 +131,12 @@ for to in BitInteger_types
   end
 end
 
+@override rem(x::T, y::T) where {T<:BitSigned} = SRem(x, y)
+@noinline SRem(x::T, y::T) where {T<:BitSigned} = Base.checked_srem_int(x, y)
+# SPIR-V does not have URem but it looks like SRem can work with unsigned ints.
+@override rem(x::T, y::T) where {T<:BitUnsigned} = SRem(x, y)
+@noinline SRem(x::T, y::T) where {T<:BitUnsigned} = Base.checked_urem_int(x, y)
+
 @override Int(x::Ptr) = reinterpret(Int, x)
 @override UInt(x::Ptr) = reinterpret(UInt, x)
 

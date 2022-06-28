@@ -298,7 +298,9 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
         # Core.GotoIfNot uses the SSA value of the first instruction of the target
         # block as its `dest`.
         dest = irmap.bb_ssavals[Core.SSAValue(jinst.dest)]
-        spv_inst = @inst OpBranchConditional(SSAValue(jinst.cond, irmap), SSAValue(node + 1, irmap), dest)
+        (; cond) = jinst
+        cond_inst = isa(cond, Bool) ? emit!(ir, Constant(cond)) : SSAValue(cond, irmap)
+        spv_inst = @inst OpBranchConditional(cond_inst, SSAValue(node + 1, irmap), dest)
         push!(blk, irmap, spv_inst, core_ssaval)
         @case ::GlobalRef
         jtype <: Type || throw(CompilationError("Unhandled global reference $(repr(jtype))"))
