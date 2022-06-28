@@ -186,6 +186,3 @@ function SimpleDiGraph(dg::DeltaGraph)
   end
   g
 end
-
-sinks(dg::DeltaGraph) = vertices(dg)[findall(isempty ∘ Base.Fix1(outneighbors, dg), vertices(dg))]
-sources(dg::DeltaGraph) = vertices(dg)[findall(isempty ∘ Base.Fix1(inneighbors, dg), vertices(dg))]

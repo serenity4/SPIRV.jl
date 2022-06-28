@@ -16,7 +16,7 @@ function validate_types(mod::Module)::Result{Bool,ValidationError}
       T = typeof(arg)
       T in spirv_types || return ValidationError("""
           Argument $(repr(arg)) of type $(repr(T)) is not a SPIR-V type.
-          Offending instruction: $(sprint(emit, inst; context = :color => true))
+          Offending instruction: $(sprintc(emit, inst))
           """)
     end
   end

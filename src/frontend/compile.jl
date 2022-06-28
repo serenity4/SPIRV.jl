@@ -268,6 +268,10 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
   blk = new_block!(fdef, SSAValue(node, irmap))
   for i in range
     jinst = code[i]
+    # Ignore single `nothing::Nothing` instructions.
+    # They seem to be only here to provide a dummy basic block with
+    # for instructions such as `OpPhi`.
+    isnothing(jinst) && length(range) == 1 && continue
     jtype = ssavaluetypes[i]
     core_ssaval = Core.SSAValue(i)
     spv_inst = nothing
@@ -401,7 +405,7 @@ macro compile(features, interp, ex)
 end
 
 macro compile(interp, ex)
-  esc(:($(@__MODULE__).@compile $(AllSupported()) $interp $ex))
+  esc(:($(@__MODULE__).@compile $(AllSupported()) $(esc(interp)) $ex))
 end
 macro compile(ex)
   esc(:($(@__MODULE__).@compile $(AllSupported()) $(SPIRVInterpreter()) $ex))

@@ -24,7 +24,7 @@ function write!(c::AbstractCursor, x, y, z...)
 end
 
 """
-Skip instructions while `f(c)` returns false.
+Skip instructions while `f(c)` returns false. The instruction for which `f(c)` returns true (if any) will be the next instruction.
 Returns true if the end of file has not been reached (i.e. `f(c)` evaluated to true at some point).
 """
 function skip_until(f, c::AbstractCursor)

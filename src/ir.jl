@@ -501,7 +501,7 @@ end
 function Base.show(io::IO, mime::MIME"text/plain", ir::IR)
   mod = Module(ir)
   isnothing(ir.debug) && return show(io, mime, mod)
-  str = sprint(disassemble, mod; context = :color => true)
+  str = sprintc(disassemble, mod)
   lines = split(str, '\n')
   filter!(lines) do line
     !contains(line, "OpName") && !contains(line, "OpMemberName")

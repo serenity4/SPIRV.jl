@@ -90,3 +90,7 @@ function Core.Compiler.inlining_policy(si::SPIRVInterpreter, @nospecialize(src),
     end
   end
 end
+
+function Base.show(io::IO, interp::SPIRVInterpreter)
+  print(io, SPIRVInterpreter, '(', interp.inf_params, ", ", interp.opt_params, ')')
+end

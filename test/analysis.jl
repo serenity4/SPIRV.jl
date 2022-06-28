@@ -1,6 +1,22 @@
 using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
-using AbstractTrees: parent
-using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator, flow_through
+using AbstractTrees: parent, nodevalue, Leaves
+using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain
+
+function program_1(x)
+  @noinline 2U * x
+end
+
+function program_2(x)
+  z = @noinline 2U + x - 1U
+  @noinline program_1(z)
+end
+
+function program_3(x)
+  if x > 3U
+    x = 45U
+  end
+  x + 2U
+end
 
 @testset "Function analysis" begin
   @testset "Static call graph traversal" begin
@@ -194,5 +210,59 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
     @test all(get_prop(mg, e, :count) == 1 for e in edges_nocycle)
     edges_cycle = filter(!in(edges_nocycle), collect(edges(mg)))
     @test all(get_prop(mg, e, :count) == 3 for e in edges_cycle)
+  end
+
+  @testset "Abstract interpretation" begin
+    recorded = Instruction[]
+    observe_instructions(interpret::AbstractInterpretation, frame::InterpretationFrame) = nothing
+    function observe_instructions(interpret::AbstractInterpretation, frame::InterpretationFrame, inst::Instruction)
+      interpret.stop = in(inst, recorded)
+      push!(recorded, inst)
+    end
+    mod = SPIRV.Module(resource("vert.spv"))
+    amod = annotate(mod)
+    af = only(amod.annotated_functions)
+    interpret(observe_instructions, amod, af)
+    @test recorded == instructions(amod, only(af.blocks))
+
+    empty!(recorded)
+    ir = @compile program_1(::UInt32)
+    mod = SPIRV.Module(ir)
+    amod = annotate(mod)
+    af1, af2 = amod.annotated_functions
+    interpret(observe_instructions, amod, af1)
+    @test SPIRV.opcode.(recorded) == [SPIRV.OpLabel, SPIRV.OpFunctionCall, SPIRV.OpLabel, SPIRV.OpIMul, SPIRV.OpReturnValue, SPIRV.OpReturnValue]
+  end
+
+  @testset "Use-def chains" begin
+    ir = @compile +(::UInt32, ::UInt32)
+    amod = annotate(SPIRV.Module(ir))
+    iadd = SSAValue(8)
+    st = StackTrace()
+    chain = UseDefChain(amod, only(amod.annotated_functions), iadd, st)
+    @test chain.use == amod[iadd]
+    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(5), SSAValue(6)])
+
+    ir = @compile program_1(::UInt32)
+    amod = annotate(SPIRV.Module(ir))
+    imul = SSAValue(12)
+    st = StackTrace([StackFrame(16, 1)])
+    chain = UseDefChain(amod, amod.annotated_functions[2], imul, st)
+    @test chain.use == amod[imul]
+    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(5), SSAValue(13)])
+
+    ir = @compile program_2(::UInt32)
+    amod = annotate(SPIRV.Module(ir))
+    imul = SSAValue(29)
+    st = StackTrace([StackFrame(27, 1), StackFrame(47, lastindex(amod.annotated_functions) - 1)])
+    chain = UseDefChain(amod, last(amod.annotated_functions), imul, st)
+    @test chain.use == amod[imul]
+    @test Set(nodevalue.(Leaves(chain))) == Set([
+      @inst(SSAValue(20) = SPIRV.OpConstant(1U)::SSAValue(2)),
+      @inst(SSAValue(13) = SPIRV.OpConstant(2U)::SSAValue(2)),
+      @inst(SSAValue(5) = SPIRV.OpFunctionParameter()::SSAValue(2)),
+    ])
+
+    # TODO: Test with functions that exhibit a nontrivial control-flow.
   end
 end;

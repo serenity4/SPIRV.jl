@@ -45,12 +45,12 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
             (OpExtInst, args)
           end
         else
-          args, variables = peel_global_vars(args, ir)
-          (OpFunctionCall, (emit_new!(ir, mi, fdef, variables), args...))
+          args, variables = peel_global_vars(args, ir, irmap, fdef)
+          (OpFunctionCall, (emit_new!(ir, cfg.interp, mi, fdef, variables), args...))
         end
       else
-        args, variables = peel_global_vars(args, ir)
-        (OpFunctionCall, (emit_new!(ir, mi, fdef, variables), args...))
+        args, variables = peel_global_vars(args, ir, irmap, fdef)
+        (OpFunctionCall, (emit_new!(ir, cfg.interp, mi, fdef, variables), args...))
       end
     end
     _ => throw(CompilationError("Expected call or invoke expression, got $(repr(jinst))"))
@@ -126,11 +126,11 @@ function storage_class(arg, ir::IR, irmap::IRMapping, fdef::FunctionDefinition)
   end
 end
 
-function peel_global_vars(args, ir::IR)
+function peel_global_vars(args, ir::IR, irmap, fdef)
   fargs = []
   variables = Dictionary{Int,Variable}()
   for (i, arg) in enumerate(args)
-    @switch storage_class(arg) begin
+    @switch storage_class(arg, ir, irmap, fdef) begin
       @case ::Nothing || &StorageClassFunction
       push!(fargs, arg)
       @case ::StorageClass
@@ -207,6 +207,6 @@ function literals_to_const!(args, ir::IR, irmap::IRMapping, opcode)
   end
 end
 
-function emit_new!(ir::IR, mi::MethodInstance, fdef::FunctionDefinition, variables)
-  emit!(ir, CFG(mi; inferred = true), variables)
+function emit_new!(ir::IR, interp::SPIRVInterpreter, mi::MethodInstance, fdef::FunctionDefinition, variables)
+  emit!(ir, CFG(mi, interp; inferred = true), variables)
 end

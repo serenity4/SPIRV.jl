@@ -1,50 +1,28 @@
 entry_node(g::AbstractGraph) = only(sources(g))
 
+sinks(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Base.Fix1(outneighbors, g), vertices(g))]
+sources(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Base.Fix1(inneighbors, g), vertices(g))]
+
 control_flow_graph(fdef::FunctionDefinition) = control_flow_graph(collect(fdef.blocks))
 
-function control_flow_graph(c::InstructionCursor)
-  inst = read(c)
-  assert_opcode(OpFunction, inst)
-  cfg = control_flow_graph(read(c, Vector{Block}))
-  assert_opcode(OpFunctionEnd, read(c, 1))
-  cfg
-end
+function control_flow_graph(amod::AnnotatedModule, af::AnnotatedFunction)
+  cfg = SimpleDiGraph(length(af.blocks))
 
-function Base.read(c::InstructionCursor, ::Type{Block})
-  inst = read(c)
-  assert_opcode(OpLabel, inst)
-  block = Block(inst.result_id)
-  while !eof(c) && !in(opcode(peek(c)), (OpLabel, OpFunctionEnd))
-    push!(block, read(c))
-  end
-  block
-end
-
-function Base.read(c::InstructionCursor, ::Type{Vector{Block}})
-  blocks = Block[]
-  while opcode(peek(c)) == OpLabel
-    push!(blocks, read(c, Block))
-  end
-  blocks
-end
-
-function control_flow_graph(blocks::AbstractVector{Block})
-  cfg = SimpleDiGraph(length(blocks))
-  for (i, block) in enumerate(blocks)
-    for inst in block
+  for (i, block) in enumerate(af.blocks)
+    for inst in instructions(amod, block)
       (; arguments) = inst
       @tryswitch opcode(inst) begin
         @case &OpBranch
         dst = arguments[1]::SSAValue
-        add_edge!(cfg, i, block_index(blocks, dst))
+        add_edge!(cfg, i, find_block(amod, af, dst))
         @case &OpBranchConditional
         cond, dst1, dst2 = arguments[1]::SSAValue, arguments[2]::SSAValue, arguments[3]::SSAValue
-        add_edge!(cfg, i, block_index(blocks, dst1))
-        add_edge!(cfg, i, block_index(blocks, dst2))
+        add_edge!(cfg, i, find_block(amod, af, dst1))
+        add_edge!(cfg, i, find_block(amod, af, dst2))
         @case &OpSwitch
         val = arguments[1]::SSAValue
         for dst in arguments[2:end]
-          add_edge!(cfg, i, block_index(blocks, dst::SSAValue))
+          add_edge!(cfg, i, find_block(amod, af, dst::SSAValue))
         end
       end
     end
@@ -52,7 +30,11 @@ function control_flow_graph(blocks::AbstractVector{Block})
   cfg
 end
 
-block_index(blocks::AbstractVector{Block}, id::SSAValue) = findfirst(==(id) ∘ Base.Fix2(getproperty, :id), blocks)
+function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::SSAValue)
+  for (i, block) in enumerate(af.blocks)
+    has_result_id(amod[block.start], id) && return i
+  end
+end
 
 function backedges(g::AbstractGraph, source = 1)
   dfs = dfs_tree(g, source)
@@ -99,7 +81,10 @@ function flow_through(f, g::AbstractGraph, v; stop_at::Optional{Union{Int, Edge{
   next = [Edge(v, v2) for v2 in outneighbors(g, v)]
   while !isempty(next)
     edge = popfirst!(next)
-    f(edge) || continue
+    ret = f(edge)
+    ret === nothing && return
+    ret || continue
+
     stop_at isa Edge{Int} && edge === stop_at && continue
     stop_at isa Int && dst(edge) === stop_at && continue
 

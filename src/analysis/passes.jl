@@ -1,22 +1,23 @@
 function renumber_ssa(mod::Module)
+  renumber_ssa(annotate(mod)).mod
+end
+
+function renumber_ssa(amod::AnnotatedModule)
   counter = SSACounter()
   swaps = SSADict{SSAValue}()
   new_insts = Instruction[]
 
-  amod = AnnotatedModule(mod)
-  c = cursor(amod)
-
-  while position(c) < amod.functions || opcode(peek(c)) ≠ OpLabel
-    push!(new_insts, swap_result_id!(swaps, counter, read(c)))
+  for inst in instructions(amod, first(amod.capabilities):(first(amod.functions) - 1))
+    push!(new_insts, swap_result_id!(swaps, counter, inst))
   end
 
-  while !eof(c)
-    blocks = read(c, Vector{Block})
-    assert_opcode(OpFunctionEnd, read(c))
-    cfg = control_flow_graph(blocks)
-    for block in blocks[traverse(cfg)]
-      push!(new_insts, swap_result_id!(swaps, counter, @inst block.id = OpLabel()))
-      for inst in block
+  for af in amod.annotated_functions
+    cfg = control_flow_graph(amod, af)
+    for inst in instructions(amod, first(af.range):last(af.parameters))
+      push!(new_insts, swap_result_id!(swaps, counter, inst))
+    end
+    for block in af.blocks[traverse(cfg)]
+      for inst in instructions(amod, block)
         push!(new_insts, swap_result_id!(swaps, counter, inst))
       end
     end
@@ -37,7 +38,7 @@ function renumber_ssa(mod::Module)
     end
   end
 
-  Module(mod.meta, new_insts)
+  annotate(Module(amod.mod.meta, new_insts))
 end
 
 function swap_result_id!(swaps::SSADict{SSAValue}, counter::SSACounter, inst::Instruction)

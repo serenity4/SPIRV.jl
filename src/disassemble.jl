@@ -128,5 +128,8 @@ end
 disassemble(obj) = disassemble(stdout, obj)
 disassemble(io::IO, mod::PhysicalModule) = disassemble(io, Module(mod))
 
+sprintc(args...; context = :color => true, kwargs...) = sprint(args...; context, kwargs...)
+sprintc_mime(f, args...; kwargs...) = sprintc(f, MIME"text/plain"(), args...; kwargs...)
+
 # Print the module as a single string to avoid the slowdown caused by a possible IO congestion.
-Base.show(io::IO, mime::MIME"text/plain", mod::Union{AnnotatedModule,Module}) = print(io, sprint(disassemble, mod; context = :color => true))
+Base.show(io::IO, mime::MIME"text/plain", mod::Union{AnnotatedModule,Module}) = print(io, sprintc(disassemble, mod))
