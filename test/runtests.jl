@@ -30,6 +30,6 @@ end
     include("frontend.jl");
     include("analysis.jl");
     include("passes.jl");
+    include("codegen.jl")
   end;
-  include("codegen.jl")
 end;
