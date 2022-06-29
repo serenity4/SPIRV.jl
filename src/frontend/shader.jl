@@ -114,19 +114,19 @@ function add_align_operands!(ir::IR, fdef::FunctionDefinition, layout::LayoutStr
 end
 
 struct MemoryResource
-  type::SPIRType
   address::SSAValue
+  type::SSAValue
 end
 
 struct Shader
-  ir::IR
-  entry_point::EntryPoint
+  mod::Module
+  entry_point::SSAValue
   memory_resources::SSADict{MemoryResource}
 end
 
-@forward Shader.ir (Module,)
+Module(shader::Shader) = shader.mod
 
-validate(shader::Shader) = validate_shader(shader.ir)
+validate(shader::Shader) = validate_shader(IR(Module(shader); satisfy_requirements = false))
 
 function Shader(cfg::CFG, interface::ShaderInterface)
   ir = IR()
@@ -144,12 +144,45 @@ function Shader(cfg::CFG, interface::ShaderInterface)
   end
   compile!(ir, cfg, variables)
   ep = make_shader!(ir, cfg.mi, interface, variables)
-  Shader(ir, ep, memory_resources(ir, ep))
+  mod = Module(ir)
+  Shader(mod, ep.func, memory_resources(mod, ep.func))
 end
 
-function memory_resources(ir::IR, ep::EntryPoint)
-  addresses = @NamedTuple{address::SSAValue, fid::SSAValue}[]
-  pointers = SSAValue[]
+struct MemoryResourceExtraction
+  conversions::SSADict{Instruction}
+  loaded_addresses::SSADict{InterpretationFrame}
+  resources::SSADict{MemoryResource}
+end
+
+MemoryResourceExtraction() = MemoryResourceExtraction(SSADict(), Set(), SSADict())
+
+function (extract::MemoryResourceExtraction)(interpret::AbstractInterpretation, frame::InterpretationFrame)
+  nothing
+end
+
+function (extract::MemoryResourceExtraction)(interpret::AbstractInterpretation, frame::InterpretationFrame, inst::Instruction)
+  @tryswitch opcode(inst) begin
+  @case &OpConvertUToPtr
+    if !in(inst, extract.conversions)
+      insert!(extract.conversions, inst.result_id, inst)
+    else
+      interpret.converged = true
+    end
+  @case &OpLoad || &OpAccessChain
+    # TODO: Use a def-use chain to make it more robust.
+    # For example, one may pass the pointer to a function call
+    # and a different ID (associated with an `OpFunctionParameter`) would be used as operand.
+    loaded = inst.arguments[1]::SSAValue
+    c = get(extract.conversions, loaded, nothing)
+    !isnothing(c) && insert!(extract.loaded_addresses, c.arguments[1]::SSAValue, frame)
+  end
+end
+
+function memory_resources(mod::Module, fid::SSAValue)
+  memory_resources = SSADict{MemoryResource}()
+  return memory_resources
+  amod = annotate(mod)
+  af = amod.annotated_functions[find_function(amod, fid)]
 
   #=
 
@@ -164,31 +197,15 @@ function memory_resources(ir::IR, ep::EntryPoint)
 
   =#
 
-  # for (id, fdef) in pairs(ir.fdefs)
-  #   for blk in fdef.blocks
-  #     for inst in blk
-  #       if inst.opcode == OpConvertUToPtr
-  #         push!(addresses, first(inst.arguments)::SSAValue)
-  #       end
-  #     end
-  #   end
-  # end
-
-  resources = SSADict{MemoryResource}()
-  return resources
-
-  defining_variables = SSADict{SSAValue}()
-  for (; address, fid) in unique(addresses)
-    addr_var = nothing
-    for blk in fdef.blocks
-      for inst in blk
-        if inst.opcode == OpLoad && first(inst.arguments)::SSAValue in pointers
-          isnothing(addr_var) && (addr_var = defining_variable(ir, address, fid))
-          insert!(resources, address, MemoryResource(ir.types[inst.result_id], address))
-        end
-      end
+  extract = MemoryResourceExtraction()
+  interpret(extract, amod, af)
+  chains = UseDefChain[]
+  for (address, frame) in enumerate(extract.loaded_addresses)
+    chain = UseDefChain(amod, frame.af, address, frame.stacktrace)
+    for leaf in Leaves(chain)
+      inst = nodevalue(leaf)
+      opcode(inst) == OpConstant && continue
+      insert!(memory_resources, address, MemoryResource(inst.result_id::SSAValue, inst.type_id::SSAValue))
     end
   end
-
-  resources
 end

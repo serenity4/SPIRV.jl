@@ -82,7 +82,7 @@ function flow_through(f, g::AbstractGraph, v; stop_at::Optional{Union{Int, Edge{
   while !isempty(next)
     edge = popfirst!(next)
     ret = f(edge)
-    ret === nothing && return
+    isnothing(ret) && return
     ret || continue
 
     stop_at isa Edge{Int} && edge === stop_at && continue

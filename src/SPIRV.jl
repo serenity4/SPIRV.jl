@@ -117,7 +117,7 @@ export
   SSAValue,
   ModuleMetadata,
   SSADict,
-  @inst,
+  @inst, @block,
   FeatureRequirements,
   FeatureSupport, AllSupported, SupportedFeatures,
   Decorations, has_decoration, decorate!, Metadata, decorations,

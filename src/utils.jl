@@ -12,6 +12,10 @@ macro forward(ex, fs)
 end
 
 macro inst(ex)
+  inst_expr(ex)
+end
+
+function inst_expr(ex)
   Base.remove_linenums!(ex)
   result_id, inst = @match ex begin
     :($result_id = $inst) => (result_id, inst)
@@ -25,11 +29,35 @@ macro inst(ex)
   end
 
   opcode, args = @match call begin
-    :($opcode($(args...))) => (esc(opcode), esc.(args))
+    :($opcode($(args...))) => (opcode, args)
     _ => error("Invalid call $call")
   end
 
-  :(Instruction($opcode, $(esc(type_id)), $(esc(result_id)), $(args...)))
+  if isa(opcode, Symbol) && isdefined(SPIRV, Symbol(:Op, opcode))
+    maybe_op = getproperty(SPIRV, Symbol(:Op, opcode))
+    maybe_op isa Union{OpCode, OpCodeGLSL} && (opcode = maybe_op)
+  else
+    opcode = esc(opcode)
+  end
+
+  res = :(Instruction($opcode, $(esc(type_id)), $(esc(result_id)), $(esc.(args)...)))
+
+  # Substitute arguments of the form $1, $2, $n... to SSAValue(1), SSAValue(2), ...
+  for (i, arg) in enumerate(res.args)
+    Meta.isexpr(arg, :escape) || continue
+    arg = arg.args[1]
+    Meta.isexpr(arg, :$) && (res.args[i] = SSAValue(only(arg.args)))
+  end
+  res
+end
+
+macro block(ex)
+  res = :(Instruction[])
+  Meta.isexpr(ex, :block) || error("Expected a block expression `begin ... end`.")
+  for subex in ex.args
+    !isa(subex, LineNumberNode) && push!(res.args, inst_expr(subex))
+  end
+  res
 end
 
 isline(x) = false
