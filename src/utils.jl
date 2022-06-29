@@ -46,7 +46,7 @@ function inst_expr(ex)
   for (i, arg) in enumerate(res.args)
     Meta.isexpr(arg, :escape) || continue
     arg = arg.args[1]
-    Meta.isexpr(arg, :$) && (res.args[i] = SSAValue(only(arg.args)))
+    Meta.isexpr(arg, :&) && (res.args[i] = SSAValue(only(arg.args)))
   end
   res
 end
