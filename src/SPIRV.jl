@@ -82,6 +82,8 @@ include("frontend/compile.jl")
 include("frontend/codegen.jl")
 include("frontend/shader.jl")
 
+include("generate.jl")
+
 include("precompile.jl")
 
 export
@@ -117,7 +119,7 @@ export
   SSAValue,
   ModuleMetadata,
   SSADict,
-  @inst, @block,
+  @inst, @block, @spv_ir, @spv_module,
   FeatureRequirements,
   FeatureSupport, AllSupported, SupportedFeatures,
   Decorations, has_decoration, decorate!, Metadata, decorations,

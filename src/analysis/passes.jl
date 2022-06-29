@@ -26,12 +26,7 @@ function renumber_ssa(amod::AnnotatedModule)
 
   for (i, inst) in enumerate(new_insts)
     for (j, arg) in enumerate(inst.arguments)
-      if isa(arg, SSAValue)
-        replacement = get(swaps, arg, nothing)
-        if !isnothing(replacement)
-          inst.arguments[j] = replacement
-        end
-      end
+      isa(arg, SSAValue) && (inst.arguments[j] = swaps[arg])
     end
     if isa(inst.type_id, SSAValue)
       new_insts[i] = @set inst.type_id = swaps[inst.type_id]

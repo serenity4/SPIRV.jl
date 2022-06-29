@@ -145,6 +145,7 @@ function info(opcode::OpCode, arguments::AbstractVector, skip_ids::Bool = true)
 
   # Add extra operands.
   for (i, arg) in enumerate(arguments)
+    firstindex(op_infos) ≤ i ≤ lastindex(op_infos) || error("Too many operands for instruction ", sprintc(printstyled, opcode; color = :cyan), " ($(length(arguments)) arguments received, expected $(length(op_infos)))")
     info = op_infos[i]
     category = kind_to_category[info.kind]
     add_extra_operands!(op_infos, i, arg, category)

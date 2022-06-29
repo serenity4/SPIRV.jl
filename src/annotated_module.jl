@@ -25,6 +25,7 @@ function annotate_function(c::InstructionCursor)
     end
   end
   stop = position(c)
+  !iszero(block_start) || error("Expected at least one block (OpLabel) declaration in the function body.")
   push!(blocks, block_start:(stop - 1))
 
   f = AnnotatedFunction(start:stop, parameters, blocks)

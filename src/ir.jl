@@ -154,8 +154,8 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
       @case "Type-Declaration"
       @switch opcode begin
         @case &OpTypeFunction
-        rettype = types[first(arguments)]
-        argtypes = [types[id] for id in arguments[2:end]]
+        rettype = types[arguments[1]::SSAValue]
+        argtypes = [types[id::SSAValue] for id in arguments[2:end]]
         insert!(types, result_id, FunctionType(rettype, argtypes))
         @case _
         insert!(types, result_id, parse(SPIRType, inst, types, ir.constants))

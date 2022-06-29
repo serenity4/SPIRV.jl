@@ -31,4 +31,5 @@ end
     include("analysis.jl");
     include("passes.jl");
   end;
+  include("codegen.jl")
 end;

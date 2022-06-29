@@ -1,7 +1,7 @@
 using SPIRV, Test
 
 @testset "SPIR-V utilities" begin
-  @testset "Generating instructions with `@inst`" begin
+  @testset "Generating instructions with `@inst` and `@block`" begin
     x = SSAValue(6)
     inst1 = @inst SSAValue(5) = SPIRV.OpIAdd(x, SSAValue(7))::SSAValue(2)
     inst2 = @inst &5 = SPIRV.OpIAdd(&6, &7)::&2
