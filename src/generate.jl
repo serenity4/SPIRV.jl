@@ -1,5 +1,26 @@
 is_function_macro(x) = Meta.isexpr(x, :macrocall) && x.args[1] == Symbol("@function")
 
+"""
+Generate SPIR-V [`IR`](@ref) based on a DSL made for manually building modules.
+
+This is largely intended for testing, and is not the main target of this library.
+
+`ex` must be a block expression which first lists global definitions and then lists function definitions.
+
+Functions are defined with expressions of the form
+
+```julia
+@function f(x::T, y::T, ...)::RT begin
+  ... # statements
+end
+```
+
+where arguments must be typed, as well as the function return type. With this information, a proper `OpFunctionType` type declaration and `OpFunction` instructions will be inserted, along with `OpFunctionParameter`s and `OpFunctionEnd`. The types, just like for any other instruction, are either SSA values or bindings to global variables.
+
+Except for function definitions, all statements are parsed the same way as with [`@inst`](@ref), with the additional feature that symbols are allowed instead of raw SSA values. These symbols will be referred to as bindings.
+
+SSA values will be computed for each defined binding (that is, a binding on a LHS of an expression), which will be substituted by the computed ID. Every binding must be unique, except in function scope where shadowing of global bindings is allowed. One reason for this simple design is that in presence of arbitrary CFG structures, including very messy ones, more elaborate scoping rules would be very hard to come up with. The same is true for re-assignments, which typically need to insert `OpPhi` nodes after analysis of the CFG; since the goal is to provide code that is in close correspondence with the generated SPIR-V code, we prefer to avoid such nontrivial and opaque modifications.
+"""
 function generate_ir(ex::Expr)
   ex = deepcopy(ex)
   statements = @match ex begin
@@ -19,7 +40,7 @@ function generate_ir(ex::Expr)
   for st in statements[globals]
     @tryswitch st begin
       @case :($(x::Symbol) = $inst)
-      !in(x, global_bindings) || error("Invalid redefinition of binding '$x'")
+      !in(x, global_bindings) || throw(ArgumentError("Invalid redefinition of binding '$x'"))
       push!(global_bindings, x)
     end
   end
@@ -31,29 +52,29 @@ function generate_ir(ex::Expr)
     isline(f_st) && continue
     @switch f_st begin
       @case :(@function $_ $(f::Symbol)($(args...))::$_ $block)
-      !in(f, global_bindings) || error("Invalid redefinition of function '$f'")
+      !in(f, global_bindings) || throw(ArgumentError("Invalid redefinition of function '$f'"))
       push!(global_bindings, f)
       insert!(local_bindings, f, Set{Symbol}())
-      Meta.isexpr(block, :block) || error("Expected block expression as function body.")
+      Meta.isexpr(block, :block) || throw(ArgumentError("Expected block expression as function body."))
       for arg in args
         @switch arg begin
           @case :($x::$T)
-          !in(x, local_bindings[f]) || error("Non-unique argument name detected for '$x'")
+          !in(x, local_bindings[f]) || throw(ArgumentError("Non-unique argument name detected for '$x'"))
           push!(local_bindings[f], x)
           @case _
-          error("Expected typed argument declaration of the form 'x::T', got $arg")
+          throw(ArgumentError("Expected typed argument declaration of the form 'x::T', got $arg"))
         end
       end
       for st in block.args
         isline(st) && continue
         @tryswitch st begin
           @case :($(x::Symbol) = $inst)
-          !in(x, local_bindings[f]) || error("Invalid redefinition of local binding '$x'")
+          !in(x, local_bindings[f]) || throw(ArgumentError("Invalid redefinition of local binding '$x'"))
           push!(local_bindings[f], x)
         end
       end
       @case _
-      error("Expected function definition of the form `@function f(args...) begin ... end`")
+      throw(ArgumentError("Expected function definition of the form `@function f(args...) begin ... end`"))
     end
   end
 
