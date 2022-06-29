@@ -79,7 +79,7 @@ function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::A
   expand_chains!(target_defs, instructions(amod, reverse(af.blocks[block])))
 
   flow_through(reverse(cfg), block) do e
-    expand_chains!(target_defs, instructions(amod, reverse(dst(e))))
+    expand_chains!(target_defs, instructions(amod, reverse(af.blocks[dst(e)])))
   end
 
   if isempty(stacktrace)
@@ -101,6 +101,6 @@ function UseDefChain(amod::AnnotatedModule, af::AnnotatedFunction, use::SSAValue
 
   expand_chains!(target_defs, amod, af, find_block(af, use_index), stacktrace)
   expand_chains!(target_defs, instructions(amod, reverse(amod.globals)))
-  !isempty(target_defs) && warn_unresolved && @warn "The use-def chain for instruction $(sprintc_mime(show, inst)) was not fully resolved."
+  !isempty(target_defs) && warn_unresolved && @warn "The use-def chain for the instruction $(sprintc_mime(show, inst)) was not fully resolved (missing ids: $(join([sprintc(printstyled, id; color = :red) for id in first.(target_defs)], ", ")))."
   chain
 end

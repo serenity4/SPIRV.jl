@@ -196,8 +196,13 @@ function generate_ir(ex::Expr)
     end
   end
 
-  all_names = merge(global_ids, (ids for ids in local_ids)...)
-  insts = Expr(:block, [:(Name($id, $(string(name)))) for (name, id) in pairs(all_names)]..., statements[globals]..., finsts...)
+  debug_names = Expr[]
+  for d in (global_ids, values(local_ids)...)
+    for (name, id) in pairs(d)
+      push!(debug_names, :(Name($id, $(string(name)))))
+    end
+  end
+  insts = Expr(:block, debug_names..., statements[globals]..., finsts...)
   quote
     mod_insts = @block $insts
     mod = Module(ModuleMetadata(), mod_insts)

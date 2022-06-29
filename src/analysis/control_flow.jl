@@ -79,11 +79,12 @@ If `false`, then the iteration will not be continued on outgoing nodes.
 """
 function flow_through(f, g::AbstractGraph, v; stop_at::Optional{Union{Int, Edge{Int}}} = nothing)
   next = [Edge(v, v2) for v2 in outneighbors(g, v)]
+  bedges = backedges(g, v)
   while !isempty(next)
     edge = popfirst!(next)
     ret = f(edge)
     isnothing(ret) && return
-    ret || continue
+    in(edge, bedges) && !ret && continue
 
     stop_at isa Edge{Int} && edge === stop_at && continue
     stop_at isa Int && dst(edge) === stop_at && continue

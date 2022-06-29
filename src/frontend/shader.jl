@@ -77,7 +77,7 @@ function add_type_metadata!(ir::IR, interface::ShaderInterface)
 end
 
 function find_definition(id::SSAValue, insts)
-  idx = findfirst(x -> x.result_id == id, insts)
+  idx = findfirst(has_result_id(id), insts)
   if !isnothing(idx)
     insts[idx]
   end

@@ -27,9 +27,9 @@ end
   include("spvasm.jl");
   include("layouts.jl");
   if VERSION > v"1.9.0-DEV"
-    include("frontend.jl");
-    include("analysis.jl");
     include("passes.jl");
     include("codegen.jl")
+    include("frontend.jl");
+    include("analysis.jl");
   end;
 end;

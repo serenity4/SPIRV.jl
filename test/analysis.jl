@@ -2,22 +2,6 @@ using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
 using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain
 
-function program_1(x)
-  @noinline 2U * x
-end
-
-function program_2(x)
-  z = @noinline 2U + x - 1U
-  @noinline program_1(z)
-end
-
-function program_3(x)
-  if x > 3U
-    x = 45U
-  end
-  x + 2U
-end
-
 @testset "Function analysis" begin
   @testset "Static call graph traversal" begin
     ir = IR(SPIRV.Module(resource("comp.spv")); satisfy_requirements = false)
@@ -219,50 +203,52 @@ end
       interpret.stop = in(inst, recorded)
       push!(recorded, inst)
     end
-    mod = SPIRV.Module(resource("vert.spv"))
-    amod = annotate(mod)
+    amod = annotate(load_module("single_block"))
     af = only(amod.annotated_functions)
     interpret(observe_instructions, amod, af)
     @test recorded == instructions(amod, only(af.blocks))
 
     empty!(recorded)
-    ir = @compile program_1(::UInt32)
-    mod = SPIRV.Module(ir)
-    amod = annotate(mod)
+    amod = annotate(load_module("function_call"))
     af1, af2 = amod.annotated_functions
     interpret(observe_instructions, amod, af1)
-    @test SPIRV.opcode.(recorded) == [SPIRV.OpLabel, SPIRV.OpFunctionCall, SPIRV.OpLabel, SPIRV.OpIMul, SPIRV.OpReturnValue, SPIRV.OpReturnValue]
+    block_start, block_end = extrema(only(af1.blocks))
+    @test recorded == [instructions(amod, block_start:(block_start + 2)); instructions(amod, only(af2.blocks)); instructions(amod, (block_start + 3):block_end)]
   end
 
   @testset "Use-def chains" begin
-    ir = @compile +(::UInt32, ::UInt32)
-    amod = annotate(SPIRV.Module(ir))
-    iadd = SSAValue(7)
+    amod = annotate(load_module("single_block"))
+    iadd = SSAValue(9)
     st = StackTrace()
     chain = UseDefChain(amod, only(amod.annotated_functions), iadd, st)
     @test chain.use == amod[iadd]
-    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(4), SSAValue(5)])
+    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(6), SSAValue(7)])
+    fadd = SSAValue(11)
+    chain = UseDefChain(amod, only(amod.annotated_functions), fadd, st)
+    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(10), SSAValue(3)])
+    @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(6), SSAValue(7), SSAValue(3)])
 
-    ir = @compile program_1(::UInt32)
-    amod = annotate(SPIRV.Module(ir))
-    imul = SSAValue(11)
-    st = StackTrace([StackFrame(16, 1)])
-    chain = UseDefChain(amod, amod.annotated_functions[2], imul, st)
-    @test chain.use == amod[imul]
-    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(4), SSAValue(12)])
+    amod = annotate(load_module("function_call"))
+    isub = SSAValue(18)
+    st = StackTrace([StackFrame(amod, SSAValue(11))])
+    chain = UseDefChain(amod, amod.annotated_functions[2], isub, st)
+    @test chain.use == amod[isub]
+    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(7), SSAValue(8)])
 
-    ir = @compile program_2(::UInt32)
-    amod = annotate(SPIRV.Module(ir))
-    imul = SSAValue(28)
-    st = StackTrace([StackFrame(27, 1), StackFrame(47, lastindex(amod.annotated_functions) - 1)])
-    chain = UseDefChain(amod, last(amod.annotated_functions), imul, st)
-    @test chain.use == amod[imul]
-    @test Set(nodevalue.(Leaves(chain))) == Set([
-      @inst(SSAValue(19) = SPIRV.OpConstant(1U)::SSAValue(1)),
-      @inst(SSAValue(12) = SPIRV.OpConstant(2U)::SSAValue(1)),
-      @inst(SSAValue(4) = SPIRV.OpFunctionParameter()::SSAValue(1)),
-    ])
+    amod = annotate(load_module("simple_conditional"))
+    fadd = SSAValue(16)
+    st = StackTrace()
+    chain = UseDefChain(amod, only(amod.annotated_functions), fadd, st)
+    @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(8), SSAValue(9), SSAValue(4)])
+    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(15), SSAValue(4)])
 
-    # TODO: Test with functions that exhibit a nontrivial control-flow.
+    # FIXME: back-edges for `reverse(control_flow_graph(amod, only(amod.annotated_functions)))` seem off.
+    # We get that almost all edges (or all) are back-edges, which should not be the case even for a reverse CFG.
+    # amod = annotate(load_module("simple_loop.jl"))
+    # iadd = SSAValue(30)
+    # st = StackTrace()
+    # chain = UseDefChain(amod, only(amod.annotated_functions), iadd, st)
+    # @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(8), SSAValue(9), SSAValue(4)])
+    # @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(15), SSAValue(4)])
   end
 end;

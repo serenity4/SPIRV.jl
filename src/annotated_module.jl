@@ -117,6 +117,12 @@ function find_function(amod::AnnotatedModule, fid::SSAValue)
   end
 end
 
+function find_function(amod::AnnotatedModule, index::Integer)
+  for (i, af) in enumerate(amod.annotated_functions)
+    in(index, af.range) && return i
+  end
+end
+
 function find_block(af::AnnotatedFunction, index::Integer)
   index < first(af.range) && error("Index ", index, " is not inside the provided function")
   index < first(first(af.blocks)) && error("Index ", index, " points to an instruction occurring before any block definition")

@@ -3,6 +3,12 @@ struct StackFrame
   function_index::Int
 end
 
+function StackFrame(amod::AnnotatedModule, caller::SSAValue)
+  callsite = findfirst(has_result_id(caller), amod.mod.instructions)
+  findex = find_function(amod, callsite)
+  StackFrame(callsite, findex)
+end
+
 struct StackTrace
   frames::Vector{StackFrame}
 end
