@@ -237,30 +237,30 @@ end
   @testset "Use-def chains" begin
     ir = @compile +(::UInt32, ::UInt32)
     amod = annotate(SPIRV.Module(ir))
-    iadd = SSAValue(8)
+    iadd = SSAValue(7)
     st = StackTrace()
     chain = UseDefChain(amod, only(amod.annotated_functions), iadd, st)
     @test chain.use == amod[iadd]
-    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(5), SSAValue(6)])
+    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(4), SSAValue(5)])
 
     ir = @compile program_1(::UInt32)
     amod = annotate(SPIRV.Module(ir))
-    imul = SSAValue(12)
+    imul = SSAValue(11)
     st = StackTrace([StackFrame(16, 1)])
     chain = UseDefChain(amod, amod.annotated_functions[2], imul, st)
     @test chain.use == amod[imul]
-    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(5), SSAValue(13)])
+    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(4), SSAValue(12)])
 
     ir = @compile program_2(::UInt32)
     amod = annotate(SPIRV.Module(ir))
-    imul = SSAValue(29)
+    imul = SSAValue(28)
     st = StackTrace([StackFrame(27, 1), StackFrame(47, lastindex(amod.annotated_functions) - 1)])
     chain = UseDefChain(amod, last(amod.annotated_functions), imul, st)
     @test chain.use == amod[imul]
     @test Set(nodevalue.(Leaves(chain))) == Set([
-      @inst(SSAValue(20) = SPIRV.OpConstant(1U)::SSAValue(2)),
-      @inst(SSAValue(13) = SPIRV.OpConstant(2U)::SSAValue(2)),
-      @inst(SSAValue(5) = SPIRV.OpFunctionParameter()::SSAValue(2)),
+      @inst(SSAValue(19) = SPIRV.OpConstant(1U)::SSAValue(1)),
+      @inst(SSAValue(12) = SPIRV.OpConstant(2U)::SSAValue(1)),
+      @inst(SSAValue(4) = SPIRV.OpFunctionParameter()::SSAValue(1)),
     ])
 
     # TODO: Test with functions that exhibit a nontrivial control-flow.

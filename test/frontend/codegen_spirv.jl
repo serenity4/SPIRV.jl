@@ -6,24 +6,24 @@ using SPIRV, Test
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
-      """
+        """
         OpCapability(VulkanMemoryModel)
         OpExtension("SPV_KHR_vulkan_memory_model")
         OpMemoryModel(Logical, Vulkan)
-   %2 = OpTypeFloat(32)
-   %3 = OpTypeFunction(%2, %2)
+   %1 = OpTypeFloat(0x00000020)
+   %2 = OpTypeFunction(%1, %1)
+   %6 = OpConstant(0x3f800000)::%1
    # Constant literals are not interpreted as floating point values.
    # Doing so would require the knowledge of types, expressed in the IR.
-   %7 = OpConstant(0x3f800000)::%2
-   %9 = OpConstant(0x40400000)::%2
-   %4 = OpFunction(None, %3)::%2
-   %5 = OpFunctionParameter()::%2
-   %6 = OpLabel()
-   %8 = OpFAdd(%5, %7)::%2
-  %10 = OpFMul(%9, %8)::%2
-  %11 = OpFMul(%10, %10)::%2
-        OpReturnValue(%11)
-        OpFunctionEnd()
+   %8 = OpConstant(0x40400000)::%1
+   %3 = OpFunction(None, %2)::%1
+   %4 = OpFunctionParameter()::%1
+   %5 = OpLabel()
+   %7 = OpFAdd(%4, %6)::%1
+   %9 = OpFMul(%8, %7)::%1
+  %10 = OpFMul(%9, %9)::%1
+          OpReturnValue(%10)
+          OpFunctionEnd()
   """,
     )
 
@@ -31,24 +31,24 @@ using SPIRV, Test
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
-      """
+        """
         OpCapability(VulkanMemoryModel)
         OpCapability(Float64)
         OpExtension("SPV_KHR_vulkan_memory_model")
         OpMemoryModel(Logical, Vulkan)
-   %2 = OpTypeFloat(64)
-   %3 = OpTypeFunction(%2, %2, %2, %2)
-  %10 = OpTypeBool()
-   %4 = OpFunction(None, %3)::%2
-   %5 = OpFunctionParameter()::%2
-   %6 = OpFunctionParameter()::%2
-   %7 = OpFunctionParameter()::%2
-   %8 = OpLabel()
-  %11 = OpFOrdLessThan(%7, %5)::%10
-  %12 = OpFOrdLessThan(%5, %6)::%10
-  %13 = OpSelect(%12, %6, %5)::%2
-  %14 = OpSelect(%11, %7, %13)::%2
-        OpReturnValue(%14)
+   %1 = OpTypeFloat(0x00000040)
+   %2 = OpTypeFunction(%1, %1, %1, %1)
+   %8 = OpTypeBool()
+   %3 = OpFunction(None, %2)::%1
+   %4 = OpFunctionParameter()::%1
+   %5 = OpFunctionParameter()::%1
+   %6 = OpFunctionParameter()::%1
+   %7 = OpLabel()
+   %9 = OpFOrdLessThan(%6, %4)::%8
+  %10 = OpFOrdLessThan(%4, %5)::%8
+  %11 = OpSelect(%10, %5, %4)::%1
+  %12 = OpSelect(%9, %6, %11)::%1
+        OpReturnValue(%12)
         OpFunctionEnd()
     """,
     )
@@ -59,21 +59,21 @@ using SPIRV, Test
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
-      """
+        """
         OpCapability(VulkanMemoryModel)
         OpCapability(Float64)
         OpExtension("SPV_KHR_vulkan_memory_model")
-   %9 = OpExtInstImport("GLSL.std.450")
+   %8 = OpExtInstImport("GLSL.std.450")
         OpMemoryModel(Logical, Vulkan)
-   %2 = OpTypeFloat(64)
-   %3 = OpTypeFunction(%2, %2, %2, %2)
-   %4 = OpFunction(None, %3)::%2
-   %5 = OpFunctionParameter()::%2
-   %6 = OpFunctionParameter()::%2
-   %7 = OpFunctionParameter()::%2
-   %8 = OpLabel()
-  %10 = OpExtInst(%9, FClamp, %5, %6, %7)::%2
-        OpReturnValue(%10)
+   %1 = OpTypeFloat(0x00000040)
+   %2 = OpTypeFunction(%1, %1, %1, %1)
+   %3 = OpFunction(None, %2)::%1
+   %4 = OpFunctionParameter()::%1
+   %5 = OpFunctionParameter()::%1
+   %6 = OpFunctionParameter()::%1
+   %7 = OpLabel()
+   %9 = OpExtInst(%8, FClamp, %4, %5, %6)::%1
+        OpReturnValue(%9)
         OpFunctionEnd()
     """,
     )
@@ -82,25 +82,25 @@ using SPIRV, Test
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
-      """
+        """
         OpCapability(VulkanMemoryModel)
         OpExtension("SPV_KHR_vulkan_memory_model")
-   %7 = OpExtInstImport("GLSL.std.450")
+   %6 = OpExtInstImport("GLSL.std.450")
         OpMemoryModel(Logical, Vulkan)
-   %2 = OpTypeFloat(0x00000020)
-   %3 = OpTypeFunction(%2, %2)
-  %10 = OpConstant(0x40400000)::%2
-  %12 = OpConstant(0x3f800000)::%2
-   %4 = OpFunction(None, %3)::%2
-   %5 = OpFunctionParameter()::%2
-   %6 = OpLabel()
-   %8 = OpExtInst(%7, Exp, %5)::%2
-   %9 = OpExtInst(%7, Sin, %5)::%2
-  %11 = OpFMul(%10, %9)::%2
-  %13 = OpFAdd(%12, %11)::%2
-  %14 = OpExtInst(%7, Log, %13)::%2
-  %15 = OpFAdd(%14, %8)::%2
-        OpReturnValue(%15)
+   %1 = OpTypeFloat(0x00000020)
+   %2 = OpTypeFunction(%1, %1)
+   %9 = OpConstant(0x40400000)::%1
+  %11 = OpConstant(0x3f800000)::%1
+   %3 = OpFunction(None, %2)::%1
+   %4 = OpFunctionParameter()::%1
+   %5 = OpLabel()
+   %7 = OpExtInst(%6, Exp, %4)::%1
+   %8 = OpExtInst(%6, Sin, %4)::%1
+  %10 = OpFMul(%9, %8)::%1
+  %12 = OpFAdd(%11, %10)::%1
+  %13 = OpExtInst(%6, Log, %12)::%1
+  %14 = OpFAdd(%13, %7)::%1
+        OpReturnValue(%14)
         OpFunctionEnd()
     """,
     )
@@ -114,30 +114,30 @@ using SPIRV, Test
 
       @test ir ≈ parse(
         SPIRV.Module,
-        """
-        OpCapability(VulkanMemoryModel)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
-   %2 = OpTypeFloat(0x00000020)
-   %3 = OpTypeFunction(%2, %2)
-   %9 = OpConstant(0x00000000)::%2
-  %11 = OpTypeBool()
-  %13 = OpConstant(0x3f800000)::%2
-   %4 = OpFunction(None, %3)::%2
-   %5 = OpFunctionParameter()::%2
-   %6 = OpLabel()
-  %12 = OpFOrdLessThan(%9, %5)::%11
-        OpSelectionMerge(%7, None)
-        OpBranchConditional(%12, %7, %8)
-   %7 = OpLabel()
-  %14 = OpFAdd(%5, %13)::%2
-        OpReturnValue(%14)
-   %8 = OpLabel()
-  %15 = OpFSub(%5, %13)::%2
-        OpReturnValue(%15)
-        OpFunctionEnd()
-        """
-        )
+          """
+          OpCapability(VulkanMemoryModel)
+          OpExtension("SPV_KHR_vulkan_memory_model")
+          OpMemoryModel(Logical, Vulkan)
+     %1 = OpTypeFloat(0x00000020)
+     %2 = OpTypeFunction(%1, %1)
+     %8 = OpConstant(0x00000000)::%1
+     %9 = OpTypeBool()
+    %11 = OpConstant(0x3f800000)::%1
+     %3 = OpFunction(None, %2)::%1
+     %4 = OpFunctionParameter()::%1
+     %5 = OpLabel()
+    %10 = OpFOrdLessThan(%8, %4)::%9
+          OpSelectionMerge(%6, None)
+          OpBranchConditional(%10, %6, %7)
+     %6 = OpLabel()
+    %12 = OpFAdd(%4, %11)::%1
+          OpReturnValue(%12)
+     %7 = OpLabel()
+    %13 = OpFSub(%4, %11)::%1
+          OpReturnValue(%13)
+          OpFunctionEnd()
+        """,
+      )
       function f_branches(x)
         y = clamp(x, 0F, 1F)
         if iszero(y)
@@ -155,47 +155,47 @@ using SPIRV, Test
       @test unwrap(validate(ir))
       @test ir ≈ parse(
         SPIRV.Module,
-        """
-        OpCapability(VulkanMemoryModel)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-  %14 = OpExtInstImport("GLSL.std.450")
-        OpMemoryModel(Logical, Vulkan)
-   %2 = OpTypeFloat(0x00000020)
-   %3 = OpTypeFunction(%2, %2)
-  %15 = OpConstant(0x00000000)::%2
-  %16 = OpConstant(0x3f800000)::%2
-  %19 = OpTypeBool()
-   %4 = OpFunction(None, %3)::%2
-   %5 = OpFunctionParameter()::%2
-   %6 = OpLabel()
-  %17 = OpExtInst(%14, FClamp, %5, %15, %16)::%2
-  %20 = OpFOrdEqual(%17, %15)::%19
-        OpSelectionMerge(%11, None)
-        OpBranchConditional(%20, %7, %10)
-   %7 = OpLabel()
-  %21 = OpFMul(%5, %5)::%2
-  %22 = OpFOrdLessThan(%16, %21)::%19
-        OpSelectionMerge(%8, None)
-        OpBranchConditional(%22, %8, %9)
-   %8 = OpLabel()
-        OpReturnValue(%21)
-   %9 = OpLabel()
-  %23 = OpFAdd(%5, %21)::%2
-        OpBranch(%11)
-  %10 = OpLabel()
-  %24 = OpFSub(%5, %16)::%2
-        OpBranch(%11)
-  %11 = OpLabel()
-  %25 = OpPhi(%23 => %9, %24 => %10)::%2
-  %26 = OpFOrdLessThan(%25, %15)::%19
-        OpSelectionMerge(%12, None)
-        OpBranchConditional(%26, %12, %13)
-  %12 = OpLabel()
-        OpReturnValue(%17)
-  %13 = OpLabel()
-  %27 = OpFAdd(%25, %17)::%2
-        OpReturnValue(%27)
-        OpFunctionEnd()
+          """
+          OpCapability(VulkanMemoryModel)
+          OpExtension("SPV_KHR_vulkan_memory_model")
+    %13 = OpExtInstImport("GLSL.std.450")
+          OpMemoryModel(Logical, Vulkan)
+     %1 = OpTypeFloat(0x00000020)
+     %2 = OpTypeFunction(%1, %1)
+    %14 = OpConstant(0x00000000)::%1
+    %15 = OpConstant(0x3f800000)::%1
+    %17 = OpTypeBool()
+     %3 = OpFunction(None, %2)::%1
+     %4 = OpFunctionParameter()::%1
+     %5 = OpLabel()
+    %16 = OpExtInst(%13, FClamp, %4, %14, %15)::%1
+    %18 = OpFOrdEqual(%16, %14)::%17
+          OpSelectionMerge(%10, None)
+          OpBranchConditional(%18, %6, %9)
+     %6 = OpLabel()
+    %19 = OpFMul(%4, %4)::%1
+    %20 = OpFOrdLessThan(%15, %19)::%17
+          OpSelectionMerge(%7, None)
+          OpBranchConditional(%20, %7, %8)
+     %7 = OpLabel()
+          OpReturnValue(%19)
+     %8 = OpLabel()
+    %21 = OpFAdd(%4, %19)::%1
+          OpBranch(%10)
+     %9 = OpLabel()
+    %22 = OpFSub(%4, %15)::%1
+          OpBranch(%10)
+    %10 = OpLabel()
+    %23 = OpPhi(%21 => %8, %22 => %9)::%1
+    %24 = OpFOrdLessThan(%23, %14)::%17
+          OpSelectionMerge(%11, None)
+          OpBranchConditional(%24, %11, %12)
+    %11 = OpLabel()
+          OpReturnValue(%16)
+    %12 = OpLabel()
+    %25 = OpFAdd(%23, %16)::%1
+          OpReturnValue(%25)
+          OpFunctionEnd()
         """
       )
     end
@@ -210,28 +210,28 @@ using SPIRV, Test
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
-      """
-      OpCapability(VulkanMemoryModel)
-      OpExtension("SPV_KHR_vulkan_memory_model")
-      OpMemoryModel(Logical, Vulkan)
- %2 = OpTypeFloat(0x00000020)
- %3 = OpTypeVector(%2, 0x00000004)
- %4 = OpTypePointer(Function, %3)
- %5 = OpTypeFunction(%3, %4)
-%14 = OpConstant(0x3f800000)::%2
- %6 = OpFunction(None, %5)::%3
- %7 = OpFunctionParameter()::%4
- %8 = OpLabel()
-%13 = OpVariable(Function)::%4
- %9 = OpLoad(%7)::%3
-%10 = OpCompositeExtract(%9, 0x00000000)::%2
-%11 = OpLoad(%7)::%3
-%12 = OpCompositeExtract(%11, 0x00000001)::%2
-%15 = OpCompositeConstruct(%10, %12, %14, %14)::%3
-      OpStore(%13, %15)
-%16 = OpLoad(%13)::%3
-      OpReturnValue(%16)
-      OpFunctionEnd()
+        """
+        OpCapability(VulkanMemoryModel)
+        OpExtension("SPV_KHR_vulkan_memory_model")
+        OpMemoryModel(Logical, Vulkan)
+   %1 = OpTypeFloat(0x00000020)
+   %2 = OpTypeVector(%1, 0x00000004)
+   %3 = OpTypePointer(Function, %2)
+   %4 = OpTypeFunction(%2, %3)
+  %13 = OpConstant(0x3f800000)::%1
+   %5 = OpFunction(None, %4)::%2
+   %6 = OpFunctionParameter()::%3
+   %7 = OpLabel()
+  %12 = OpVariable(Function)::%3
+   %8 = OpLoad(%6)::%2
+   %9 = OpCompositeExtract(%8, 0x00000000)::%1
+  %10 = OpLoad(%6)::%2
+  %11 = OpCompositeExtract(%10, 0x00000001)::%1
+  %14 = OpCompositeConstruct(%9, %11, %13, %13)::%2
+        OpStore(%12, %14)
+  %15 = OpLoad(%12)::%2
+        OpReturnValue(%15)
+        OpFunctionEnd()
       """
     )
 
@@ -244,21 +244,21 @@ using SPIRV, Test
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
-      """
-      OpCapability(VulkanMemoryModel)
-      OpExtension("SPV_KHR_vulkan_memory_model")
-      OpMemoryModel(Logical, Vulkan)
- %2 = OpTypeBool()
- %4 = OpTypeInt(0x00000020, 0x00000001)
- %5 = OpTypeStruct(%2, %4)
- %6 = OpTypeFunction(%5, %2, %4)
- %7 = OpFunction(None, %6)::%5
- %8 = OpFunctionParameter()::%2
- %9 = OpFunctionParameter()::%4
-%10 = OpLabel()
-%11 = OpCompositeConstruct(%8, %9)::%5
-      OpReturnValue(%11)
-      OpFunctionEnd()
+        """
+        OpCapability(VulkanMemoryModel)
+        OpExtension("SPV_KHR_vulkan_memory_model")
+        OpMemoryModel(Logical, Vulkan)
+   %1 = OpTypeBool()
+   %2 = OpTypeInt(0x00000020, 0x00000001)
+   %3 = OpTypeStruct(%1, %2)
+   %4 = OpTypeFunction(%3, %1, %2)
+   %5 = OpFunction(None, %4)::%3
+   %6 = OpFunctionParameter()::%1
+   %7 = OpFunctionParameter()::%2
+   %8 = OpLabel()
+   %9 = OpCompositeConstruct(%6, %7)::%3
+        OpReturnValue(%9)
+        OpFunctionEnd()
       """
     )
   end
@@ -272,34 +272,34 @@ using SPIRV, Test
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
-      """
-      OpCapability(VulkanMemoryModel)
-      OpCapability(Shader)
-      OpExtension("SPV_KHR_vulkan_memory_model")
-      OpMemoryModel(Logical, Vulkan)
- %2 = OpTypeFloat(0x00000020)
- %3 = OpTypeVector(%2, 0x00000004)
- %4 = OpTypeImage(%2, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
- %5 = OpTypeSampledImage(%4)
- %6 = OpTypeFunction(%3, %5)
-%11 = OpTypeVector(%2, 0x00000002)
-%12 = OpTypePointer(Function, %11)
-%13 = OpConstant(0x40400000)::%2
-%14 = OpConstant(0x40800000)::%2
-%17 = OpTypePointer(Function, %3)
- %7 = OpFunction(None, %6)::%3
- %8 = OpFunctionParameter()::%5
- %9 = OpLabel()
-%10 = OpVariable(Function)::%12
-%16 = OpVariable(Function)::%17
-%15 = OpCompositeConstruct(%13, %14)::%11
-      OpStore(%10, %15)
-%18 = OpLoad(%10)::%11
-%19 = OpImageSampleImplicitLod(%8, %18)::%3
-      OpStore(%16, %19)
-%20 = OpLoad(%16)::%3
-      OpReturnValue(%20)
-      OpFunctionEnd()
+        """
+        OpCapability(VulkanMemoryModel)
+        OpCapability(Shader)
+        OpExtension("SPV_KHR_vulkan_memory_model")
+        OpMemoryModel(Logical, Vulkan)
+   %1 = OpTypeFloat(0x00000020)
+   %2 = OpTypeVector(%1, 0x00000004)
+   %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
+   %4 = OpTypeSampledImage(%3)
+   %5 = OpTypeFunction(%2, %4)
+  %10 = OpTypeVector(%1, 0x00000002)
+  %11 = OpTypePointer(Function, %10)
+  %12 = OpConstant(0x40400000)::%1
+  %13 = OpConstant(0x40800000)::%1
+  %16 = OpTypePointer(Function, %2)
+   %6 = OpFunction(None, %5)::%2
+   %7 = OpFunctionParameter()::%4
+   %8 = OpLabel()
+   %9 = OpVariable(Function)::%11
+  %15 = OpVariable(Function)::%16
+  %14 = OpCompositeConstruct(%12, %13)::%10
+        OpStore(%9, %14)
+  %17 = OpLoad(%9)::%10
+  %18 = OpImageSampleImplicitLod(%7, %17)::%2
+        OpStore(%15, %18)
+  %19 = OpLoad(%15)::%2
+        OpReturnValue(%19)
+        OpFunctionEnd()
       """
     )
 
@@ -312,38 +312,38 @@ using SPIRV, Test
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
-      """
-      OpCapability(VulkanMemoryModel)
-      OpCapability(Shader)
-      OpExtension("SPV_KHR_vulkan_memory_model")
-      OpMemoryModel(Logical, Vulkan)
- %2 = OpTypeFloat(0x00000020)
- %3 = OpTypeVector(%2, 0x00000004)
- %4 = OpTypeImage(%2, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
- %6 = OpTypeSampler()
- %7 = OpTypeFunction(%3, %4, %6)
-%12 = OpTypeSampledImage(%4)
-%15 = OpTypeVector(%2, 0x00000002)
-%16 = OpTypePointer(Function, %15)
-%17 = OpConstant(0x40400000)::%2
-%18 = OpConstant(0x40800000)::%2
-%21 = OpTypePointer(Function, %3)
- %8 = OpFunction(None, %7)::%3
- %9 = OpFunctionParameter()::%4
-%10 = OpFunctionParameter()::%6
-%11 = OpLabel()
-%14 = OpVariable(Function)::%16
-%20 = OpVariable(Function)::%21
-%13 = OpSampledImage(%9, %10)::%12
-%19 = OpCompositeConstruct(%17, %18)::%15
-      OpStore(%14, %19)
-%22 = OpLoad(%14)::%15
-%23 = OpImageSampleImplicitLod(%13, %22)::%3
-      OpStore(%20, %23)
-%24 = OpLoad(%20)::%3
-      OpReturnValue(%24)
-      OpFunctionEnd()
+        """
+        OpCapability(VulkanMemoryModel)
+        OpCapability(Shader)
+        OpExtension("SPV_KHR_vulkan_memory_model")
+        OpMemoryModel(Logical, Vulkan)
+   %1 = OpTypeFloat(0x00000020)
+   %2 = OpTypeVector(%1, 0x00000004)
+   %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
+   %4 = OpTypeSampler()
+   %5 = OpTypeFunction(%2, %3, %4)
+  %10 = OpTypeSampledImage(%3)
+  %13 = OpTypeVector(%1, 0x00000002)
+  %14 = OpTypePointer(Function, %13)
+  %15 = OpConstant(0x40400000)::%1
+  %16 = OpConstant(0x40800000)::%1
+  %19 = OpTypePointer(Function, %2)
+   %6 = OpFunction(None, %5)::%2
+   %7 = OpFunctionParameter()::%3
+   %8 = OpFunctionParameter()::%4
+   %9 = OpLabel()
+  %12 = OpVariable(Function)::%14
+  %18 = OpVariable(Function)::%19
+  %11 = OpSampledImage(%7, %8)::%10
+  %17 = OpCompositeConstruct(%15, %16)::%13
+        OpStore(%12, %17)
+  %20 = OpLoad(%12)::%13
+  %21 = OpImageSampleImplicitLod(%11, %20)::%2
+        OpStore(%18, %21)
+  %22 = OpLoad(%18)::%2
+        OpReturnValue(%22)
+        OpFunctionEnd()
       """
     )
   end
-end
+end;

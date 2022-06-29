@@ -160,7 +160,7 @@ function emit!(ir::IR, @nospecialize(type::SPIRType))
     @case ::SampledImageType
     emit!(ir, type.image_type)
     @case ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType || ::SamplerType
-    next!(ir.ssacounter)
+    nothing
     @case ::FunctionType
     emit!(ir, type.rettype)
     for t in type.argtypes

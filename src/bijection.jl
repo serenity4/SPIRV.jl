@@ -35,6 +35,7 @@ end
 @forward BijectiveMapping.forward (Base.pairs, Base.iterate, Base.keys, Base.length)
 
 function Base.show(io::IO, ::MIME"text/plain", bmap::BijectiveMapping)
+  isempty(bmap) && return print(io, BijectiveMapping, "({})")
   print(io, BijectiveMapping, " with ", length(bmap), " elements:")
   dpheight = displaysize(io)[2]
   keyvals = []

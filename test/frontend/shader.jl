@@ -28,36 +28,36 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   mod = SPIRV.Module(shader)
   @test mod == parse(
     SPIRV.Module,
-    """
-  OpCapability(VulkanMemoryModel)
-  OpCapability(Shader)
-  OpExtension("SPV_KHR_vulkan_memory_model")
-  OpMemoryModel(Logical, Vulkan)
-  OpEntryPoint(Vertex, %18, "main", %5)
-  OpName(%7, "vert_shader!_Tuple{Vec{4,Float32}}")
-  OpName(%5, "out_color")
-%2 = OpTypeFloat(0x00000020)
-%3 = OpTypeVector(%2, 0x00000004)
-%4 = OpTypePointer(Output, %3)
-%5 = OpVariable(Output)::%4
-%6 = OpTypeFunction(%2)
-%10 = OpTypeInt(0x00000020, 0x00000000)
-%11 = OpConstant(0x00000003)::%10
-%12 = OpTypePointer(Output, %2)
-%14 = OpConstant(0x3f800000)::%2
-%16 = OpTypeVoid()
-%17 = OpTypeFunction(%16)
-%7 = OpFunction(None, %6)::%2
-%8 = OpLabel()
-%13 = OpAccessChain(%5, %11)::%12
-  OpStore(%13, %14)
-  OpReturnValue(%14)
-  OpFunctionEnd()
-%18 = OpFunction(None, %17)::%16
-%19 = OpLabel()
-%20 = OpFunctionCall(%7)::%2
-  OpReturn()
-  OpFunctionEnd()
+      """
+      OpCapability(VulkanMemoryModel)
+      OpCapability(Shader)
+      OpExtension("SPV_KHR_vulkan_memory_model")
+      OpMemoryModel(Logical, Vulkan)
+      OpEntryPoint(Vertex, %15, "main", %4)
+      OpName(%6, "vert_shader!_Tuple{Vec{4,Float32}}")
+      OpName(%4, "out_color")
+ %1 = OpTypeFloat(0x00000020)
+ %2 = OpTypeVector(%1, 0x00000004)
+ %3 = OpTypePointer(Output, %2)
+ %4 = OpVariable(Output)::%3
+ %5 = OpTypeFunction(%1)
+ %8 = OpTypeInt(0x00000020, 0x00000000)
+ %9 = OpConstant(0x00000003)::%8
+%10 = OpTypePointer(Output, %1)
+%12 = OpConstant(0x3f800000)::%1
+%13 = OpTypeVoid()
+%14 = OpTypeFunction(%13)
+ %6 = OpFunction(None, %5)::%1
+ %7 = OpLabel()
+%11 = OpAccessChain(%4, %9)::%10
+      OpStore(%11, %12)
+      OpReturnValue(%12)
+      OpFunctionEnd()
+%15 = OpFunction(None, %14)::%13
+%16 = OpLabel()
+%17 = OpFunctionCall(%6)::%1
+      OpReturn()
+      OpFunctionEnd()
 """,
   )
   # Make sure the absence of Location decoration raises an error.
@@ -202,4 +202,4 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   )
   shader = Shader(cfg, interface)
   @test unwrap(validate(shader))
-end
+end;
