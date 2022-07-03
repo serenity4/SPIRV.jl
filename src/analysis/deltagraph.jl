@@ -107,15 +107,15 @@ end
 """
 Remove all edges from or to vertex `v`.
 """
-function rem_edges!(dg::DeltaGraph, v::Int)
-  for i in outneighbors(dg, v)
-    rem_edge!(dg, v, i)
+function rem_edges!(g::AbstractGraph, v::Integer)
+  for i in outneighbors(g, v)
+    rem_edge!(g, v, i)
   end
-  for i in inneighbors(dg, v)
-    rem_edge!(dg, i, v)
+  for i in inneighbors(g, v)
+    rem_edge!(g, i, v)
   end
 end
-rem_edges!(dg::DeltaGraph, edges) = foreach(Base.Fix1(rem_edge!, dg), edges)
+rem_edges!(g::AbstractGraph, edges) = foreach(Base.Fix1(rem_edge!, g), edges)
 
 function rem_vertex!(dg::DeltaGraph, i)
   idx = vertex_index(dg, i)

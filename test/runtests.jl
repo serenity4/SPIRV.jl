@@ -20,6 +20,7 @@ function test_module(mod::SPIRV.Module)
 end
 
 @testset "SPIRV.jl" begin
+  include("deltagraph.jl");
   include("utilities.jl");
   include("modules.jl");
   include("metadata.jl");

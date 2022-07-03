@@ -12,7 +12,7 @@ function renumber_ssa(amod::AnnotatedModule)
   end
 
   for af in amod.annotated_functions
-    cfg = control_flow_graph(amod, af)
+    cfg = ControlFlowGraph(amod, af)
     for inst in instructions(amod, first(af.range):last(af.parameters))
       push!(new_insts, swap_result_id!(swaps, counter, inst))
     end

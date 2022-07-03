@@ -14,7 +14,7 @@ function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, insts)
   any_expanded = false
 
   for inst in insts
-    (; result_id, arguments) = inst
+    (; result_id) = inst
     if opcode(inst) == OpStore
       # OpVariable instructions will be seen after their stored value. We need to
       # mark stores as definitions even before we encounter the OpVariable instruction.
@@ -75,10 +75,10 @@ function expand_chains_from_caller!(target_defs::Vector{Pair{SSAValue,UseDefChai
   expand_chains!(target_defs, amod, af_caller, find_block(af_caller, stackframe.callsite), stacktrace[1:end-1])
 end
 
-function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::AnnotatedModule, af::AnnotatedFunction, block::Integer, stacktrace::StackTrace, cfg::AbstractGraph = control_flow_graph(amod, af))
+function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::AnnotatedModule, af::AnnotatedFunction, block::Integer, stacktrace::StackTrace, cfg::ControlFlowGraph = ControlFlowGraph(amod, af))
   expand_chains!(target_defs, instructions(amod, reverse(af.blocks[block])))
 
-  flow_through(reverse(cfg), block) do e
+  flow_through(ControlFlowGraph(reverse(cfg.g)), block) do e
     expand_chains!(target_defs, instructions(amod, reverse(af.blocks[dst(e)])))
   end
 

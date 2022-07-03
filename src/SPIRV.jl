@@ -13,7 +13,6 @@ using AbstractTrees: parent
 using SwapStreams: SwapStream
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
-using CodeInfoTools: CodeInfoTools, finish, verify, Builder
 using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, MethodInstance, InferenceResult, typeinf, InferenceState,
   retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView,
   WorldRange, OverlayMethodTable
@@ -53,6 +52,7 @@ include("functions.jl")
 include("metadata.jl")
 include("ir.jl")
 include("assemble.jl")
+include("analysis/deltagraph.jl")
 include("analysis/call_tree.jl")
 include("analysis/control_flow.jl")
 include("analysis/abstract_interpretation.jl")
@@ -74,10 +74,8 @@ include("frontend/types/image.jl")
 include("frontend/intrinsics_glsl.jl")
 include("frontend/vulkan.jl")
 include("frontend/interpreter.jl")
-include("frontend/deltagraph.jl")
 include("frontend/cfg.jl")
 include("frontend/reflection.jl")
-include("frontend/restructuring.jl")
 include("frontend/compile.jl")
 include("frontend/codegen.jl")
 include("frontend/shader.jl")
@@ -126,7 +124,10 @@ export
   set_name!,
 
   # CFG
+  ControlFlowGraph,
   control_flow_graph,
+  is_reducible,
+  is_structured,
 
   # validation
   validate,

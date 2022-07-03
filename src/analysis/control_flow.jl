@@ -3,6 +3,138 @@ entry_node(g::AbstractGraph) = only(sources(g))
 sinks(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Base.Fix1(outneighbors, g), vertices(g))]
 sources(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Base.Fix1(inneighbors, g), vertices(g))]
 
+struct SimpleTree{T}
+  data::T
+  parent::Optional{SimpleTree{T}}
+  children::Vector{SimpleTree{T}}
+end
+SimpleTree(data::T) where {T} = SimpleTree(data, nothing, T[])
+
+AbstractTrees.HasNodeType(::Type{SimpleTree}) = true
+AbstractTrees.NodeType(::Type{SimpleTree{T}}) where {T} = T
+AbstractTrees.nodevalue(tree::SimpleTree) = tree.data
+AbstractTrees.ChildIndexing(::Type{SimpleTree}) = IndexedChildren()
+
+AbstractTrees.ParentLinks(::Type{SimpleTree}) = StoredParents()
+AbstractTrees.parent(tree::SimpleTree) = tree.parent
+
+AbstractTrees.children(tree::SimpleTree) = tree.children
+AbstractTrees.childrentype(::Type{T}) where {T<:SimpleTree} = T
+
+struct SpanningTreeDFS{G<:AbstractGraph}
+  tree::G
+  discovery_times::Vector{Int}
+  finish_times::Vector{Int}
+end
+
+function SpanningTreeDFS(g::AbstractGraph{T}, source = 1) where {T}
+  tree = typeof(g)(nv(g))
+  dfst = SpanningTreeDFS(tree, zeros(Int, nv(g)), zeros(Int, nv(g)))
+  build!(dfst, [source], zeros(Bool, nv(g)), g)
+  dfst
+end
+
+function build!(dfst::SpanningTreeDFS, next, visited, g::AbstractGraph, time = 0)
+  v = pop!(next)
+  # visited[v] && continue
+  visited[v] = true
+  dfst.discovery_times[v] = (time += 1)
+  for w in outneighbors(g, v)
+    if !visited[w]
+      add_edge!(dfst.tree, v, w)
+      push!(next, w)
+      time = build!(dfst, next, visited, g, time)
+    end
+  end
+  dfst.finish_times[v] = (time += 1)
+
+  time
+end
+
+pre_ordering(dfst::SpanningTreeDFS) = sortperm(dfst.discovery_times)
+post_ordering(dfst::SpanningTreeDFS) = sortperm(dfst.finish_times)
+
+struct EdgeClassification{E<:AbstractEdge}
+  tree_edges::Set{E}
+  forward_edges::Set{E}
+  retreating_edges::Set{E}
+  cross_edges::Set{E}
+end
+
+EdgeClassification{E}() where {E} = EdgeClassification(Set{E}(), Set{E}(), Set{E}(), Set{E}())
+
+function SimpleTree(dfst::SpanningTreeDFS, parent::Union{Nothing, SimpleTree{T}}, v::T) where {T}
+  tree = SimpleTree(v, parent, SimpleTree{T}[])
+  for w in outneighbors(dfst.tree, v)
+    push!(tree.children, SimpleTree(dfst, tree, w))
+  end
+  tree
+end
+
+SimpleTree(dfst::SpanningTreeDFS) = SimpleTree(dfst, nothing, entry_node(dfst.tree))
+
+EdgeClassification(g::AbstractGraph, dfst::SpanningTreeDFS = SpanningTreeDFS(g)) = EdgeClassification(g, SimpleTree(dfst))
+
+function EdgeClassification(g::AbstractGraph{T}, tree::SimpleTree{T}) where {T}
+  E = edgetype(g)
+  ec = EdgeClassification{E}()
+  for subtree in PreOrderDFS(tree)
+    # Traverse the tree and classify edges based on ancestor information.
+    # Outgoing edges are used to find retreating edges (if pointing to an ancestor).
+    # Incoming edges are used to find tree edges (if coming from parent) and forward edges (if pointing to an ancestor that is not the parent).
+    # Other edges are cross-edges.
+    v = nodevalue(subtree)
+
+    for u in inneighbors(g, v)
+      e = E(u, v)
+      nodevalue(parent(subtree))
+      if u == nodevalue(parent(subtree))
+        push!(ec.tree_edges, e)
+      elseif !isnothing(find_parent(==(u) ∘ nodevalue, subtree))
+        push!(ec.forward_edges, e)
+      end
+    end
+
+    for w in outneighbors(g, v)
+      e = E(v, w)
+      !isnothing(find_parent(==(w) ∘ nodevalue, subtree)) && push!(ec.retreating_edges, e)
+    end
+  end
+
+  for e in edges(g)
+    !in(e, ec.tree_edges) && !in(e, ec.forward_edges) && !in(e, ec.retreating_edges) && push!(ec.cross_edges, e)
+  end
+
+  ec
+end
+
+struct ControlFlowGraph{E<:AbstractEdge,G<:AbstractGraph}
+  g::G
+  dfst::SpanningTreeDFS{G}
+  ec::EdgeClassification{E}
+  is_reducible::Bool
+  is_structured::Bool
+  ControlFlowGraph(g::G, dfst::SpanningTreeDFS{G}, ec::EdgeClassification{E}, is_reducible::Bool, is_structured::Bool) where {G<:AbstractGraph, E<:AbstractEdge} = new{E,G}(g, dfst, ec, is_reducible, is_structured)
+end
+
+is_reducible(cfg::ControlFlowGraph) = cfg.is_reducible
+is_structured(cfg::ControlFlowGraph) = cfg.is_structured
+
+ControlFlowGraph(args...) = ControlFlowGraph(control_flow_graph(args...))
+
+function ControlFlowGraph(cfg::AbstractGraph)
+  dfst = SpanningTreeDFS(cfg)
+  ec = EdgeClassification(cfg, dfst)
+
+  analysis_cfg = deepcopy(cfg)
+  rem_edges!(analysis_cfg, backedges(cfg, ec))
+  is_reducible = !is_cyclic(analysis_cfg)
+
+  # TODO: actually test whether CFG is structured or not.
+  is_structured = is_reducible
+  ControlFlowGraph(cfg, dfst, ec, is_reducible, is_structured)
+end
+
 control_flow_graph(fdef::FunctionDefinition) = control_flow_graph(collect(fdef.blocks))
 
 function control_flow_graph(amod::AnnotatedModule, af::AnnotatedFunction)
@@ -16,11 +148,10 @@ function control_flow_graph(amod::AnnotatedModule, af::AnnotatedFunction)
         dst = arguments[1]::SSAValue
         add_edge!(cfg, i, find_block(amod, af, dst))
         @case &OpBranchConditional
-        cond, dst1, dst2 = arguments[1]::SSAValue, arguments[2]::SSAValue, arguments[3]::SSAValue
+        dst1, dst2 = arguments[2]::SSAValue, arguments[3]::SSAValue
         add_edge!(cfg, i, find_block(amod, af, dst1))
         add_edge!(cfg, i, find_block(amod, af, dst2))
         @case &OpSwitch
-        val = arguments[1]::SSAValue
         for dst in arguments[2:end]
           add_edge!(cfg, i, find_block(amod, af, dst::SSAValue))
         end
@@ -36,33 +167,51 @@ function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::SSAValue)
   end
 end
 
-function backedges(g::AbstractGraph, source = 1)
-  dfs = dfs_tree(g, source)
-  visited = zeros(Bool, nv(dfs))
-  backedges = Edge{Int}[]
-  for v in 1:nv(dfs)
-    visited[v] = true
-    for dst in outneighbors(g, v)
-      if visited[dst]
-        push!(backedges, Edge(v, dst))
-      end
+@forward ControlFlowGraph.g (dominators,)
+
+function dominators(g::AbstractGraph{T}) where {T}
+  doms = Set{T}[Set{T}() for _ in 1:nv(g)]
+  source = entry_node(g)
+  push!(doms[source], source)
+  vs = filter(≠(source), vertices(g))
+  for v in vs
+    union!(doms[v], vertices(g))
+  end
+
+  converged = false
+  while !converged
+    converged = true
+    for v in vs
+      h = hash(doms[v])
+      set = intersect((doms[u] for u in inneighbors(g, v))...)
+      doms[v] = set
+      push!(set, v)
+      h ≠ hash(set) && (converged &= false)
     end
   end
-  backedges
+
+  doms
 end
 
-function remove_backedges!(g::AbstractGraph, source = 1)
-  for e in backedges(g, source)
-    rem_edge!(g, e)
+function backedges(cfg::ControlFlowGraph)
+  is_reducible(cfg) && return copy(cfg.ec.retreating_edges)
+  backedges(cfg.g, cfg.ec)
+end
+
+function backedges(g::AbstractGraph, ec::EdgeClassification = EdgeClassification(g))
+  doms = dominators(g)
+  filter(ec.retreating_edges) do e
+    in(dst(e), doms[src(e)])
   end
-  g
 end
-remove_backedges(g::AbstractGraph, source = 1) = remove_backedges!(deepcopy(g), source)
 
-function traverse(g::AbstractGraph, source = 1; has_backedges = true)
-  has_backedges && (g = remove_backedges(g, source))
-  topological_sort_by_dfs(g)
+function remove_backedges(cfg::ControlFlowGraph)
+  g = deepcopy(cfg.g)
+  rem_edges!(g, backedges(cfg))
+  ControlFlowGraph(g)
 end
+
+traverse(cfg::ControlFlowGraph) = reverse(post_ordering(cfg.dfst))
 
 """
 Iterate through the graph `g` applying `f` until its application on the graph vertices
@@ -77,9 +226,9 @@ If `false`, then the iteration will not be continued on outgoing nodes.
 - Cyclic structures must be iterated on until convergence. On reducible control-flow graphs, it might be sufficient to iterate a given loop structure locally until convergence before iterating through nodes that are further apart in the cyclic structure. This optimization is not currently implemented.
 - Flow analysis should provide a framework suited for both abstract interpretation and data-flow algorithms.
 """
-function flow_through(f, g::AbstractGraph, v; stop_at::Optional{Union{Int, Edge{Int}}} = nothing)
-  next = [Edge(v, v2) for v2 in outneighbors(g, v)]
-  bedges = backedges(g, v)
+function flow_through(f, cfg::ControlFlowGraph, v; stop_at::Optional{Union{Int, Edge{Int}}} = nothing)
+  next = [Edge(v, v2) for v2 in outneighbors(cfg.g, v)]
+  bedges = backedges(cfg)
   while !isempty(next)
     edge = popfirst!(next)
     ret = f(edge)
@@ -90,22 +239,22 @@ function flow_through(f, g::AbstractGraph, v; stop_at::Optional{Union{Int, Edge{
     stop_at isa Int && dst(edge) === stop_at && continue
 
     # Push all new edges to the end of the worklist.
-    new_edges = [Edge(dst(edge), v) for v in outneighbors(g, dst(edge))]
+    new_edges = [Edge(dst(edge), v) for v in outneighbors(cfg.g, dst(edge))]
     filter!(e -> !in(e, new_edges), next)
     append!(next, new_edges)
   end
 end
 
-function postdominator(g::AbstractGraph, source)
-  g = remove_backedges(g)
-  root_tree = DominatorTree(g)
+function postdominator(cfg::ControlFlowGraph, source)
+  cfg = remove_backedges(cfg)
+  root_tree = DominatorTree(cfg)
   tree = nothing
   for subtree in PreOrderDFS(root_tree)
     if nodevalue(subtree) == source
       tree = subtree
     end
   end
-  pdoms = findall(!in(nodevalue(subtree), outneighbors(g, nodevalue(tree))) for subtree in children(tree))
+  pdoms = findall(!in(nodevalue(subtree), outneighbors(cfg.g, nodevalue(tree))) for subtree in children(tree))
   @assert length(pdoms) ≤ 1 "Found $(length(pdoms)) postdominator(s)"
   isempty(pdoms) ? nothing : nodevalue(children(tree)[first(pdoms)])
 end
@@ -117,9 +266,9 @@ struct DominatorTree
 end
 
 AbstractTrees.nodevalue(tree::DominatorTree) = tree.node
-AbstractTrees.ParentLinks(tree::DominatorTree) = StoredParents()
+AbstractTrees.ParentLinks(::Type{DominatorTree}) = StoredParents()
 AbstractTrees.parent(tree::DominatorTree) = tree.immediate_dominator
-AbstractTrees.ChildIndexing(tree::DominatorTree) = IndexedChildren()
+AbstractTrees.ChildIndexing(::Type{DominatorTree}) = IndexedChildren()
 AbstractTrees.children(tree::DominatorTree) = tree.immediate_post_dominators
 AbstractTrees.childrentype(::Type{DominatorTree}) = DominatorTree
 AbstractTrees.NodeType(::Type{<:DominatorTree}) = HasNodeType()
@@ -141,8 +290,8 @@ function Base.show(io::IO, ::MIME"text/plain", tree::DominatorTree)
   print(io, ')')
 end
 
-function DominatorTree(cfg::AbstractGraph)
-  g = remove_backedges(cfg)
+function DominatorTree(cfg::ControlFlowGraph)
+  g = remove_backedges(cfg).g
 
   # 0: unvisited
   # 1: visited
@@ -197,6 +346,8 @@ function common_ancestor(tree, trees)
   end
   common_ancestor
 end
+
+is_ancestor(candidate, tree) = !isnothing(find_parent(==(candidate), tree))
 
 function parents(tree)
   res = [tree]

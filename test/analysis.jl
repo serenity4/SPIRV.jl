@@ -1,6 +1,25 @@
 using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
-using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain
+using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators
+
+# All the following graphs are rooted in 1.
+
+# Symmetric diverge/merge point.
+g1() = DeltaGraph(4, 1 => 2, 1 => 3, 2 => 4, 3 => 4)
+# No merge point, two sinks.
+g2() = DeltaGraph(4, 1 => 2, 1 => 3, 3 => 4)
+# Graph with a merge point that is the target of both a primary and a secondary branching construct (nested within the primary).
+g3() = DeltaGraph(6, 1 => 2, 1 => 3, 2 => 4, 2 => 5, 4 => 6, 5 => 6, 3 => 6)
+# Graph with a merge point dominated by a cycle.
+g4() = DeltaGraph(8, 1 => 2, 1 => 3, 2 => 4, 4 => 5, 4 => 7, 5 => 6, 6 => 4, 7 => 8, 3 => 8)
+# Graph with three sinks and a merge point dominated by a branching construct wherein one branch is a sink.
+g5() = DeltaGraph(8, 1 => 2, 2 => 3, 2 => 4, 4 => 6, 1 => 5, 5 => 6, 6 => 7, 6 => 8)
+# Graph with a simple source, a central vertex and a simple sink. The central vertex contains two separate loops with one having a symmetric branching construct inside.
+g6() = DeltaGraph(9, 1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 2, 2 => 9)
+# Basic irreducible CFG.
+g7() = DeltaGraph(5, 1 => 2, 1 => 3, 2 => 3, 3 => 2, 2 => 4, 3 => 5)
+# CFG from https://www.sable.mcgill.ca/~hendren/621/ControlFlowAnalysis_Handouts.pdf
+g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 5, 8 => 9, 9 => 11, 11 => 8, 9 => 10, 10 => 2, 9 => 4)
 
 @testset "Function analysis" begin
   @testset "Static call graph traversal" begin
@@ -18,21 +37,6 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
     main = ir.fdefs[SSAValue(4)]
     @test !in(main, fdefs)
   end
-
-  # All the following graphs are rooted in 1.
-
-  # Symmetric diverge/merge point.
-  g1() = DeltaGraph(4, 1 => 2, 1 => 3, 2 => 4, 3 => 4)
-  # No merge point, two sinks.
-  g2() = DeltaGraph(4, 1 => 2, 1 => 3, 3 => 4)
-  # Graph with a merge point that is the target of both a primary and a secondary branching construct (nested within the primary).
-  g3() = DeltaGraph(6, 1 => 2, 1 => 3, 2 => 4, 2 => 5, 4 => 6, 5 => 6, 3 => 6)
-  # Graph with a merge point dominated by a cycle.
-  g4() = DeltaGraph(8, 1 => 2, 1 => 3, 2 => 4, 4 => 5, 4 => 7, 5 => 6, 6 => 4, 7 => 8, 3 => 8)
-  # Graph with three sinks and a merge point dominated by a branching construct wherein one branch is a sink.
-  g5() = DeltaGraph(8, 1 => 2, 2 => 3, 2 => 4, 4 => 6, 1 => 5, 5 => 6, 6 => 7, 6 => 8)
-  # Graph with a simple source, a central vertex and a simple sink. The central vertex contains two separate loops with one having a symmetric branching construct inside.
-  g6() = DeltaGraph(9, 1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 2, 2 => 9)
 
   @testset "Control flow graph" begin
     @testset "Dominance relationships" begin
@@ -63,21 +67,97 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
         @test common_ancestor((tree_1, b[1], a[2], a[3])) == tree_1
       end
 
-      function test_traversal(g)
+      @testset "Edge classification" begin
+        ec = EdgeClassification(g1())
+        @test isempty(ec.retreating_edges)
+        @test isempty(ec.forward_edges)
+        @test length(ec.cross_edges) == 1
+        @test length(ec.tree_edges) == 3
+        
+        ec = EdgeClassification(g2())
+        @test isempty(ec.retreating_edges)
+        @test isempty(ec.forward_edges)
+        @test isempty(ec.cross_edges)
+        @test length(ec.tree_edges) == 3
+
+        ec = EdgeClassification(g3())
+        @test isempty(ec.retreating_edges)
+        @test isempty(ec.forward_edges)
+        @test length(ec.cross_edges) == 2
+        @test length(ec.tree_edges) == 5
+
+        ec = EdgeClassification(g4())
+        @test ec.retreating_edges == Set([Edge(6 => 4)])
+        @test isempty(ec.forward_edges)
+        @test length(ec.cross_edges) == 1
+        @test length(ec.tree_edges) == 7
+
+        ec = EdgeClassification(g5())
+        @test isempty(ec.retreating_edges)
+        @test isempty(ec.forward_edges)
+        @test length(ec.cross_edges) == 1
+        @test length(ec.tree_edges) == 7
+
+        ec = EdgeClassification(g6())
+        @test ec.retreating_edges == Set(Edge.([4 => 2, 8 => 2]))
+        @test isempty(ec.forward_edges)
+        @test length(ec.cross_edges) == 1
+        @test length(ec.tree_edges) == 8
+
+        ec = EdgeClassification(g7())
+        @test length(ec.retreating_edges) == 1
+        @test length(ec.forward_edges) == 1
+        @test length(ec.cross_edges) == 0
+        @test length(ec.tree_edges) == 4
+
+        ec = EdgeClassification(g8())
+        @test length(ec.retreating_edges) == 5
+        @test length(ec.forward_edges) == 1
+        @test length(ec.cross_edges) == 1
+        @test length(ec.tree_edges) == 10
+      end
+
+      @testset "Dominators" begin
+        @test dominators(g8()) == [
+          Set([1]),
+          Set([1, 2]),
+          Set([1, 2, 3]),
+          Set([1, 2, 4]),
+          Set([1, 2, 4, 5]),
+          Set([1, 2, 4, 5, 6]),
+          Set([1, 2, 4, 5, 7]),
+          Set([1, 2, 4, 5, 8]),
+          Set([1, 2, 4, 5, 8, 9]),
+          Set([1, 2, 4, 5, 8, 9, 10]),
+          Set([1, 2, 4, 5, 8, 9, 11]),
+        ]
+      end
+
+      @testset "Back-edges" begin
+        @test Set(SPIRV.backedges(g8())) == Set(Edge.([
+          10 => 2,
+          5 => 4,
+          9 => 4,
+          8 => 5,
+          11 => 8,
+        ]))
+      end
+
+      function test_traversal(cfg)
         visited = Int[]
-        scc = strongly_connected_components(g)
-        for v in traverse(g)
+        scc = strongly_connected_components(cfg.g)
+        for v in traverse(cfg)
           push!(visited, v)
           @test all(x -> in(x, visited) || begin
             idx = findfirst(v in c for c in scc)
             !isnothing(idx) && x in scc[idx]
-          end, inneighbors(g, v))
+          end, inneighbors(cfg.g, v))
         end
       end
 
-      function test_completeness(tree, g)
-        @test nodevalue(tree) == 1 && isroot(tree) && Set(nodevalue.(collect(PostOrderDFS(tree)))) == Set(1:nv(g))
-        pdom = postdominator(g, 1)
+      function test_completeness(tree, cfg)
+        @test nodevalue(tree) == 1 && isroot(tree) && Set(nodevalue.(collect(PostOrderDFS(tree)))) == Set(1:nv(cfg.g))
+        pdom = postdominator(cfg, 1)
         @test isnothing(pdom) || in(pdom, dominated_nodes(tree))
 
         dominated = Int[]
@@ -85,45 +165,65 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
           node == tree && continue
           push!(dominated, nodevalue(node))
         end
-        @test sort(dominated) == 2:nv(g)
+        @test sort(dominated) == 2:nv(cfg.g)
       end
 
-      g = g1()
-      tree = DominatorTree(g)
-      test_completeness(tree, g)
+      cfg = ControlFlowGraph(g1())
+      @test cfg.is_reducible
+      @test cfg.is_structured
+      tree = DominatorTree(cfg)
+      test_completeness(tree, cfg)
       @test all(isempty ∘ children, children(tree)) && dominated_nodes(tree) == [2, 3, 4]
-      @test postdominator(g, 1) == 4
-      test_traversal(g)
+      @test postdominator(cfg, 1) == 4
+      test_traversal(cfg)
 
-      g = g2()
-      tree = DominatorTree(g)
-      test_completeness(tree, g)
+      cfg = ControlFlowGraph(g2())
+      @test cfg.is_reducible
+      @test cfg.is_structured
+      tree = DominatorTree(cfg)
+      test_completeness(tree, cfg)
       @test dominated_nodes(tree) == [2, 3]
       @test dominated_nodes(tree[2]) == [4]
-      @test isnothing(postdominator(g, 1))
-      test_traversal(g)
+      @test isnothing(postdominator(cfg, 1))
+      test_traversal(cfg)
 
-      g = g3()
-      tree = DominatorTree(g)
-      test_completeness(tree, g)
+      cfg = ControlFlowGraph(g3())
+      @test cfg.is_reducible
+      @test cfg.is_structured
+      tree = DominatorTree(cfg)
+      test_completeness(tree, cfg)
       @test dominated_nodes(tree) == [2, 3, 6]
       @test dominated_nodes(tree[1]) == [4, 5]
-      @test postdominator(g, 1) == 6
-      test_traversal(g)
+      @test postdominator(cfg, 1) == 6
+      test_traversal(cfg)
 
-      g = g4()
-      tree = DominatorTree(g)
-      test_completeness(tree, g)
+      cfg = ControlFlowGraph(g4())
+      @test cfg.is_reducible
+      @test cfg.is_structured
+      tree = DominatorTree(cfg)
+      test_completeness(tree, cfg)
       @test dominated_nodes(tree) == [2, 3, 8]
       @test dominated_nodes(tree[1]) == [4]
       @test dominated_nodes(tree[1][1]) == [5, 7]
       @test dominated_nodes(tree[1][1][1]) == [6]
-      @test postdominator(g, 1) == 8
-      test_traversal(g)
+      @test postdominator(cfg, 1) == 8
+      test_traversal(cfg)
 
-      g = g5()
-      @test postdominator(g, 1) == 6
-      @test postdominator(g, 2) == nothing
+      cfg = ControlFlowGraph(g5())
+      @test cfg.is_reducible
+      @test cfg.is_structured
+      @test postdominator(cfg, 1) == 6
+      @test isnothing(postdominator(cfg, 2))
+
+      cfg = ControlFlowGraph(g6())
+      @test cfg.is_reducible
+      @test cfg.is_structured
+
+      cfg = ControlFlowGraph(g7())
+      @test !cfg.is_reducible
+
+      cfg = ControlFlowGraph(g8())
+      @test cfg.is_reducible
     end
   end
 
@@ -149,30 +249,30 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
 
     mapping = Dict()
     mg = MetaDiGraph()
-    g = g1()
-    flow_through(make_analyze_f1(mg, mapping), g, 1)
+    cfg = ControlFlowGraph(g1())
+    flow_through(make_analyze_f1(mg, mapping), cfg, 1)
     @test all(k == v for (k, v) in mapping)
-    @test !is_cyclic(g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+    @test !is_cyclic(cfg.g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
 
     mapping = Dict()
     mg = MetaDiGraph()
-    g = g2()
-    flow_through(make_analyze_f1(mg, mapping), g, 1)
+    cfg = ControlFlowGraph(g2())
+    flow_through(make_analyze_f1(mg, mapping), cfg, 1)
     @test all(k == v for (k, v) in mapping)
-    @test !is_cyclic(g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+    @test !is_cyclic(cfg.g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
 
     mapping = Dict()
     mg = MetaDiGraph()
-    g = g3()
-    flow_through(make_analyze_f1(mg, mapping), g, 1)
+    cfg = ControlFlowGraph(g3())
+    flow_through(make_analyze_f1(mg, mapping), cfg, 1)
     @test all(k == v for (k, v) in mapping)
-    @test !is_cyclic(g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+    @test !is_cyclic(cfg.g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
 
     mapping = Dict()
     mg = MetaDiGraph()
-    g = g4()
-    flow_through(make_analyze_f1(mg, mapping), g, 1)
-    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(g))
+    cfg = ControlFlowGraph(g4())
+    flow_through(make_analyze_f1(mg, mapping), cfg, 1)
+    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(cfg.g))
     edges_nocycle = [Edge(mapping[src(e)], mapping[dst(e)]) for e in Edge.([1 => 2, 1 => 3, 2 => 4, 3 => 8])]
     @test all(get_prop(mg, e, :count) == 1 for e in edges_nocycle)
     edges_cycle = filter(!in(edges_nocycle), collect(edges(mg)))
@@ -180,16 +280,16 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
 
     mapping = Dict()
     mg = MetaDiGraph()
-    g = g5()
-    flow_through(make_analyze_f1(mg, mapping), g, 1)
-    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(g))
-    @test !is_cyclic(g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+    cfg = ControlFlowGraph(g5())
+    flow_through(make_analyze_f1(mg, mapping), cfg, 1)
+    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(cfg.g))
+    @test !is_cyclic(cfg.g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
 
     mapping = Dict()
     mg = MetaDiGraph()
-    g = g6()
-    flow_through(make_analyze_f1(mg, mapping), g, 1)
-    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(g))
+    cfg = ControlFlowGraph(g6())
+    flow_through(make_analyze_f1(mg, mapping), cfg, 1)
+    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(cfg.g))
     edges_nocycle = [Edge(mapping[src(e)], mapping[dst(e)]) for e in Edge.([1 => 2])]
     @test all(get_prop(mg, e, :count) == 1 for e in edges_nocycle)
     edges_cycle = filter(!in(edges_nocycle), collect(edges(mg)))
@@ -244,9 +344,13 @@ using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_
 
     # FIXME: back-edges for `reverse(control_flow_graph(amod, only(amod.annotated_functions)))` seem off.
     # We get that almost all edges (or all) are back-edges, which should not be the case even for a reverse CFG.
-    # amod = annotate(load_module("simple_loop.jl"))
-    # iadd = SSAValue(30)
-    # st = StackTrace()
+    amod = annotate(load_module("simple_loop.jl"))
+    iadd = SSAValue(30)
+    st = StackTrace()
+    g = reverse(ControlFlowGraph(amod, only(amod.annotated_functions)).g)
+    # plotgraph(g)
+    # SPIRV.backedges(g, 3)
+
     # chain = UseDefChain(amod, only(amod.annotated_functions), iadd, st)
     # @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(8), SSAValue(9), SSAValue(4)])
     # @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(15), SSAValue(4)])

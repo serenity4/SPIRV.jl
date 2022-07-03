@@ -19,6 +19,8 @@ push(stacktrace::StackTrace, frame::StackFrame) = StackTrace([stacktrace.frames;
 
 Base.getindex(stacktrace::StackTrace, range::UnitRange) = StackTrace(stacktrace.frames[range])
 
+const SimpleCFG = ControlFlowGraph{Edge{Int}, SimpleDiGraph{Int}}
+
 """
 State of an abstract interpretation being run.
 
@@ -26,7 +28,7 @@ This state is meant to be modified by the provided user function during interpre
 Notably, setting the field `converged` to `true` when no modification occurs at a particular
 basic block is required to ensure termination of the interpretation process.
 """
-mutable struct AbstractInterpretation
+mutable struct AbstractInterpretation{CFG<:ControlFlowGraph}
   """
   If `true`, indicates that the abstract interpretation has converged locally on a block.
 
@@ -45,20 +47,20 @@ mutable struct AbstractInterpretation
   """
   stop_function::Bool
   "Cache for control-flow graphs to avoid computing them more than once for every function."
-  cfgs::Dictionary{AnnotatedFunction, SimpleDiGraph{Int}}
+  cfgs::Dictionary{AnnotatedFunction, CFG}
 end
-AbstractInterpretation() = AbstractInterpretation(false, false, false, false, Dictionary())
+AbstractInterpretation() = AbstractInterpretation{SimpleCFG}(false, false, false, false, Dictionary())
 
 """
 Frame of interpretation which contains information about the current program point.
 """
-struct InterpretationFrame
+struct InterpretationFrame{CFG<:ControlFlowGraph}
   "SPIR-V module that the interpretation is carried on."
   amod::AnnotatedModule
   "SPIR-V function being currently interpreted."
   af::AnnotatedFunction
   "Control-flow graph of the current function."
-  cfg::SimpleDiGraph{Int}
+  cfg::CFG
   "Stacktrace indicating the program's execution path."
   stacktrace::StackTrace
   "Basic block currently being processed. Has a direct correspondence with `cfg` nodes."
@@ -67,14 +69,14 @@ end
 
 function InterpretationFrame(interpret::AbstractInterpretation, amod::AnnotatedModule, af::AnnotatedFunction, stacktrace::StackTrace = StackTrace())
   cfg = control_flow_graph!(interpret, amod, af)
-  InterpretationFrame(amod, af, cfg, stacktrace, entry_node(cfg))
+  InterpretationFrame(amod, af, cfg, stacktrace, entry_node(cfg.g))
 end
 
 "Memoize the control flow graph inside the abstract interpretation state."
 function control_flow_graph!(interpret::AbstractInterpretation, amod::AnnotatedModule, af::AnnotatedFunction)
   cfg = get(interpret.cfgs, af, nothing)
   !isnothing(cfg) && return cfg
-  cfg = control_flow_graph(amod, af)
+  cfg = ControlFlowGraph(amod, af)
   insert!(interpret.cfgs, af, cfg)
   cfg
 end
