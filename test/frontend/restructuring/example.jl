@@ -29,26 +29,26 @@ function f(x::AbstractFloat)
   end
 end
 
-cfg = CFG(f, Tuple{Float64})
-modified = merge_return_blocks(cfg)
-replace_code!(cfg.mi, modified.code)
-cfg2 = infer(cfg)
-cfg2.code
-cfg.mi.uninferred
-cfg.code
-CFG(cfg.mi).code
+target = SPIRVTarget(f, Tuple{Float64})
+modified = merge_return_blocks(target)
+replace_code!(target.mi, modified.code)
+target2 = infer(target)
+target2.code
+target.mi.uninferred
+target.code
+SPIRVTarget(target.mi).code
 
 using Plots, GraphRecipes
 
-macro plot_cfg(ex)
+macro plot_target(ex)
   quote
-    cfg = CFG(@code_lowered $ex)
-    plot(cfg.graph, names = 1:length(cfg.graph), nodesize = 0.5)
+    target = SPIRVTarget(@code_lowered $ex)
+    plot(target.graph, names = 1:length(target.graph), nodesize = 0.5)
   end
 end
 
-plot(cfg.graph, names = 1:length(cfg.graph), nodesize = 0.5)
-plot(cfg2.graph, names = 1:length(cfg2.graph), nodesize = 0.3)
+plot(target.graph, names = 1:length(target.graph), nodesize = 0.5)
+plot(target2.graph, names = 1:length(target2.graph), nodesize = 0.3)
 0
 
 #=

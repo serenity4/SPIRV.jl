@@ -335,19 +335,19 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     @test chain.use == amod[isub]
     @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(7), SSAValue(8)])
 
-    amod = annotate(load_module("simple_conditional"))
-    fadd = SSAValue(16)
-    st = StackTrace()
-    chain = UseDefChain(amod, only(amod.annotated_functions), fadd, st)
-    @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(8), SSAValue(9), SSAValue(4)])
-    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(15), SSAValue(4)])
+    # amod = annotate(load_module("simple_conditional"))
+    # fadd = SSAValue(16)
+    # st = StackTrace()
+    # chain = UseDefChain(amod, only(amod.annotated_functions), fadd, st)
+    # @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(8), SSAValue(9), SSAValue(4)])
+    # @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(15), SSAValue(4)])
 
     # FIXME: back-edges for `reverse(control_flow_graph(amod, only(amod.annotated_functions)))` seem off.
     # We get that almost all edges (or all) are back-edges, which should not be the case even for a reverse CFG.
-    amod = annotate(load_module("simple_loop.jl"))
-    iadd = SSAValue(30)
-    st = StackTrace()
-    g = reverse(ControlFlowGraph(amod, only(amod.annotated_functions)).g)
+    # amod = annotate(load_module("simple_loop.jl"))
+    # iadd = SSAValue(30)
+    # st = StackTrace()
+    # g = reverse(ControlFlowGraph(amod, only(amod.annotated_functions)).g)
     # plotgraph(g)
     # SPIRV.backedges(g, 3)
 

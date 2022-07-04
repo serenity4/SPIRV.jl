@@ -109,23 +109,23 @@ end
   @test is_single_entry_single_exit(g)
   @test is_tail_structured(g)
 
-  cfg = CFG(f, Tuple{Int,Vector{Float64}})
-  @test !is_single_entry_single_exit(cfg)
-  @test !is_tail_structured(cfg)
+  target = SPIRVTarget(f, Tuple{Int,Vector{Float64}})
+  @test !is_single_entry_single_exit(target)
+  @test !is_tail_structured(target)
 
-  cfg = CFG(f, Tuple{String})
-  @test is_single_entry_single_exit(cfg)
-  @test is_tail_structured(cfg)
+  target = SPIRVTarget(f, Tuple{String})
+  @test is_single_entry_single_exit(target)
+  @test is_tail_structured(target)
 
-  cfg = CFG(f, Tuple{Int})
-  @test is_single_entry_single_exit(cfg)
-  @test is_tail_structured(cfg)
+  target = SPIRVTarget(f, Tuple{Int})
+  @test is_single_entry_single_exit(target)
+  @test is_tail_structured(target)
 
-  cfg = CFG(f, Tuple{Float64})
-  @test !is_single_entry_single_exit(cfg)
-  @test !is_tail_structured(cfg)
+  target = SPIRVTarget(f, Tuple{Float64})
+  @test !is_single_entry_single_exit(target)
+  @test !is_tail_structured(target)
 
-  cfg = CFG(f, Tuple{})
-  @test !is_single_entry_single_exit(cfg)
-  @test !is_tail_structured(cfg)
+  target = SPIRVTarget(f, Tuple{})
+  @test !is_single_entry_single_exit(target)
+  @test !is_tail_structured(target)
 end

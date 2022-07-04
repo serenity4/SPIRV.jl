@@ -128,12 +128,12 @@ Module(shader::Shader) = shader.mod
 
 validate(shader::Shader) = validate_shader(IR(Module(shader); satisfy_requirements = false))
 
-function Shader(cfg::CFG, interface::ShaderInterface)
+function Shader(target::SPIRVTarget, interface::ShaderInterface)
   ir = IR()
   variables = Dictionary{Int,Variable}()
   for (i, sc) in enumerate(interface.storage_classes)
     if sc ≠ StorageClassFunction
-      t = spir_type(cfg.mi.specTypes.parameters[i + 1], ir; storage_class = sc)
+      t = spir_type(target.mi.specTypes.parameters[i + 1], ir; storage_class = sc)
       if sc in (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer)
         decorate!(ir, emit!(ir, t), DecorationBlock)
       end
@@ -142,8 +142,8 @@ function Shader(cfg::CFG, interface::ShaderInterface)
       insert!(variables, i, var)
     end
   end
-  compile!(ir, cfg, variables)
-  ep = make_shader!(ir, cfg.mi, interface, variables)
+  compile!(ir, target, variables)
+  ep = make_shader!(ir, target.mi, interface, variables)
   mod = Module(ir)
   Shader(mod, ep.func, memory_resources(mod, ep.func))
 end

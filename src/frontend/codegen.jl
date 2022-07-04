@@ -1,9 +1,9 @@
-function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
+function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
   type = spir_type(jtype, ir)
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => (OpCompositeConstruct, args)
     ::Core.PhiNode =>
-      (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(cfg)), irmap) for e in jinst.edges)))
+      (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(target)), irmap) for e in jinst.edges)))
     :($f($(args...))) => @match f begin
       ::GlobalRef => @match getfield(f.mod, f.name) begin
         ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$f'."))
@@ -13,7 +13,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
             node::QuoteNode => begin
               node.value::Symbol
               sym = (args[2]::QuoteNode).value::Symbol
-              T = get_type(composite, cfg)
+              T = get_type(composite, target)
               field_idx = findfirst(==(sym), fieldnames(T))
               !isnothing(field_idx) || throw(CompilationError("Symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))"))
               field_idx
@@ -46,11 +46,11 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
           end
         else
           args, variables = peel_global_vars(args, ir, irmap, fdef)
-          (OpFunctionCall, (emit_new!(ir, cfg.interp, mi, fdef, variables), args...))
+          (OpFunctionCall, (emit_new!(ir, target.interp, mi, fdef, variables), args...))
         end
       else
         args, variables = peel_global_vars(args, ir, irmap, fdef)
-        (OpFunctionCall, (emit_new!(ir, cfg.interp, mi, fdef, variables), args...))
+        (OpFunctionCall, (emit_new!(ir, target.interp, mi, fdef, variables), args...))
       end
     end
     _ => throw(CompilationError("Expected call or invoke expression, got $(repr(jinst))"))
@@ -89,10 +89,10 @@ function emit_inst!(ir::IR, irmap::IRMapping, cfg::CFG, fdef::FunctionDefinition
   @inst result_id = opcode(args...)::type_id
 end
 
-function get_type(arg, cfg::CFG)
+function get_type(arg, target::SPIRVTarget)
   @match arg begin
-    ::Core.SSAValue => cfg.code.ssavaluetypes[arg.id]
-    ::Core.Argument => cfg.mi.specTypes.types[arg.n]
+    ::Core.SSAValue => target.code.ssavaluetypes[arg.id]
+    ::Core.Argument => target.mi.specTypes.types[arg.n]
     _ => throw(CompilationError("Cannot extract type from argument $arg"))
   end
 end
@@ -208,5 +208,5 @@ function literals_to_const!(args, ir::IR, irmap::IRMapping, opcode)
 end
 
 function emit_new!(ir::IR, interp::SPIRVInterpreter, mi::MethodInstance, fdef::FunctionDefinition, variables)
-  emit!(ir, CFG(mi, interp; inferred = true), variables)
+  emit!(ir, SPIRVTarget(mi, interp; inferred = true), variables)
 end

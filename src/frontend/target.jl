@@ -1,5 +1,5 @@
-"Control Flow Graph (CFG)"
-struct CFG
+"SPIR-V target for compilation through the Julia frontend."
+struct SPIRVTarget
   mi::MethodInstance
   """
   Graph where nodes represent basic blocks, and edges represent branches.
@@ -14,7 +14,7 @@ struct CFG
   interp::SPIRVInterpreter
 end
 
-function CFG(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false, interp = SPIRVInterpreter())
+function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false, interp = SPIRVInterpreter())
   reset_world!(interp)
 
   mis = method_instances(f, argtypes, interp)
@@ -28,7 +28,7 @@ function CFG(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false, inter
   elseif iszero(length(mis))
     error("No method matching the signature ($f, $argtypes).")
   end
-  CFG(only(mis), interp; inferred)
+  SPIRVTarget(only(mis), interp; inferred)
 end
 
 function method_instances(@nospecialize(f), @nospecialize(t), interp::AbstractInterpreter)
@@ -39,26 +39,26 @@ function method_instances(@nospecialize(f), @nospecialize(t), interp::AbstractIn
   map(Core.Compiler.specialize_method, matches)
 end
 
-function CFG(mi::MethodInstance, interp::AbstractInterpreter; inferred = false)
+function SPIRVTarget(mi::MethodInstance, interp::AbstractInterpreter; inferred = false)
   if inferred
     code = get(interp.global_cache, mi, nothing)
     if isnothing(code)
       # Run type inference on lowered code.
-      cfg = CFG(mi, interp; inferred = false)
-      infer(cfg)
+      target = SPIRVTarget(mi, interp; inferred = false)
+      infer(target)
     else
-      CFG(mi, code, interp)
+      SPIRVTarget(mi, code, interp)
     end
   else
-    CFG(mi, lowered_code(mi), interp)
+    SPIRVTarget(mi, lowered_code(mi), interp)
   end
 end
 
 lowered_code(mi::MethodInstance) = uncompressed_ir(mi.def::Method)
 inferred_code(ci::CodeInstance) = isa(ci.inferred, CodeInfo) ? ci.inferred : Core.Compiler._uncompressed_ir(ci, ci.inferred)
 
-CFG(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = CFG(mi, inferred_code(ci), interp)
-function CFG(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter)
+SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = SPIRVTarget(mi, inferred_code(ci), interp)
+function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter)
   stmts = copy(code.code)
   bbs = compute_basic_blocks(stmts)
 
@@ -84,10 +84,10 @@ function CFG(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter)
     rem_vertex!(g, nv(g))
   end
 
-  CFG(mi, g, insts, indices, code, interp)
+  SPIRVTarget(mi, g, insts, indices, code, interp)
 end
 
-exit_blocks(cfg::CFG) = BasicBlock.(sinks(cfg.graph))
+exit_blocks(target::SPIRVTarget) = BasicBlock.(sinks(target.graph))
 
 "Run type inference on the given `MethodInstance`."
 function infer(mi::MethodInstance, interp::AbstractInterpreter)
@@ -111,25 +111,25 @@ function infer(mi::MethodInstance, interp::AbstractInterpreter)
 end
 
 """
-Run type inference on the provided CFG and wrap inferred code with a new CFG.
+Run type inference on the provided target.
 
-The internal `MethodInstance` of the original CFG gets mutated in the process.
+The internal `MethodInstance` of the original target gets mutated in the process.
 """
-function infer(cfg::CFG)
-  infer(cfg.mi, cfg.interp)
-  CFG(cfg.mi, cfg.interp, inferred = true)
+function infer(target::SPIRVTarget)
+  infer(target.mi, target.interp)
+  SPIRVTarget(target.mi, target.interp, inferred = true)
 end
 
-function Base.show(io::IO, cfg::CFG)
-  print(io, "CFG ($(nv(cfg.graph)) nodes, $(ne(cfg.graph)) edges, $(sum(length, cfg.instructions)) instructions)")
+function Base.show(io::IO, target::SPIRVTarget)
+  print(io, "SPIRVTarget ($(nv(target.graph)) nodes, $(ne(target.graph)) edges, $(sum(length, target.instructions)) instructions)")
 end
 
-function block_ranges(cfg::CFG)
-  map(Base.splat(UnitRange), zip(cfg.indices[1:(end - 1)], cfg.indices[2:end] .- 1))
+function block_ranges(target::SPIRVTarget)
+  map(Base.splat(UnitRange), zip(target.indices[1:(end - 1)], target.indices[2:end] .- 1))
 end
 
-traverse(cfg::CFG) = traverse(ControlFlowGraph(cfg.graph))
-postdominator(cfg::CFG, source) = postdominator(ControlFlowGraph(cfg.graph), source)
+traverse(target::SPIRVTarget) = traverse(ControlFlowGraph(target.graph))
+postdominator(target::SPIRVTarget, source) = postdominator(ControlFlowGraph(target.graph), source)
 
 get_signature(f::Symbol) = (f,)
 function argtype(arg)
@@ -153,21 +153,21 @@ function get_signature(ex::Expr)
   end
 end
 
-macro cfg(infer, interp, ex)
+macro target(infer, interp, ex)
   cfg_args = get_signature(ex)
   infer = @match infer begin
     :(infer = $val) && if isa(val, Bool)
     end => val
     _ => error("Invalid `infer` option, expected infer=<val> where <val> can be either true or false.")
   end
-  :(CFG($(esc.(cfg_args)...); inferred = $infer, interp = $(esc(interp))))
+  :(SPIRVTarget($(esc.(cfg_args)...); inferred = $infer, interp = $(esc(interp))))
 end
 
-macro cfg(interp, ex)
-  :($(esc(:($(@__MODULE__).@cfg infer = true $interp $ex))))
+macro target(interp, ex)
+  :($(esc(:($(@__MODULE__).@target infer = true $interp $ex))))
 end
-macro cfg(ex)
-  :($(esc(:($(@__MODULE__).@cfg $(SPIRVInterpreter()) $ex))))
+macro target(ex)
+  :($(esc(:($(@__MODULE__).@target $(SPIRVInterpreter()) $ex))))
 end
 
 macro code_typed(debuginfo, interp, ex)
@@ -176,8 +176,8 @@ macro code_typed(debuginfo, interp, ex)
     _ => error("Expected 'debuginfo = <value>' where <value> is one of (:source, :none)")
   end
   ex = quote
-    cfg = $(esc(:(@cfg $interp $ex)))
-    code = cfg.code
+    target = $(esc(:(@target $interp $ex)))
+    code = target.code
     $debuginfo == :none && Base.remove_linenums!(code)
     code
   end

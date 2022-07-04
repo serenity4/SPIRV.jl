@@ -74,7 +74,7 @@ include("frontend/types/image.jl")
 include("frontend/intrinsics_glsl.jl")
 include("frontend/vulkan.jl")
 include("frontend/interpreter.jl")
-include("frontend/cfg.jl")
+include("frontend/target.jl")
 include("frontend/reflection.jl")
 include("frontend/compile.jl")
 include("frontend/codegen.jl")
@@ -134,8 +134,8 @@ export
   validate_shader,
 
   # Front-end
-  CFG,
-  @cfg,
+  SPIRVTarget,
+  @target,
   is_single_entry_single_exit,
   is_tail_structured,
   is_single_node,

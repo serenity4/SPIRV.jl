@@ -1,4 +1,9 @@
-entry_node(g::AbstractGraph) = only(sources(g))
+function entry_node(g::AbstractGraph)
+  vs = sources(g)
+  isempty(vs) && error("No entry node was found.")
+  length(vs) > 1 && error("Multiple entry nodes were found.")
+  first(vs)
+end
 
 sinks(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Base.Fix1(outneighbors, g), vertices(g))]
 sources(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Base.Fix1(inneighbors, g), vertices(g))]

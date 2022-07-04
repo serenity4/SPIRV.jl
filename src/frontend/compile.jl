@@ -1,18 +1,18 @@
 function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}), args...; interp = SPIRVInterpreter())
-  compile(CFG(f, argtypes; interp), args...)
+  compile(SPIRVTarget(f, argtypes; interp), args...)
 end
 
-compile(cfg::CFG, args...) = compile!(IR(), cfg, args...)
+compile(target::SPIRVTarget, args...) = compile!(IR(), target, args...)
 
-function compile!(ir::IR, cfg::CFG, variables::Dictionary{Int,Variable} = Dictionary{Int,Variable}())
+function compile!(ir::IR, target::SPIRVTarget, variables::Dictionary{Int,Variable} = Dictionary{Int,Variable}())
   # TODO: restructure CFG
-  inferred = infer(cfg)
+  inferred = infer(target)
   emit!(ir, inferred, variables)
   ir
 end
 
-function compile!(ir::IR, cfg::CFG, features::FeatureSupport, variables = Dictionary{Int,Variable}())
-  ir = compile!(ir, cfg, variables)
+function compile!(ir::IR, target::SPIRVTarget, features::FeatureSupport, variables = Dictionary{Int,Variable}())
+  ir = compile!(ir, target, variables)
   satisfy_requirements!(ir, features)
 end
 
@@ -78,25 +78,25 @@ function Base.showerror(io::IO, err::CompilationError)
   println(io)
 end
 
-function emit!(ir::IR, cfg::CFG, variables = Dictionary{Int,Variable}())
+function emit!(ir::IR, target::SPIRVTarget, variables = Dictionary{Int,Variable}())
   # Declare a new function.
-  fdef = define_function!(ir, cfg, variables)
+  fdef = define_function!(ir, target, variables)
   fid = emit!(ir, fdef)
-  set_name!(ir, fid, make_name(cfg.mi))
+  set_name!(ir, fid, make_name(target.mi))
   irmap = IRMapping()
   arg_idx = 0
   gvar_idx = 0
-  for i = 1:(cfg.mi.def.nargs - 1)
+  for i = 1:(target.mi.def.nargs - 1)
     argid = haskey(variables, i) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
     insert!(irmap.args, Core.Argument(i + 1), argid)
-    set_name!(ir, argid, cfg.code.slotnames[i + 1])
+    set_name!(ir, argid, target.code.slotnames[i + 1])
   end
 
   try
-    # Fill it with instructions using the CFG.
-    emit!(fdef, ir, irmap, cfg)
+    # Fill the SPIR-V function with instructions generated from the target's inferred code.
+    emit!(fdef, ir, irmap, target)
   catch e
-    throw_compilation_error(e, (; cfg.mi))
+    throw_compilation_error(e, (; target.mi))
   end
   fid
 end
@@ -105,10 +105,10 @@ function make_name(mi::MethodInstance)
   Symbol(replace(string(mi.def.name, '_', Base.tuple_type_tail(mi.specTypes)), ' ' => ""))
 end
 
-function define_function!(ir::IR, cfg::CFG, variables::Dictionary{Int,Variable})
+function define_function!(ir::IR, target::SPIRVTarget, variables::Dictionary{Int,Variable})
   argtypes = SPIRType[]
   global_vars = SSAValue[]
-  (; mi) = cfg
+  (; mi) = target
 
   for (i, t) in enumerate(mi.specTypes.types[2:end])
     type = spir_type(t, ir; wrap_mutable = true)
@@ -125,7 +125,7 @@ function define_function!(ir::IR, cfg::CFG, variables::Dictionary{Int,Variable})
       end
     end
   end
-  ci = cfg.interp.global_cache[mi]
+  ci = target.interp.global_cache[mi]
   ftype = FunctionType(spir_type(ci.rettype, ir), argtypes)
   FunctionDefinition(ftype, FunctionControlNone, [], [], SSADict(), global_vars)
 end
@@ -189,14 +189,14 @@ function emit!(ir::IR, var::Variable)
   id
 end
 
-function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG)
-  ranges = block_ranges(cfg)
-  back_edges = backedges(cfg.graph)
-  graph = deepcopy(cfg.graph)
+function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget)
+  ranges = block_ranges(target)
+  back_edges = backedges(target.graph)
+  graph = deepcopy(target.graph)
   rem_edges!(graph, back_edges)
-  nodelist = traverse(cfg)
+  nodelist = traverse(target)
   add_mapping!(irmap, ir, ranges, nodelist)
-  emit_nodes!(fdef, ir, irmap, cfg, ranges, nodelist, back_edges)
+  emit_nodes!(fdef, ir, irmap, target, ranges, nodelist, back_edges)
   replace_forwarded_ssa!(fdef, irmap)
 end
 
@@ -208,11 +208,11 @@ function add_mapping!(irmap::IRMapping, ir::IR, ranges, nodelist)
   end
 end
 
-function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ranges, nodelist, backedges)
+function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget, ranges, nodelist, backedges)
   for node in nodelist
-    emit!(fdef, ir, irmap, cfg, ranges[node], node)
-    ins = inneighbors(cfg.graph, node)
-    outs = outneighbors(cfg.graph, node)
+    emit!(fdef, ir, irmap, target, ranges[node], node)
+    ins = inneighbors(target.graph, node)
+    outs = outneighbors(target.graph, node)
     local_backedges = filter(in(backedges), map(Base.Fix2(Edge, node), ins))
     if !isempty(local_backedges)
       # Must be a loop.
@@ -221,7 +221,7 @@ function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CF
       end
       vcont = only(local_backedges)
       vmerge = nothing
-      vmerge_candidates = findall(v -> !has_path(cfg.graph, v, node), outs)
+      vmerge_candidates = findall(v -> !has_path(target.graph, v, node), outs)
       @switch length(vmerge_candidates) begin
         @case 0
         throw(CompilationError("No merge candidate found for a loop."))
@@ -235,7 +235,7 @@ function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CF
       insert!(block.insts, lastindex(block.insts), header)
     elseif length(outs) > 1
       # We're branching.
-      vmerge = postdominator(cfg, node)
+      vmerge = postdominator(target, node)
       merge_id = if isnothing(vmerge)
         # All target blocks return.
         # Any block is valid in that case.
@@ -263,8 +263,8 @@ function replace_forwarded_ssa!(fdef::FunctionDefinition, irmap::IRMapping)
   end
 end
 
-function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, range::UnitRange, node::Integer)
-  (; code, ssavaluetypes, slottypes) = cfg.code
+function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget, range::UnitRange, node::Integer)
+  (; code, ssavaluetypes, slottypes) = target.code
   blk = new_block!(fdef, SSAValue(node, irmap))
   for i in range
     jinst = code[i]
@@ -310,7 +310,7 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, cfg::CFG, ran
         if ismutabletype(jtype)
           allocate_variable!(ir, irmap, fdef, jtype, core_ssaval)
         end
-        ret = emit_inst!(ir, irmap, cfg, fdef, jinst, jtype, blk)
+        ret = emit_inst!(ir, irmap, target, fdef, jinst, jtype, blk)
         if isa(ret, Instruction)
           if ismutabletype(jtype)
             # The current core SSAValue has already been assigned (to the variable).

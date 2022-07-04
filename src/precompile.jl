@@ -37,7 +37,7 @@ while true
   #   frag_color[] = Vec(color[1U], color[2U], color[3U], 1F)
   # end
 
-  # cfg = @cfg PRECOMPILE_vert_shader(::Vec{4,Float32}, ::Vec{4,Float32}, ::UInt32, ::PRECOMPILE_DrawData)
+  # target = @target PRECOMPILE_vert_shader(::Vec{4,Float32}, ::Vec{4,Float32}, ::UInt32, ::PRECOMPILE_DrawData)
   # interface = ShaderInterface(
   #   storage_classes = [StorageClassOutput, StorageClassOutput, StorageClassInput, StorageClassPushConstant],
   #   variable_decorations = dictionary([
@@ -50,7 +50,7 @@ while true
   #   ]),
   #   features = SUPPORTED_FEATURES,
   # )
-  # ir = make_shader(cfg, interface)
+  # ir = make_shader(target, interface)
   # assemble(ir)
   break
 end
