@@ -19,7 +19,7 @@ push(stacktrace::StackTrace, frame::StackFrame) = StackTrace([stacktrace.frames;
 
 Base.getindex(stacktrace::StackTrace, range::UnitRange) = StackTrace(stacktrace.frames[range])
 
-const SimpleCFG = ControlFlowGraph{Edge{Int}, SimpleDiGraph{Int}}
+const SimpleCFG = ControlFlowGraph{Edge{Int}, Int, SimpleDiGraph{Int}}
 
 """
 State of an abstract interpretation being run.

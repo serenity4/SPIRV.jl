@@ -78,7 +78,7 @@ end
 function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::AnnotatedModule, af::AnnotatedFunction, block::Integer, stacktrace::StackTrace, cfg::ControlFlowGraph = ControlFlowGraph(amod, af))
   expand_chains!(target_defs, instructions(amod, reverse(af.blocks[block])))
 
-  flow_through(ControlFlowGraph(reverse(cfg.g)), block) do e
+  flow_through(reverse(cfg), block) do e
     expand_chains!(target_defs, instructions(amod, reverse(af.blocks[dst(e)])))
   end
 

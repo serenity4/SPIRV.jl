@@ -191,10 +191,8 @@ end
 
 function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget)
   ranges = block_ranges(target)
-  back_edges = backedges(target.graph)
-  graph = deepcopy(target.graph)
-  rem_edges!(graph, back_edges)
-  nodelist = traverse(target)
+  back_edges = backedges(target.cfg)
+  nodelist = traverse(target.cfg)
   add_mapping!(irmap, ir, ranges, nodelist)
   emit_nodes!(fdef, ir, irmap, target, ranges, nodelist, back_edges)
   replace_forwarded_ssa!(fdef, irmap)
@@ -211,8 +209,8 @@ end
 function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget, ranges, nodelist, backedges)
   for node in nodelist
     emit!(fdef, ir, irmap, target, ranges[node], node)
-    ins = inneighbors(target.graph, node)
-    outs = outneighbors(target.graph, node)
+    ins = inneighbors(target.cfg, node)
+    outs = outneighbors(target.cfg, node)
     local_backedges = filter(in(backedges), map(Base.Fix2(Edge, node), ins))
     if !isempty(local_backedges)
       # Must be a loop.
@@ -221,7 +219,7 @@ function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target:
       end
       vcont = only(local_backedges)
       vmerge = nothing
-      vmerge_candidates = findall(v -> !has_path(target.graph, v, node), outs)
+      vmerge_candidates = findall(v -> !has_path(target.cfg, v, node), outs)
       @switch length(vmerge_candidates) begin
         @case 0
         throw(CompilationError("No merge candidate found for a loop."))
@@ -235,7 +233,7 @@ function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target:
       insert!(block.insts, lastindex(block.insts), header)
     elseif length(outs) > 1
       # We're branching.
-      vmerge = postdominator(target, node)
+      vmerge = postdominator(target.cfg, node)
       merge_id = if isnothing(vmerge)
         # All target blocks return.
         # Any block is valid in that case.

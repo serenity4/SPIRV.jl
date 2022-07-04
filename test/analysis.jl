@@ -145,18 +145,18 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
 
       function test_traversal(cfg)
         visited = Int[]
-        scc = strongly_connected_components(cfg.g)
+        scc = strongly_connected_components(cfg)
         for v in traverse(cfg)
           push!(visited, v)
           @test all(x -> in(x, visited) || begin
             idx = findfirst(v in c for c in scc)
             !isnothing(idx) && x in scc[idx]
-          end, inneighbors(cfg.g, v))
+          end, inneighbors(cfg, v))
         end
       end
 
       function test_completeness(tree, cfg)
-        @test nodevalue(tree) == 1 && isroot(tree) && Set(nodevalue.(collect(PostOrderDFS(tree)))) == Set(1:nv(cfg.g))
+        @test nodevalue(tree) == 1 && isroot(tree) && Set(nodevalue.(collect(PostOrderDFS(tree)))) == Set(1:nv(cfg))
         pdom = postdominator(cfg, 1)
         @test isnothing(pdom) || in(pdom, dominated_nodes(tree))
 
@@ -165,7 +165,7 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
           node == tree && continue
           push!(dominated, nodevalue(node))
         end
-        @test sort(dominated) == 2:nv(cfg.g)
+        @test sort(dominated) == 2:nv(cfg)
       end
 
       cfg = ControlFlowGraph(g1())
@@ -252,27 +252,27 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     cfg = ControlFlowGraph(g1())
     flow_through(make_analyze_f1(mg, mapping), cfg, 1)
     @test all(k == v for (k, v) in mapping)
-    @test !is_cyclic(cfg.g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+    @test !is_cyclic(cfg) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
 
     mapping = Dict()
     mg = MetaDiGraph()
     cfg = ControlFlowGraph(g2())
     flow_through(make_analyze_f1(mg, mapping), cfg, 1)
     @test all(k == v for (k, v) in mapping)
-    @test !is_cyclic(cfg.g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+    @test !is_cyclic(cfg) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
 
     mapping = Dict()
     mg = MetaDiGraph()
     cfg = ControlFlowGraph(g3())
     flow_through(make_analyze_f1(mg, mapping), cfg, 1)
     @test all(k == v for (k, v) in mapping)
-    @test !is_cyclic(cfg.g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+    @test !is_cyclic(cfg) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
 
     mapping = Dict()
     mg = MetaDiGraph()
     cfg = ControlFlowGraph(g4())
     flow_through(make_analyze_f1(mg, mapping), cfg, 1)
-    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(cfg.g))
+    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(cfg))
     edges_nocycle = [Edge(mapping[src(e)], mapping[dst(e)]) for e in Edge.([1 => 2, 1 => 3, 2 => 4, 3 => 8])]
     @test all(get_prop(mg, e, :count) == 1 for e in edges_nocycle)
     edges_cycle = filter(!in(edges_nocycle), collect(edges(mg)))
@@ -282,14 +282,14 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     mg = MetaDiGraph()
     cfg = ControlFlowGraph(g5())
     flow_through(make_analyze_f1(mg, mapping), cfg, 1)
-    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(cfg.g))
-    @test !is_cyclic(cfg.g) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
+    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(cfg))
+    @test !is_cyclic(cfg) && all(get_prop(mg, e, :count) == 1 for e in edges(mg))
 
     mapping = Dict()
     mg = MetaDiGraph()
     cfg = ControlFlowGraph(g6())
     flow_through(make_analyze_f1(mg, mapping), cfg, 1)
-    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(cfg.g))
+    @test Set(keys(mapping)) == Set(values(mapping)) == Set(1:nv(cfg))
     edges_nocycle = [Edge(mapping[src(e)], mapping[dst(e)]) for e in Edge.([1 => 2])]
     @test all(get_prop(mg, e, :count) == 1 for e in edges_nocycle)
     edges_cycle = filter(!in(edges_nocycle), collect(edges(mg)))

@@ -1,10 +1,12 @@
+const DeltaCFG = ControlFlowGraph{Edge{Int}, Int, DeltaGraph{Int}}
+
 "SPIR-V target for compilation through the Julia frontend."
 struct SPIRVTarget
   mi::MethodInstance
   """
   Graph where nodes represent basic blocks, and edges represent branches.
   """
-  graph::DeltaGraph
+  cfg::DeltaCFG
   """
   Mapping from node index to instructions.
   """
@@ -84,10 +86,10 @@ function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpr
     rem_vertex!(g, nv(g))
   end
 
-  SPIRVTarget(mi, g, insts, indices, code, interp)
-end
+  cfg = ControlFlowGraph(g)
 
-exit_blocks(target::SPIRVTarget) = BasicBlock.(sinks(target.graph))
+  SPIRVTarget(mi, cfg, insts, indices, code, interp)
+end
 
 "Run type inference on the given `MethodInstance`."
 function infer(mi::MethodInstance, interp::AbstractInterpreter)
@@ -121,15 +123,14 @@ function infer(target::SPIRVTarget)
 end
 
 function Base.show(io::IO, target::SPIRVTarget)
-  print(io, "SPIRVTarget ($(nv(target.graph)) nodes, $(ne(target.graph)) edges, $(sum(length, target.instructions)) instructions)")
+  print(io, "SPIRVTarget ($(nv(target.cfg)) nodes, $(ne(target.cfg)) edges, $(sum(length, target.instructions)) instructions)")
 end
 
 function block_ranges(target::SPIRVTarget)
   map(Base.splat(UnitRange), zip(target.indices[1:(end - 1)], target.indices[2:end] .- 1))
 end
 
-traverse(target::SPIRVTarget) = traverse(ControlFlowGraph(target.graph))
-postdominator(target::SPIRVTarget, source) = postdominator(ControlFlowGraph(target.graph), source)
+@forward SPIRVTarget.cfg (traverse, postdminator)
 
 get_signature(f::Symbol) = (f,)
 function argtype(arg)

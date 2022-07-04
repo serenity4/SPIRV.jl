@@ -113,14 +113,20 @@ function EdgeClassification(g::AbstractGraph{T}, tree::SimpleTree{T}) where {T}
   ec
 end
 
-struct ControlFlowGraph{E<:AbstractEdge,G<:AbstractGraph}
+struct ControlFlowGraph{E<:AbstractEdge,T,G<:AbstractGraph{T}} <: AbstractGraph{T}
   g::G
   dfst::SpanningTreeDFS{G}
   ec::EdgeClassification{E}
   is_reducible::Bool
   is_structured::Bool
-  ControlFlowGraph(g::G, dfst::SpanningTreeDFS{G}, ec::EdgeClassification{E}, is_reducible::Bool, is_structured::Bool) where {G<:AbstractGraph, E<:AbstractEdge} = new{E,G}(g, dfst, ec, is_reducible, is_structured)
+  ControlFlowGraph(g::G, dfst::SpanningTreeDFS{G}, ec::EdgeClassification{E}, is_reducible::Bool, is_structured::Bool) where {T, G<:AbstractGraph{T}, E<:AbstractEdge} = new{E,T,G}(g, dfst, ec, is_reducible, is_structured)
 end
+
+@forward ControlFlowGraph.g (Graphs.vertices, Graphs.edges, Graphs.add_edge!, Graphs.edgetype, Graphs.add_vertex!, Graphs.rem_edge!, Graphs.rem_vertex!, Graphs.rem_vertices!, Graphs.inneighbors, Graphs.outneighbors, Graphs.nv, Graphs.ne)
+
+Graphs.is_directed(::Type{<:ControlFlowGraph}) = true
+
+Base.reverse(cfg::ControlFlowGraph) = ControlFlowGraph(reverse(cfg.g))
 
 is_reducible(cfg::ControlFlowGraph) = cfg.is_reducible
 is_structured(cfg::ControlFlowGraph) = cfg.is_structured
@@ -232,7 +238,7 @@ If `false`, then the iteration will not be continued on outgoing nodes.
 - Flow analysis should provide a framework suited for both abstract interpretation and data-flow algorithms.
 """
 function flow_through(f, cfg::ControlFlowGraph, v; stop_at::Optional{Union{Int, Edge{Int}}} = nothing)
-  next = [Edge(v, v2) for v2 in outneighbors(cfg.g, v)]
+  next = [Edge(v, v2) for v2 in outneighbors(cfg, v)]
   bedges = backedges(cfg)
   while !isempty(next)
     edge = popfirst!(next)
@@ -244,7 +250,7 @@ function flow_through(f, cfg::ControlFlowGraph, v; stop_at::Optional{Union{Int, 
     stop_at isa Int && dst(edge) === stop_at && continue
 
     # Push all new edges to the end of the worklist.
-    new_edges = [Edge(dst(edge), v) for v in outneighbors(cfg.g, dst(edge))]
+    new_edges = [Edge(dst(edge), v) for v in outneighbors(cfg, dst(edge))]
     filter!(e -> !in(e, new_edges), next)
     append!(next, new_edges)
   end
@@ -259,7 +265,7 @@ function postdominator(cfg::ControlFlowGraph, source)
       tree = subtree
     end
   end
-  pdoms = findall(!in(nodevalue(subtree), outneighbors(cfg.g, nodevalue(tree))) for subtree in children(tree))
+  pdoms = findall(!in(nodevalue(subtree), outneighbors(cfg, nodevalue(tree))) for subtree in children(tree))
   @assert length(pdoms) ≤ 1 "Found $(length(pdoms)) postdominator(s)"
   isempty(pdoms) ? nothing : nodevalue(children(tree)[first(pdoms)])
 end

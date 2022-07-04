@@ -58,7 +58,7 @@ function compact_structured_branches!(g, v)
   end
 end
 
-is_single_entry_single_exit(target::SPIRVTarget) = is_single_entry_single_exit(target.graph)
+is_single_entry_single_exit(target::SPIRVTarget) = is_single_entry_single_exit(target.cfg)
 
 function is_single_entry_single_exit(g)
   g = deepcopy(g)
@@ -75,7 +75,7 @@ function is_single_entry_single_exit(g)
   is_single_node(g)
 end
 
-is_tail_structured(target::SPIRVTarget) = is_tail_structured(target.graph)
+is_tail_structured(target::SPIRVTarget) = is_tail_structured(target.cfg)
 
 function is_tail_structured(g)
   # same as `is_single_entry_single_exit`, without

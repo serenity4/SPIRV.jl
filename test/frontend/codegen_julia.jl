@@ -107,8 +107,10 @@ end
       # the SPIR-V interpreter, which is invalid; the native interpreter seems
       # to remove the `Core.Const` annotation and feeds in `x::Float32`.
       # To replicate, use `f() = exp(2f0)` (or anything that passes a `Core.Const` to `exp`).
-      (; code) = SPIRV.@code_typed test_constprop5()
-      @test code[1] == Core.ReturnNode(8.704899f0) broken = VERSION > v"1.9.0-DEV.718" # version is not exact.
+      @test begin
+        (; code) = SPIRV.@code_typed test_constprop5()
+        code[1] == Core.ReturnNode(8.704899f0)
+      end broken = VERSION > v"1.9.0-DEV.718" # version is not exact.
     end
   end
 
@@ -167,4 +169,4 @@ end
       @test ssavaluetypes[1:(end - 1)] == [SampledImage{T}, Vec{2,Float32}, Vec{4, Float32}]
     end
   end
-end
+end;

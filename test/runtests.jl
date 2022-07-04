@@ -29,7 +29,7 @@ end
   include("layouts.jl");
   if VERSION > v"1.9.0-DEV"
     include("passes.jl");
-    include("codegen.jl")
+    include("codegen.jl");
     include("frontend.jl");
     include("analysis.jl");
   end;
