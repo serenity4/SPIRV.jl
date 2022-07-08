@@ -114,14 +114,26 @@ end
   end
 end
 
-@active natural_loop(args) begin
-  @when (ec, g, v) = args begin
-  end
-end
+function cyclic_region(g, v, ec, doms, domtrees, scc)
+  bedges = backedges(g, ec, doms)
 
-@active improper_loop(args) begin
-  @when (ec, g, v) = args begin
+  # Natural loop.
+  any(in(bedges), inneighbors(g, v)) || return
+  entry_edges = filter(e -> in(dst(e), scc) && ≠(dst(e), v), edges(g))
+  isempty(entry_edges) && return (REGION_NATURAL_LOOP, scc)
+
+  # Improper region.
+  entry_points = unique!(src.(entry_edges))
+  entry = common_ancestor(domtrees[v], [domtrees[ep] for ep in entry_points])
+  @assert !isnothing(entry) "Multiple-entry cyclic region encountered with no single dominator"
+  vs = [entry.node]
+  exclude_vertices = [entry.node]
+  for v in vertices(g)
+    v == entry.node && continue
+    !has_path(g, entry.node, v) && continue
+    any(has_path(g, v, ep; exclude_vertices) for ep in entry_points) && push!(vs, v)
   end
+  (REGION_IMPROPER, vs)
 end
 
 struct ControlNode
@@ -129,6 +141,14 @@ struct ControlNode
   region_type::RegionType
 end
 
+"""
+Control tree.
+
+The leaves are labeled as [`REGION_BLOCK`](@ref) regions, with the distinguishing property that they no children.
+
+Children nodes of any given subtree are in reverse postorder according to the
+original control-flow graph.
+"""
 const ControlTree = SimpleTree{ControlNode}
 
 # Structures are constructed via pattern matching on the graph.
@@ -141,22 +161,18 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
   dfst = SpanningTreeDFS(cfg)
   abstract_graph = DeltaGraph(cfg)
   ec = EdgeClassification(cfg, dfst)
+  doms = dominators(cfg)
+  domtree = DominatorTree(cfg, backedges(cfg, ec, doms))
+  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> x.node)
+  sccs = strongly_connected_components(cfg)
 
-  control_trees = Dictionary{Int, ControlTree}(1:nv(cfg), ControlTree.(ControlNode.(1:nv(cfg), REGION_BLOCK)))
+  control_trees = Dictionary{T, ControlTree}(1:nv(cfg), ControlTree.(ControlNode.(1:nv(cfg), REGION_BLOCK)))
   next = post_ordering(dfst)
-
-  #=
-  Issues of the moment:
-  1. The correspondence with the DFST and the original flow graph is not maintained, such that dominators, edge classifications and post-order iteration seem hard to reuse.
-  2. There does not seem to be any clear heuristic regarding which nodes to iterate (maybe solved by the append logic at the end of the loop, TBC)
-
-  For 1., we know already that by constructing structures with a single entry point (even for improper regions) we preserve dominators from that entry point to any other node or structure. Regarding post-order iteration, we can keep the original one and simply ignore vertices that have been merged.
-
-  =#
 
   while !isempty(next)
     start = popfirst!(next)
-    # `v` can change if we follow a chain of blocks in a block region which starts before `v`.
+    haskey(control_trees, start) || continue
+    # `v` can change if we follow a chain of blocks in a block region which starts before `v`, or if we need to find a dominator to an improper region.
     v = start
     ret = @trymatch (abstract_graph, v) begin
       block_region(vs) && Do(v = first(vs)) => (REGION_BLOCK, @view vs[2:end])
@@ -165,46 +181,43 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
       case_region(branches) => (REGION_CASE, branches)
       self_loop() => (REGION_SELF_LOOP, T[])
       while_loop(cond, body, merge) => (REGION_WHILE_LOOP, [body, merge])
-      # _ => @trymatch (ec, abstract_graph, v) begin
-      #   while_loop(cond, body, merge) => (REGION_WHILE_LOOP, [body, merge])
-      #   natural_loop(vs) => (REGION_NATURAL_LOOP, vs)
-      #   improper_loop(vs) && Do(v = first(vs)) => (REGION_IMPROPER, @view vs[2:end])
-      # end
-    end
-    if !isnothing(ret)
-      (region_type, ws) = ret
-      region = SimpleTree(ControlNode(v, region_type))
-
-      # Add the new region and merge region vertices.
-      push!(children(region), control_trees[v])
-      set!(control_trees, v, region)
-      if region_type == REGION_SELF_LOOP
-        rem_edge!(abstract_graph, v, v)
-      else
-        for w in ws
-          tree = control_trees[w]
-          tree = @set tree.parent = region
-          push!(children(region), tree)
-          delete!(control_trees, w)
-          merge_vertices!(abstract_graph, v, w)
-          rem_edge!(abstract_graph, v, v)
+      _ => begin
+        scc = sccs[findfirst(Base.Fix1(in, v), sccs)]
+        filter!(in(vertices(abstract_graph)), scc)
+        ret = cyclic_region(abstract_graph, v, ec, doms, domtrees, scc)
+        if !isnothing(ret)
+          (region_type, vs) = ret
+          if region_type == REGION_IMPROPER
+            v, vs... = vs
+          end
+          (region_type, vs)
         end
-        filter!(w -> !in(w, (v, start)) && !in(w, ws) && !in(w, inneighbors(abstract_graph, v)), next)
       end
-
-      # Add vertices which might show new patterns due to the merge of this region.
-      append!(next, inneighbors(abstract_graph, v))
-      push!(next, v)
     end
-  end
+    isnothing(ret) && continue
 
-  while length(control_trees) > 1
-    @warn "Merging control trees under an improper region."
-    # There are improper structures or natural loops.
-    region = ControlTree(ControlNode(1, REGION_IMPROPER), nothing, collect(values(control_trees)))
-    control_trees = dictionary([1 => region])
-    merge_vertices!(abstract_graph, vertices(abstract_graph)...)
-    set!(control_trees, 1, region)
+    # `ws` must be in reverse post-order.
+    (region_type, ws) = ret
+    region = SimpleTree(ControlNode(v, region_type))
+
+    # Add the new region and merge region vertices.
+    push!(children(region), control_trees[v])
+    control_trees[v] = region
+    if region_type ≠ REGION_SELF_LOOP
+      for w in ws
+        tree = control_trees[w]
+        tree = @set tree.parent = region
+        push!(children(region), tree)
+        delete!(control_trees, w)
+        merge_vertices!(abstract_graph, v, w)
+        rem_edge!(abstract_graph, v, v)
+      end
+    else
+      rem_edge!(abstract_graph, v, v)
+    end
+
+    # Process transformed node next for eventual successive transformations.
+    pushfirst!(next, v)
   end
 
   @assert nv(abstract_graph) == 1

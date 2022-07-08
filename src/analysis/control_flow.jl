@@ -127,7 +127,7 @@ struct ControlFlowGraph{E<:AbstractEdge,T,G<:AbstractGraph{T}} <: AbstractGraph{
   ControlFlowGraph(g::G, dfst::SpanningTreeDFS{G}, ec::EdgeClassification{E}, is_reducible::Bool, is_structured::Bool) where {T, G<:AbstractGraph{T}, E<:AbstractEdge} = new{E,T,G}(g, dfst, ec, is_reducible, is_structured)
 end
 
-@forward ControlFlowGraph.g (Graphs.vertices, Graphs.edges, Graphs.add_edge!, Graphs.edgetype, Graphs.add_vertex!, Graphs.rem_edge!, Graphs.rem_vertex!, Graphs.rem_vertices!, Graphs.inneighbors, Graphs.outneighbors, Graphs.nv, Graphs.ne)
+@forward ControlFlowGraph.g (Graphs.vertices, Graphs.edges, Graphs.add_edge!, Graphs.edgetype, Graphs.add_vertex!, Graphs.rem_edge!, Graphs.rem_vertex!, Graphs.rem_vertices!, Graphs.inneighbors, Graphs.outneighbors, Graphs.nv, Graphs.ne, dominators)
 
 Graphs.is_directed(::Type{<:ControlFlowGraph}) = true
 
@@ -183,8 +183,6 @@ function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::SSAValue)
   end
 end
 
-@forward ControlFlowGraph.g (dominators,)
-
 function dominators(g::AbstractGraph{T}) where {T}
   doms = Set{T}[Set{T}() for _ in 1:nv(g)]
   source = entry_node(g)
@@ -214,8 +212,7 @@ function backedges(cfg::ControlFlowGraph)
   backedges(cfg.g, cfg.ec)
 end
 
-function backedges(g::AbstractGraph, ec::EdgeClassification = EdgeClassification(g))
-  doms = dominators(g)
+function backedges(g::AbstractGraph{T}, ec::EdgeClassification = EdgeClassification(g), doms::AbstractVector{Set{T}} = dominators(g)) where {T}
   filter(ec.retreating_edges) do e
     in(dst(e), doms[src(e)])
   end
@@ -306,8 +303,11 @@ function Base.show(io::IO, ::MIME"text/plain", tree::DominatorTree)
   print(io, ')')
 end
 
-function DominatorTree(cfg::ControlFlowGraph)
-  g = remove_backedges(cfg).g
+DominatorTree(cfg::ControlFlowGraph) = DominatorTree(cfg.g, backedges(cfg))
+
+function DominatorTree(g::AbstractGraph, backedges)
+  g = deepcopy(g)
+  rem_edges!(g, backedges)
 
   # 0: unvisited
   # 1: visited
