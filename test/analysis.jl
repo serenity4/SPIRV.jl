@@ -1,6 +1,6 @@
 using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
-using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators
+using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, REGION_BLOCK
 
 # All the following graphs are rooted in 1.
 
@@ -39,192 +39,218 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
   end
 
   @testset "Control flow graph" begin
-    @testset "Dominance relationships" begin
-      @testset "Tree utilities" begin
-        @auto_hash_equals struct Tree1
-          val::Int
-          parent::Union{Tree1,Nothing}
-          children::Vector{Tree1}
-        end
-        Tree1(val, parent = nothing) = Tree1(val, parent, [])
-        AbstractTrees.parent(tree::Tree1) = tree.parent
-        AbstractTrees.children(tree::Tree1) = tree.children
-        AbstractTrees.nodevalue(tree::Tree1) = tree.val
-        AbstractTrees.ChildIndexing(::Type{Tree1}) = IndexedChildren()
-        Base.getindex(tree::Tree1, idx::Integer) = children(tree)[idx]
-        Base.show(io::IO, tree::Tree1) = print(io, Tree1, '(', tree.val, ", ", tree.children, ')')
-        Base.show(io::IO, ::MIME"text/plain", tree::Tree1) = print_tree(io, tree)
-
-        tree_1 = Tree1(0)
-        push!(tree_1.children, Tree1(1, tree_1), Tree1(2, tree_1))
-        @test common_ancestor(tree_1.children) == tree_1
-
-        (a, b) = tree_1.children
-        push!(a.children, Tree1(3, a), Tree1(4, a), Tree1(5, a))
-        push!(b.children, Tree1(6, b), Tree1(7, b))
-        @test common_ancestor((a, b)) == tree_1
-        @test common_ancestor((b[1], a[2], a[3])) == tree_1
-        @test common_ancestor((tree_1, b[1], a[2], a[3])) == tree_1
+    @testset "Tree utilities" begin
+      @auto_hash_equals struct Tree1
+        val::Int
+        parent::Union{Tree1,Nothing}
+        children::Vector{Tree1}
       end
+      Tree1(val, parent = nothing) = Tree1(val, parent, [])
+      AbstractTrees.parent(tree::Tree1) = tree.parent
+      AbstractTrees.children(tree::Tree1) = tree.children
+      AbstractTrees.nodevalue(tree::Tree1) = tree.val
+      AbstractTrees.ChildIndexing(::Type{Tree1}) = IndexedChildren()
+      Base.getindex(tree::Tree1, idx::Integer) = children(tree)[idx]
+      Base.show(io::IO, tree::Tree1) = print(io, Tree1, '(', tree.val, ", ", tree.children, ')')
+      Base.show(io::IO, ::MIME"text/plain", tree::Tree1) = print_tree(io, tree)
 
-      @testset "Edge classification" begin
-        ec = EdgeClassification(g1())
-        @test isempty(ec.retreating_edges)
-        @test isempty(ec.forward_edges)
-        @test length(ec.cross_edges) == 1
-        @test length(ec.tree_edges) == 3
-        
-        ec = EdgeClassification(g2())
-        @test isempty(ec.retreating_edges)
-        @test isempty(ec.forward_edges)
-        @test isempty(ec.cross_edges)
-        @test length(ec.tree_edges) == 3
+      tree_1 = Tree1(0)
+      push!(tree_1.children, Tree1(1, tree_1), Tree1(2, tree_1))
+      @test common_ancestor(tree_1.children) == tree_1
 
-        ec = EdgeClassification(g3())
-        @test isempty(ec.retreating_edges)
-        @test isempty(ec.forward_edges)
-        @test length(ec.cross_edges) == 2
-        @test length(ec.tree_edges) == 5
-
-        ec = EdgeClassification(g4())
-        @test ec.retreating_edges == Set([Edge(6 => 4)])
-        @test isempty(ec.forward_edges)
-        @test length(ec.cross_edges) == 1
-        @test length(ec.tree_edges) == 7
-
-        ec = EdgeClassification(g5())
-        @test isempty(ec.retreating_edges)
-        @test isempty(ec.forward_edges)
-        @test length(ec.cross_edges) == 1
-        @test length(ec.tree_edges) == 7
-
-        ec = EdgeClassification(g6())
-        @test ec.retreating_edges == Set(Edge.([4 => 2, 8 => 2]))
-        @test isempty(ec.forward_edges)
-        @test length(ec.cross_edges) == 1
-        @test length(ec.tree_edges) == 8
-
-        ec = EdgeClassification(g7())
-        @test length(ec.retreating_edges) == 1
-        @test length(ec.forward_edges) == 1
-        @test length(ec.cross_edges) == 0
-        @test length(ec.tree_edges) == 4
-
-        ec = EdgeClassification(g8())
-        @test length(ec.retreating_edges) == 5
-        @test length(ec.forward_edges) == 1
-        @test length(ec.cross_edges) == 1
-        @test length(ec.tree_edges) == 10
-      end
-
-      @testset "Dominators" begin
-        @test dominators(g8()) == [
-          Set([1]),
-          Set([1, 2]),
-          Set([1, 2, 3]),
-          Set([1, 2, 4]),
-          Set([1, 2, 4, 5]),
-          Set([1, 2, 4, 5, 6]),
-          Set([1, 2, 4, 5, 7]),
-          Set([1, 2, 4, 5, 8]),
-          Set([1, 2, 4, 5, 8, 9]),
-          Set([1, 2, 4, 5, 8, 9, 10]),
-          Set([1, 2, 4, 5, 8, 9, 11]),
-        ]
-      end
-
-      @testset "Back-edges" begin
-        @test Set(SPIRV.backedges(g8())) == Set(Edge.([
-          10 => 2,
-          5 => 4,
-          9 => 4,
-          8 => 5,
-          11 => 8,
-        ]))
-      end
-
-      function test_traversal(cfg)
-        visited = Int[]
-        scc = strongly_connected_components(cfg)
-        for v in traverse(cfg)
-          push!(visited, v)
-          @test all(x -> in(x, visited) || begin
-            idx = findfirst(v in c for c in scc)
-            !isnothing(idx) && x in scc[idx]
-          end, inneighbors(cfg, v))
-        end
-      end
-
-      function test_completeness(tree, cfg)
-        @test nodevalue(tree) == 1 && isroot(tree) && Set(nodevalue.(collect(PostOrderDFS(tree)))) == Set(1:nv(cfg))
-        pdom = postdominator(cfg, 1)
-        @test isnothing(pdom) || in(pdom, dominated_nodes(tree))
-
-        dominated = Int[]
-        for node in PostOrderDFS(tree)
-          node == tree && continue
-          push!(dominated, nodevalue(node))
-        end
-        @test sort(dominated) == 2:nv(cfg)
-      end
-
-      cfg = ControlFlowGraph(g1())
-      @test cfg.is_reducible
-      @test cfg.is_structured
-      tree = DominatorTree(cfg)
-      test_completeness(tree, cfg)
-      @test all(isempty ∘ children, children(tree)) && dominated_nodes(tree) == [2, 3, 4]
-      @test postdominator(cfg, 1) == 4
-      test_traversal(cfg)
-
-      cfg = ControlFlowGraph(g2())
-      @test cfg.is_reducible
-      @test cfg.is_structured
-      tree = DominatorTree(cfg)
-      test_completeness(tree, cfg)
-      @test dominated_nodes(tree) == [2, 3]
-      @test dominated_nodes(tree[2]) == [4]
-      @test isnothing(postdominator(cfg, 1))
-      test_traversal(cfg)
-
-      cfg = ControlFlowGraph(g3())
-      @test cfg.is_reducible
-      @test cfg.is_structured
-      tree = DominatorTree(cfg)
-      test_completeness(tree, cfg)
-      @test dominated_nodes(tree) == [2, 3, 6]
-      @test dominated_nodes(tree[1]) == [4, 5]
-      @test postdominator(cfg, 1) == 6
-      test_traversal(cfg)
-
-      cfg = ControlFlowGraph(g4())
-      @test cfg.is_reducible
-      @test cfg.is_structured
-      tree = DominatorTree(cfg)
-      test_completeness(tree, cfg)
-      @test dominated_nodes(tree) == [2, 3, 8]
-      @test dominated_nodes(tree[1]) == [4]
-      @test dominated_nodes(tree[1][1]) == [5, 7]
-      @test dominated_nodes(tree[1][1][1]) == [6]
-      @test postdominator(cfg, 1) == 8
-      test_traversal(cfg)
-
-      cfg = ControlFlowGraph(g5())
-      @test cfg.is_reducible
-      @test cfg.is_structured
-      @test postdominator(cfg, 1) == 6
-      @test isnothing(postdominator(cfg, 2))
-
-      cfg = ControlFlowGraph(g6())
-      @test cfg.is_reducible
-      @test cfg.is_structured
-
-      cfg = ControlFlowGraph(g7())
-      @test !cfg.is_reducible
-
-      cfg = ControlFlowGraph(g8())
-      @test cfg.is_reducible
+      (a, b) = tree_1.children
+      push!(a.children, Tree1(3, a), Tree1(4, a), Tree1(5, a))
+      push!(b.children, Tree1(6, b), Tree1(7, b))
+      @test common_ancestor((a, b)) == tree_1
+      @test common_ancestor((b[1], a[2], a[3])) == tree_1
+      @test common_ancestor((tree_1, b[1], a[2], a[3])) == tree_1
     end
+
+    @testset "Edge classification" begin
+      ec = EdgeClassification(g1())
+      @test isempty(ec.retreating_edges)
+      @test isempty(ec.forward_edges)
+      @test length(ec.cross_edges) == 1
+      @test length(ec.tree_edges) == 3
+      
+      ec = EdgeClassification(g2())
+      @test isempty(ec.retreating_edges)
+      @test isempty(ec.forward_edges)
+      @test isempty(ec.cross_edges)
+      @test length(ec.tree_edges) == 3
+
+      ec = EdgeClassification(g3())
+      @test isempty(ec.retreating_edges)
+      @test isempty(ec.forward_edges)
+      @test length(ec.cross_edges) == 2
+      @test length(ec.tree_edges) == 5
+
+      ec = EdgeClassification(g4())
+      @test ec.retreating_edges == Set([Edge(6 => 4)])
+      @test isempty(ec.forward_edges)
+      @test length(ec.cross_edges) == 1
+      @test length(ec.tree_edges) == 7
+
+      ec = EdgeClassification(g5())
+      @test isempty(ec.retreating_edges)
+      @test isempty(ec.forward_edges)
+      @test length(ec.cross_edges) == 1
+      @test length(ec.tree_edges) == 7
+
+      ec = EdgeClassification(g6())
+      @test ec.retreating_edges == Set(Edge.([4 => 2, 8 => 2]))
+      @test isempty(ec.forward_edges)
+      @test length(ec.cross_edges) == 1
+      @test length(ec.tree_edges) == 8
+
+      ec = EdgeClassification(g7())
+      @test length(ec.retreating_edges) == 1
+      @test length(ec.forward_edges) == 1
+      @test length(ec.cross_edges) == 0
+      @test length(ec.tree_edges) == 4
+
+      ec = EdgeClassification(g8())
+      @test length(ec.retreating_edges) == 5
+      @test length(ec.forward_edges) == 1
+      @test length(ec.cross_edges) == 1
+      @test length(ec.tree_edges) == 10
+    end
+
+    @testset "Dominators" begin
+      @test dominators(g8()) == [
+        Set([1]),
+        Set([1, 2]),
+        Set([1, 2, 3]),
+        Set([1, 2, 4]),
+        Set([1, 2, 4, 5]),
+        Set([1, 2, 4, 5, 6]),
+        Set([1, 2, 4, 5, 7]),
+        Set([1, 2, 4, 5, 8]),
+        Set([1, 2, 4, 5, 8, 9]),
+        Set([1, 2, 4, 5, 8, 9, 10]),
+        Set([1, 2, 4, 5, 8, 9, 11]),
+      ]
+    end
+
+    @testset "Back-edges" begin
+      @test Set(SPIRV.backedges(g8())) == Set(Edge.([
+        10 => 2,
+        5 => 4,
+        9 => 4,
+        8 => 5,
+        11 => 8,
+      ]))
+    end
+
+    @testset "Structural analysis" begin
+      @testset "Control trees" begin
+        function make_sese!(g)
+          vs = sinks(g)
+          length(vs) > 1 || return g
+          add_vertex!(g)
+          for v in vs
+            add_edge!(g, v, nv(g))
+          end
+          g
+        end
+        function test_control_tree(g)
+          tree = ControlTree(g)
+          @test Set([nodevalue(c).index for c in Leaves(tree)]) == Set(vertices(g))
+          @test tree.data.region_type == REGION_BLOCK
+        end
+        test_control_tree(g1())
+        test_control_tree(make_sese!(g2()))
+        test_control_tree(g3())
+        test_control_tree(g4())
+        # g5 is broken, it should pass.
+        # test_control_tree(make_sese!(g5()))
+        # test_control_tree(g6())
+        # test_control_tree(g7())
+        # test_control_tree(g8())
+      end
+    end
+
+    function test_traversal(cfg)
+      visited = Int[]
+      scc = strongly_connected_components(cfg)
+      for v in traverse(cfg)
+        push!(visited, v)
+        @test all(x -> in(x, visited) || begin
+          idx = findfirst(v in c for c in scc)
+          !isnothing(idx) && x in scc[idx]
+        end, inneighbors(cfg, v))
+      end
+    end
+
+    function test_completeness(tree, cfg)
+      @test nodevalue(tree) == 1 && isroot(tree) && Set(nodevalue.(collect(PostOrderDFS(tree)))) == Set(1:nv(cfg))
+      pdom = postdominator(cfg, 1)
+      @test isnothing(pdom) || in(pdom, dominated_nodes(tree))
+
+      dominated = Int[]
+      for node in PostOrderDFS(tree)
+        node == tree && continue
+        push!(dominated, nodevalue(node))
+      end
+      @test sort(dominated) == 2:nv(cfg)
+    end
+
+    cfg = ControlFlowGraph(g1())
+    @test cfg.is_reducible
+    @test cfg.is_structured
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
+    @test all(isempty ∘ children, children(tree)) && dominated_nodes(tree) == [2, 3, 4]
+    @test postdominator(cfg, 1) == 4
+    test_traversal(cfg)
+
+    cfg = ControlFlowGraph(g2())
+    @test cfg.is_reducible
+    @test cfg.is_structured
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
+    @test dominated_nodes(tree) == [2, 3]
+    @test dominated_nodes(tree[2]) == [4]
+    @test isnothing(postdominator(cfg, 1))
+    test_traversal(cfg)
+
+    cfg = ControlFlowGraph(g3())
+    @test cfg.is_reducible
+    @test cfg.is_structured
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
+    @test dominated_nodes(tree) == [2, 3, 6]
+    @test dominated_nodes(tree[1]) == [4, 5]
+    @test postdominator(cfg, 1) == 6
+    test_traversal(cfg)
+
+    cfg = ControlFlowGraph(g4())
+    @test cfg.is_reducible
+    @test cfg.is_structured
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
+    @test dominated_nodes(tree) == [2, 3, 8]
+    @test dominated_nodes(tree[1]) == [4]
+    @test dominated_nodes(tree[1][1]) == [5, 7]
+    @test dominated_nodes(tree[1][1][1]) == [6]
+    @test postdominator(cfg, 1) == 8
+    test_traversal(cfg)
+
+    cfg = ControlFlowGraph(g5())
+    @test cfg.is_reducible
+    @test cfg.is_structured
+    @test postdominator(cfg, 1) == 6
+    @test isnothing(postdominator(cfg, 2))
+
+    cfg = ControlFlowGraph(g6())
+    @test cfg.is_reducible
+    @test cfg.is_structured
+
+    cfg = ControlFlowGraph(g7())
+    @test !cfg.is_reducible
+
+    cfg = ControlFlowGraph(g8())
+    @test cfg.is_reducible
   end
 
   @testset "Flow analysis" begin
@@ -335,9 +361,9 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     @test chain.use == amod[isub]
     @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(7), SSAValue(8)])
 
-    # amod = annotate(load_module("simple_conditional"))
-    # fadd = SSAValue(16)
-    # st = StackTrace()
+    amod = annotate(load_module("simple_conditional"))
+    fadd = SSAValue(16)
+    st = StackTrace()
     # chain = UseDefChain(amod, only(amod.annotated_functions), fadd, st)
     # @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(8), SSAValue(9), SSAValue(4)])
     # @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(15), SSAValue(4)])

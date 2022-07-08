@@ -59,10 +59,10 @@ using SPIRV: ArrayCursor, write!
     seek(c, 8)
     @test read(c) == 23
     @test seekend(c) == 9
-    @test delete!(c) == nothing
+    @test isnothing(delete!(c))
     @test seekend(c) == 9
     seek(c, 8)
-    @test delete!(c) == nothing
+    @test isnothing(delete!(c))
     @test seekend(c) == 8
     seek(c, 7)
     @test peek(c) == 3

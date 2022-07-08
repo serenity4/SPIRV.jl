@@ -13,14 +13,19 @@ struct SimpleTree{T}
   parent::Optional{SimpleTree{T}}
   children::Vector{SimpleTree{T}}
 end
-SimpleTree(data::T) where {T} = SimpleTree(data, nothing, T[])
+SimpleTree(data::T) where {T} = SimpleTree{T}(data)
+SimpleTree{T}(data::T) where {T} = SimpleTree{T}(data, nothing, T[])
 
-AbstractTrees.HasNodeType(::Type{SimpleTree}) = true
-AbstractTrees.NodeType(::Type{SimpleTree{T}}) where {T} = T
+Base.show(io::IO, ::MIME"text/plain", tree::SimpleTree) = print(io, chomp(sprintc(print_tree, tree)))
+
+Base.getindex(tree::SimpleTree, index) = children(tree)[index]
+
+AbstractTrees.nodetype(T::Type{<:SimpleTree}) = T
+AbstractTrees.NodeType(::Type{SimpleTree{T}}) where {T} = HasNodeType()
 AbstractTrees.nodevalue(tree::SimpleTree) = tree.data
-AbstractTrees.ChildIndexing(::Type{SimpleTree}) = IndexedChildren()
+AbstractTrees.ChildIndexing(::Type{<:SimpleTree}) = IndexedChildren()
 
-AbstractTrees.ParentLinks(::Type{SimpleTree}) = StoredParents()
+AbstractTrees.ParentLinks(::Type{<:SimpleTree}) = StoredParents()
 AbstractTrees.parent(tree::SimpleTree) = tree.parent
 
 AbstractTrees.children(tree::SimpleTree) = tree.children

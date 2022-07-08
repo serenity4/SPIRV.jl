@@ -1,8 +1,3 @@
-import Graphs: edges, edgetype, add_edge!, add_vertex!, rem_edge!, rem_vertex!, rem_vertices!, has_edge, has_vertex, inneighbors, outneighbors, ne,
-  nv, vertices, is_directed, SimpleDiGraph, merge_vertices!
-
-export DeltaGraph, compact
-
 """
 Graph whose vertices and edges remain identical after deletion of other vertices.
 """
@@ -33,18 +28,16 @@ end
 
 function vertex_index(dg::DeltaGraph, v)
   idx = findfirst(==(v), dg.vertices)
-  if isnothing(idx)
-    error("Vertex $v not found in $dg.")
-  end
+  isnothing(idx) && error("Vertex $v not found in $dg.")
   idx
 end
 
 Base.eltype(dg::DeltaGraph{T}) where {T} = T
 Base.zero(dg::DeltaGraph) = zero(typeof(dg))
 Base.zero(T::Type{DeltaGraph}) = T()
-edgetype(dg::DeltaGraph) = Edge{eltype(dg)}
-has_vertex(dg::DeltaGraph, v) = v in vertices(dg)
-vertices(dg::DeltaGraph) = dg.vertices
+Graphs.edgetype(dg::DeltaGraph) = Edge{eltype(dg)}
+Graphs.has_vertex(dg::DeltaGraph, v) = v in vertices(dg)
+Graphs.vertices(dg::DeltaGraph) = dg.vertices
 
 function Base.empty!(dg::DeltaGraph)
   empty!(dg.vertices)
@@ -57,26 +50,26 @@ is_single_node(dg::DeltaGraph) = isempty(edges(dg)) && nv(dg) == 1
 
 Base.isempty(dg::DeltaGraph) = isempty(dg.vertices)
 
-is_directed(dg::DeltaGraph) = is_directed(typeof(dg))
-is_directed(::Type{<:DeltaGraph}) = true
+Graphs.is_directed(dg::DeltaGraph) = is_directed(typeof(dg))
+Graphs.is_directed(::Type{<:DeltaGraph}) = true
 
-has_edge(dg::DeltaGraph, e::Edge) = has_edge(dg, e.src, e.dst)
-has_edge(dg::DeltaGraph, src, dst) = has_vertex(dg, src) && has_vertex(dg, dst) && dst in outneighbors(dg, src)
+Graphs.has_edge(dg::DeltaGraph, e::Edge) = has_edge(dg, e.src, e.dst)
+Graphs.has_edge(dg::DeltaGraph, src, dst) = has_vertex(dg, src) && has_vertex(dg, dst) && dst in outneighbors(dg, src)
 
-function edges(dg::DeltaGraph)
+function Graphs.edges(dg::DeltaGraph)
   edge_lists = map(enumerate(dg.fadjlist)) do (i, fadj)
     Edge.(dg.vertices[i], fadj)
   end
   edgetype(dg)[edge_lists...;]
 end
 
-inneighbors(dg::DeltaGraph, v) = dg.badjlist[vertex_index(dg, v)]
-outneighbors(dg::DeltaGraph, v) = dg.fadjlist[vertex_index(dg, v)]
+Graphs.inneighbors(dg::DeltaGraph, v) = dg.badjlist[vertex_index(dg, v)]
+Graphs.outneighbors(dg::DeltaGraph, v) = dg.fadjlist[vertex_index(dg, v)]
 
-ne(dg::DeltaGraph) = sum(length, dg.fadjlist[vertices(dg)])
-nv(dg::DeltaGraph) = length(vertices(dg))
+Graphs.ne(dg::DeltaGraph) = sum(length, dg.fadjlist[vertices(dg)])
+Graphs.nv(dg::DeltaGraph) = length(vertices(dg))
 
-function add_vertex!(dg::DeltaGraph; fill_holes = true)
+function Graphs.add_vertex!(dg::DeltaGraph; fill_holes = true)
   idx = fill_holes ? findfirst(((i, x),) -> i ≠ x, collect(enumerate(dg.vertices))) : length(dg.vertices) + 1
   idx = something(idx, length(dg.vertices) + 1)
   T = eltype(dg)
@@ -86,13 +79,13 @@ function add_vertex!(dg::DeltaGraph; fill_holes = true)
   idx
 end
 
-function add_vertices!(dg::DeltaGraph, n)
+function Graphs.add_vertices!(dg::DeltaGraph, n::Integer)
   [add_vertex!(dg, fill_holes = n < 1000) for _ = 1:n]
   nothing
 end
 
-add_edge!(dg::DeltaGraph, e::Edge) = add_edge!(dg, e.src, e.dst)
-function add_edge!(dg::DeltaGraph, src, dst)
+Graphs.add_edge!(dg::DeltaGraph, e::Edge) = add_edge!(dg, e.src, e.dst)
+function Graphs.add_edge!(dg::DeltaGraph, src, dst)
   src_idx = vertex_index(dg, src)
   if dst ∉ dg.fadjlist[src_idx]
     push!(dg.fadjlist[src_idx], dst)
@@ -117,7 +110,7 @@ function rem_edges!(g::AbstractGraph, v::Integer)
 end
 rem_edges!(g::AbstractGraph, edges) = foreach(Base.Fix1(rem_edge!, g), edges)
 
-function rem_vertex!(dg::DeltaGraph, i)
+function Graphs.rem_vertex!(dg::DeltaGraph, i)
   idx = vertex_index(dg, i)
   rem_edges!(dg, i)
   deleteat!(dg.vertices, idx)
@@ -126,11 +119,12 @@ function rem_vertex!(dg::DeltaGraph, i)
   nothing
 end
 
-rem_vertices!(dg::DeltaGraph, vs...) = foreach(Base.Fix1(rem_vertex!, dg), vs)
+Graphs.rem_vertices!(dg::DeltaGraph, vs...) = foreach(Base.Fix1(rem_vertex!, dg), vs)
 
-rem_edge!(dg::DeltaGraph, e::Edge) = rem_edge!(dg, e.src, e.dst)
+add_edges!(g::AbstractGraph, edges) = foreach(Base.Fix1(add_edge!, g), edges)
+Graphs.rem_edge!(dg::DeltaGraph, e::Edge) = rem_edge!(dg, e.src, e.dst)
 
-function rem_edge!(dg::DeltaGraph, src, dst)
+function Graphs.rem_edge!(dg::DeltaGraph, src, dst)
   if has_edge(dg, src, dst)
     outs = outneighbors(dg, src)
     deleteat!(outs, findfirst(==(dst), outs))
@@ -143,10 +137,10 @@ end
 """
 Merge vertices `vs` into the first one.
 """
-merge_vertices!(dg::DeltaGraph, vs::AbstractVector) = foldl((x, y) -> merge_vertices!(dg, x, y), vs)
-merge_vertices!(dg::DeltaGraph, origin, merged...) = merge_vertices!(dg, [origin; collect(merged)])
+Graphs.merge_vertices!(dg::DeltaGraph, vs::AbstractVector) = foldl((x, y) -> merge_vertices!(dg, x, y), vs)
+Graphs.merge_vertices!(dg::DeltaGraph, origin, merged...) = merge_vertices!(dg, [origin; collect(merged)])
 
-function merge_vertices!(dg::DeltaGraph, origin, merged)
+function Graphs.merge_vertices!(dg::DeltaGraph, origin, merged)
   copy_edges!(dg, merged, origin)
   rem_vertex!(dg, merged)
   origin
@@ -170,7 +164,7 @@ function compact(dg::DeltaGraph)
   dg
 end
 
-function SimpleDiGraph(dg::DeltaGraph)
+function Graphs.SimpleDiGraph(dg::DeltaGraph)
   perm = sortperm(dg.vertices)
   verts_sorted = dg.vertices[perm]
   fadjs = dg.fadjlist[perm]
@@ -185,4 +179,11 @@ function SimpleDiGraph(dg::DeltaGraph)
     end
   end
   g
+end
+
+function DeltaGraph(g::AbstractGraph{T}) where {T}
+  is_directed(typeof(g)) || error("Delta graphs can only be used from directed graphs.")
+  dg = DeltaGraph{T}(nv(g))
+  add_edges!(dg, edges(g))
+  dg
 end

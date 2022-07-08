@@ -2,7 +2,6 @@ using SPIRV, Test
 
 @testset "Front-end" begin
   include("frontend/definitions.jl");
-  include("frontend/restructuring.jl");
   include("frontend/cache.jl");
   include("frontend/types.jl");
   include("frontend/method_table.jl");

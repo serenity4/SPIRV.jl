@@ -55,6 +55,7 @@ include("assemble.jl")
 include("analysis/deltagraph.jl")
 include("analysis/call_tree.jl")
 include("analysis/control_flow.jl")
+include("analysis/structural_analysis.jl")
 include("analysis/abstract_interpretation.jl")
 include("analysis/data_flow.jl")
 include("analysis/passes.jl")
@@ -75,7 +76,6 @@ include("frontend/intrinsics_glsl.jl")
 include("frontend/vulkan.jl")
 include("frontend/interpreter.jl")
 include("frontend/target.jl")
-include("frontend/reflection.jl")
 include("frontend/compile.jl")
 include("frontend/codegen.jl")
 include("frontend/shader.jl")
@@ -124,10 +124,12 @@ export
   set_name!,
 
   # CFG
+  DeltaGraph, compact,
   ControlFlowGraph,
   control_flow_graph,
   is_reducible,
   is_structured,
+  ControlTree,
 
   # validation
   validate,
@@ -137,17 +139,10 @@ export
   SPIRVTarget,
   @target,
   is_single_entry_single_exit,
-  is_tail_structured,
-  is_single_node,
-  rem_head_recursion!,
-  compact_reducible_bbs!,
-  compact_structured_branches!,
-  merge_mutually_recursive!,
-  merge_return_blocks,
   compact,
   sinks,
-  sources, replace_code!,
-  infer, verify,
+  sources,
+  infer,
   compile,
   make_shader,
   ShaderInterface, Shader, MemoryResource,
