@@ -5,8 +5,8 @@ function entry_node(g::AbstractGraph)
   first(vs)
 end
 
-sinks(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Base.Fix1(outneighbors, g), vertices(g))]
-sources(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Base.Fix1(inneighbors, g), vertices(g))]
+sinks(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Fix1(outneighbors, g), vertices(g))]
+sources(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Fix1(inneighbors, g), vertices(g))]
 
 struct SimpleTree{T}
   data::T

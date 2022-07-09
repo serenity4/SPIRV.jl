@@ -17,6 +17,7 @@ using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, Me
   retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView,
   WorldRange, OverlayMethodTable
 using Base.Experimental: @overlay, @MethodTable
+using Base: Fix1, Fix2
 
 import SPIRV_Tools_jll
 const spirv_val = SPIRV_Tools_jll.spirv_val(identity)

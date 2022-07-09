@@ -3,7 +3,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::Functio
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => (OpCompositeConstruct, args)
     ::Core.PhiNode =>
-      (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Base.Fix1(in, e), block_ranges(target)), irmap) for e in jinst.edges)))
+      (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Fix1(in, e), block_ranges(target)), irmap) for e in jinst.edges)))
     :($f($(args...))) => @match f begin
       ::GlobalRef => @match getfield(f.mod, f.name) begin
         ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$f'."))

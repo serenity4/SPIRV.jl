@@ -20,8 +20,6 @@ end
 Base.getindex(cache::CodeInstanceCache, mi::MethodInstance) = WorldView(cache, mi)[mi]
 
 function Base.setindex!(cache::CodeInstanceCache, ci::CodeInstance, mi::MethodInstance)
-  # Attach invalidation callback if necessary.
-  # callback = Base.Fix1(invalidate, cache)
   callback(mi, max_world) = invalidate(cache, mi, max_world)
   if !isdefined(mi, :callbacks)
     mi.callbacks = Any[callback]

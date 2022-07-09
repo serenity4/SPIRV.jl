@@ -146,7 +146,7 @@ function emit!(ir::IR, @nospecialize(type::SPIRType))
   @switch type begin
     @case ::PointerType
     emit!(ir, type.type)
-    @case (::ArrayType && GuardBy(isnothing ∘ Base.Fix2(getproperty, :size))) || ::VectorType || ::MatrixType
+    @case (::ArrayType && GuardBy(isnothing ∘ Fix2(getproperty, :size))) || ::VectorType || ::MatrixType
     emit!(ir, type.eltype)
     @case ::ArrayType
     emit!(ir, type.eltype)
@@ -211,7 +211,7 @@ function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target:
     emit!(fdef, ir, irmap, target, ranges[node], node)
     ins = inneighbors(target.cfg, node)
     outs = outneighbors(target.cfg, node)
-    local_backedges = filter(in(backedges), map(Base.Fix2(Edge, node), ins))
+    local_backedges = filter(in(backedges), map(Fix2(Edge, node), ins))
     if !isempty(local_backedges)
       # Must be a loop.
       if length(local_backedges) > 1

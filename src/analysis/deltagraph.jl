@@ -108,7 +108,7 @@ function rem_edges!(g::AbstractGraph, v::Integer)
     rem_edge!(g, i, v)
   end
 end
-rem_edges!(g::AbstractGraph, edges) = foreach(Base.Fix1(rem_edge!, g), edges)
+rem_edges!(g::AbstractGraph, edges) = foreach(Fix1(rem_edge!, g), edges)
 
 function Graphs.rem_vertex!(dg::DeltaGraph, i)
   idx = vertex_index(dg, i)
@@ -119,9 +119,9 @@ function Graphs.rem_vertex!(dg::DeltaGraph, i)
   nothing
 end
 
-Graphs.rem_vertices!(dg::DeltaGraph, vs...) = foreach(Base.Fix1(rem_vertex!, dg), vs)
+Graphs.rem_vertices!(dg::DeltaGraph, vs...) = foreach(Fix1(rem_vertex!, dg), vs)
 
-add_edges!(g::AbstractGraph, edges) = foreach(Base.Fix1(add_edge!, g), edges)
+add_edges!(g::AbstractGraph, edges) = foreach(Fix1(add_edge!, g), edges)
 Graphs.rem_edge!(dg::DeltaGraph, e::Edge) = rem_edge!(dg, e.src, e.dst)
 
 function Graphs.rem_edge!(dg::DeltaGraph, src, dst)
