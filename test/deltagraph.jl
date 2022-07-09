@@ -47,4 +47,4 @@ using SPIRV, Test, Graphs
     merge_vertices!(g, 4, 5)
     @test edges(g) == [Edge(1, 1), Edge(1, 4)]
   end
-end
+end;

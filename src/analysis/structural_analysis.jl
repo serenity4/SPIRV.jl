@@ -3,6 +3,8 @@
   REGION_IF_THEN
   REGION_IF_THEN_ELSE
   REGION_CASE
+  REGION_TERMINATION
+  REGION_PROPER
   REGION_SELF_LOOP
   REGION_WHILE_LOOP
   REGION_NATURAL_LOOP
@@ -17,6 +19,13 @@ REGION_IF_THEN
 REGION_IF_THEN_ELSE
 "Conditional with any number of symmetric branches [`u` ─→ `vᵢ`, `u` ─→ `vᵢ₊₁`, ...] and a single merge block reachable by [`vᵢ` ─→ `w`, `vᵢ₊₁` ─→ `w`, ...]."
 REGION_CASE
+"""
+Acyclic region which contains a block `v` with multiple branches, including one or multiple branches to blocks `wᵢ` which end with a function termination instruction.
+The region is composed of `v` and all the `wᵢ`.
+"""
+REGION_TERMINATION
+"Acyclic region which does not match any other acyclic patterns."
+REGION_PROPER
 "Region consisting of only one node which has a self-loop."
 REGION_SELF_LOOP
 "Simple cycling region made of a condition block `u`, a loop body block `v` and a merge block `w` such that `v` ⇆ `u` ─→ `w`."
@@ -31,12 +40,11 @@ REGION_IMPROPER
 @active block_region(args) begin
   @when (g, v) = args begin
     start = v
-    vs = nothing
     # Look ahead for a chain.
+    vs = [start]
     while length(outneighbors(g, v)) == 1
       v = only(outneighbors(g, v))
       length(inneighbors(g, v)) == 1 || break
-      isnothing(vs) && (vs = [start])
       in(v, vs) && break
       push!(vs, v)
     end
@@ -45,11 +53,10 @@ REGION_IMPROPER
     while length(inneighbors(g, v)) == 1
       v = only(inneighbors(g, v))
       length(outneighbors(g, v)) == 1 || break
-      isnothing(vs) && (vs = [start])
       in(v, vs) && break
       pushfirst!(vs, v)
     end
-    isnothing(vs) && return
+    length(vs) == 1 && return
     Some(vs)
   end
 end
@@ -79,6 +86,7 @@ end
       b, c = outneighbors(g, v)
       if is_single_entry_single_exit(g, b) && is_single_entry_single_exit(g, c)
         d = only(outneighbors(g, b))
+        d == v && return
         d == only(outneighbors(g, c)) && return (v, b, c, d)
       end
     end
@@ -92,10 +100,45 @@ end
     for w in outneighbors(g, v)
       !is_single_entry_single_exit(g, w) && return
       isnothing(candidate) && (candidate = only(outneighbors(g, w)))
+      candidate == v && return
       only(outneighbors(g, w)) ≠ candidate && return
     end
-    Some(outneighbors(g, v))
+    (outneighbors(g, v), candidate)
   end
+end
+
+@active termination_region(args) begin
+  @when (g, v) = args begin
+    length(outneighbors(g, v)) ≥ 2 || return
+    termination_blocks = filter(isempty ∘ Fix1(outneighbors, g), outneighbors(g, v))
+    isempty(termination_blocks) && return
+    Some(termination_blocks)
+  end
+end
+
+function acyclic_region(g, v, ec, doms, domtrees, backedges)
+  ret = @trymatch (g, v) begin
+    block_region(vs) => (REGION_BLOCK, vs)
+    if_then_region(v, t, m) => (REGION_IF_THEN, [v, t])
+    if_then_else_region(v, t, e, m) => (REGION_IF_THEN_ELSE, [v, t, e])
+    case_region(branches, target) => (REGION_CASE, [v; branches; target])
+    termination_region(termination_blocks) => (REGION_TERMINATION, [v; termination_blocks])
+  end
+  !isnothing(ret) && return ret
+  # Possibly a proper region
+  # Test that we don't have a loop or improper region.
+  any(u -> in(Edge(u, v), backedges), inneighbors(g, v)) && return
+  domtree = domtrees[v]
+  pdom_indices = findall(children(domtree)) do tree
+    w = nodevalue(tree)
+    in(w, vertices(g)) && !in(w, outneighbors(g, nodevalue(domtree)))
+  end
+  length(pdom_indices) == 1 || return
+  pdom = domtree[only(pdom_indices)]
+  vs = vertices_between(v, nodevalue(pdom))
+  delete!(vs, v)
+  delete!(vs, nodevalue(pdom))
+  (REGION_PROPER, vs)
 end
 
 @active while_loop(args) begin
@@ -114,24 +157,29 @@ end
   end
 end
 
-function cyclic_region(g, v, ec, doms, domtrees, scc)
-  bedges = backedges(g, ec, doms)
+function cyclic_region(g, v, ec, doms, domtrees, backedges, scc)
+  length(scc) == 1 && return
 
   # Natural loop.
-  any(in(bedges), inneighbors(g, v)) || return
-  entry_edges = filter(e -> in(dst(e), scc) && ≠(dst(e), v), edges(g))
-  isempty(entry_edges) && return (REGION_NATURAL_LOOP, scc)
+  if any(u -> in(Edge(u, v), backedges), inneighbors(g, v))
+    entry_edges = filter(e -> in(dst(e), scc) && ≠(dst(e), v), edges(g))
+    isempty(entry_edges) && return (REGION_NATURAL_LOOP, scc)
+  end
 
   # Improper region.
+  entry_edges = filter(e -> in(dst(e), scc) && !in(src(e), scc), edges(g))
+  isempty(entry_edges) && return
   entry_points = unique!(src.(entry_edges))
   entry = common_ancestor(domtrees[v], [domtrees[ep] for ep in entry_points])
   @assert !isnothing(entry) "Multiple-entry cyclic region encountered with no single dominator"
-  vs = [entry.node]
-  exclude_vertices = [entry.node]
+  entry_node = node(entry)
+  vs = [entry_node]
+  exclude_vertices = [entry_node]
+  mec_entries = unique!(dst.(entry_edges))
   for v in vertices(g)
-    v == entry.node && continue
-    !has_path(g, entry.node, v) && continue
-    any(has_path(g, v, ep; exclude_vertices) for ep in entry_points) && push!(vs, v)
+    v == entry_node && continue
+    !has_path(g, entry_node, v) && continue
+    any(has_path(g, v, ep; exclude_vertices) for ep in mec_entries) && push!(vs, v)
   end
   (REGION_IMPROPER, vs)
 end
@@ -157,13 +205,13 @@ is_single_entry_single_exit(g::AbstractGraph, v) = length(inneighbors(g, v)) == 
 is_single_entry_single_exit(g::AbstractGraph) = is_weakly_connected(g) && length(sinks(g)) == length(sources(g)) == 1
 
 function ControlTree(cfg::AbstractGraph{T}) where {T}
-  is_single_entry_single_exit(cfg) || error("Control trees require single-entry single-exit control-flow graphs.")
   dfst = SpanningTreeDFS(cfg)
   abstract_graph = DeltaGraph(cfg)
   ec = EdgeClassification(cfg, dfst)
   doms = dominators(cfg)
-  domtree = DominatorTree(cfg, backedges(cfg, ec, doms))
-  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> x.node)
+  bedges = backedges(cfg, ec, doms)
+  domtree = DominatorTree(doms)
+  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node(x))
   sccs = strongly_connected_components(cfg)
 
   control_trees = Dictionary{T, ControlTree}(1:nv(cfg), ControlTree.(ControlNode.(1:nv(cfg), REGION_BLOCK)))
@@ -174,23 +222,25 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
     haskey(control_trees, start) || continue
     # `v` can change if we follow a chain of blocks in a block region which starts before `v`, or if we need to find a dominator to an improper region.
     v = start
-    ret = @trymatch (abstract_graph, v) begin
-      block_region(vs) && Do(v = first(vs)) => (REGION_BLOCK, @view vs[2:end])
-      if_then_region(v, t, m) => (REGION_IF_THEN, [t])
-      if_then_else_region(v, t, e, m) => (REGION_IF_THEN_ELSE, [t, e])
-      case_region(branches) => (REGION_CASE, branches)
-      self_loop() => (REGION_SELF_LOOP, T[])
-      while_loop(cond, body, merge) => (REGION_WHILE_LOOP, [body, merge])
-      _ => begin
-        scc = sccs[findfirst(Base.Fix1(in, v), sccs)]
-        filter!(in(vertices(abstract_graph)), scc)
-        ret = cyclic_region(abstract_graph, v, ec, doms, domtrees, scc)
-        if !isnothing(ret)
-          (region_type, vs) = ret
-          if region_type == REGION_IMPROPER
-            v, vs... = vs
+    ret = acyclic_region(abstract_graph, v, ec, doms, domtrees, bedges)
+    ret = if !isnothing(ret)
+      (region_type, (v, ws...)) = ret
+      (region_type, ws)
+    else
+      @trymatch (abstract_graph, v) begin
+        self_loop() => (REGION_SELF_LOOP, T[])
+        while_loop(cond, body, merge) => (REGION_WHILE_LOOP, [body, merge])
+        _ => begin
+          scc = sccs[findfirst(Fix1(in, v), sccs)]
+          filter!(in(vertices(abstract_graph)), scc)
+          ret = cyclic_region(abstract_graph, v, ec, doms, domtrees, bedges, scc)
+          if !isnothing(ret)
+            (region_type, vs) = ret
+            if region_type == REGION_IMPROPER
+              v, vs... = vs
+            end
+            (region_type, vs)
           end
-          (region_type, vs)
         end
       end
     end
@@ -209,6 +259,16 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
         tree = @set tree.parent = region
         push!(children(region), tree)
         delete!(control_trees, w)
+
+        # Adjust back-edges.
+        for w′ in outneighbors(abstract_graph, w)
+          e = Edge(w, w′)
+          if in(e, bedges)
+            delete!(bedges, e)
+            push!(bedges, Edge(v, dst(e)))
+          end
+        end
+
         merge_vertices!(abstract_graph, v, w)
         rem_edge!(abstract_graph, v, v)
       end

@@ -110,13 +110,22 @@ function rem_edges!(g::AbstractGraph, v::Integer)
 end
 rem_edges!(g::AbstractGraph, edges) = foreach(Fix1(rem_edge!, g), edges)
 
-function Graphs.rem_vertex!(dg::DeltaGraph, i)
-  idx = vertex_index(dg, i)
-  rem_edges!(dg, i)
+function Graphs.rem_vertex!(dg::DeltaGraph, v)
+  idx = vertex_index(dg, v)
+  isnothing(idx) && return false
+  rem_edges!(dg, v)
   deleteat!(dg.vertices, idx)
   deleteat!(dg.fadjlist, idx)
   deleteat!(dg.badjlist, idx)
-  nothing
+
+  # Clean up all edges to avoid having invalid edges hanging around.
+  for fadj in dg.fadjlist
+    setdiff!(fadj, v)
+  end
+  for badj in dg.badjlist
+    setdiff!(badj, v)
+  end
+  true
 end
 
 Graphs.rem_vertices!(dg::DeltaGraph, vs...) = foreach(Fix1(rem_vertex!, dg), vs)
@@ -125,13 +134,12 @@ add_edges!(g::AbstractGraph, edges) = foreach(Fix1(add_edge!, g), edges)
 Graphs.rem_edge!(dg::DeltaGraph, e::Edge) = rem_edge!(dg, e.src, e.dst)
 
 function Graphs.rem_edge!(dg::DeltaGraph, src, dst)
-  if has_edge(dg, src, dst)
-    outs = outneighbors(dg, src)
-    deleteat!(outs, findfirst(==(dst), outs))
-    ins = inneighbors(dg, dst)
-    deleteat!(ins, findfirst(==(src), ins))
-  end
-  nothing
+  has_edge(dg, src, dst) || return false
+  outs = outneighbors(dg, src)
+  deleteat!(outs, findfirst(==(dst), outs))
+  ins = inneighbors(dg, dst)
+  deleteat!(ins, findfirst(==(src), ins))
+  true
 end
 
 """
@@ -186,4 +194,54 @@ function DeltaGraph(g::AbstractGraph{T}) where {T}
   dg = DeltaGraph{T}(nv(g))
   add_edges!(dg, edges(g))
   dg
+end
+
+# Re-implementation of functions from Graphs.jl to be compatible with non-contiguous vertex storage.
+
+"""
+    has_path(g::AbstractGraph, u, v; exclude_vertices=Vector())
+
+Return `true` if there is a path from `u` to `v` in `g` (while avoiding vertices in
+`exclude_vertices`) or `u == v`. Return false if there is no such path or if `u` or `v`
+is in `excluded_vertices`.
+
+Re-implemented from Graphs.jl.
+"""
+function Graphs.has_path(g::DeltaGraph{T}, u::Integer, v::Integer; 
+        exclude_vertices::AbstractVector = Vector{T}()) where T
+    seen = Set{T}(exclude_vertices)
+    (in(seen, u) || in(seen, v)) && return false
+    u == v && return true # cannot be separated
+    next = Vector{T}()
+    push!(next, u)
+    push!(seen, u)
+    while !isempty(next)
+        src = popfirst!(next) # get new element from queue
+        for vertex in outneighbors(g, src)
+            vertex == v && return true
+            if !in(vertex, seen)
+                push!(next, vertex) # push onto queue
+                push!(seen, vertex)
+            end
+        end
+    end
+    return false
+end
+
+"""
+Return the set of all vertices that one must go through to reach `v` starting from `u`, endpoints included.
+
+`v` should be a post-dominator of `u` for this function to make sense.
+"""
+function vertices_between(g::AbstractGraph{T}, u::Integer, v::Integer) where {T}
+  collected = Set(T[u])
+  next = copy(outneighbors(g, u))
+  while !isempty(next)
+    w = popfirst!(next)
+    in(w, collected) && continue
+    push!(collected, w)
+    w ≠ v && append!(next, outneighbors(g, w))
+  end
+  in(collected, v) || error("`v` could not be reached from `u`.")
+  collected
 end

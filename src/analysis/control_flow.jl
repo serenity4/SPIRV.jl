@@ -212,9 +212,9 @@ function backedges(cfg::ControlFlowGraph)
   backedges(cfg.g, cfg.ec)
 end
 
-function backedges(g::AbstractGraph{T}, ec::EdgeClassification = EdgeClassification(g), doms::AbstractVector{Set{T}} = dominators(g)) where {T}
+function backedges(g::AbstractGraph{T}, ec::EdgeClassification = EdgeClassification(g), domsets::AbstractVector{Set{T}} = dominators(g)) where {T}
   filter(ec.retreating_edges) do e
-    in(dst(e), doms[src(e)])
+    in(dst(e), domsets[src(e)])
   end
 end
 
@@ -263,93 +263,63 @@ function postdominator(cfg::ControlFlowGraph, source)
   root_tree = DominatorTree(cfg)
   tree = nothing
   for subtree in PreOrderDFS(root_tree)
-    if nodevalue(subtree) == source
+    if node(subtree) == source
       tree = subtree
     end
   end
-  pdoms = findall(!in(nodevalue(subtree), outneighbors(cfg, nodevalue(tree))) for subtree in children(tree))
+  pdoms = findall(!in(v, outneighbors(cfg, node(tree))) for v in immediate_postdominators(tree))
   @assert length(pdoms) ≤ 1 "Found $(length(pdoms)) postdominator(s)"
-  isempty(pdoms) ? nothing : nodevalue(children(tree)[first(pdoms)])
+  isempty(pdoms) ? nothing : node(tree[only(pdoms)])
 end
 
-struct DominatorTree
-  node::Int
-  immediate_dominator::Optional{DominatorTree}
-  immediate_post_dominators::Vector{DominatorTree}
+struct DominatorNode
+  index::Int
 end
 
-AbstractTrees.nodevalue(tree::DominatorTree) = tree.node
-AbstractTrees.ParentLinks(::Type{DominatorTree}) = StoredParents()
-AbstractTrees.parent(tree::DominatorTree) = tree.immediate_dominator
-AbstractTrees.ChildIndexing(::Type{DominatorTree}) = IndexedChildren()
-AbstractTrees.children(tree::DominatorTree) = tree.immediate_post_dominators
-AbstractTrees.childrentype(::Type{DominatorTree}) = DominatorTree
-AbstractTrees.NodeType(::Type{<:DominatorTree}) = HasNodeType()
-AbstractTrees.nodetype(::Type{T}) where {T<:DominatorTree} = T
+const DominatorTree = SimpleTree{DominatorNode}
 
-@forward DominatorTree.immediate_post_dominators (Base.getindex,)
+node(tree::DominatorTree) = nodevalue(tree).index
 
-dominated_nodes(tree::DominatorTree) = nodevalue.(children(tree))
-dominator(tree::DominatorTree) = nodevalue(parent(tree))
+immediate_postdominators(tree::DominatorTree) = node.(children(tree))
+immediate_dominator(tree::DominatorTree) = node(@something(parent(tree), return))
 
-DominatorTree(node, immediate_dominator = nothing) = DominatorTree(node, immediate_dominator, [])
 DominatorTree(fdef::FunctionDefinition) = DominatorTree(control_flow_graph(fdef))
+DominatorTree(cfg::AbstractGraph) = DominatorTree(dominators(cfg))
 
-Base.show(io::IO, tree::DominatorTree) = print(io, DominatorTree, '(', nodevalue(tree), ", ", children(tree), ')')
-function Base.show(io::IO, ::MIME"text/plain", tree::DominatorTree)
-  print(io, DominatorTree, " (node: ", nodevalue(tree))
-  print(io, ", ", isroot(tree) ? "no dominator" : "dominator: $(nodevalue(parent(tree)))")
-  print(io, ", ", isempty(children(tree)) ? "no dominated nodes" : "dominated nodes: $(nodevalue.(children(tree)))")
-  print(io, ')')
-end
+function DominatorTree(domsets::AbstractVector{Set{T}}) where {T}
+  root = nothing
+  idoms = Dictionary{T, T}()
+  for (v, domset) in pairs(domsets)
+    if length(domset) == 1
+      isnothing(root) || error("Found multiple root dominators.")
+      root = v
+      continue
+    end
 
-DominatorTree(cfg::ControlFlowGraph) = DominatorTree(cfg.g, backedges(cfg))
-
-function DominatorTree(g::AbstractGraph, backedges)
-  g = deepcopy(g)
-  rem_edges!(g, backedges)
-
-  # 0: unvisited
-  # 1: visited
-  # 2: in tree
-  vcolors = zeros(UInt8, nv(g))
-  root = DominatorTree(entry_node(g))
-  next_trees = [root]
-
-  while !isempty(next_trees)
-    tree = pop!(next_trees)
-    # The tree shouldn't have been filled with post-dominators yet.
-    @assert isempty(tree.immediate_post_dominators)
-    for next in outneighbors(g, tree.node)
-      # Ignore vertices that have already been associated with a dominator tree.
-      vcolors[next] == 2 && continue
-      sources = inneighbors(g, next)
-      if sources == [tree.node]
-        @assert iszero(vcolors[next])
-        new_tree = DominatorTree(next, tree)
-        push!(tree.immediate_post_dominators, new_tree)
-        push!(next_trees, new_tree)
-        vcolors[next] = 2
-      elseif all(vcolors[source] == 2 for source in sources)
-        new_tree = DominatorTree(next, tree)
-        ancestor = common_ancestor(begin
-            v = source
-            prev_sources = inneighbors(g, v)
-            while length(prev_sources) == 1
-              v = first(prev_sources)
-              prev_sources = inneighbors(g, v)
-            end
-            find_parent(x -> nodevalue(x) == v, tree)
-          end for source in sources)
-        push!(ancestor.immediate_post_dominators, new_tree)
-        push!(next_trees, new_tree)
-        vcolors[next] = 2
-      else
-        vcolors[next] = 1
+    candidates = copy(domset)
+    delete!(candidates, v)
+    for p in candidates
+      for dom in domsets[p]
+        dom == p && continue
+        in(dom, candidates) && delete!(candidates, dom)
       end
     end
+    idom = only(candidates)
+    insert!(idoms, v, idom)
   end
-  root
+
+  root_tree = DominatorTree(DominatorNode(root))
+  trees = dictionary([v => DominatorTree(DominatorNode(v)) for v in keys(idoms)])
+  for (v, tree) in pairs(trees)
+    idom = idoms[v]
+    if isroot(tree)
+      p = get(trees, idom, root_tree)
+      tree = @set tree.parent = p
+      trees[v] = tree
+      push!(children(p), tree)
+    end
+  end
+  root_tree
 end
 
 common_ancestor(trees) = common_ancestor(Iterators.peel(trees)...)
@@ -358,6 +328,7 @@ function common_ancestor(tree, trees)
   parent_chain = parents(common_ancestor)
   for candidate in trees
     common_ancestor = find_parent(in(parent_chain), candidate)
+    parent_chain = parents(common_ancestor)
     isnothing(common_ancestor) && return nothing
   end
   common_ancestor

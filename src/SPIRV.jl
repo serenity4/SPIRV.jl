@@ -132,6 +132,9 @@ export
   is_structured,
   ControlTree,
 
+  # Dominators
+  DominatorTree, immediate_postdominators, immediate_dominator,
+
   # validation
   validate,
   validate_shader,

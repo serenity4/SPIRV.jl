@@ -1,6 +1,6 @@
 using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
-using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, dominated_nodes, dominator, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, REGION_BLOCK
+using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, node
 
 # All the following graphs are rooted in 1.
 
@@ -144,29 +144,18 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
 
     @testset "Structural analysis" begin
       @testset "Control trees" begin
-        function make_sese!(g)
-          vs = sinks(g)
-          length(vs) > 1 || return g
-          add_vertex!(g)
-          for v in vs
-            add_edge!(g, v, nv(g))
-          end
-          g
-        end
         function test_control_tree(g)
           tree = ControlTree(g)
           @test Set([nodevalue(c).index for c in Leaves(tree)]) == Set(vertices(g))
-          @test tree.data.region_type == REGION_BLOCK
         end
         test_control_tree(g1())
-        test_control_tree(make_sese!(g2()))
+        test_control_tree(g2())
         test_control_tree(g3())
         test_control_tree(g4())
-        # g5 is broken, it should pass.
-        # test_control_tree(make_sese!(g5()))
-        # test_control_tree(g6())
-        # test_control_tree(g7())
-        # test_control_tree(g8())
+        test_control_tree(g5())
+        test_control_tree(g6())
+        test_control_tree(g7())
+        test_control_tree(g8())
       end
     end
 
@@ -183,14 +172,15 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     end
 
     function test_completeness(tree, cfg)
-      @test nodevalue(tree) == 1 && isroot(tree) && Set(nodevalue.(collect(PostOrderDFS(tree)))) == Set(1:nv(cfg))
+      @test node(tree) == 1 && isroot(tree) && Set(node.(collect(PostOrderDFS(tree)))) == Set(1:nv(cfg))
       pdom = postdominator(cfg, 1)
-      @test isnothing(pdom) || in(pdom, dominated_nodes(tree))
+      @test isnothing(pdom) || in(pdom, immediate_postdominators(tree))
 
       dominated = Int[]
-      for node in PostOrderDFS(tree)
-        node == tree && continue
-        push!(dominated, nodevalue(node))
+      for dom in PostOrderDFS(tree)
+        dom == tree && continue
+        @test !isnothing(parent(dom))
+        push!(dominated, node(dom))
       end
       @test sort(dominated) == 2:nv(cfg)
     end
@@ -200,7 +190,7 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     @test cfg.is_structured
     tree = DominatorTree(cfg)
     test_completeness(tree, cfg)
-    @test all(isempty ∘ children, children(tree)) && dominated_nodes(tree) == [2, 3, 4]
+    @test all(isempty ∘ children, children(tree)) && immediate_postdominators(tree) == [2, 3, 4]
     @test postdominator(cfg, 1) == 4
     test_traversal(cfg)
 
@@ -209,8 +199,8 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     @test cfg.is_structured
     tree = DominatorTree(cfg)
     test_completeness(tree, cfg)
-    @test dominated_nodes(tree) == [2, 3]
-    @test dominated_nodes(tree[2]) == [4]
+    @test immediate_postdominators(tree) == [2, 3]
+    @test immediate_postdominators(tree[2]) == [4]
     @test isnothing(postdominator(cfg, 1))
     test_traversal(cfg)
 
@@ -219,8 +209,8 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     @test cfg.is_structured
     tree = DominatorTree(cfg)
     test_completeness(tree, cfg)
-    @test dominated_nodes(tree) == [2, 3, 6]
-    @test dominated_nodes(tree[1]) == [4, 5]
+    @test immediate_postdominators(tree) == [2, 3, 6]
+    @test immediate_postdominators(tree[1]) == [4, 5]
     @test postdominator(cfg, 1) == 6
     test_traversal(cfg)
 
@@ -229,10 +219,10 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     @test cfg.is_structured
     tree = DominatorTree(cfg)
     test_completeness(tree, cfg)
-    @test dominated_nodes(tree) == [2, 3, 8]
-    @test dominated_nodes(tree[1]) == [4]
-    @test dominated_nodes(tree[1][1]) == [5, 7]
-    @test dominated_nodes(tree[1][1][1]) == [6]
+    @test immediate_postdominators(tree) == [2, 3, 8]
+    @test immediate_postdominators(tree[1]) == [4]
+    @test immediate_postdominators(tree[1][1]) == [5, 7]
+    @test immediate_postdominators(tree[1][1][1]) == [6]
     @test postdominator(cfg, 1) == 8
     test_traversal(cfg)
 
@@ -243,13 +233,19 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
     @test isnothing(postdominator(cfg, 2))
 
     cfg = ControlFlowGraph(g6())
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
     @test cfg.is_reducible
     @test cfg.is_structured
 
     cfg = ControlFlowGraph(g7())
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
     @test !cfg.is_reducible
 
     cfg = ControlFlowGraph(g8())
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
     @test cfg.is_reducible
   end
 
