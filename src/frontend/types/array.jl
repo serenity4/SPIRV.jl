@@ -5,6 +5,7 @@ end
 Arr(components...) = Arr(promote(components...)...)
 Arr(components::T...) where {T} = Arr{length(components),T}(components...)
 Arr{N,T}(components::T...) where {N, T} = CompositeConstruct(Arr{N,T}, components...)
+Arr{T}(components...) where {T} = Arr{length(components),T}(convert.(T, components)...)
 @noinline (@generated CompositeConstruct(::Type{Arr{N,T}}, data::T...) where {N,T} = Expr(:new, Arr{N,T}, :data))
 
 Base.length(::Type{<:Arr{N}}) where {N} = N

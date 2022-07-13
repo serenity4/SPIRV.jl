@@ -5,6 +5,11 @@ end
 
 Mat(cols::Vec...) = Mat(promote(cols...)...)
 Mat(cols::T...) where {T<:Vec} = Mat{length(T),length(cols),eltype(T)}(cols...)
+
+const Mat2 = Mat{2,2,Float32}
+const Mat3 = Mat{3,3,Float32}
+const Mat4 = Mat{4,4,Float32}
+
 @noinline (@generated function CompositeConstruct(::Type{Mat{N,M,T}}, cols::Vec{N,T}...) where {N,M,T}
   2 ≤ N ≤ 4 || throw(ArgumentError("SPIR-V vectors must have between 2 and 4 components."))
   Expr(:new, Mat{N,M,T}, :(getproperty.(cols, :data)))

@@ -160,8 +160,8 @@ export
   DEFAULT_CI_CACHE, VULKAN_CI_CACHE,
 
   # SPIR-V array/vector types
-  Vec,
-  Mat, @mat,
+  Vec, Vec2, Vec3, Vec4,
+  Mat, Mat2, Mat3, Mat4, @mat,
   Arr,
   Pointer,
   Image, Sampler,
