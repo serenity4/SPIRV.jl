@@ -139,7 +139,7 @@ function compute_minimal_size(t::StructType, ir::IR, layout::LayoutStrategy)
       alignmt = alignment(layout, subt, scs, has_decoration(ir, t, DecorationBlock))
       res = alignmt * cld(res, alignmt)
     end
-    res *= compute_minimal_size(subt, ir, layout)
+    res += compute_minimal_size(subt, ir, layout)
   end
   res
 end

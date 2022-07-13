@@ -33,7 +33,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       OpExtension("SPV_KHR_vulkan_memory_model")
       OpMemoryModel(Logical, Vulkan)
       OpEntryPoint(Vertex, %15, "main", %4)
-      OpName(%6, "vert_shader!_Tuple{Vec{4,Float32}}")
+      OpName(%6, "vert_shader!_Tuple{Vec4}")
       OpName(%4, "out_color")
  %1 = OpTypeFloat(0x00000020)
  %2 = OpTypeVector(%1, 0x00000004)

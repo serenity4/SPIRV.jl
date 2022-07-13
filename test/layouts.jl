@@ -72,7 +72,7 @@ end
     test_has_offset(ir, Align4, 1, 0)
     test_has_offset(ir, Align4, 2, 8)
     test_has_offset(ir, Align4, 3, 10)
-    @test aligned_size(Align4, ir, layout) == 14
+    @test compute_minimal_size(Align4, ir, layout) == 14
 
     struct Align5
       x::Int64
@@ -85,7 +85,7 @@ end
     test_has_offset(ir, Align5, 1, 0)
     test_has_offset(ir, Align5, 2, 8)
     test_has_offset(ir, Align5, 3, 22)
-    @test aligned_size(Align5, ir, layout) == 23
+    @test compute_minimal_size(Align5, ir, layout) == 23
 
     ir = ir_with_type(Align5; storage_classes = [StorageClassUniform])
     decorate!(ir, Align5, DecorationBlock)
@@ -93,7 +93,7 @@ end
     test_has_offset(ir, Align5, 1, 0)
     test_has_offset(ir, Align5, 2, 16)
     test_has_offset(ir, Align5, 3, 30)
-    @test aligned_size(Align5, ir, layout) == 31
+    @test compute_minimal_size(Align5, ir, layout) == 31
   end
 
   @testset "Array/Matrix layouts" begin
