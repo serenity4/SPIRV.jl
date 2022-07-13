@@ -91,13 +91,13 @@ end
 function add_stride!(ir::IR, t::ArrayType, layout::LayoutStrategy)
   # Array of shader resources. Must not be decorated.
   isa(t.eltype, StructType) && has_decoration(ir, t.eltype, DecorationBlock) && return
-  stride = aligned_size(t.eltype, ir, layout)
+  stride = compute_stride(t.eltype, ir, layout)
   isa(t, ArrayType) ? decorate!(ir, t, DecorationArrayStride, stride) : decorate!(ir, t, DecorationMatrixStride, stride)
   decorate!(ir, t, DecorationArrayStride, stride)
 end
 
 function add_stride!(ir::IR, t::MatrixType, layout::LayoutStrategy)
-  stride = aligned_size(t.eltype.eltype, ir, layout)
+  stride = compute_stride(t.eltype.eltype, ir, layout)
   decorate!(ir, t, DecorationMatrixStride, stride)
 end
 
@@ -115,27 +115,23 @@ function add_offsets!(ir::IR, t::StructType, layout::LayoutStrategy)
     alignmt = alignment(layout, subt, scs, has_decoration(ir, t, DecorationBlock))
     current_offset = alignmt * cld(current_offset, alignmt)
     decorate!(ir, t, i, DecorationOffset, current_offset)
-    i ≠ n && (current_offset += aligned_size(subt, ir, layout))
+    i ≠ n && (current_offset += compute_minimal_size(subt, ir, layout))
   end
 end
 
 """
-    aligned_size(T, ir::IR, layout::LayoutStrategy)
+    compute_minimal_size(T, ir::IR, layout::LayoutStrategy)
 
-Compute the size that a type `T` should have, using the alignments computed by the provided layout strategy.
-
-Note that this may differ than the real aligned size that the IR will expect, which will use declared member offsets.
-If those offsets were overriden manually or obtained by other means that this layout strategy, the results will
-likely be different.
+Compute the minimal size that a type `T` should have, using the alignments computed by the provided layout strategy.
 """
-function aligned_size end
+function compute_minimal_size end
 
-aligned_size(T::DataType, ir::IR, layout::LayoutStrategy) = aligned_size(ir.typerefs[T], ir, layout)
-aligned_size(t::ScalarType, ir::IR, layout::LayoutStrategy) = scalar_alignment(t)
-aligned_size(t::Union{VectorType, MatrixType}, ir::IR, layout::LayoutStrategy) = t.n * aligned_size(t.eltype, ir, layout)
-aligned_size(t::ArrayType, ir::IR, layout::LayoutStrategy) = extract_size(t) * aligned_size(t.eltype, ir, layout)
+compute_minimal_size(T::DataType, ir::IR, layout::LayoutStrategy) = compute_minimal_size(ir.typerefs[T], ir, layout)
+compute_minimal_size(t::ScalarType, ir::IR, layout::LayoutStrategy) = scalar_alignment(t)
+compute_minimal_size(t::Union{VectorType, MatrixType}, ir::IR, layout::LayoutStrategy) = t.n * compute_minimal_size(t.eltype, ir, layout)
+compute_minimal_size(t::ArrayType, ir::IR, layout::LayoutStrategy) = extract_size(t) * compute_minimal_size(t.eltype, ir, layout)
 
-function aligned_size(t::StructType, ir::IR, layout::LayoutStrategy)
+function compute_minimal_size(t::StructType, ir::IR, layout::LayoutStrategy)
   res = 0
   scs = storage_classes(ir, t)
   for (i, subt) in enumerate(t.members)
@@ -143,10 +139,32 @@ function aligned_size(t::StructType, ir::IR, layout::LayoutStrategy)
       alignmt = alignment(layout, subt, scs, has_decoration(ir, t, DecorationBlock))
       res = alignmt * cld(res, alignmt)
     end
-    res += aligned_size(subt, ir, layout)
+    res *= compute_minimal_size(subt, ir, layout)
   end
   res
 end
+
+"""
+    compute_stride(T, ir::IR, layout::LayoutStrategy)
+
+Compute the stride that an array containing `T` should have, using module member offset declarations and with an extra padding at the end corresponding to the alignment of `T`.
+"""
+function compute_stride end
+
+compute_stride(T::DataType, ir::IR, layout::LayoutStrategy) = compute_stride(ir.typerefs[T], ir, layout)
+compute_stride(t::ScalarType, ir::IR, layout::LayoutStrategy) = scalar_alignment(t)
+compute_stride(t::Union{VectorType, MatrixType}, ir::IR, layout::LayoutStrategy) = t.n * compute_stride(t.eltype, ir, layout)
+compute_stride(t::ArrayType, ir::IR, layout::LayoutStrategy) = extract_size(t) * compute_stride(t.eltype, ir, layout)
+
+function compute_stride(t::StructType, ir::IR, layout::LayoutStrategy)
+  offsets = getoffsets(ir, t)
+  size = last(offsets) + payload_size(last_member(t))
+  alignmt = alignment(layout, t, storage_classes(ir, t), has_decoration(ir, t, DecorationBlock))
+  alignmt * cld(size, alignmt)
+end
+
+last_member(t::SPIRType) = t
+last_member(t::StructType) = last_member(last(t.members))
 
 function payload_sizes!(sizes, t::StructType)
   for subt in t.members
@@ -164,7 +182,7 @@ end
 Extract bytes from a Julia value, with strictly no alignment.
 """
 function extract_bytes(data::T) where {T}
-  isstructtype(T) || return reinterpret(UInt8, [data])
+  isstructtype(T) || return collect(reinterpret(UInt8, [data]))
   bytes = UInt8[]
   for field in fieldnames(T)
     append!(bytes, extract_bytes(getproperty(data, field)))
@@ -194,6 +212,7 @@ Return a vector of bytes where every logical piece of data (delimited via the pr
 has been aligned according to the provided offsets.
 """
 function align(data::Vector{UInt8}, sizes::AbstractVector{<:Integer}, offsets::AbstractVector{<:Integer})
+  isempty(offsets) && return data
   aligned_size = last(offsets) + last(sizes)
   aligned = zeros(UInt8, aligned_size)
   total = sum(sizes)
@@ -206,6 +225,6 @@ function align(data::Vector{UInt8}, sizes::AbstractVector{<:Integer}, offsets::A
   aligned
 end
 
-align(data::Vector{UInt8}, t::SPIRType, offsets::AbstractVector{<:Integer}) = align(data, payload_sizes(t), offsets)
-align(data::Vector{UInt8}, t::SPIRType, ir::IR) = align(data, t, getoffsets(ir, t))
+align(data::Vector{UInt8}, t::StructType, offsets::AbstractVector{<:Integer}) = align(data, payload_sizes(t), offsets)
+align(data::Vector{UInt8}, t::StructType, ir::IR) = align(data, t, getoffsets(ir, t))
 align(data::Vector{UInt8}, T::DataType, ir::IR) = align(data, ir.typerefs[T], ir)

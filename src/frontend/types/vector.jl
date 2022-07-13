@@ -6,6 +6,7 @@ end
 Vec{N,T}(data::NTuple) where {N,T} = Vec{N,T}(data...)
 Vec(components::Scalar...) = Vec(promote(components...)...)
 Vec(components::T...) where {T<:Scalar} = Vec{length(components),T}(components...)
+Vec{T}(components...) where {T<:Scalar} = Vec{length(components),T}(convert.(T, components)...)
 @noinline (@generated function CompositeConstruct(::Type{Vec{N,T}}, data::T...) where {N,T}
   2 ≤ N ≤ 4 || throw(ArgumentError("SPIR-V vectors must have between 2 and 4 components."))
   Expr(:new, Vec{N,T}, :data)

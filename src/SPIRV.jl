@@ -152,7 +152,7 @@ export
   ShaderInterface, Shader, MemoryResource,
   dependent_functions,
   LayoutStrategy, VulkanLayout, alignment,
-  extract_bytes, align, aligned_size, payload_size,
+  extract_bytes, align, aligned_size, payload_size, getoffsets,
   @compile,
   invalidate_all!,
   SPIRVInterpreter,

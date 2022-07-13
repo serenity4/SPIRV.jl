@@ -257,6 +257,14 @@ function set_name!(ir::IR, id::SSAValue, name::Symbol)
 end
 set_name!(ir::IR, id::SSAValue, member_index::Int, name::Symbol) = set_name!(get!(Metadata, ir.metadata, id), member_index, name)
 
+"Return the first entry point corresponding to `name`."
+function entry_point(ir::IR, name::Symbol)
+  for ep in ir.entry_points
+    ep.name == name && return ep
+  end
+  error("No entry point found with name '$name'")
+end
+
 SSAValue(ir::IR, t::DataType) = SSAValue(ir, spir_type(t, ir))
 SSAValue(ir::IR, t::SPIRType) = ir.types[t]
 

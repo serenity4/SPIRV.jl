@@ -176,7 +176,7 @@ function Instruction(inst::PhysicalInstruction)
     (; quantifier) = info
     @switch quantifier begin
       @case "?"
-      error("Unhandled '?' quantifier")
+      error("Unhandled '?' quantifier for instruction $opcode")
       @case "*" || nothing
       j, arg = next_argument(operands[i:end], info)
       category == "Id" && (arg = SSAValue(arg))

@@ -61,7 +61,6 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
   push!(blk, @inst next!(ir.ssacounter) = OpFunctionCall(fid)::SSAValue(ir, fdef.type.rettype))
   push!(blk, @inst OpReturn())
   satisfy_requirements!(ir, interface.features)
-  ep
 end
 
 function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)
@@ -128,7 +127,17 @@ Module(shader::Shader) = shader.mod
 
 validate(shader::Shader) = validate_shader(IR(Module(shader); satisfy_requirements = false))
 
-function Shader(target::SPIRVTarget, interface::ShaderInterface)
+function Shader(ir::IR)
+  ep = entry_point(ir, :main)
+  mod = Module(ir)
+  Shader(mod, ep.func, memory_resources(mod, ep.func))
+end
+
+Shader(target::SPIRVTarget, interface::ShaderInterface) = Shader(IR(target, interface))
+
+assemble(shader::Shader) = assemble(shader.mod)
+
+function IR(target::SPIRVTarget, interface::ShaderInterface)
   ir = IR()
   variables = Dictionary{Int,Variable}()
   for (i, sc) in enumerate(interface.storage_classes)
@@ -143,9 +152,8 @@ function Shader(target::SPIRVTarget, interface::ShaderInterface)
     end
   end
   compile!(ir, target, variables)
-  ep = make_shader!(ir, target.mi, interface, variables)
-  mod = Module(ir)
-  Shader(mod, ep.func, memory_resources(mod, ep.func))
+  make_shader!(ir, target.mi, interface, variables)
+  ir
 end
 
 struct MemoryResourceExtraction

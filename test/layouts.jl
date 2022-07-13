@@ -1,5 +1,5 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData, getoffsets, payload_sizes
+using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData, payload_sizes
 
 function test_has_offset(ir, T, field, offset)
   decs = decorations(ir, T, field)
