@@ -60,6 +60,7 @@ Base.isapprox(mod1::PhysicalModule, mod2::PhysicalModule) =
 function PhysicalModule(file::AbstractString)
   open(io -> read(io, PhysicalModule), file)
 end
+PhysicalModule(bytes::AbstractVector{UInt8}) = read(IOBuffer(bytes), PhysicalModule)
 
 Base.read(io::IO, ::Type{PhysicalModule}) = read(IOBuffer(read(io)), PhysicalModule)
 Base.read(io::IOBuffer, ::Type{PhysicalModule}) = read(correct_endianess(io), PhysicalModule)

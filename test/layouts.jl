@@ -117,6 +117,7 @@ end
     @test getoffsets(ir, t) == [0, 8]
     @test payload_sizes(t) == [8, 8]
     @test align(bytes, t, ir) == bytes
+    @test bytes == align(bytes, [8, 8], [0, 8]) == align(bytes, t, [0, 8]) == align(bytes, Align1, ir)
 
     bytes = extract_bytes(Align2(1, 2))
     @test bytes == reinterpret(UInt8, [1U, 2U, 0U])

@@ -190,12 +190,10 @@ getoffsets(ir::IR, t::SPIRType) = getoffsets!(UInt32[], 0U, ir, t)
 getoffsets(ir::IR, T::DataType) = getoffsets(ir, ir.typerefs[T])
 
 """
-Return a vector of bytes where every logical piece of data has been aligned according
-to the SPIR-V offsets specified in the IR.
+Return a vector of bytes where every logical piece of data (delimited via the provided `sizes`)
+has been aligned according to the provided offsets.
 """
-function align(data::Vector{UInt8}, t::SPIRType, ir::IR)
-  offsets = getoffsets(ir, t)
-  sizes = payload_sizes(t)
+function align(data::Vector{UInt8}, sizes::AbstractVector{<:Integer}, offsets::AbstractVector{<:Integer})
   aligned_size = last(offsets) + last(sizes)
   aligned = zeros(UInt8, aligned_size)
   total = sum(sizes)
@@ -207,4 +205,7 @@ function align(data::Vector{UInt8}, t::SPIRType, ir::IR)
   end
   aligned
 end
+
+align(data::Vector{UInt8}, t::SPIRType, offsets::AbstractVector{<:Integer}) = align(data, payload_sizes(t), offsets)
+align(data::Vector{UInt8}, t::SPIRType, ir::IR) = align(data, t, getoffsets(ir, t))
 align(data::Vector{UInt8}, T::DataType, ir::IR) = align(data, ir.typerefs[T], ir)
