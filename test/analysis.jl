@@ -1,6 +1,7 @@
 using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
 using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, node
+using SPIRV: REGION_BLOCK, REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION, REGION_PROPER, REGION_SELF_LOOP, REGION_WHILE_LOOP, REGION_NATURAL_LOOP, REGION_IMPROPER
 
 # All the following graphs are rooted in 1.
 
@@ -144,18 +145,146 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
 
     @testset "Structural analysis" begin
       @testset "Control trees" begin
-        function test_control_tree(g)
-          tree = ControlTree(g)
-          @test Set([nodevalue(c).index for c in Leaves(tree)]) == Set(vertices(g))
-        end
-        test_control_tree(g1())
-        test_control_tree(g2())
-        test_control_tree(g3())
-        test_control_tree(g4())
-        test_control_tree(g5())
-        test_control_tree(g6())
-        test_control_tree(g7())
-        test_control_tree(g8())
+        test_coverage(g, ctree) = Set([node(c) for c in Leaves(ctree)]) == Set(vertices(g))
+
+        g = g1()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_IF_THEN_ELSE, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+          ]),
+          ControlTree(4, REGION_BLOCK),
+        ])
+
+        g = g2()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_TERMINATION, (
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_BLOCK),
+          ControlTree(3, REGION_BLOCK, [
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
+          ]),
+        ))
+
+        g = g3()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_IF_THEN_ELSE, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_IF_THEN_ELSE, [
+              ControlTree(2, REGION_BLOCK),
+              ControlTree(4, REGION_BLOCK),
+              ControlTree(5, REGION_BLOCK),
+            ]),
+            ControlTree(3, REGION_BLOCK),
+          ]),
+          ControlTree(6, REGION_BLOCK),
+        ])
+
+        g = g4()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_IF_THEN_ELSE, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_BLOCK, [
+              ControlTree(2, REGION_BLOCK),
+              ControlTree(4, REGION_WHILE_LOOP, [
+                ControlTree(4, REGION_BLOCK),
+                ControlTree(5, REGION_BLOCK, [
+                  ControlTree(5, REGION_BLOCK),
+                  ControlTree(6, REGION_BLOCK),
+                ]),
+              ]),
+              ControlTree(7, REGION_BLOCK),
+            ]),
+            ControlTree(3, REGION_BLOCK),
+          ]),
+          ControlTree(8, REGION_BLOCK),
+        ])
+
+        g = g5()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_IF_THEN_ELSE, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_BLOCK, [
+              ControlTree(2, REGION_TERMINATION, [
+                ControlTree(2, REGION_BLOCK),
+                ControlTree(3, REGION_BLOCK),
+              ]),
+              ControlTree(4, REGION_BLOCK)
+            ]),
+            ControlTree(5, REGION_BLOCK),
+          ]),
+          ControlTree(6, REGION_TERMINATION, [
+            ControlTree(6, REGION_BLOCK),
+            ControlTree(7, REGION_BLOCK),
+            ControlTree(8, REGION_BLOCK),
+          ]),
+        ])
+
+        g = g6()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_NATURAL_LOOP, [
+            ControlTree(2, REGION_TERMINATION, [
+              ControlTree(2, REGION_BLOCK),
+              ControlTree(9, REGION_BLOCK),
+            ]),
+            ControlTree(3, REGION_BLOCK, [
+              ControlTree(3, REGION_BLOCK),
+              ControlTree(4, REGION_BLOCK),
+            ]),
+            ControlTree(5, REGION_BLOCK, [
+              ControlTree(5, REGION_IF_THEN_ELSE, [
+                ControlTree(5, REGION_BLOCK),
+                ControlTree(6, REGION_BLOCK),
+                ControlTree(7, REGION_BLOCK),
+              ]),
+              ControlTree(8, REGION_BLOCK),
+            ]),
+          ]),
+        ])
+
+        g = g7()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_IMPROPER, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_TERMINATION, [
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
+          ]),
+          ControlTree(3, REGION_TERMINATION, [
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(5, REGION_BLOCK),
+          ]),
+        ])
+
+        g = g8()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test_broken ctree == ControlTree(1, REGION_IMPROPER, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_TERMINATION, [
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
+          ]),
+          ControlTree(3, REGION_TERMINATION, [
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(5, REGION_BLOCK),
+          ]),
+        ])
       end
     end
 

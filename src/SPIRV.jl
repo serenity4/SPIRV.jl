@@ -130,7 +130,7 @@ export
   control_flow_graph,
   is_reducible,
   is_structured,
-  ControlTree,
+  ControlTree, ControlNode, region_type,
 
   # Dominators
   DominatorTree, immediate_postdominators, immediate_dominator,

@@ -1,3 +1,6 @@
+"""
+Single-entry control-flow structure which is classified according to well-specified pattern structures.
+"""
 @enum RegionType begin
   REGION_BLOCK
   REGION_IF_THEN
@@ -26,13 +29,13 @@ The region is composed of `v` and all the `wᵢ`.
 REGION_TERMINATION
 "Acyclic region which does not match any other acyclic patterns."
 REGION_PROPER
-"Region consisting of only one node which has a self-loop."
+"Single node region which exhibits a self-loop."
 REGION_SELF_LOOP
 "Simple cycling region made of a condition block `u`, a loop body block `v` and a merge block `w` such that `v` ⇆ `u` ─→ `w`."
 REGION_WHILE_LOOP
 "Single-entry cyclic region with varying complexity such that the entry point dominates all nodes in the cyclic structure."
 REGION_NATURAL_LOOP
-"Single-entry cyclic region with varying complexity where the entry point does not dominate all nodes in the cyclic structure."
+"Single-entry region containing a multiple-entry cyclic region, such that the single entry is the least common dominator of all cycle entry nodes."
 REGION_IMPROPER
 
 # Define active patterns for use in pattern matching with MLStyle.
@@ -87,7 +90,8 @@ end
       if is_single_entry_single_exit(g, b) && is_single_entry_single_exit(g, c)
         d = only(outneighbors(g, b))
         d == v && return
-        d == only(outneighbors(g, c)) && return (v, b, c, d)
+        d == only(outneighbors(g, c)) || return
+        return (v, b, c, d)
       end
     end
   end
@@ -157,18 +161,37 @@ end
   end
 end
 
+function minimal_cyclic_component(g, v, backedges)
+  vs = [v]
+  for w in vertices(g)
+    for e in backedges
+      dst(e) == v || continue
+      if has_path(g, w, src(e); exclude_vertices = [v])
+        push!(vs, w)
+        break
+      end
+    end
+  end
+  vs
+end
+
 function cyclic_region(g, v, ec, doms, domtrees, backedges, scc)
   length(scc) == 1 && return
 
+  any(u -> in(Edge(u, v), ec.retreating_edges), inneighbors(g, v)) || return
+  cycle = minimal_cyclic_component(g, v, backedges)
+
   # Natural loop.
   if any(u -> in(Edge(u, v), backedges), inneighbors(g, v))
-    entry_edges = filter(e -> in(dst(e), scc) && ≠(dst(e), v), edges(g))
-    isempty(entry_edges) && return (REGION_NATURAL_LOOP, scc)
+    entry_edges = filter(e -> in(dst(e), cycle) && !in(src(e), cycle), edges(g))
+    # FIXME: Return vertices in reverse post-order.
+    all(==(v) ∘ dst, entry_edges) && return (REGION_NATURAL_LOOP, cycle)
   end
 
   # Improper region.
-  entry_edges = filter(e -> in(dst(e), scc) && !in(src(e), scc), edges(g))
-  isempty(entry_edges) && return
+  entry_edges = filter(e -> in(dst(e), cycle) && !in(src(e), cycle), edges(g))
+  length(entry_edges) < 2 && return
+  # length(entry_edges) < 2 && return
   entry_points = unique!(src.(entry_edges))
   entry = common_ancestor(domtrees[v], [domtrees[ep] for ep in entry_points])
   @assert !isnothing(entry) "Multiple-entry cyclic region encountered with no single dominator"
@@ -181,6 +204,7 @@ function cyclic_region(g, v, ec, doms, domtrees, backedges, scc)
     !has_path(g, entry_node, v) && continue
     any(has_path(g, v, ep; exclude_vertices) for ep in mec_entries) && push!(vs, v)
   end
+  # FIXME: Return vertices in reverse post-order (according to one possible post-order traversal).
   (REGION_IMPROPER, vs)
 end
 
@@ -201,6 +225,10 @@ const ControlTree = SimpleTree{ControlNode}
 
 # Structures are constructed via pattern matching on the graph.
 
+node(tree::ControlTree) = nodevalue(tree).index
+region_type(tree::ControlTree) = nodevalue(tree).region_type
+ControlTree(node::Integer, region_type::RegionType, children = ControlTree[]) = ControlTree(ControlNode(node, region_type), children)
+
 is_single_entry_single_exit(g::AbstractGraph, v) = length(inneighbors(g, v)) == 1 && length(outneighbors(g, v)) == 1
 is_single_entry_single_exit(g::AbstractGraph) = is_weakly_connected(g) && length(sinks(g)) == length(sources(g)) == 1
 
@@ -214,7 +242,7 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
   domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node(x))
   sccs = strongly_connected_components(cfg)
 
-  control_trees = Dictionary{T, ControlTree}(1:nv(cfg), ControlTree.(ControlNode.(1:nv(cfg), REGION_BLOCK)))
+  control_trees = Dictionary{T, ControlTree}(copy(vertices(cfg)), ControlTree.(ControlNode.(copy(vertices(cfg)), REGION_BLOCK)))
   next = post_ordering(dfst)
 
   while !isempty(next)
@@ -229,7 +257,7 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
     else
       @trymatch (abstract_graph, v) begin
         self_loop() => (REGION_SELF_LOOP, T[])
-        while_loop(cond, body, merge) => (REGION_WHILE_LOOP, [body, merge])
+        while_loop(cond, body, merge) => (REGION_WHILE_LOOP, [body])
         _ => begin
           scc = sccs[findfirst(Fix1(in, v), sccs)]
           filter!(in(vertices(abstract_graph)), scc)
@@ -238,6 +266,8 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
             (region_type, vs) = ret
             if region_type == REGION_IMPROPER
               v, vs... = vs
+            elseif region_type == REGION_NATURAL_LOOP
+              filter!(≠(v), vs)
             end
             (region_type, vs)
           end
@@ -248,24 +278,24 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
 
     # `ws` must be in reverse post-order.
     (region_type, ws) = ret
-    region = SimpleTree(ControlNode(v, region_type))
+    region = SimpleTree(ControlNode(v, region_type), control_trees[w] for w in [v; ws])
 
     # Add the new region and merge region vertices.
-    push!(children(region), control_trees[v])
     control_trees[v] = region
     if region_type ≠ REGION_SELF_LOOP
       for w in ws
-        tree = control_trees[w]
-        tree = @set tree.parent = region
-        push!(children(region), tree)
         delete!(control_trees, w)
 
-        # Adjust back-edges.
+        # Adjust back-edges and retreating edges.
         for w′ in outneighbors(abstract_graph, w)
           e = Edge(w, w′)
           if in(e, bedges)
             delete!(bedges, e)
             push!(bedges, Edge(v, dst(e)))
+          end
+          if in(e, ec.retreating_edges)
+            delete!(ec.retreating_edges, e)
+            push!(ec.retreating_edges, Edge(v, dst(e)))
           end
         end
 
@@ -280,6 +310,13 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
     pushfirst!(next, v)
   end
 
-  @assert nv(abstract_graph) == 1
+  @assert nv(abstract_graph) == 1 string("Expected to contract the CFG into a single vertex, got ", nv(abstract_graph), " vertices instead.", nv(cfg) > 15 ? "" : string("\n\nShowing the remaining control trees:\n\n", join((sprintc_mime(show, tree) for (v, tree) in pairs(control_trees)), "\n\n")), "\n")
   only(control_trees)
+end
+
+function is_structured(ctree::ControlTree)
+  all(PreOrderDFS(ctree)) do tree
+    node = nodevalue(tree)
+    !in(node.region_type, (REGION_PROPER, REGION_IMPROPER, REGION_SELF_LOOP))
+  end
 end

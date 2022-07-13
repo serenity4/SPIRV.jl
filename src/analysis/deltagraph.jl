@@ -211,21 +211,21 @@ function Graphs.has_path(g::DeltaGraph{T}, u::Integer, v::Integer;
         exclude_vertices::AbstractVector = Vector{T}()) where T
     seen = Set{T}(exclude_vertices)
     (in(seen, u) || in(seen, v)) && return false
-    u == v && return true # cannot be separated
-    next = Vector{T}()
+    u == v && return true
+    next = T[]
     push!(next, u)
     push!(seen, u)
     while !isempty(next)
-        src = popfirst!(next) # get new element from queue
+        src = popfirst!(next)
         for vertex in outneighbors(g, src)
             vertex == v && return true
             if !in(vertex, seen)
-                push!(next, vertex) # push onto queue
+                push!(next, vertex)
                 push!(seen, vertex)
             end
         end
     end
-    return false
+    false
 end
 
 """

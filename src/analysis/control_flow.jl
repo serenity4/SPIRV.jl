@@ -8,15 +8,32 @@ end
 sinks(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Fix1(outneighbors, g), vertices(g))]
 sources(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Fix1(inneighbors, g), vertices(g))]
 
-struct SimpleTree{T}
+@auto_hash_equals struct SimpleTree{T}
   data::T
   parent::Optional{SimpleTree{T}}
   children::Vector{SimpleTree{T}}
 end
+
+"""
+Equality is defined for `SimpleTree`s over data and children. The equality of
+parents is not tested to avoid infinite recursion, and only the presence of
+parents is tested instead.
+"""
+Base.:(==)(x::SimpleTree{T}, y::SimpleTree{T}) where {T} = x.data == y.data && x.children == y.children && isnothing(x.parent) == isnothing(y.parent)
 SimpleTree(data::T) where {T} = SimpleTree{T}(data)
 SimpleTree{T}(data::T) where {T} = SimpleTree{T}(data, nothing, T[])
 
-Base.show(io::IO, ::MIME"text/plain", tree::SimpleTree) = print(io, chomp(sprintc(print_tree, tree)))
+SimpleTree(data::T, children) where {T} = SimpleTree{T}(data, children)
+function SimpleTree{T}(data::T, children) where {T}
+  tree = SimpleTree(data)
+  for c in children
+    push!(tree.children, @set c.parent = tree)
+  end
+  tree
+end
+
+Base.show(io::IO, ::MIME"text/plain", tree::SimpleTree) = isempty(children(tree)) ? print(io, typeof(tree), "(", tree.data, ", [])") : print(io, chomp(sprintc(print_tree, tree; maxdepth = 10)))
+Base.show(io::IO, tree::SimpleTree) = print(io, typeof(tree), "(", nodevalue(tree), isroot(tree) ? "" : string(", parent = ", nodevalue(parent(tree))), ", children = [", join(nodevalue.(children(tree)), ", "), "])")
 
 Base.getindex(tree::SimpleTree, index) = children(tree)[index]
 
