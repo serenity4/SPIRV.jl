@@ -232,7 +232,7 @@ getoffsets(ir::IR, T::DataType) = getoffsets(ir, ir.typerefs[T])
 Return a vector of bytes where every logical piece of data (delimited via the provided `sizes`)
 has been aligned according to the provided offsets.
 """
-function align(data::Vector{UInt8}, sizes::AbstractVector{<:Integer}, offsets::AbstractVector{<:Integer})
+function align(data::AbstractVector{UInt8}, sizes::AbstractVector{<:Integer}, offsets::AbstractVector{<:Integer})
   isempty(offsets) && return data
   aligned_size = last(offsets) + last(sizes)
   aligned = zeros(UInt8, aligned_size)
@@ -246,15 +246,15 @@ function align(data::Vector{UInt8}, sizes::AbstractVector{<:Integer}, offsets::A
   aligned
 end
 
-align(data::Vector{UInt8}, t::StructType, offsets::AbstractVector{<:Integer}) = align(data, payload_sizes(t), offsets)
-align(data::Vector{UInt8}, t::StructType, ir::IR) = align(data, t, getoffsets(ir, t))
-align(data::Vector{UInt8}, T::DataType, ir::IR) = align(data, ir.typerefs[T], ir)
+align(data::AbstractVector{UInt8}, t::StructType, offsets::AbstractVector{<:Integer}) = align(data, payload_sizes(t), offsets)
+align(data::AbstractVector{UInt8}, T::DataType, ir::IR) = align(data, ir.typerefs[T], ir)
+align(data::AbstractVector{UInt8}, t::StructType, ir::IR) = align(data, t, getoffsets(ir, t))
 
 """
 Type information used for associating Julia-level data types with SPIR-V types and
 for applying offsets to pad payload bytes extracted from Julia values.
 """
-struct TypeInfo
+@auto_hash_equals struct TypeInfo
   mapping::Dictionary{DataType, SPIRType}
   offsets::Dictionary{SPIRType, Vector{UInt32}}
 end
@@ -286,3 +286,4 @@ end
 
 getoffsets(type_info::TypeInfo, T::DataType) = getoffsets(type_info, type_info.mapping[T])
 getoffsets(type_info::TypeInfo, t::SPIRType) = getoffsets((t, i) -> type_info.offsets[t][i], t)
+align(data::AbstractVector{UInt8}, t::StructType, type_info::TypeInfo) = align(data, t, getoffsets(type_info, t))
