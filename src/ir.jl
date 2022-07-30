@@ -322,6 +322,7 @@ function spir_type(t::Type, ir::Optional{IR} = nothing; wrap_mutable = false, st
     ::Type{<:Image} => ImageType(spir_type(eltype(t), ir), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
     ::Type{<:SampledImage} => SampledImageType(spir_type(image_type(t), ir))
     GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type.(t.types, ir))
+    GuardBy(isprimitivetype) => primitive_type_to_spirv(t)
     _ => error("Type $t does not have a corresponding SPIR-V type.")
   end
 
@@ -341,6 +342,14 @@ function spir_type(t::Type, ir::Optional{IR} = nothing; wrap_mutable = false, st
 
   promoted_type
 end
+
+"""
+    primitive_type_to_spirv(::Type{T})::SPIRType where {T}
+
+Specify which SPIR-V type corresponds to a given primitive type.
+Both types must have the same number of bits.
+"""
+function primitive_type_to_spirv end
 
 function promote_to_interface_block(type, storage_class)
   @tryswitch storage_class begin
