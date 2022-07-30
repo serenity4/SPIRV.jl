@@ -86,6 +86,7 @@ function add_type_layouts!(ir::IR, layout::LayoutStrategy)
       add_offsets!(ir, t, layout)
     end
   end
+  ir
 end
 
 function add_stride!(ir::IR, t::ArrayType, layout::LayoutStrategy)
@@ -119,27 +120,40 @@ function add_offsets!(ir::IR, t::StructType, layout::LayoutStrategy)
   end
 end
 
+function member_offsets(t::StructType, layout::LayoutStrategy, storage_classes::Dictionary{SPIRType, Set{StorageClass}}, interfaces::Set{StructType})
+  offsets = UInt32[]
+  base = 0U
+  for (i, subt) in enumerate(t.members)
+    alignmt = alignment(layout, subt, get(Set{StorageClass}, storage_classes, subt), in(subt, interfaces))
+    base = alignmt * cld(base, alignmt)
+    push!(offsets, base)
+    base += compute_minimal_size(subt, t -> get(Set{StorageClass}, storage_classes, t), Base.Fix2(in, interfaces), layout)
+  end
+  offsets
+end
+
 """
-    compute_minimal_size(T, ir::IR, layout::LayoutStrategy)
+    compute_minimal_size(T, storage_classes::Callable, is_interface::Callable, layout::LayoutStrategy)
 
 Compute the minimal size that a type `T` should have, using the alignments computed by the provided layout strategy.
 """
 function compute_minimal_size end
 
 compute_minimal_size(T::DataType, ir::IR, layout::LayoutStrategy) = compute_minimal_size(ir.typerefs[T], ir, layout)
-compute_minimal_size(t::ScalarType, ir::IR, layout::LayoutStrategy) = scalar_alignment(t)
-compute_minimal_size(t::Union{VectorType, MatrixType}, ir::IR, layout::LayoutStrategy) = t.n * compute_minimal_size(t.eltype, ir, layout)
-compute_minimal_size(t::ArrayType, ir::IR, layout::LayoutStrategy) = extract_size(t) * compute_minimal_size(t.eltype, ir, layout)
+compute_minimal_size(t::SPIRType, ir::IR, layout::LayoutStrategy) = compute_minimal_size(t, Base.Fix1(storage_classes, ir), t -> has_decoration(ir, t, DecorationBlock), layout)
+compute_minimal_size(t::ScalarType, storage_classes, is_interface, layout::LayoutStrategy) = scalar_alignment(t)
+compute_minimal_size(t::Union{VectorType, MatrixType}, storage_classes, is_interface, layout::LayoutStrategy) = t.n * compute_minimal_size(t.eltype, storage_classes, is_interface, layout)
+compute_minimal_size(t::ArrayType, storage_classes, is_interface, layout::LayoutStrategy) = extract_size(t) * compute_minimal_size(t.eltype, storage_classes, is_interface, layout)
 
-function compute_minimal_size(t::StructType, ir::IR, layout::LayoutStrategy)
+function compute_minimal_size(t::StructType, storage_classes, is_interface, layout::LayoutStrategy)
   res = 0
-  scs = storage_classes(ir, t)
+  scs = storage_classes(t)
   for (i, subt) in enumerate(t.members)
     if i ≠ 1
-      alignmt = alignment(layout, subt, scs, has_decoration(ir, t, DecorationBlock))
+      alignmt = alignment(layout, subt, scs, is_interface(t))
       res = alignmt * cld(res, alignmt)
     end
-    res += compute_minimal_size(subt, ir, layout)
+    res += compute_minimal_size(subt, storage_classes, is_interface, layout)
   end
   res
 end
@@ -192,19 +206,26 @@ end
 
 extract_bytes(data::Vector{UInt8}) = data
 extract_bytes(data::AbstractVector) = reduce(vcat, extract_bytes.(data); init = UInt8[])
+extract_bytes(data1, data2, data...) = reduce(vcat, vcat(extract_bytes(data2), extract_bytes.(data)...); init = extract_bytes(data1))
 
-function getoffsets!(offsets, base, ir::IR, t::StructType)
+function getoffset(ir::IR, t, i)
+  decs = decorations(ir, t, i)
+  isnothing(decs) && error("Missing decorations on member ", i, " of the aggregate type ", t)
+  has_decoration(decs, DecorationOffset) || error("Missing offset declaration for member ", i, " on ", t)
+  decs.offset
+end
+
+function getoffsets!(offsets, base, getoffset, t::StructType)
   for (i, subt) in enumerate(t.members)
-    decs = decorations(ir, t, i)
-    isnothing(decs) && error("Missing decorations on member ", i, " of the aggregate type ", t)
-    has_decoration(decs, DecorationOffset) || error("Missing offset declaration for member ", i, " on ", t)
-    new_offset = base + decs.offset
-    isa(subt, StructType) ? getoffsets!(offsets, new_offset, ir, subt) : push!(offsets, new_offset)
+    new_offset = base + getoffset(t, i)
+    isa(subt, StructType) ? getoffsets!(offsets, new_offset, getoffset, subt) : push!(offsets, new_offset)
   end
   offsets
 end
-getoffsets!(offsets, base, ir::IR, t::SPIRType) = offsets
-getoffsets(ir::IR, t::SPIRType) = getoffsets!(UInt32[], 0U, ir, t)
+
+getoffsets!(offsets, base, getoffsets, t::SPIRType) = offsets
+getoffsets(getoffset, t::SPIRType) = getoffsets!(UInt32[], 0U, getoffset, t)
+getoffsets(ir::IR, t::SPIRType) = getoffsets((t, i) -> getoffset(ir, t, i), t)
 getoffsets(ir::IR, T::DataType) = getoffsets(ir, ir.typerefs[T])
 
 """
@@ -228,3 +249,40 @@ end
 align(data::Vector{UInt8}, t::StructType, offsets::AbstractVector{<:Integer}) = align(data, payload_sizes(t), offsets)
 align(data::Vector{UInt8}, t::StructType, ir::IR) = align(data, t, getoffsets(ir, t))
 align(data::Vector{UInt8}, T::DataType, ir::IR) = align(data, ir.typerefs[T], ir)
+
+"""
+Type information used for associating Julia-level data types with SPIR-V types and
+for applying offsets to pad payload bytes extracted from Julia values.
+"""
+struct TypeInfo
+  mapping::Dictionary{DataType, SPIRType}
+  offsets::Dictionary{SPIRType, Vector{UInt32}}
+end
+
+function TypeInfo(ir::IR)
+  offsets = dictionary([t => getoffsets(ir, t) for t in ir.typerefs])
+  TypeInfo(ir.typerefs, offsets)
+end
+
+function TypeInfo(Ts::AbstractVector{DataType}, layout::LayoutStrategy)
+  mapping = Dictionary{DataType, SPIRType}()
+  offsets = Dictionary{StructType, Vector{UInt32}}()
+
+  storage_classes = Dictionary{SPIRType,Set{StorageClass}}()
+  interfaces = Set{StructType}()
+
+  for T in Ts
+    t = spir_type(T)
+    isa(t, StructType) || continue
+    insert!(mapping, T, t)
+    insert!(offsets, t, member_offsets(t, layout, storage_classes, interfaces))
+    for subt in t.members
+      isa(subt, StructType) || continue
+      insert!(offsets, subt, member_offsets(subt, layout, storage_classes, interfaces))
+    end
+  end
+  TypeInfo(mapping, offsets)
+end
+
+getoffsets(type_info::TypeInfo, T::DataType) = getoffsets(type_info, type_info.mapping[T])
+getoffsets(type_info::TypeInfo, t::SPIRType) = getoffsets((t, i) -> type_info.offsets[t][i], t)

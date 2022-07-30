@@ -63,7 +63,6 @@ end
 
 function build!(dfst::SpanningTreeDFS, next, visited, g::AbstractGraph, time = 0)
   v = pop!(next)
-  # visited[v] && continue
   visited[v] = true
   dfst.discovery_times[v] = (time += 1)
   for w in outneighbors(g, v)

@@ -153,6 +153,7 @@ export
   dependent_functions,
   LayoutStrategy, VulkanLayout, alignment,
   extract_bytes, align, compute_minimal_size, compute_stride, payload_size, getoffsets,
+  TypeInfo,
   @compile,
   invalidate_all!,
   SPIRVInterpreter,

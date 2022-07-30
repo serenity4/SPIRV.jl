@@ -25,35 +25,47 @@ function ir_with_type(T; storage_classes = [])
   ir
 end
 
+layout = VulkanLayout()
+
+struct Align1
+  x::Int64
+  y::Int64
+end
+
+struct Align2
+  x::Int32
+  y::Int64
+end
+
+struct Align3
+  x::Int64
+  y::Int32
+  z::Int32
+end
+
+struct Align4
+  x::Int64
+  y::Int8
+  z::Vec{2,Int16}
+end
+
+struct Align5
+  x::Int64
+  y::Align4
+  z::Int8
+end
+
 @testset "Structure layouts" begin
-  layout = VulkanLayout()
-
   @testset "Alignments" begin
-    struct Align1
-      x::Int64
-      y::Int64
-    end
-
     ir = ir_with_type(Align1)
     add_type_layouts!(ir, layout)
     test_has_offset(ir, Align1, 1, 0)
     test_has_offset(ir, Align1, 2, 8)
 
-    struct Align2
-      x::Int32
-      y::Int64
-    end
-
     ir = ir_with_type(Align2)
     add_type_layouts!(ir, layout)
     test_has_offset(ir, Align2, 1, 0)
     test_has_offset(ir, Align2, 2, 8)
-
-    struct Align3
-      x::Int64
-      y::Int32
-      z::Int32
-    end
 
     ir = ir_with_type(Align3)
     add_type_layouts!(ir, layout)
@@ -61,24 +73,12 @@ end
     test_has_offset(ir, Align3, 2, 8)
     test_has_offset(ir, Align3, 3, 12)
 
-    struct Align4
-      x::Int64
-      y::Int8
-      z::Vec{2,Int16}
-    end
-
     ir = ir_with_type(Align4)
     add_type_layouts!(ir, layout)
     test_has_offset(ir, Align4, 1, 0)
     test_has_offset(ir, Align4, 2, 8)
     test_has_offset(ir, Align4, 3, 10)
     @test compute_minimal_size(Align4, ir, layout) == 14
-
-    struct Align5
-      x::Int64
-      y::Align4
-      z::Int8
-    end
 
     ir = ir_with_type(Align5)
     add_type_layouts!(ir, layout)
@@ -154,5 +154,19 @@ end
     @test getoffsets(ir, t) == [0, 8, 16, 18, 22]
     @test payload_sizes(t) == [8, 8, 1, 4, 1]
     @test align(bytes, t, ir) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06]
+  end
+
+  @testset "TypeInfo" begin
+    Ts = [
+      Align1,
+      Align2,
+      Align3,
+      Align4,
+      Align5,
+    ]
+    type_info = TypeInfo(Ts, layout)
+    for T in Ts
+      @test getoffsets(type_info, T) == getoffsets(add_type_layouts!(ir_with_type(T), layout), T)
+    end
   end
 end;
