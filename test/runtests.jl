@@ -23,6 +23,7 @@ end
   include("deltagraph.jl");
   include("utilities.jl");
   include("modules.jl");
+  include("spir_types.jl");
   include("metadata.jl");
   include("ir.jl");
   include("spvasm.jl");

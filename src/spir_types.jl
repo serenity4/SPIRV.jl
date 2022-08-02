@@ -97,12 +97,18 @@ mutable struct StructType <: SPIRType
   members::Vector{SPIRType}
 end
 
+Base.:(≈)(x::SPIRType, y::SPIRType) = typeof(x) == typeof(y) && x == y
+Base.:(≈)(x::StructType, y::StructType) = length(x.members) == length(y.members) && all(subx ≈ suby for (subx, suby) in zip(x.members, y.members))
+Base.:(≈)(x::ArrayType, y::ArrayType) = x.eltype ≈ y.eltype && x.size == y.size
+Base.:(≈)(x::ImageType, y::ImageType) = x.sampled_type ≈ y.sampled_type && x.dim == y.dim && x.depth === y.depth && x.arrayed == y.arrayed && x.multisampled == y.multisampled && x.sampled === y.sampled && x.format == y.format && x.access_qualifier === y.access_qualifier
+
 struct PointerType <: SPIRType
   storage_class::StorageClass
   type::SPIRType
 end
 
 PointerType(inst::Instruction, type::SPIRType) = PointerType(first(inst.arguments), type)
+Base.:(≈)(x::PointerType, y::PointerType) = x.storage_class == y.storage_class && x.type ≈ y.type
 
 @auto_hash_equals struct FunctionType <: SPIRType
   rettype::SPIRType
