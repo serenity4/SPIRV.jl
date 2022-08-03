@@ -34,6 +34,10 @@ payload_size(t::Union{VectorType,MatrixType}) = t.n * payload_size(t.eltype)
 payload_size(t::ArrayType) = extract_size(t) * payload_size(t.eltype)
 payload_size(t::StructType) = sum(payload_size, t.members)
 
+payload_size(T::DataType) = sizeof(T)
+payload_size(x::AbstractVector) = payload_size(eltype(x)) * length(x)
+payload_size(x) = payload_size(typeof(x))
+
 """
 Layout strategy used to compute alignments, offsets and strides.
 """
@@ -181,17 +185,14 @@ end
 last_member(t::SPIRType) = t
 last_member(t::StructType) = last_member(last(t.members))
 
-function payload_sizes!(sizes, t::StructType)
-  for subt in t.members
-    payload_sizes!(sizes, subt)
+function payload_sizes!(sizes, T)
+  !is_composite_type(T) && return push!(sizes, payload_size(T))
+  for subT in member_types(T)
+    payload_sizes!(sizes, subT)
   end
-end
-payload_sizes!(sizes, t::SPIRType) = push!(sizes, payload_size(t))
-function payload_sizes(t::SPIRType)
-  sizes = Int[]
-  payload_sizes!(sizes, t)
   sizes
 end
+payload_sizes(T) = payload_sizes!(Int[], T)
 
 """
 Extract bytes from a Julia value, with strictly no alignment.
@@ -216,16 +217,44 @@ function getoffset(ir::IR, t, i)
   decs.offset
 end
 
-function getoffsets!(offsets, base, getoffset, t::StructType)
-  for (i, subt) in enumerate(t.members)
-    new_offset = base + getoffset(t, i)
-    isa(subt, StructType) ? getoffsets!(offsets, new_offset, getoffset, subt) : push!(offsets, new_offset)
+is_composite_type(t::SPIRType) = isa(t, StructType)
+is_composite_type(T::DataType) = isstructtype(T) && !(T <: Vec)
+member_types(t::StructType) = t.members
+member_types(T::DataType) = fieldtypes(T)
+
+reinterpret_type(T::Type) = T
+reinterpret_type(::Type{Vec{N,T}}) where {N,T} = NTuple{N,T}
+reinterpret_type(::Type{Arr{N,T}}) where {N,T} = NTuple{N,reinterpret_type(T)}
+reinterpret_type(::Type{Mat{N,M,T}}) where {N,M,T} = NTuple{M,NTuple{N,T}}
+
+reinterpreted(::Type{Vec{N,T}}, arr) where {N,T} = Vec{N,T}(Tuple(arr))
+reinterpreted(::Type{Arr{N,T}}, arr) where {N,T} = Arr{N,T}(reinterpreted.(T, arr))
+reinterpreted(::Type{Mat{N,M,T}}, arr) where {N,M,T} = error("Not supported yet.")
+reinterpreted(T::Type, arr) = arr
+
+function reinterpret_spirv(T::Type, x::AbstractArray{UInt8})
+  RT = reinterpret_type(T)
+  T === RT && return only(reinterpret(T, x))
+  reinterpreted(T, only(reinterpret(RT, x)))
+end
+
+function reinterpret_spirv(V::Type{Vector{T}}, x::AbstractArray{UInt8}) where {T}
+  RT = reinterpret_type(T)
+  T === RT && return collect(reinterpret(T, x))
+  [reinterpreted(T, el) for el in reinterpret(RT, x)]
+end
+
+function getoffsets!(offsets, base, getoffset, T)
+  !is_composite_type(T) && return offsets
+  for (i, subT) in enumerate(member_types(T))
+    new_offset = base + getoffset(T, i)
+    is_composite_type(subT) ? getoffsets!(offsets, new_offset, getoffset, subT) : push!(offsets, new_offset)
   end
   offsets
 end
 
-getoffsets!(offsets, base, getoffsets, t::SPIRType) = offsets
 getoffsets(getoffset, t::SPIRType) = getoffsets!(UInt32[], 0U, getoffset, t)
+getoffsets(T::DataType) = getoffsets!(UInt32[], 0U, fieldoffset, T)
 getoffsets(ir::IR, t::SPIRType) = getoffsets((t, i) -> getoffset(ir, t, i), t)
 getoffsets(ir::IR, T::DataType) = getoffsets(ir, ir.typerefs[T])
 
@@ -351,3 +380,5 @@ function align(data::AbstractVector{UInt8}, t::ArrayType, stride::Integer, eloff
   end
   aligned
 end
+
+getstride(T::DataType) = Base.elsize(T)

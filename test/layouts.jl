@@ -1,5 +1,5 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData, payload_sizes, getstride
+using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, DecorationData, payload_sizes, getstride, reinterpret_spirv
 
 function test_has_offset(ir, T, field, offset)
   decs = decorations(ir, T, field)
@@ -56,6 +56,9 @@ struct Align5
 end
 
 Align6 = Arr{2, Align5}
+
+primitive type WeirdType 24 end
+WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
 
 @testset "Structure layouts" begin
   @testset "Alignments" begin
@@ -178,5 +181,26 @@ Align6 = Arr{2, Align5}
     for T in Ts
       @test getoffsets(type_info, T) == getoffsets(add_type_layouts!(ir_with_type(T), layout), T)
     end
+  end
+
+  @testset "Layout extraction from Julia types" begin
+    @test payload_sizes(Align5) == [8, 8, 1, 4, 1]
+    @test getoffsets(Align3) == [0, 8, 12]
+    @test getoffsets(Align4) == [0, 8, 16]
+    # FIXME: These offsets are wrong, as they assume 8-byte pointers for non-`isbits` elements.
+    @test_broken getoffsets(Align5) == [0, 8, 16, 18, 22]
+    @test getstride(Vector{WeirdType}) == 4
+  end
+
+  @testset "Serializing and deserializing Julia values" begin
+    function test_reinterpret_noalign(x)
+      bytes = extract_bytes(x)
+      @test length(bytes) == payload_size(x)
+      @test reinterpret_spirv(typeof(x), bytes) == x
+    end
+    test_reinterpret_noalign(Vec(1, 2))
+    test_reinterpret_noalign([Vec(1, 2), Vec(3, 4)])
+    # FIXME: Non-`isbits` types are not supported for `Arr`.
+    # test_reinterpret_noalign(Arr(Vec(1, 2), Vec(3, 4)))
   end
 end;
