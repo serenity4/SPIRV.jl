@@ -93,9 +93,11 @@ SPIR-V aggregate type.
 Equality is defined in terms of identity, since different aggregate
 types have in principle different semantics.
 """
-mutable struct StructType <: SPIRType
+struct StructType <: SPIRType
+  id::UUID
   members::Vector{SPIRType}
 end
+StructType(members) = StructType(uuid1(), members)
 
 Base.:(≈)(x::SPIRType, y::SPIRType) = typeof(x) == typeof(y) && x == y
 Base.:(≈)(x::StructType, y::StructType) = length(x.members) == length(y.members) && all(subx ≈ suby for (subx, suby) in zip(x.members, y.members))
