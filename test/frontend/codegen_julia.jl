@@ -115,6 +115,8 @@ end
   end
 
   @testset "Custom SPIR-V types" begin
+    # We will often index until `end - 1` instead of the whole array of code expressions
+    # whenever we are not interested in the `return` statement.
     @testset "Vec" begin
       v1 = Vec(0.0, 1.0, 0.0)
       v2 = Vec(1.0, 2.0, 1.0)
@@ -141,10 +143,16 @@ end
             [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
 
       (; code, ssavaluetypes) = SPIRV.@code_typed store(::Vector{Float64})
-      @test operation.(code[1:(end - 1)]) ==
-            [:AccessChain, :Load, :AccessChain, :Load, :FAdd, :AccessChain, :Store]
-      @test ssavaluetypes[1:(end - 1)] ==
-            [repeat([Pointer{Float64}, Float64], 2); Float64; Pointer{Float64}; Nothing]
+      # There may be a `OpUConvert` + `OpISub` to convert the Int64 to a UInt32 at runtime.
+      # On a few recent versions of Julia, this conversion is optimized away.
+      # So we just test that the first 5 instructions and last 2 are correct.
+      @test in(length(code), (8, 10)) # 10 is if the conversion is present.
+      @test operation.(code[1:5]) ==
+            [:AccessChain, :Load, :AccessChain, :Load, :FAdd]
+      @test operation.(code[end-2:end-1]) == [:AccessChain, :Store]
+      @test ssavaluetypes[1:5] ==
+            [repeat([Pointer{Float64}, Float64], 2); Float64]
+      @test ssavaluetypes[end-2:end-1] == [Pointer{Float64}; Nothing]
     end
 
     @testset "Matrix" begin

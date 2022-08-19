@@ -7,7 +7,7 @@ if VERSION ≥ v"1.8.0-beta1"
   Core.Compiler.isoverlayed(::NOverlayMethodTable) = true
 end
 
-@static if VERSION < v"1.9.0-DEV.149"
+@static if VERSION < v"1.8"
   function Core.Compiler.findall(@nospecialize(sig::Type), table::NOverlayMethodTable; limit::Int = typemax(Int))
     min_val = Ref(typemin(UInt))
     max_val = Ref(typemax(UInt))
