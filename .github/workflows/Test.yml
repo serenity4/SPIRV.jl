@@ -13,7 +13,6 @@ jobs:
         exclude:
           - os: macOS-latest
             julia-arch: x86
-        allow-failures: ['nightly']
 
     steps:
       - uses: actions/checkout@v2
@@ -28,6 +27,7 @@ jobs:
           Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:JuliaRegistries/General"));
           Pkg.instantiate()'
       - run: julia --color=yes --project -e 'using Pkg; Pkg.test(coverage = false)'
+      - continue-on-error: ${{ matrix.julia-version == 'nightly' }}
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v2
         with:
