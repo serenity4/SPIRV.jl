@@ -135,7 +135,7 @@ Base.BroadcastStyle(::DefaultArrayStyle{0}, style::BroadcastStyleSPIRV) = style
 Base.BroadcastStyle(style::BroadcastStyleSPIRV, ::DefaultArrayStyle{0}) = style
 Base.similar(bc::Broadcasted{BroadcastStyleSPIRV{T}}, ::Type) where {T} = zero(T)
 @inline Broadcast.instantiate(bc::Broadcasted{BroadcastStyleSPIRV{T}}) where {T<:Vec} = bc
-@inline Base.materialize!(v::T, bc::Broadcasted{BroadcastStyleSPIRV{T}}) where {T<:Vec} = @inline copyto!(v, only(bc.args))
+@inline Base.materialize!(v::T, bc::Broadcasted{BroadcastStyleSPIRV{T}}) where {T<:Vec} = copyto!(v, only(bc.args))
 
 for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, :Mod))
   @eval Base.$f(v1::Vec{N}, v2::Vec{N}) where {N} = $f(promote(v1, v2)...)
