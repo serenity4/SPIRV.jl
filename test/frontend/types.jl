@@ -39,6 +39,19 @@ using SPIRV, Test
 
     @test_throws ArgumentError Vec(1.0)
     @test_throws ArgumentError Vec(1.0, 2.0, 3.0, 4.0, 5.0)
+
+    # Broadcasting.
+    v = Vec2(1, 2)
+    copyto!(v, Vec2(0, 0))
+    @test all(iszero, v)
+    @test_throws MethodError copyto!(v, Vec3(0, 0, 0))
+    v = Vec2(1, 2)
+    @test v .+ v == v + v == 2v
+    @test v .- v == v - v == zero(Vec2)
+    @test v .* Vec(1, 1) == v * Vec(1, 1) == v
+    @test v ./ Vec(1, 1) == v * Vec(1, 1) == v
+    @test 1 .* v == 1 * v == v
+    @test v .* v .+ v .* 1 == v * v + v * 1 == Vec2(2, 6)
   end
 
   @testset "Mat" begin

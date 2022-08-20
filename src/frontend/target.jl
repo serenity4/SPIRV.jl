@@ -16,7 +16,7 @@ struct SPIRVTarget
   interp::SPIRVInterpreter
 end
 
-function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false, interp = SPIRVInterpreter())
+function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false, interp::SPIRVInterpreter = SPIRVInterpreter())
   reset_world!(interp)
 
   mis = method_instances(f, argtypes, interp)
@@ -184,9 +184,9 @@ macro code_typed(debuginfo, interp, ex)
   end
 end
 
-macro code_typed(interp, ex)
-  esc(:($(@__MODULE__).@code_typed debuginfo = :source $interp $ex))
+macro code_typed(debuginfo, ex)
+  esc(:($(@__MODULE__).@code_typed $debuginfo $(SPIRVInterpreter()) $ex))
 end
 macro code_typed(ex)
-  esc(:($(@__MODULE__).@code_typed $(SPIRVInterpreter()) $ex))
+  esc(:($(@__MODULE__).@code_typed debuginfo=:none $ex))
 end

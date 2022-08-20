@@ -30,11 +30,12 @@ Base.eltype(::Type{<:AbstractSPIRVArray{T}}) where {T} = T
 Base.firstindex(T::Type{<:AbstractSPIRVArray}, d = 1) = 1
 Base.lastindex(T::Type{<:AbstractSPIRVArray}, d) = size(T)[d]
 Base.lastindex(T::Type{<:AbstractSPIRVArray}) = prod(size(T))
+Base.eachindex(T::Type{<:AbstractSPIRVArray}) = 0U:((lastindex(T) - 1) * U)
 
 Base.similar(T::Type{<:AbstractSPIRVArray}, element_type, dims) = zero(T)
 Base.similar(T::Type{<:AbstractSPIRVArray}) = similar(T, eltype(T), size(T))
 
-for f in (:length, :eltype, :size, :firstindex, :lastindex, :zero, :one, :similar)
+for f in (:length, :eltype, :size, :firstindex, :lastindex, :zero, :one, :similar, :eachindex)
   @eval Base.$f(v::AbstractSPIRVArray) = $f(typeof(v))
 end
 

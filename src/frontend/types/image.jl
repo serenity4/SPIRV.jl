@@ -29,11 +29,20 @@ Base.getindex(img::Image, coord::Scalar) = ImageRead(img, coord)
 Base.getindex(img::Image, coord::Scalar, coord2::Scalar, coords::Scalar...) = getindex(img, Vec(coord, coord2, coords...))
 Base.getindex(img::Image, coords::Vec) = ImageRead(img, coords)
 
-#TODO: Support ImageRead and ImageWrite
-# @noinline function ImageRead(img::Image, coord::Union{Vec,Scalar})
-#   #TODO: Figure out return type from image format.
-#   zero(???)
-# end
+Base.size(image::Image) = ImageQuerySize(image)
+Base.size(image::Image, lod::UInt32) = ImageQuerySizeLod(image, lod)
+Base.size(image::Image, lod::Integer) = size(image, convert(UInt32, lod))
+
+@noinline ImageQuerySize(image::Image{<:Any,Dim2D})::Vec{2,UInt32} = Vec{2,UInt32}(size(image.data)...)
+@noinline ImageQuerySize(image::Image{<:Any,Dim3D})::Vec{3,UInt32} = Vec{3,UInt32}(size(image.data)...)
+
+@noinline ImageQuerySizeLod(image::Image{<:Any,Dim2D}, lod)::Vec{2,UInt32} = Vec{2,UInt32}(size(image.data)...)
+@noinline ImageQuerySizeLod(image::Image{<:Any,Dim3D}, lod)::Vec{3,UInt32} = Vec{3,UInt32}(size(image.data)...)
+
+@noinline function ImageRead(img::Image, coord::Union{Vec{<:Any,BitInteger},BitInteger})
+  isa(coord, Integer) && return img.data[coord]
+  img.data[CartesianIndex(coord...)]
+end
 
 struct Sampler end
 

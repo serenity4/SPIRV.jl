@@ -198,6 +198,13 @@ end
 @noinline UDiv(x::T, y::T) where {T<:BitUnsigned} = Base.udiv_int(x, y)
 @noinline SDiv(x::T, y::T) where {T<:BitSigned} = Base.sdiv_int(x, y)
 
+# Not SPIR-V operations, but handy to define to abstract over unsigned/signed integers.
+IRem(x::T, y::T) where {T<:Union{BitSigned,BitUnsigned}} = SRem(x, y)
+IMod(x::T, y::T) where {T<:BitSigned} = SMod(x, y)
+IMod(x::T, y::T) where {T<:BitUnsigned} = UMod(x, y)
+IDiv(x::T, y::T) where {T<:BitSigned} = SDiv(x, y)
+IDiv(x::T, y::T) where {T<:BitUnsigned} = UDiv(x, y)
+
 @override ifelse(cond::Bool, x, y) = Select(cond, x, y)
 @noinline Select(cond::Bool, x::T, y::T) where {T} = Core.ifelse(cond, x, y)
 

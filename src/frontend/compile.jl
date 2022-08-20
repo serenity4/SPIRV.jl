@@ -86,10 +86,10 @@ function emit!(ir::IR, target::SPIRVTarget, variables = Dictionary{Int,Variable}
   irmap = IRMapping()
   arg_idx = 0
   gvar_idx = 0
-  for i = 1:(target.mi.def.nargs - 1)
-    argid = haskey(variables, i) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
-    insert!(irmap.args, Core.Argument(i + 1), argid)
-    set_name!(ir, argid, target.code.slotnames[i + 1])
+  for i in 2:target.mi.def.nargs
+    argid = haskey(variables, i - 1) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
+    insert!(irmap.args, Core.Argument(i), argid)
+    set_name!(ir, argid, target.code.slotnames[i])
   end
 
   try

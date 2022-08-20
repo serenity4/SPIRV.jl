@@ -346,4 +346,43 @@ using SPIRV, Test
       """
     )
   end
+
+  @testset "Broadcasting" begin
+    broadcast_test!(v, arr, image) = v .= image(Vec2(1, 2)).rgb .* v .* arr[0U] .* 2f0
+
+    v = Vec3(1, 2, 3)
+    image = SampledImage(Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}(zeros(512, 512)))
+    arr = Arr(0f0)
+    @test broadcast_test!(v, arr, image) == zero(Vec3)
+
+    ir = @compile broadcast_test!(::Vec3, ::Arr{1, Float32}, ::SampledImage{Image{Float32, SPIRV.Dim2D, 0, false, false, 1, SPIRV.ImageFormatRgba16f}})
+    @test unwrap(validate(ir))
+  end
+
+  @testset "Loops" begin
+    struct GaussianBlur
+      scale::Float32
+      strength::Float32
+    end
+    
+    function compute_blur(blur::GaussianBlur, reference, direction, uv)
+      weights = Arr{Float32}(0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216)
+      # TODO: Implement broadcasting.
+      tex_offset = 1.0 ./ size(Image(reference), 0) .* blur.scale
+      res = zero(Vec3)
+      for i in eachindex(weights)
+        vec = direction == 1 ? Vec2(tex_offset.x * i, 0.0) : Vec2(0.0, tex_offset.y * i)
+        res .+= reference(uv .+ vec).rgb .* weights[i] .* blur.strength
+        res .+= reference(uv .- vec).rgb .* weights[i] .* blur.strength
+      end
+      res
+    end
+
+    image = SampledImage(Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}(zeros(512, 512)))
+    blur = GaussianBlur(1.0, 1.0)
+    @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec3)
+
+    # Loops not supported yet.
+    @test_throws "merge candidate" @compile compute_blur(::GaussianBlur, ::SampledImage{Image{Float32, SPIRV.Dim2D, 0, false, false, 1, SPIRV.ImageFormatRgba16f}}, ::UInt32, ::Vec2)
+  end
 end;

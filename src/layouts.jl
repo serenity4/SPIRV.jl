@@ -208,6 +208,7 @@ end
 
 extract_bytes(data::Vector{UInt8}) = data
 extract_bytes(data::AbstractVector) = reduce(vcat, extract_bytes.(data); init = UInt8[])
+extract_bytes(data::AbstractSPIRVArray) = Base.@invoke extract_bytes(data::T where T)
 extract_bytes(data1, data2, data...) = reduce(vcat, vcat(extract_bytes(data2), extract_bytes.(data)...); init = extract_bytes(data1))
 
 function getoffset(ir::IR, t, i)
