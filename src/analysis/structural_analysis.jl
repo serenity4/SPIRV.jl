@@ -48,6 +48,7 @@ REGION_IMPROPER
     while length(outneighbors(g, v)) == 1
       v = only(outneighbors(g, v))
       length(inneighbors(g, v)) == 1 || break
+      all(!in(vs), outneighbors(g, v)) || break
       in(v, vs) && break
       push!(vs, v)
     end
@@ -56,6 +57,7 @@ REGION_IMPROPER
     while length(inneighbors(g, v)) == 1
       v = only(inneighbors(g, v))
       length(outneighbors(g, v)) == 1 || break
+      all(!in(vs), inneighbors(g, v)) || break
       in(v, vs) && break
       pushfirst!(vs, v)
     end
@@ -114,7 +116,7 @@ end
 @active termination_region(args) begin
   @when (g, v) = args begin
     length(outneighbors(g, v)) ≥ 2 || return
-    termination_blocks = filter(isempty ∘ Fix1(outneighbors, g), outneighbors(g, v))
+    termination_blocks = filter(w -> isempty(outneighbors(g, w)) && length(inneighbors(g, w)) == 1, outneighbors(g, v))
     isempty(termination_blocks) && return
     Some(termination_blocks)
   end

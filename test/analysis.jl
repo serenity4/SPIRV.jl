@@ -21,6 +21,13 @@ g6() = DeltaGraph(9, 1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6, 5 => 7, 6 =
 g7() = DeltaGraph(5, 1 => 2, 1 => 3, 2 => 3, 3 => 2, 2 => 4, 3 => 5)
 # CFG from https://www.sable.mcgill.ca/~hendren/621/ControlFlowAnalysis_Handouts.pdf
 g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 5, 8 => 9, 9 => 11, 11 => 8, 9 => 10, 10 => 2, 9 => 4)
+# Entry node leading to a pure cycle between three nodes.
+g9() = DeltaGraph(4, 1 => 2, 2 => 3, 3 => 4, 4 => 2)
+# CFG with a branch between a loop and a termination node from a node dominating a loop, with that loop otherwise dominating the termination node.
+g10() = DeltaGraph(4, 1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
+
+# The core structure is `DeltaGraph(6, 1 => 2, 1 => 6, 2 => 3, 3 => 4, 4 => 5, 5 => 2, 5 => 6)`
+# g11() = DeltaGraph(10, 1 => 2, 1 => 10, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 9, 9 => 2, 8 => 10)
 
 @testset "Function analysis" begin
   @testset "Static call graph traversal" begin
@@ -284,6 +291,34 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
             ControlTree(3, REGION_BLOCK),
             ControlTree(5, REGION_BLOCK),
           ]),
+        ])
+
+        g = g9()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_NATURAL_LOOP, [
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK, [
+              ControlTree(3, REGION_BLOCK),
+              ControlTree(4, REGION_BLOCK),
+            ]),
+          ]),
+        ])
+
+        g = g10()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_IF_THEN, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_NATURAL_LOOP, [
+              ControlTree(2, REGION_BLOCK),
+              ControlTree(3, REGION_BLOCK),
+            ]),
+          ]),
+          ControlTree(4, REGION_BLOCK),
         ])
       end
     end
