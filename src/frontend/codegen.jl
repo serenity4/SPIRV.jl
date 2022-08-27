@@ -6,6 +6,9 @@ function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::Functio
       (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Fix1(in, e), block_ranges(target)), irmap) for e in jinst.edges)))
     :($f($(args...))) => @match f begin
       ::GlobalRef => @match getfield(f.mod, f.name) begin
+        # Loop constructs use `Base.not_int` seemingly from the C code, so we
+        # need to handle it if encountered.
+        &Base.not_int => (OpNot, args)
         ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$f'."))
         &getfield => begin
           composite = args[1]
@@ -202,6 +205,7 @@ end
 function literals_to_const!(args, ir::IR, irmap::IRMapping, opcode)
   for (i, arg) in enumerate(args)
     if isa(arg, Bool) || (isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, QuoteNode)) && !is_literal(opcode, args, i)
+      (isa(arg, Int64) || isa(arg, Float64) || isa(arg, UInt64)) && error("64-bit literals are not supported yet.")
       args[i] = emit!(ir, irmap, Constant(arg))
     end
   end

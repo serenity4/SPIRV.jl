@@ -277,9 +277,10 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRV
   for i in range
     jinst = code[i]
     # Ignore single `nothing::Nothing` instructions.
-    # They seem to be only here to provide a dummy basic block with
+    # They seem to be only here as part of dummy basic blocks
     # for instructions such as `OpPhi`.
-    isnothing(jinst) && length(range) == 1 && continue
+    # Actual `nothing` arguments are passed by symbol directly.
+    (isnothing(jinst) || jinst === GlobalRef(Base, :nothing)) && continue
     jtype = ssavaluetypes[i]
     core_ssaval = Core.SSAValue(i)
     spv_inst = nothing

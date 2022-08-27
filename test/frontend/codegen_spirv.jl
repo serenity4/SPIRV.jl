@@ -383,6 +383,6 @@ using SPIRV, Test
     @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec3)
 
     # Loops not supported yet.
-    @test_throws "merge candidate" @compile compute_blur(::GaussianBlur, ::SampledImage{Image{Float32, SPIRV.Dim2D, 0, false, false, 1, SPIRV.ImageFormatRgba16f}}, ::UInt32, ::Vec2)
+    @test_throws SPIRV.CompilationError @compile compute_blur(::GaussianBlur, ::SampledImage{Image{Float32, SPIRV.Dim2D, 0, false, false, 1, SPIRV.ImageFormatRgba16f}}, ::UInt32, ::Vec2)
   end
 end;
