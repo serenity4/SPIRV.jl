@@ -1,29 +1,29 @@
 using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
-using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, node
+using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, node, cyclic_region, acyclic_region
 using SPIRV: REGION_BLOCK, REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION, REGION_PROPER, REGION_SELF_LOOP, REGION_WHILE_LOOP, REGION_NATURAL_LOOP, REGION_IMPROPER
 
 # All the following graphs are rooted in 1.
 
-# Symmetric diverge/merge point.
+"Symmetric diverge/merge point."
 g1() = DeltaGraph(4, 1 => 2, 1 => 3, 2 => 4, 3 => 4)
-# No merge point, two sinks.
+"No merge point, two sinks."
 g2() = DeltaGraph(4, 1 => 2, 1 => 3, 3 => 4)
-# Graph with a merge point that is the target of both a primary and a secondary branching construct (nested within the primary).
+"Graph with a merge point that is the target of both a primary and a secondary branching construct (nested within the primary)."
 g3() = DeltaGraph(6, 1 => 2, 1 => 3, 2 => 4, 2 => 5, 4 => 6, 5 => 6, 3 => 6)
-# Graph with a merge point dominated by a cycle.
+"Graph with a merge point dominated by a cycle."
 g4() = DeltaGraph(8, 1 => 2, 1 => 3, 2 => 4, 4 => 5, 4 => 7, 5 => 6, 6 => 4, 7 => 8, 3 => 8)
-# Graph with three sinks and a merge point dominated by a branching construct wherein one branch is a sink.
+"Graph with three sinks and a merge point dominated by a branching construct wherein one branch is a sink."
 g5() = DeltaGraph(8, 1 => 2, 2 => 3, 2 => 4, 4 => 6, 1 => 5, 5 => 6, 6 => 7, 6 => 8)
-# Graph with a simple source, a central vertex and a simple sink. The central vertex contains two separate loops with one having a symmetric branching construct inside.
+"Graph with a simple source, a central vertex and a simple sink. The central vertex contains two separate loops with one having a symmetric branching construct inside."
 g6() = DeltaGraph(9, 1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 2, 2 => 9)
-# Basic irreducible CFG.
+"Basic irreducible CFG."
 g7() = DeltaGraph(5, 1 => 2, 1 => 3, 2 => 3, 3 => 2, 2 => 4, 3 => 5)
-# CFG from https://www.sable.mcgill.ca/~hendren/621/ControlFlowAnalysis_Handouts.pdf
+"CFG from https://www.sable.mcgill.ca/~hendren/621/ControlFlowAnalysis_Handouts.pdf"
 g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 5, 8 => 9, 9 => 11, 11 => 8, 9 => 10, 10 => 2, 9 => 4)
-# Entry node leading to a pure cycle between three nodes.
+"Entry node leading to a pure cycle between three nodes."
 g9() = DeltaGraph(4, 1 => 2, 2 => 3, 3 => 4, 4 => 2)
-# CFG with a branch between a loop and a termination node from a node dominating a loop, with that loop otherwise dominating the termination node.
+"CFG with a branch between a loop and a termination node from a node dominating a loop, with that loop otherwise dominating the termination node."
 g10() = DeltaGraph(4, 1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
 
 # The core structure is `DeltaGraph(6, 1 => 2, 1 => 6, 2 => 3, 3 => 4, 4 => 5, 5 => 2, 5 => 6)`
@@ -151,6 +151,36 @@ g10() = DeltaGraph(4, 1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
     end
 
     @testset "Structural analysis" begin
+      @testset "Regions" begin
+        g = DeltaGraph(2, 1 => 2)
+        @test acyclic_region(g, 2) == (REGION_BLOCK, [1, 2])
+        g = DeltaGraph(3, 1 => 2, 2 => 3)
+        @test acyclic_region(g, 2) == (REGION_BLOCK, [1, 2, 3])
+
+        g = DeltaGraph(3, 1 => 3, 1 => 2, 2 => 3)
+        @test acyclic_region(g, 1) == (REGION_IF_THEN, [1, 2])
+
+        g = DeltaGraph(4, 1 => 2, 1 => 3, 2 => 4, 3 => 4)
+        @test acyclic_region(g, 1) == (REGION_IF_THEN_ELSE, [1, 2, 3])
+
+        g = DeltaGraph(5, 1 => 2, 1 => 3, 1 => 4, 2 => 5, 3 => 5, 4 => 5)
+        @test acyclic_region(g, 1) == (REGION_CASE, [1, 2, 3, 4, 5])
+
+        g = DeltaGraph(3, 1 => 2, 1 => 3)
+        @test acyclic_region(g, 1) == (REGION_TERMINATION, [1, 2, 3])
+
+        g = DeltaGraph(4, 1 => 2, 1 => 3, 1 => 4)
+        @test acyclic_region(g, 1) == (REGION_TERMINATION, [1, 2, 3, 4])
+
+        g = DeltaGraph(4, 1 => 2, 2 => 3, 2 => 4, 3 => 2)
+        @test cyclic_region(g, 2) == (REGION_WHILE_LOOP, [2, 3])
+
+        g = DeltaGraph(5, 1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5)
+        @test acyclic_region(g, 2) == (REGION_TERMINATION, [2, 5])
+        @test cyclic_region(g, 2) == (REGION_NATURAL_LOOP, [2, 3, 4])
+        @test acyclic_region(g, 3) == (REGION_BLOCK, [3, 4])
+      end
+
       @testset "Control trees" begin
         test_coverage(g, ctree) = Set([node(c) for c in Leaves(ctree)]) == Set(vertices(g))
 

@@ -207,19 +207,29 @@ function add_mapping!(irmap::IRMapping, ir::IR, ranges, nodelist)
 end
 
 function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget, ranges, nodelist, backedges)
+  (; cfg) = target
+  ctree = ControlTree(cfg.g)
   for node in nodelist
     emit!(fdef, ir, irmap, target, ranges[node], node)
-    ins = inneighbors(target.cfg, node)
-    outs = outneighbors(target.cfg, node)
-    local_backedges = filter(in(backedges), map(Fix2(Edge, node), ins))
-    if !isempty(local_backedges)
-      # Must be a loop.
+    ins = inneighbors(cfg, node)
+    outs = outneighbors(cfg, node)
+    length(ins) > 1 || length(outs) > 1 || continue
+
+    # Structured loop or selection.
+
+    # We iterate nodes in reverse post-order, so we will have to deal
+    # with outer structures first and inner structures last.
+    # We therefore get the control tree at the highest level.
+    ctree_local = outermost_tree(ctree, node)
+    if region_type(ctree_local) == REGION_NATURAL_LOOP
+      local_backedges = filter(in(backedges), map(Fix2(Edge, node), ins))
       if length(local_backedges) > 1
         throw(CompilationError("There is more than one backedge to a loop."))
       end
-      vcont = only(local_backedges)
+      vcont = src(only(local_backedges))
       vmerge = nothing
-      vmerge_candidates = findall(v -> !has_path(target.cfg, v, node), outs)
+      cyclic_nodes = SPIRV.node.(Leaves(ctree_local))
+      vmerge_candidates = Set(dst.(findall(e -> !in(dst(e), cyclic_nodes) && in(src(e), cyclic_nodes), edges(cfg))))
       @switch length(vmerge_candidates) begin
         @case 0
         throw(CompilationError("No merge candidate found for a loop."))

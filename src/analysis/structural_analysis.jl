@@ -79,7 +79,7 @@ end
       if is_single_entry_single_exit(g, b)
         only(outneighbors(g, b)) == c && return (v, b, c)
       elseif is_single_entry_single_exit(g, c)
-        only(outneighbors(g, c)) == b && return (v, b, c)
+        only(outneighbors(g, c)) == b && return (v, c, b)
       end
     end
   end
@@ -102,7 +102,7 @@ end
 @active case_region(args) begin
   @when (g, v) = args begin
     candidate = nothing
-    isempty(outneighbors(g, v)) && return
+    length(outneighbors(g, v)) > 1 || return
     for w in outneighbors(g, v)
       !is_single_entry_single_exit(g, w) && return
       isnothing(candidate) && (candidate = only(outneighbors(g, w)))
@@ -166,6 +166,7 @@ end
 function minimal_cyclic_component(g, v, backedges)
   vs = [v]
   for w in vertices(g)
+    w == v && continue
     for e in backedges
       dst(e) == v || continue
       if has_path(g, w, src(e); exclude_vertices = [v])
@@ -177,21 +178,29 @@ function minimal_cyclic_component(g, v, backedges)
   vs
 end
 
-function cyclic_region(g, v, ec, doms, domtrees, backedges, scc)
+function cyclic_region!(sccs, g, v, ec, doms, domtrees, backedges)
+  ret = @trymatch (g, v) begin
+    self_loop() => (REGION_SELF_LOOP, T[])
+    while_loop(cond, body, merge) => (REGION_WHILE_LOOP, [cond, body])
+  end
+  !isnothing(ret) && return ret
+
+  scc = sccs[findfirst(Fix1(in, v), sccs)]
+  filter!(in(vertices(g)), scc)
+
   length(scc) == 1 && return
 
   any(u -> in(Edge(u, v), ec.retreating_edges), inneighbors(g, v)) || return
   cycle = minimal_cyclic_component(g, v, backedges)
+  entry_edges = filter(e -> in(dst(e), cycle) && !in(src(e), cycle), edges(g))
 
-  # Natural loop.
   if any(u -> in(Edge(u, v), backedges), inneighbors(g, v))
-    entry_edges = filter(e -> in(dst(e), cycle) && !in(src(e), cycle), edges(g))
+    # Natural loop.
     # FIXME: Return vertices in reverse post-order.
     all(==(v) ∘ dst, entry_edges) && return (REGION_NATURAL_LOOP, cycle)
   end
 
   # Improper region.
-  entry_edges = filter(e -> in(dst(e), cycle) && !in(src(e), cycle), edges(g))
   length(entry_edges) < 2 && return
   # length(entry_edges) < 2 && return
   entry_points = unique!(src.(entry_edges))
@@ -208,6 +217,27 @@ function cyclic_region(g, v, ec, doms, domtrees, backedges, scc)
   end
   # FIXME: Return vertices in reverse post-order (according to one possible post-order traversal).
   (REGION_IMPROPER, vs)
+end
+
+function acyclic_region(g, v)
+  dfst = SpanningTreeDFS(g)
+  ec = EdgeClassification(g, dfst)
+  doms = dominators(g)
+  bedges = backedges(g, ec, doms)
+  domtree = DominatorTree(doms)
+  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node(x))
+  acyclic_region(g, v, ec, doms, domtrees, bedges)
+end
+
+function cyclic_region(g, v)
+  dfst = SpanningTreeDFS(g)
+  ec = EdgeClassification(g, dfst)
+  doms = dominators(g)
+  bedges = backedges(g, ec, doms)
+  domtree = DominatorTree(doms)
+  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node(x))
+  sccs = strongly_connected_components(g)
+  cyclic_region!(sccs, g, v, ec, doms, domtrees, bedges)
 end
 
 struct ControlNode
@@ -257,23 +287,10 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
       (region_type, (v, ws...)) = ret
       (region_type, ws)
     else
-      @trymatch (abstract_graph, v) begin
-        self_loop() => (REGION_SELF_LOOP, T[])
-        while_loop(cond, body, merge) => (REGION_WHILE_LOOP, [body])
-        _ => begin
-          scc = sccs[findfirst(Fix1(in, v), sccs)]
-          filter!(in(vertices(abstract_graph)), scc)
-          ret = cyclic_region(abstract_graph, v, ec, doms, domtrees, bedges, scc)
-          if !isnothing(ret)
-            (region_type, vs) = ret
-            if region_type == REGION_IMPROPER
-              v, vs... = vs
-            elseif region_type == REGION_NATURAL_LOOP
-              filter!(≠(v), vs)
-            end
-            (region_type, vs)
-          end
-        end
+      ret = cyclic_region!(sccs, abstract_graph, v, ec, doms, domtrees, bedges)
+      if !isnothing(ret)
+        (region_type, (v, ws...)) = ret
+        (region_type, ws)
       end
     end
     isnothing(ret) && continue
@@ -320,5 +337,11 @@ function is_structured(ctree::ControlTree)
   all(PreOrderDFS(ctree)) do tree
     node = nodevalue(tree)
     !in(node.region_type, (REGION_PROPER, REGION_IMPROPER, REGION_SELF_LOOP))
+  end
+end
+
+function outermost_tree(ctree::ControlTree, v::Integer)
+  for subtree in PreOrderDFS(ctree)
+    node(subtree) == v && return subtree
   end
 end
