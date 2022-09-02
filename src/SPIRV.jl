@@ -12,6 +12,7 @@ using AbstractTrees
 using AbstractTrees: parent
 using SwapStreams: SwapStream
 using UUIDs: UUID, uuid1
+using SnoopPrecompile
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
 using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, MethodInstance, InferenceResult, typeinf, InferenceState,

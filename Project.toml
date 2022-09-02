@@ -14,6 +14,7 @@ MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 ResultTypes = "08a2b407-ddc3-586a-afd6-c784ad1fffe2"
 SPIRV_Tools_jll = "6ac6d60f-d740-5983-97d7-a4482c0689f4"
+SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
 SwapStreams = "0b152c4a-7e29-418b-9258-223db38db9d9"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
