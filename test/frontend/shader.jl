@@ -143,7 +143,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   end
 
   function vert_shader_5!(frag_color, position, index, dd)
-    vd = Pointer{Vector{VertexData}}(dd.vbuffer)[index]
+    vd = @load dd.vbuffer[index]::VertexData
     (; pos, color) = vd
     position[] = Vec(pos.x, pos.y, 0F, 1F)
     frag_color[] = Vec(color[1U], color[2U], color[3U], 1F)

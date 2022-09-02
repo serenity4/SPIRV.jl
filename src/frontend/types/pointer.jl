@@ -74,3 +74,24 @@ end
 AccessChain(v::AbstractVector, index::Signed) = AccessChain(v, UInt32(index) - 1U)
 AccessChain(x, index::Integer, second_index::Integer) = AccessChain(AccessChain(x, index), second_index)
 AccessChain(x, index::Integer, second_index::Integer, other_indices::Integer...) = AccessChain(AccessChain(x, index, second_index), other_indices...)
+
+function load_expr(address)
+  Meta.isexpr(address, :(::)) || error("Type annotation required for the loaded element in expression $address")
+  address, type = address.args
+  index = nothing
+  Meta.isexpr(address, :ref) && ((address, index) = esc.(address.args))
+  type = esc(type)
+  !isnothing(index) && (type = :(Vector{$type}))
+  ex = Expr(:ref, :(Pointer{$type}($address)))
+  !isnothing(index) && push!(ex.args, index)
+  ex
+end
+
+"""
+    @load address::T
+    @load address[index]::T
+
+Load a value of type `T`, either directly (if no index is specified) or at `index - 1` elements from `address`.
+`address` should be a device address, i.e. a `UInt64` value representing the address of a physical storage buffer.
+"""
+macro load(address) load_expr(address) end

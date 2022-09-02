@@ -29,7 +29,7 @@
     end
 
     function PRECOMPILE_vert_shader(frag_color, position, index, dd)
-      vd = Pointer{Vector{PRECOMPILE_VertexData}}(dd.vbuffer)[index]
+      vd = @load dd.vbuffer[index]::PRECOMPILE_VertexData
       (; pos, color) = vd
       position[] = Vec(pos.x, pos.y, 0F, 1F)
       frag_color[] = Vec(color[1U], color[2U], color[3U], 1F)
