@@ -10,10 +10,13 @@ using SPIRV, Test
     arr = [1, 2]
     GC.@preserve arr begin
       p = pointer(arr)
-      ptr = Pointer{Vector{Int64}}(convert(UInt, p))
+      address = convert(UInt64, p)
+      ptr = Pointer{Vector{Int64}}(address)
       @test eltype(ptr) == Vector{Int64}
       @test ptr[1] == 1
       @test ptr[2] == 2
+      @test (@load address::Int64) == 1
+      @test (@load address[2]::Int64) == 2
     end
   end
 

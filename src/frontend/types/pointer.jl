@@ -79,7 +79,7 @@ function load_expr(address)
   Meta.isexpr(address, :(::)) || error("Type annotation required for the loaded element in expression $address")
   address, type = address.args
   index = nothing
-  Meta.isexpr(address, :ref) && ((address, index) = esc.(address.args))
+  Meta.isexpr(address, :ref) ? ((address, index) = esc.(address.args)) : address = esc(address)
   type = esc(type)
   !isnothing(index) && (type = :(Vector{$type}))
   ex = Expr(:ref, :(Pointer{$type}($address)))
