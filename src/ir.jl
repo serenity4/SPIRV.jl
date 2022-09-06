@@ -319,7 +319,7 @@ function spir_type(t::Type, ir::Optional{IR} = nothing; wrap_mutable = false, st
     ::Type{<:Mat} => MatrixType(spir_type(Vec{nrows(t),eltype(t)}, ir), ncols(t))
     ::Type{<:Arr} => ArrayType(spir_type(eltype(t), ir), Constant(UInt32(length(t))))
     ::Type{Sampler} => SamplerType()
-    ::Type{<:Image} => ImageType(spir_type(eltype(t), ir), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
+    ::Type{<:Image} => ImageType(spir_type(component_type(t), ir), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
     ::Type{<:SampledImage} => SampledImageType(spir_type(image_type(t), ir))
     GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type.(t.types, ir))
     GuardBy(isprimitivetype) => primitive_type_to_spirv(t)

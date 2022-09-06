@@ -171,7 +171,7 @@ end
         sampled_image(Vec(1f0, 2f0))
       end
 
-      T = Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}
+      T = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
       (; code, ssavaluetypes) = SPIRV.@code_typed sample_some_image(::T, ::Sampler)
       @test operation.(code[1:(end - 1)]) == [:SampledImage, :CompositeConstruct, :ImageSampleImplicitLod]
       @test ssavaluetypes[1:(end - 1)] == [SampledImage{T}, Vec{2,Float32}, Vec{4, Float32}]

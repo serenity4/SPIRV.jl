@@ -1,4 +1,5 @@
 using SPIRV, Test
+using SPIRV: component_type, texel_type, sampled_type
 
 @testset "Array operations" begin
   @testset "Pointers" begin
@@ -91,9 +92,24 @@ using SPIRV, Test
   end
 
   @testset "Images" begin
-    img = Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}(nothing)
+    img = image_type(SPIRV.ImageFormatRgba32f, SPIRV.Dim2D, 0, false, false, 1)(zeros(Vec4, 32, 32))
+
+    @test texel_type(img) === Vec4
+    @test img[0] == zero(Vec4)
+    @test img[0, 0] == zero(Vec4)
+    @test img[31, 31] == zero(Vec4)
+    @test_throws BoundsError img[32, 31] == zero(Vec4)
+
+    img[0] = one(Vec4)
+    @test img[0] == one(Vec4)
+    img[4, 4] = one(Vec4)
+    @test img[4, 4] == one(Vec4)
+
     sampler = Sampler()
     sampled = SampledImage(img, sampler)
-    @test sampled(1f0) == zero(Vec{4, eltype(img)})
+    @test sampled_type(sampled) === Vec4
+    @test sampled(1f0) == zero(eltype(img))
+    @test sampled(1f0, 1f0) == zero(eltype(img))
+    @test sampled(zero(Vec2), 1) == zero(eltype(img))
   end
 end;

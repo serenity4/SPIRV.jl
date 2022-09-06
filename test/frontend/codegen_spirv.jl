@@ -1,5 +1,7 @@
 using SPIRV, Test
 
+IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
+
 @testset "SPIR-V code generation" begin
   @testset "Straight code functions" begin
     ir = @compile f_straightcode(::Float32)
@@ -268,7 +270,7 @@ using SPIRV, Test
       sampled_image(3f0, 4f0)
     end
 
-    ir = @compile sample(::SampledImage{Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}})
+    ir = @compile sample(::SampledImage{IT})
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
@@ -308,7 +310,7 @@ using SPIRV, Test
       sampled(3f0, 4f0)
     end
 
-    ir = @compile sample(::Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}, ::Sampler)
+    ir = @compile sample(::IT, ::Sampler)
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
@@ -351,11 +353,11 @@ using SPIRV, Test
     broadcast_test!(v, arr, image) = v .= image(Vec2(1, 2)).rgb .* v .* arr[0U] .* 2f0
 
     v = Vec3(1, 2, 3)
-    image = SampledImage(Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}(zeros(512, 512)))
+    image = SampledImage(IT(zeros(32, 32)))
     arr = Arr(0f0)
     @test broadcast_test!(v, arr, image) == zero(Vec3)
 
-    ir = @compile broadcast_test!(::Vec3, ::Arr{1, Float32}, ::SampledImage{Image{Float32, SPIRV.Dim2D, 0, false, false, 1, SPIRV.ImageFormatRgba16f}})
+    ir = @compile broadcast_test!(::Vec3, ::Arr{1, Float32}, ::SampledImage{IT})
     @test unwrap(validate(ir))
   end
 
@@ -378,11 +380,11 @@ using SPIRV, Test
       res
     end
 
-    image = SampledImage(Image{Float32,SPIRV.Dim2D,0,false,false,1,SPIRV.ImageFormatRgba16f}(zeros(512, 512)))
+    image = SampledImage(IT(zeros(32, 32)))
     blur = GaussianBlur(1.0, 1.0)
     @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec3)
 
     # Loops not supported yet.
-    @test_throws SPIRV.CompilationError @compile compute_blur(::GaussianBlur, ::SampledImage{Image{Float32, SPIRV.Dim2D, 0, false, false, 1, SPIRV.ImageFormatRgba16f}}, ::UInt32, ::Vec2)
+    @test_throws SPIRV.CompilationError @compile compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
   end
 end;

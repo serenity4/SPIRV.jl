@@ -167,7 +167,7 @@ export
   Mat, Mat2, Mat3, Mat4, @mat,
   Arr,
   Pointer, @load,
-  Image, Sampler,
+  Image, image_type, Sampler,
   SampledImage,
   combine
 
