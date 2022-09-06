@@ -87,7 +87,8 @@ include("spirv_dsl.jl")
 
 # These precompile directives should be regenerated regularly
 # using `/precompile/generate_precompile.jl`.
-let exs = Meta.parse("""quote $(read(joinpath(@__DIR__, "precompile_generated.jl"), String)) end""").args[1].args
+@precompile_all_calls begin
+  exs = Meta.parse("""quote $(read(joinpath(@__DIR__, "precompile_generated.jl"), String)) end""").args[1].args
   succeeded = 0
   failed = 0
   for ex in exs
