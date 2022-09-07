@@ -86,7 +86,7 @@ include("frontend/shader.jl")
 include("spirv_dsl.jl")
 
 # These precompile directives should be regenerated regularly
-# using `/precompile/generate_precompile.jl`.
+# using `/scripts/generate_precompile.jl`.
 @precompile_all_calls begin
   exs = Meta.parse("""quote $(read(joinpath(@__DIR__, "precompile_generated.jl"), String)) end""").args[1].args
   succeeded = 0
