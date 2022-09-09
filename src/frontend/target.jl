@@ -36,8 +36,7 @@ end
 function method_instances(@nospecialize(f), @nospecialize(t), interp::AbstractInterpreter)
   sig = Base.signature_type(f, t)
   ret = Core.Compiler.findall(sig, interp.method_table, limit = -1)
-  ret isa Tuple && (ret = first(ret))
-  (; matches) = ret
+  (; matches) = method_lookup_result(ret)
   map(Core.Compiler.specialize_method, matches)
 end
 

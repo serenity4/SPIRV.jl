@@ -24,7 +24,16 @@ end
     end
     Core.Compiler.MethodLookupResult(ms::Vector{Any}, WorldRange(min_val[], max_val[]), ambig[] != 0)
   end
+  method_lookup_result(res::Core.Compiler.MethodLookupResult) = res
+elseif VERSION == v"1.8"
+  findall_result(matches::Core.Compiler.MethodLookupResult, isoverlayed::Bool) = (matches, isoverlayed)
+  method_lookup_result(res::Tuple{Core.Compiler.MethodLookupResult,Bool}) = first(res)
 else
+  findall_result(matches::Core.Compiler.MethodLookupResult, isoverlayed::Bool) = Core.Compiler.MethodMatchResult(matches, isoverlayed)
+  method_lookup_result(res::Core.Compiler.MethodMatchResult) = res.matches
+end
+
+@static if VERSION ≥ v"1.8"
   function Core.Compiler.findall(@nospecialize(sig::Type), table::NOverlayMethodTable; limit::Int = Int(typemax(Int32)))
     matches = []
     min_world = typemin(UInt)
@@ -40,10 +49,10 @@ else
         nr = length(result.matches)
         if nr ≥ 1 && result.matches[nr].fully_covers
           # no need to fall back to the internal method table
-          return result, true
+          return findall_result(result, true)
         end
       else
-        return Core.Compiler.MethodLookupResult([matches; result.matches], WorldRange(min_world, max_world), ambig), !isempty(matches)
+        return findall_result(Core.Compiler.MethodLookupResult([matches; result.matches], WorldRange(min_world, max_world), ambig), !isempty(matches))
       end
       append!(matches, result.matches)
     end
