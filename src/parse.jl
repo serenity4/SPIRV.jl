@@ -9,9 +9,14 @@ function defines_extra_operands(arg)
   !isnothing(val) && !isempty(val.parameters)
 end
 
-function add_extra_operands!(op_infos, i, arg, category)
+function add_extra_operands!(op_infos, i, arg, info)
   if defines_extra_operands(arg)
-    for info in reverse(enum_infos[arg].parameters)
+    if kind_to_category[info.kind] == "BitEnum"
+      extra_infos = [(enum_infos[flag].parameters for flag in enabled_flags(arg))...;]
+    else
+      extra_infos = enum_infos[arg].parameters
+    end
+    for info in reverse(extra_infos)
       insert!(op_infos, i + 1, info)
     end
   end
@@ -20,11 +25,11 @@ end
 invalid_format(msg...) = throw(SPIRFormatError(string(msg...)))
 
 function info(opcode::Union{OpCode,OpCodeGLSL}, skip_ids::Bool = true)
-  source = isa(opcode, OpCode) ? instruction_infos : instruction_infos_glsl
-  info = source[opcode]
-  if skip_ids
-    info = @set info.operands = filter(x -> !in(x.kind, (IdResultType, IdResult)), info.operands)
+  info = @match opcode begin
+    ::OpCode => instruction_infos[opcode]
+    ::OpCodeGLSL => instruction_infos_glsl[opcode]
   end
+  skip_ids && @reset info.operands = filter(x -> !in(x.kind, (IdResultType, IdResult)), info.operands)
   info
 end
 info(opcode::Integer, args...) = info(OpCode(opcode), args...)
@@ -149,7 +154,7 @@ function info(opcode::OpCode, arguments::AbstractVector, skip_ids::Bool = true)
     firstindex(op_infos) ≤ i ≤ lastindex(op_infos) || error("Too many operands for instruction ", sprintc(printstyled, opcode; color = :cyan), " ($(length(arguments)) arguments received, expected $(length(op_infos)))")
     info = op_infos[i]
     category = kind_to_category[info.kind]
-    add_extra_operands!(op_infos, i, arg, category)
+    add_extra_operands!(op_infos, i, arg, info)
   end
   inst_info
 end
@@ -157,10 +162,7 @@ end
 """
 Information regarding an `Instruction` and its operands, including extra parameters.
 """
-function info(inst::Instruction, skip_ids::Bool = true)
-  inst_info = info(inst.opcode, inst.arguments)
-  inst_info
-end
+info(inst::Instruction, skip_ids::Bool = true) = info(inst.opcode, inst.arguments)
 
 function Instruction(inst::PhysicalInstruction)
   opcode = OpCode(inst.opcode)
@@ -181,7 +183,7 @@ function Instruction(inst::PhysicalInstruction)
       j, arg = next_argument(operands[i:end], info)
       category == "Id" && (arg = SSAValue(arg))
       push!(arguments, arg)
-      add_extra_operands!(op_infos, i, arg, category)
+      add_extra_operands!(op_infos, i, arg, info)
       i += j
     end
     quantifier == "*" && push!(op_infos, last(op_infos))

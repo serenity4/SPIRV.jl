@@ -172,7 +172,7 @@ function Base.read(::Type{Module}, io::IO)
           _ => getproperty(@__MODULE__, Symbol(name, op))
         end
         push!(arguments, arg)
-        add_extra_operands!(op_infos, i, arg, category)
+        add_extra_operands!(op_infos, i, arg, op_info)
         op_info.quantifier == "*" && length(operands) ≠ length(arguments) && push!(op_infos, last(op_infos))
       end
     end

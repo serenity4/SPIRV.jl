@@ -15,9 +15,15 @@ function generate_enum(enum)
     isa(value, String) && (value = parse(UInt32, value))
     :($name = $value)
   end
-  :(@cenum $kind::UInt32 begin
-    $(values...)
-  end)
+  if enum[:category] == "BitEnum"
+    :(@bitmask $kind::UInt32 begin
+      $(values...)
+    end)
+  else
+    :(@cenum $kind::UInt32 begin
+      $(values...)
+    end)
+  end
 end
 
 """

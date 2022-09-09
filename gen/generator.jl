@@ -1,6 +1,6 @@
 using JSON3
 using MacroTools
-using JuliaFormatter: format
+using JuliaFormatter: format, format_file
 
 import SPIRV_Headers_jll
 

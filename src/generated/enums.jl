@@ -1,4 +1,4 @@
-@cenum ImageOperands::UInt32 begin
+@bitmask ImageOperands::UInt32 begin
   ImageOperandsNone                  = 0x00000000
   ImageOperandsBias                  = 0x00000001
   ImageOperandsLod                   = 0x00000002
@@ -20,7 +20,7 @@
   ImageOperandsZeroExtend            = 0x00002000
 end
 
-@cenum FPFastMathMode::UInt32 begin
+@bitmask FPFastMathMode::UInt32 begin
   FPFastMathModeNone       = 0x00000000
   FPFastMathModeNotNaN     = 0x00000001
   FPFastMathModeNotInf     = 0x00000002
@@ -35,7 +35,7 @@ end
   SelectionControlDontFlatten = 0x00000002
 end
 
-@cenum LoopControl::UInt32 begin
+@bitmask LoopControl::UInt32 begin
   LoopControlNone                      = 0x00000000
   LoopControlUnroll                    = 0x00000001
   LoopControlDontUnroll                = 0x00000002
@@ -55,7 +55,7 @@ end
   LoopControlSpeculatedIterationsINTEL = 0x00400000
 end
 
-@cenum FunctionControl::UInt32 begin
+@bitmask FunctionControl::UInt32 begin
   FunctionControlNone       = 0x00000000
   FunctionControlInline     = 0x00000001
   FunctionControlDontInline = 0x00000002
@@ -63,7 +63,7 @@ end
   FunctionControlConst      = 0x00000008
 end
 
-@cenum MemorySemantics::UInt32 begin
+@bitmask MemorySemantics::UInt32 begin
   MemorySemanticsRelaxed                = 0x00000000
   MemorySemanticsNone                   = 0x00000000
   MemorySemanticsAcquire                = 0x00000002
@@ -85,7 +85,7 @@ end
   MemorySemanticsVolatile               = 0x00008000
 end
 
-@cenum MemoryAccess::UInt32 begin
+@bitmask MemoryAccess::UInt32 begin
   MemoryAccessNone                    = 0x00000000
   MemoryAccessVolatile                = 0x00000001
   MemoryAccessAligned                 = 0x00000002
@@ -103,7 +103,7 @@ end
   KernelProfilingInfoCmdExecTime = 0x00000001
 end
 
-@cenum RayFlags::UInt32 begin
+@bitmask RayFlags::UInt32 begin
   RayFlagsNoneKHR                     = 0x00000000
   RayFlagsOpaqueKHR                   = 0x00000001
   RayFlagsNoOpaqueKHR                 = 0x00000002
@@ -117,7 +117,7 @@ end
   RayFlagsSkipAABBsKHR                = 0x00000200
 end
 
-@cenum FragmentShadingRate::UInt32 begin
+@bitmask FragmentShadingRate::UInt32 begin
   FragmentShadingRateVertical2Pixels   = 0x00000001
   FragmentShadingRateVertical4Pixels   = 0x00000002
   FragmentShadingRateHorizontal2Pixels = 0x00000004
