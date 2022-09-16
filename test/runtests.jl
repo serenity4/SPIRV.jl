@@ -25,6 +25,7 @@ end
   include("modules.jl");
   include("spir_types.jl");
   include("metadata.jl");
+  include("features.jl");
   include("ir.jl");
   include("spvasm.jl");
   include("layouts.jl");

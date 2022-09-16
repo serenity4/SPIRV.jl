@@ -13,7 +13,7 @@ end
 
 Bindings() = Bindings(Dictionary())
 
-@forward Bindings.dict (Base.insert!, Base.setindex!, Dictionaries.set!)
+@forward Bindings.dict (Base.insert!, Base.setindex!, Dictionaries.set!, Base.pairs)
 
 Base.merge(x::Bindings, y::Bindings) = Bindings(merge(x.dict, y.dict))
 

@@ -10,7 +10,7 @@ function defines_extra_operands(arg)
 end
 
 function add_extra_operands!(op_infos, i, arg, info)
-  if defines_extra_operands(arg)
+  if defines_extra_operands(arg) || kind_to_category[info.kind] == "BitEnum"
     if kind_to_category[info.kind] == "BitEnum"
       extra_infos = [(enum_infos[flag].parameters for flag in enabled_flags(arg))...;]
     else

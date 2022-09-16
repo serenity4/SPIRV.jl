@@ -1,4 +1,4 @@
-struct FeatureRequirements
+@auto_hash_equals struct FeatureRequirements
   extensions::Vector{String}
   capabilities::Vector{Capability}
 end
@@ -39,10 +39,10 @@ function add_requirements!(required_exts, required_caps, supported::FeatureSuppo
   !isnothing(cap) && push!(required_caps, cap)
 end
 
-function FeatureRequirements(mod::Module, supported::FeatureSupport)
+function FeatureRequirements(instructions, supported::FeatureSupport)
   required_exts = String[]
   required_caps = Capability[]
-  for inst in mod
+  for inst in instructions
     inst_info = info(inst)
     add_requirements!(required_exts, required_caps, supported, inst_info.extensions, inst_info.capabilities)
     for (arg, op_info) in zip(inst.arguments, inst_info.operands)
@@ -62,10 +62,12 @@ function FeatureRequirements(mod::Module, supported::FeatureSupport)
         @case "ValueEnum"
         enum_info = enum_infos[arg]
         add_requirements!(required_exts, required_caps, supported, enum_info.extensions, enum_info.capabilities)
+
         @case "BitEnum"
-        # TODO: support combinations of BitEnums
-        enum_info = enum_infos[arg]
-        add_requirements!(required_exts, required_caps, supported, enum_info.extensions, enum_info.capabilities)
+        for flag in enabled_flags(arg)
+          enum_info = enum_infos[flag]
+          add_requirements!(required_exts, required_caps, supported, enum_info.extensions, enum_info.capabilities)
+        end
       end
     end
   end
@@ -77,7 +79,7 @@ function FeatureRequirements(mod::Module, supported::FeatureSupport)
   FeatureRequirements(required_exts, setdiff(required_caps, implicitly_declared))
 end
 
-FeatureRequirements(ir::IR, features) = FeatureRequirements(Module(ir), features)
+FeatureRequirements(ir::IR, features::FeatureSupport) = FeatureRequirements(Module(ir), features)
 
 """
 Add all required extension and capabilities declarations to the IR.
