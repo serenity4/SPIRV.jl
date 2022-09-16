@@ -1,5 +1,22 @@
 is_function_macro(x) = Meta.isexpr(x, :macrocall) && x.args[1] == Symbol("@function")
 
+struct Bindings
+  dict::Dictionary{Symbol,SSAValue}
+end
+
+function Base.getindex(bindings::Bindings, x::Symbol)
+  (; dict) = bindings
+  val = get(dict, x, nothing)
+  !isnothing(val) && return val
+  throw(UndefVarError(x))
+end
+
+Bindings() = Bindings(Dictionary())
+
+@forward Bindings.dict (Base.insert!, Base.setindex!, Dictionaries.set!)
+
+Base.merge(x::Bindings, y::Bindings) = Bindings(merge(x.dict, y.dict))
+
 """
 Generate SPIR-V [`IR`](@ref) based on a DSL made for manually building modules.
 
@@ -80,13 +97,13 @@ function generate_ir(ex::Expr)
 
   # Assign SSA values for each binding.
   counter = SSACounter()
-  global_ids = Dictionary{Symbol,SSAValue}()
-  local_ids = Dictionary{Symbol,Dictionary{Symbol,SSAValue}}()
+  global_ids = Bindings()
+  local_ids = Dictionary{Symbol,Bindings}()
   for binding in global_bindings
     insert!(global_ids, binding, next!(counter))
   end
   for (f, bindings) in pairs(local_bindings)
-    insert!(local_ids, f, Dictionary())
+    insert!(local_ids, f, Bindings())
     for binding in bindings
       insert!(local_ids[f], binding, next!(counter))
     end
