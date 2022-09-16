@@ -29,7 +29,7 @@ end
   FPFastMathModeFast       = 0x00000010
 end
 
-@cenum SelectionControl::UInt32 begin
+@bitmask SelectionControl::UInt32 begin
   SelectionControlNone        = 0x00000000
   SelectionControlFlatten     = 0x00000001
   SelectionControlDontFlatten = 0x00000002
