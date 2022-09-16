@@ -36,7 +36,7 @@ end
 function emit_argument(io, i, arg, kind, category = kind_to_category[kind])
   @match category begin
     "ValueEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => ""); color = 208)
-    "BitEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => ""); color = :light_magenta)
+    "BitEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => "", '(' => "", ')' => ""); color = :light_magenta)
     "Literal" => @match arg begin
       ::AbstractString => printstyled(io, '"', arg, '"'; color = 150)
       ::OpCodeGLSL => printstyled(io, replace(string(arg), "OpGLSL" => ""); color = 153)
