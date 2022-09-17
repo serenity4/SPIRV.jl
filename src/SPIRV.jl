@@ -11,7 +11,7 @@ using ResultTypes: Result
 using AbstractTrees
 using AbstractTrees: parent
 using SwapStreams: SwapStream
-using Bitmasks
+using BitMasks
 using UUIDs: UUID, uuid1
 using SnoopPrecompile
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
