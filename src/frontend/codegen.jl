@@ -151,6 +151,7 @@ end
 function remap_args!(args, ir::IR, irmap::IRMapping, opcode)
   arguments_to_ssa!(args, irmap)
   replace_ssa!(args, irmap, opcode)
+  replace_globalrefs!(args)
   literals_to_const!(args, ir, irmap, opcode)
   args
 end
@@ -199,6 +200,12 @@ function replace_ssa!(args, irmap::IRMapping, opcode)
   for (i, arg) in enumerate(args)
     # Phi nodes may have forward references.
     isa(arg, Core.SSAValue) && opcode ≠ OpPhi && (args[i] = SSAValue(arg, irmap))
+  end
+end
+
+function replace_globalrefs!(args)
+  for (i, arg) in enumerate(args)
+    isa(arg, GlobalRef) && (args[i] = getproperty(arg.mod, arg.name))
   end
 end
 
