@@ -11,8 +11,8 @@ end
 Base.isless(val1::SSAValue, val2::SSAValue) = isless(id(val1), id(val2))
 
 Base.convert(::Type{T}, val::SSAValue) where {T<:Integer} = convert(T, val.id)
-Base.convert(::Type{Core.SSAValue}, val::SSAValue) where {T<:Integer} = Core.SSAValue(val.id)
-Base.convert(::Type{SSAValue}, val::Core.SSAValue) where {T<:Integer} = SSAValue(val.id)
+Base.convert(::Type{Core.SSAValue}, val::SSAValue) = Core.SSAValue(val.id)
+Base.convert(::Type{SSAValue}, val::Core.SSAValue) = SSAValue(val.id)
 Base.convert(::Type{SSAValue}, id::Integer) = SSAValue(id)
 
 Base.zero(::Type{SSAValue}) = SSAValue(zero(UInt32))
