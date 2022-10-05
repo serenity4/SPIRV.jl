@@ -79,20 +79,17 @@ function add_type_layouts!(ir::IR, layout::LayoutStrategy)
     @tryswitch t begin
       @case ::ArrayType && if !isa(t.eltype, SampledImageType) && !isa(t.eltype, ImageType) && !isa(t.eltype, SamplerType)
       end
-      add_stride!(ir, t, layout)
-
-      @case ::MatrixType
-      add_stride!(ir, t, layout)
-      add_matrix_layout!(ir, t)
+      add_array_stride!(ir, t, layout)
 
       @case ::StructType
       add_offsets!(ir, t, layout)
+      add_matrix_layouts!(ir, t, layout)
     end
   end
   ir
 end
 
-function add_stride!(ir::IR, t::ArrayType, layout::LayoutStrategy)
+function add_array_stride!(ir::IR, t::ArrayType, layout::LayoutStrategy)
   # Array of shader resources. Must not be decorated.
   isa(t.eltype, StructType) && has_decoration(ir, t.eltype, DecorationBlock) && return
   stride = compute_stride(t.eltype, ir, layout)
@@ -100,13 +97,22 @@ function add_stride!(ir::IR, t::ArrayType, layout::LayoutStrategy)
   decorate!(ir, t, DecorationArrayStride, stride)
 end
 
-function add_stride!(ir::IR, t::MatrixType, layout::LayoutStrategy)
-  stride = compute_stride(t.eltype.eltype, ir, layout)
-  decorate!(ir, t, DecorationMatrixStride, stride)
+function add_matrix_layouts!(ir::IR, t::StructType, layout::LayoutStrategy)
+  for (i, subt) in enumerate(t.members)
+    if isa(subt, MatrixType)
+      add_matrix_stride!(ir, t, i, subt, layout)
+      add_matrix_layout!(ir, t, i, subt)
+    end
+  end
+end
+
+function add_matrix_stride!(ir::IR, t::StructType, i, subt::MatrixType, layout::LayoutStrategy)
+  stride = compute_stride(subt.eltype.eltype, ir, layout)
+  decorate!(ir, t, i, DecorationMatrixStride, stride)
 end
 
 "Follow Julia's column major layout by default, consistently with the `Mat` frontend type."
-add_matrix_layout!(ir::IR, t::MatrixType) = decorate!(ir, t, t.is_column_major ? DecorationColMajor : DecorationRowMajor)
+add_matrix_layout!(ir::IR, t::StructType, i, subt::MatrixType) = decorate!(ir, t, i, subt.is_column_major ? DecorationColMajor : DecorationRowMajor)
 
 add_offsets!(ir::IR, T::DataType, layout::LayoutStrategy) = add_offsets!(ir, ir.typerefs[T], layout)
 function add_offsets!(ir::IR, t::StructType, layout::LayoutStrategy)

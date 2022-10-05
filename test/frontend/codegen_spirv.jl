@@ -247,7 +247,7 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
             OpFunctionEnd()
     """,
       )
-  
+
       ir = @compile SPIRVInterpreter([INTRINSICS_METHOD_TABLE]) clamp(::Float64, ::Float64, ::Float64)
       @test unwrap(validate(ir))
       @test ir ≈ parse(
@@ -386,11 +386,11 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
         end
         res
       end
-  
+
       image = SampledImage(IT(zeros(32, 32)))
       blur = GaussianBlur(1.0, 1.0)
       @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec3)
-  
+
       # Loops are not supported yet.
       @test_throws SPIRV.CompilationError @compile compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
     end
