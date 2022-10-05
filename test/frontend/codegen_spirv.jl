@@ -3,8 +3,12 @@ using SPIRV, Test
 IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
 
 @testset "SPIR-V code generation" begin
-  @testset "Straight code functions" begin
-    ir = @compile f_straightcode(::Float32)
+  @testset "Composite SPIR-V types" begin
+    function unicolor(position)
+      Vec(position.x, position.y, 1F, 1F)
+    end
+
+    ir = @compile unicolor(::Vec{4, Float32})
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
@@ -13,46 +17,143 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
         OpExtension("SPV_KHR_vulkan_memory_model")
         OpMemoryModel(Logical, Vulkan)
    %1 = OpTypeFloat(0x00000020)
-   %2 = OpTypeFunction(%1, %1)
-   %6 = OpConstant(0x3f800000)::%1
-   # Constant literals are not interpreted as floating point values.
-   # Doing so would require the knowledge of types, expressed in the IR.
-   %8 = OpConstant(0x40400000)::%1
-   %3 = OpFunction(None, %2)::%1
-   %4 = OpFunctionParameter()::%1
-   %5 = OpLabel()
-   %7 = OpFAdd(%4, %6)::%1
-   %9 = OpFMul(%8, %7)::%1
-  %10 = OpFMul(%9, %9)::%1
-          OpReturnValue(%10)
-          OpFunctionEnd()
-  """,
+   %2 = OpTypeVector(%1, 0x00000004)
+   %3 = OpTypePointer(Function, %2)
+   %4 = OpTypeFunction(%2, %3)
+  %13 = OpConstant(0x3f800000)::%1
+   %5 = OpFunction(None, %4)::%2
+   %6 = OpFunctionParameter()::%3
+   %7 = OpLabel()
+  %12 = OpVariable(Function)::%3
+   %8 = OpLoad(%6)::%2
+   %9 = OpCompositeExtract(%8, 0x00000000)::%1
+  %10 = OpLoad(%6)::%2
+  %11 = OpCompositeExtract(%10, 0x00000001)::%1
+  %14 = OpCompositeConstruct(%9, %11, %13, %13)::%2
+        OpStore(%12, %14)
+  %15 = OpLoad(%12)::%2
+        OpReturnValue(%15)
+        OpFunctionEnd()
+      """
     )
 
-    ir = @compile SPIRVInterpreter([INTRINSICS_METHOD_TABLE]) clamp(::Float64, ::Float64, ::Float64)
+    struct StructWithBool
+      x::Bool
+      y::Int32
+    end
+
+    ir = @compile StructWithBool(::Bool, ::Int32)
     @test unwrap(validate(ir))
     @test ir ≈ parse(
       SPIRV.Module,
         """
         OpCapability(VulkanMemoryModel)
-        OpCapability(Float64)
         OpExtension("SPV_KHR_vulkan_memory_model")
         OpMemoryModel(Logical, Vulkan)
-   %1 = OpTypeFloat(0x00000040)
-   %2 = OpTypeFunction(%1, %1, %1, %1)
-   %8 = OpTypeBool()
-   %3 = OpFunction(None, %2)::%1
-   %4 = OpFunctionParameter()::%1
-   %5 = OpFunctionParameter()::%1
+   %1 = OpTypeBool()
+   %2 = OpTypeInt(0x00000020, 0x00000001)
+   %3 = OpTypeStruct(%1, %2)
+   %4 = OpTypeFunction(%3, %1, %2)
+   %5 = OpFunction(None, %4)::%3
    %6 = OpFunctionParameter()::%1
-   %7 = OpLabel()
-   %9 = OpFOrdLessThan(%6, %4)::%8
-  %10 = OpFOrdLessThan(%4, %5)::%8
-  %11 = OpSelect(%10, %5, %4)::%1
-  %12 = OpSelect(%9, %6, %11)::%1
-        OpReturnValue(%12)
+   %7 = OpFunctionParameter()::%2
+   %8 = OpLabel()
+   %9 = OpCompositeConstruct(%6, %7)::%3
+        OpReturnValue(%9)
         OpFunctionEnd()
-    """,
+      """
+    )
+
+    struct StructWithMat
+      x::Bool
+      mat::Mat4
+    end
+
+    ir = @compile StructWithMat(::Bool, ::Mat4)
+    @test unwrap(validate(ir))
+  end
+
+  @testset "Images & textures" begin
+    function sample(sampled_image::SampledImage)
+      sampled_image(3f0, 4f0)
+    end
+
+    ir = @compile sample(::SampledImage{IT})
+    @test unwrap(validate(ir))
+    @test ir ≈ parse(
+      SPIRV.Module,
+        """
+        OpCapability(VulkanMemoryModel)
+        OpCapability(Shader)
+        OpExtension("SPV_KHR_vulkan_memory_model")
+        OpMemoryModel(Logical, Vulkan)
+   %1 = OpTypeFloat(0x00000020)
+   %2 = OpTypeVector(%1, 0x00000004)
+   %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
+   %4 = OpTypeSampledImage(%3)
+   %5 = OpTypeFunction(%2, %4)
+  %10 = OpTypeVector(%1, 0x00000002)
+  %11 = OpTypePointer(Function, %10)
+  %12 = OpConstant(0x40400000)::%1
+  %13 = OpConstant(0x40800000)::%1
+  %16 = OpTypePointer(Function, %2)
+   %6 = OpFunction(None, %5)::%2
+   %7 = OpFunctionParameter()::%4
+   %8 = OpLabel()
+   %9 = OpVariable(Function)::%11
+  %15 = OpVariable(Function)::%16
+  %14 = OpCompositeConstruct(%12, %13)::%10
+        OpStore(%9, %14)
+  %17 = OpLoad(%9)::%10
+  %18 = OpImageSampleImplicitLod(%7, %17)::%2
+        OpStore(%15, %18)
+  %19 = OpLoad(%15)::%2
+        OpReturnValue(%19)
+        OpFunctionEnd()
+      """
+    )
+
+    function sample(image, sampler)
+      sampled = combine(image, sampler)
+      sampled(3f0, 4f0)
+    end
+
+    ir = @compile sample(::IT, ::Sampler)
+    @test unwrap(validate(ir))
+    @test ir ≈ parse(
+      SPIRV.Module,
+        """
+        OpCapability(VulkanMemoryModel)
+        OpCapability(Shader)
+        OpExtension("SPV_KHR_vulkan_memory_model")
+        OpMemoryModel(Logical, Vulkan)
+   %1 = OpTypeFloat(0x00000020)
+   %2 = OpTypeVector(%1, 0x00000004)
+   %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
+   %4 = OpTypeSampler()
+   %5 = OpTypeFunction(%2, %3, %4)
+  %10 = OpTypeSampledImage(%3)
+  %13 = OpTypeVector(%1, 0x00000002)
+  %14 = OpTypePointer(Function, %13)
+  %15 = OpConstant(0x40400000)::%1
+  %16 = OpConstant(0x40800000)::%1
+  %19 = OpTypePointer(Function, %2)
+   %6 = OpFunction(None, %5)::%2
+   %7 = OpFunctionParameter()::%3
+   %8 = OpFunctionParameter()::%4
+   %9 = OpLabel()
+  %12 = OpVariable(Function)::%14
+  %18 = OpVariable(Function)::%19
+  %11 = OpSampledImage(%7, %8)::%10
+  %17 = OpCompositeConstruct(%15, %16)::%13
+        OpStore(%12, %17)
+  %20 = OpLoad(%12)::%13
+  %21 = OpImageSampleImplicitLod(%11, %20)::%2
+        OpStore(%18, %21)
+  %22 = OpLoad(%18)::%2
+        OpReturnValue(%22)
+        OpFunctionEnd()
+      """
     )
   end
 
@@ -108,8 +209,73 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
     )
   end
 
+  @testset "Broadcasting" begin
+    broadcast_test!(v, arr, image) = v .= image(Vec2(1, 2)).rgb .* v .* arr[0U] .* 2f0
+
+    v = Vec3(1, 2, 3)
+    image = SampledImage(IT(zeros(32, 32)))
+    arr = Arr(0f0)
+    @test broadcast_test!(v, arr, image) == zero(Vec3)
+
+    ir = @compile broadcast_test!(::Vec3, ::Arr{1, Float32}, ::SampledImage{IT})
+    @test unwrap(validate(ir))
+  end
+
   @testset "Control flow" begin
-    @testset "Branches" begin
+    @testset "Straight code functions" begin
+      ir = @compile f_straightcode(::Float32)
+      @test unwrap(validate(ir))
+      @test ir ≈ parse(
+        SPIRV.Module,
+          """
+          OpCapability(VulkanMemoryModel)
+          OpExtension("SPV_KHR_vulkan_memory_model")
+          OpMemoryModel(Logical, Vulkan)
+     %1 = OpTypeFloat(0x00000020)
+     %2 = OpTypeFunction(%1, %1)
+     %6 = OpConstant(0x3f800000)::%1
+     # Constant literals are not interpreted as floating point values.
+     # Doing so would require the knowledge of types, expressed in the IR.
+     %8 = OpConstant(0x40400000)::%1
+     %3 = OpFunction(None, %2)::%1
+     %4 = OpFunctionParameter()::%1
+     %5 = OpLabel()
+     %7 = OpFAdd(%4, %6)::%1
+     %9 = OpFMul(%8, %7)::%1
+    %10 = OpFMul(%9, %9)::%1
+            OpReturnValue(%10)
+            OpFunctionEnd()
+    """,
+      )
+  
+      ir = @compile SPIRVInterpreter([INTRINSICS_METHOD_TABLE]) clamp(::Float64, ::Float64, ::Float64)
+      @test unwrap(validate(ir))
+      @test ir ≈ parse(
+        SPIRV.Module,
+          """
+          OpCapability(VulkanMemoryModel)
+          OpCapability(Float64)
+          OpExtension("SPV_KHR_vulkan_memory_model")
+          OpMemoryModel(Logical, Vulkan)
+     %1 = OpTypeFloat(0x00000040)
+     %2 = OpTypeFunction(%1, %1, %1, %1)
+     %8 = OpTypeBool()
+     %3 = OpFunction(None, %2)::%1
+     %4 = OpFunctionParameter()::%1
+     %5 = OpFunctionParameter()::%1
+     %6 = OpFunctionParameter()::%1
+     %7 = OpLabel()
+     %9 = OpFOrdLessThan(%6, %4)::%8
+    %10 = OpFOrdLessThan(%4, %5)::%8
+    %11 = OpSelect(%10, %5, %4)::%1
+    %12 = OpSelect(%9, %6, %11)::%1
+          OpReturnValue(%12)
+          OpFunctionEnd()
+      """,
+      )
+    end
+
+    @testset "Conditionals" begin
       f_branch(x) = x > 0F ? x + 1F : x - 1F
       ir = @compile f_branch(::Float32)
       @test unwrap(validate(ir))
@@ -201,190 +367,32 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
         """
       )
     end
-  end
 
-  @testset "Composite SPIR-V types" begin
-    function unicolor(position)
-      Vec(position.x, position.y, 1F, 1F)
-    end
-
-    ir = @compile unicolor(::Vec{4, Float32})
-    @test unwrap(validate(ir))
-    @test ir ≈ parse(
-      SPIRV.Module,
-        """
-        OpCapability(VulkanMemoryModel)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
-   %1 = OpTypeFloat(0x00000020)
-   %2 = OpTypeVector(%1, 0x00000004)
-   %3 = OpTypePointer(Function, %2)
-   %4 = OpTypeFunction(%2, %3)
-  %13 = OpConstant(0x3f800000)::%1
-   %5 = OpFunction(None, %4)::%2
-   %6 = OpFunctionParameter()::%3
-   %7 = OpLabel()
-  %12 = OpVariable(Function)::%3
-   %8 = OpLoad(%6)::%2
-   %9 = OpCompositeExtract(%8, 0x00000000)::%1
-  %10 = OpLoad(%6)::%2
-  %11 = OpCompositeExtract(%10, 0x00000001)::%1
-  %14 = OpCompositeConstruct(%9, %11, %13, %13)::%2
-        OpStore(%12, %14)
-  %15 = OpLoad(%12)::%2
-        OpReturnValue(%15)
-        OpFunctionEnd()
-      """
-    )
-
-    struct StructWithBool
-      x::Bool
-      y::Int32
-    end
-
-    ir = @compile StructWithBool(::Bool, ::Int32)
-    @test unwrap(validate(ir))
-    @test ir ≈ parse(
-      SPIRV.Module,
-        """
-        OpCapability(VulkanMemoryModel)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
-   %1 = OpTypeBool()
-   %2 = OpTypeInt(0x00000020, 0x00000001)
-   %3 = OpTypeStruct(%1, %2)
-   %4 = OpTypeFunction(%3, %1, %2)
-   %5 = OpFunction(None, %4)::%3
-   %6 = OpFunctionParameter()::%1
-   %7 = OpFunctionParameter()::%2
-   %8 = OpLabel()
-   %9 = OpCompositeConstruct(%6, %7)::%3
-        OpReturnValue(%9)
-        OpFunctionEnd()
-      """
-    )
-  end
-
-  @testset "Images & textures" begin
-    function sample(sampled_image::SampledImage)
-      sampled_image(3f0, 4f0)
-    end
-
-    ir = @compile sample(::SampledImage{IT})
-    @test unwrap(validate(ir))
-    @test ir ≈ parse(
-      SPIRV.Module,
-        """
-        OpCapability(VulkanMemoryModel)
-        OpCapability(Shader)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
-   %1 = OpTypeFloat(0x00000020)
-   %2 = OpTypeVector(%1, 0x00000004)
-   %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
-   %4 = OpTypeSampledImage(%3)
-   %5 = OpTypeFunction(%2, %4)
-  %10 = OpTypeVector(%1, 0x00000002)
-  %11 = OpTypePointer(Function, %10)
-  %12 = OpConstant(0x40400000)::%1
-  %13 = OpConstant(0x40800000)::%1
-  %16 = OpTypePointer(Function, %2)
-   %6 = OpFunction(None, %5)::%2
-   %7 = OpFunctionParameter()::%4
-   %8 = OpLabel()
-   %9 = OpVariable(Function)::%11
-  %15 = OpVariable(Function)::%16
-  %14 = OpCompositeConstruct(%12, %13)::%10
-        OpStore(%9, %14)
-  %17 = OpLoad(%9)::%10
-  %18 = OpImageSampleImplicitLod(%7, %17)::%2
-        OpStore(%15, %18)
-  %19 = OpLoad(%15)::%2
-        OpReturnValue(%19)
-        OpFunctionEnd()
-      """
-    )
-
-    function sample(image, sampler)
-      sampled = combine(image, sampler)
-      sampled(3f0, 4f0)
-    end
-
-    ir = @compile sample(::IT, ::Sampler)
-    @test unwrap(validate(ir))
-    @test ir ≈ parse(
-      SPIRV.Module,
-        """
-        OpCapability(VulkanMemoryModel)
-        OpCapability(Shader)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
-   %1 = OpTypeFloat(0x00000020)
-   %2 = OpTypeVector(%1, 0x00000004)
-   %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
-   %4 = OpTypeSampler()
-   %5 = OpTypeFunction(%2, %3, %4)
-  %10 = OpTypeSampledImage(%3)
-  %13 = OpTypeVector(%1, 0x00000002)
-  %14 = OpTypePointer(Function, %13)
-  %15 = OpConstant(0x40400000)::%1
-  %16 = OpConstant(0x40800000)::%1
-  %19 = OpTypePointer(Function, %2)
-   %6 = OpFunction(None, %5)::%2
-   %7 = OpFunctionParameter()::%3
-   %8 = OpFunctionParameter()::%4
-   %9 = OpLabel()
-  %12 = OpVariable(Function)::%14
-  %18 = OpVariable(Function)::%19
-  %11 = OpSampledImage(%7, %8)::%10
-  %17 = OpCompositeConstruct(%15, %16)::%13
-        OpStore(%12, %17)
-  %20 = OpLoad(%12)::%13
-  %21 = OpImageSampleImplicitLod(%11, %20)::%2
-        OpStore(%18, %21)
-  %22 = OpLoad(%18)::%2
-        OpReturnValue(%22)
-        OpFunctionEnd()
-      """
-    )
-  end
-
-  @testset "Broadcasting" begin
-    broadcast_test!(v, arr, image) = v .= image(Vec2(1, 2)).rgb .* v .* arr[0U] .* 2f0
-
-    v = Vec3(1, 2, 3)
-    image = SampledImage(IT(zeros(32, 32)))
-    arr = Arr(0f0)
-    @test broadcast_test!(v, arr, image) == zero(Vec3)
-
-    ir = @compile broadcast_test!(::Vec3, ::Arr{1, Float32}, ::SampledImage{IT})
-    @test unwrap(validate(ir))
-  end
-
-  @testset "Loops" begin
-    struct GaussianBlur
-      scale::Float32
-      strength::Float32
-    end
-    
-    function compute_blur(blur::GaussianBlur, reference, direction, uv)
-      weights = Arr{Float32}(0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216)
-      # TODO: Implement broadcasting.
-      tex_offset = 1.0 ./ size(Image(reference), 0) .* blur.scale
-      res = zero(Vec3)
-      for i in eachindex(weights)
-        vec = direction == 1 ? Vec2(tex_offset.x * i, 0.0) : Vec2(0.0, tex_offset.y * i)
-        res .+= reference(uv .+ vec).rgb .* weights[i] .* blur.strength
-        res .+= reference(uv .- vec).rgb .* weights[i] .* blur.strength
+    @testset "Loops" begin
+      struct GaussianBlur
+        scale::Float32
+        strength::Float32
       end
-      res
+      
+      function compute_blur(blur::GaussianBlur, reference, direction, uv)
+        weights = Arr{Float32}(0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216)
+        # TODO: Implement broadcasting.
+        tex_offset = 1.0 ./ size(Image(reference), 0) .* blur.scale
+        res = zero(Vec3)
+        for i in eachindex(weights)
+          vec = direction == 1 ? Vec2(tex_offset.x * i, 0.0) : Vec2(0.0, tex_offset.y * i)
+          res .+= reference(uv .+ vec).rgb .* weights[i] .* blur.strength
+          res .+= reference(uv .- vec).rgb .* weights[i] .* blur.strength
+        end
+        res
+      end
+  
+      image = SampledImage(IT(zeros(32, 32)))
+      blur = GaussianBlur(1.0, 1.0)
+      @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec3)
+  
+      # Loops are not supported yet.
+      @test_throws SPIRV.CompilationError @compile compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
     end
-
-    image = SampledImage(IT(zeros(32, 32)))
-    blur = GaussianBlur(1.0, 1.0)
-    @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec3)
-
-    # Loops not supported yet.
-    @test_throws SPIRV.CompilationError @compile compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
   end
 end;
