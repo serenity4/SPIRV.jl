@@ -34,7 +34,9 @@ end
 struct MatrixType <: SPIRType
   eltype::VectorType
   n::Int
+  is_column_major::Bool
 end
+MatrixType(eltype::VectorType, n::Integer) = MatrixType(eltype, n, true)
 
 function MatrixType(inst::Instruction, eltype::VectorType)
   MatrixType(eltype, last(inst.arguments))

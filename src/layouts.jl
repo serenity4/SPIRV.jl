@@ -15,11 +15,11 @@ function base_alignment(t::StructType)
     maximum(base_alignment, t.members)
   end
 end
-base_alignment(t::MatrixType, is_column_major::Bool) = is_column_major ? base_alignment(t.eltype) : base_alignment(VectorType(t.eltype.eltype, t.n))
+base_alignment(t::MatrixType) = t.is_column_major ? base_alignment(t.eltype) : base_alignment(VectorType(t.eltype.eltype, t.n))
 
 extended_alignment(t::SPIRType) = base_alignment(t)
 extended_alignment(t::Union{ArrayType,StructType}) = 16 * cld(base_alignment(t), 16)
-extended_alignment(t::MatrixType, is_column_major::Bool) = is_column_major ? extended_alignment(t.eltype) : extended_alignment(VectorType(t.eltype.eltype, t.n))
+extended_alignment(t::MatrixType) = t.is_column_major ? extended_alignment(t.eltype) : extended_alignment(VectorType(t.eltype.eltype, t.n))
 
 function extract_size(t::ArrayType)
   (; size) = t
@@ -34,7 +34,7 @@ payload_size(t::Union{VectorType,MatrixType}) = t.n * payload_size(t.eltype)
 payload_size(t::ArrayType) = extract_size(t) * payload_size(t.eltype)
 payload_size(t::StructType) = sum(payload_size, t.members)
 
-payload_size(T::DataType) = sizeof(T)
+payload_size(T::DataType) = is_composite_type(T) ? sum(payload_sizes(T)) : sizeof(T)
 payload_size(x::AbstractVector) = payload_size(eltype(x)) * length(x)
 payload_size(x) = payload_size(typeof(x))
 
@@ -62,11 +62,10 @@ function alignment(layout::VulkanLayout, t::SPIRType, storage_classes, is_interf
     end => scalar_alignment(t)
     if !layout.uniform_buffer_standard_layout && StorageClassUniform in storage_classes && is_interface
     end => @match t begin
-      # TODO: Look up matrix layout from the IR.
-      ::MatrixType => extended_alignment(t, true)
+      ::MatrixType => extended_alignment(t)
       _ => extended_alignment(t)
     end
-    ::MatrixType => base_alignment(t, true)
+    ::MatrixType => base_alignment(t)
     _ => base_alignment(t)
   end
 end
@@ -107,9 +106,7 @@ function add_stride!(ir::IR, t::MatrixType, layout::LayoutStrategy)
 end
 
 "Follow Julia's column major layout by default, consistently with the `Mat` frontend type."
-function add_matrix_layout!(ir::IR, t::MatrixType)
-  !has_decoration(ir, t, DecorationRowMajor) && decorate!(ir, t, DecorationColMajor)
-end
+add_matrix_layout!(ir::IR, t::MatrixType) = decorate!(ir, t, t.is_column_major ? DecorationColMajor : DecorationRowMajor)
 
 add_offsets!(ir::IR, T::DataType, layout::LayoutStrategy) = add_offsets!(ir, ir.typerefs[T], layout)
 function add_offsets!(ir::IR, t::StructType, layout::LayoutStrategy)
@@ -219,7 +216,7 @@ function getoffset(ir::IR, t, i)
 end
 
 is_composite_type(t::SPIRType) = isa(t, StructType)
-is_composite_type(T::DataType) = isstructtype(T) && !(T <: Vec)
+is_composite_type(T::DataType) = isstructtype(T) && !(T <: Vector) && !(T <: Vec) && !(T <: Mat) 
 member_types(t::StructType) = t.members
 member_types(T::DataType) = fieldtypes(T)
 

@@ -74,6 +74,14 @@ using SPIRV: component_type, texel_type, sampled_type
 
     m[] = m2
     @test all(iszero, m)
+
+    m = @mat Float32[
+      1 2 3 4
+      5 6 7 8
+      9 10 11 12
+    ]
+    @test m[2, 2] === 6f0
+    @test m[3, 2] === 10f0
   end
 
   @testset "Arr" begin

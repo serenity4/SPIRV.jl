@@ -16,10 +16,18 @@ const Mat4 = Mat{4,4,Float32}
 end)
 
 macro mat(ex)
-  n = length(ex.args)
-  args = []
-  args = [:(Vec($(esc.(getindex.(getproperty.(ex.args, :args), i))...))) for i in 1:n]
-  :(Mat($(args...)))
+  (VT, rows) = @match ex begin
+    Expr(:typed_vcat, T, rows...) => (esc(T), rows)
+    Expr(:vcat, rows...) => (nothing, rows)
+    _ => error("Expected list concatenation expression, got $(repr(ex))")
+  end
+  nrows = length(rows)
+  ncols = length(first(rows).args)
+  cols = [[rows[i].args[j] for i in 1:nrows] for j in 1:ncols]
+  V = isnothing(VT) ? :Vec : :(Vec{$nrows, $VT})
+  column_vectors = [:($V($(esc.(col)...))) for col in cols]
+  M = isnothing(VT) ? :Mat : :(Mat{$nrows, $ncols, $VT})
+  :($M($(column_vectors...)))
 end
 
 nrows(::Type{<:Mat{N}}) where {N} = N
@@ -33,7 +41,7 @@ end
 Base.length(::Type{<:Mat{N,M}}) where {N,M} = N * M
 Base.size(T::Type{<:Mat{N,M}}) where {N,M} = (N, M)
 Base.zero(T::Type{<:Mat}) = T(ntuple(Returns(zero(coltype(T))), ncols(T))...)
-Base.one(T::Type{<:Mat}) = T(ntuple(Returns(one(eltype(T))), length(T))...)
+Base.one(T::Type{<:Mat}) = T(ntuple(Returns(one(coltype(T))), ncols(T))...)
 
 @noinline CompositeExtract(m::Mat, i::UInt32, j::UInt32) = m.cols[j + 1][i + 1]
-@noinline AccessChain(m::Mat, index::UInt32, second_index::UInt32) = AccessChain(m, index + second_index * UInt32(ncols(m)))
+@noinline AccessChain(m::Mat, index::UInt32, second_index::UInt32) = AccessChain(m, index + second_index * UInt32(nrows(m)))

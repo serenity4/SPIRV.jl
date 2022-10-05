@@ -57,6 +57,11 @@ end
 
 Align6 = Arr{2, Align5}
 
+struct Align7
+  x::Int8
+  mat::Mat4
+end
+
 primitive type WeirdType 24 end
 WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
 
@@ -99,6 +104,11 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     test_has_offset(ir, Align5, 2, 16)
     test_has_offset(ir, Align5, 3, 30)
     @test compute_minimal_size(Align5, ir, layout) == 31
+
+    ir = ir_with_type(Align7)
+    add_type_layouts!(ir, layout)
+    test_has_offset(ir, Align7, 1, 0)
+    test_has_offset(ir, Align7, 2, 16)
   end
 
   @testset "Array/Matrix layouts" begin
@@ -167,6 +177,20 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     t = spir_type(Align6, ir)
     @test getstride(ir, t) == 24
     @test align(bytes, t, ir) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06]
+
+    bytes = extract_bytes(Align7(1, @mat Float32[
+      1 2 3 4
+      5 6 7 8
+      9 10 11 12
+      13 14 15 16
+    ]))
+    @test length(bytes) == payload_size(Align7) == 1 + 4 * 4 * 4
+    ir = ir_with_type(Align7)
+    add_type_layouts!(ir, layout)
+    t = spir_type(Align7, ir)
+    @test getoffsets(ir, t) == [0, 16]
+    @test payload_sizes(t) == [1, 64]
+    @test compute_minimal_size(Align7, ir, layout) == 16 + 64
   end
 
   @testset "TypeInfo" begin
