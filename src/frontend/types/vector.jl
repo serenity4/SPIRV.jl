@@ -158,15 +158,10 @@ end
 vectorize(op, v1::T, v2::T) where {T<:Vec} = T(op.(v1.data, v2.data))
 vectorize(op, v::T, x::Scalar) where {T<:Vec} = T(op.(v.data, x))
 
-# Make sure the `copyto!` method below works well with the current compiler setup.
-# @generated function Base.copyto!(dst::T1, src::T2) where {T1<:Vec, T2<:Vec}
-#   length(T1) === length(T2) || error("Cannot copy vector of length $(length(T2)) into another vector of length $(length(T1)).")
-#   ex = Expr(:block)
-#   for field in propertynames(T1)
-#     push!(ex.args, :(setproperty!(dst, $(QuoteNode(field)), getproperty(src, $(QuoteNode(field))))))
-#   end
-#   push!(ex.args, :dst)
-#   ex
-# end
-
 Base.copyto!(dst::T1, src::T2) where {T1<:Vec, T2<:Vec} = dst[] = src
+
+# Mathematical operators.
+
+import LinearAlgebra: cross
+
+cross(x::Vec{2}, y::Vec{2}) = x.x * y.y - x.y * y.x
