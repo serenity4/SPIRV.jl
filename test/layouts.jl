@@ -7,14 +7,6 @@ function test_has_offset(ir, T, field, offset)
   @test decs.offset == offset
 end
 
-function test_has_stride(ir, T, stride)
-  decs = decorations(ir, T)
-  @test !isnothing(decs)
-  @test has_decoration(decs, SPIRV.DecorationArrayStride) || has_decoration(decs, SPIRV.DecorationMatrixStride)
-  dec = has_decoration(decs, SPIRV.DecorationArrayStride) ? decs.array_stride : decs.matrix_stride
-  @test dec == stride
-end
-
 function ir_with_type(T; storage_classes = [])
   ir = IR()
   type = spir_type(T, ir)
@@ -115,12 +107,16 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     T = Arr{4, Tuple{Float64, Float64}}
     ir = ir_with_type(T)
     add_type_layouts!(ir, layout)
-    test_has_stride(ir, T, 16)
+    decs = decorations(ir, T)
+    @test has_decoration(decs, SPIRV.DecorationArrayStride)
+    @test decs.array_stride == 16
 
-    T = Mat{4, 4, Float64}
+    T = Align7
     ir = ir_with_type(T)
     add_type_layouts!(ir, layout)
-    test_has_stride(ir, T, 8)
+    decs = decorations(ir, T, 2)
+    @test has_decoration(decs, SPIRV.DecorationMatrixStride)
+    @test decs.matrix_stride == 4
   end
 
   @testset "Byte extraction and alignment" begin
