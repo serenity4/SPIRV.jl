@@ -257,6 +257,7 @@ const ControlTree = SimpleTree{ControlNode}
 
 # Structures are constructed via pattern matching on the graph.
 
+"Get the node index of the control tree."
 node(tree::ControlTree) = nodevalue(tree).index
 region_type(tree::ControlTree) = nodevalue(tree).region_type
 ControlTree(node::Integer, region_type::RegionType, children = ControlTree[]) = ControlTree(ControlNode(node, region_type), children)

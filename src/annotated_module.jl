@@ -109,7 +109,9 @@ end
 
 annotate(mod::Module) = AnnotatedModule(mod)
 instructions(amod::AnnotatedModule, indices) = @view amod.mod.instructions[indices]
+instruction(amod::AnnotatedModule, index::Integer) = amod.mod.instructions[index]
 
+"Find the function index which contains the instruction with SSA value `index`."
 function find_function(amod::AnnotatedModule, fid::SSAValue)
   for (i, af) in enumerate(amod.annotated_functions)
     inst = amod[first(af.range)]
@@ -117,12 +119,14 @@ function find_function(amod::AnnotatedModule, fid::SSAValue)
   end
 end
 
+"Find the function index of the function which contains the instruction located at `index`."
 function find_function(amod::AnnotatedModule, index::Integer)
   for (i, af) in enumerate(amod.annotated_functions)
     in(index, af.range) && return i
   end
 end
 
+"Find the block index of the block which contains the instruction located at `index`."
 function find_block(af::AnnotatedFunction, index::Integer)
   index < first(af.range) && error("Index ", index, " is not inside the provided function")
   index < first(first(af.blocks)) && error("Index ", index, " points to an instruction occurring before any block definition")
