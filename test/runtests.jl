@@ -1,23 +1,10 @@
 using SPIRV, Test
 
-function test_module(mod::SPIRV.Module)
-  @test unwrap(validate(mod))
-
-  ir = IR(mod)
-  @test unwrap(validate(ir))
-
-  @test SPIRV.Module(ir) ≈ mod
-
-  pmod = PhysicalModule(mod)
-  @test unwrap(validate(pmod))
-
-  io = IOBuffer()
-  write(io, pmod)
-  seekstart(io)
-  @test read(io, PhysicalModule) == pmod
-
-  @test SPIRV.Module(pmod) == mod
-end
+resource(filename) = joinpath(@__DIR__, "resources", filename)
+read_module(file) = read(joinpath(@__DIR__, "modules", file * (last(splitext(file)) == ".jl" ? "" : ".jl")), String)
+load_module_expr(file) = Meta.parse(string("quote; ", read_module(file), "; end")).args[1]
+load_ir(file) = eval(macroexpand(Main, :(@spv_ir $(load_module_expr(file)))))
+load_module(file) = eval(macroexpand(Main, :(@spv_module $(load_module_expr(file)))))
 
 @testset "SPIRV.jl" begin
   include("deltagraph.jl");
@@ -32,7 +19,8 @@ end
   if VERSION ≥ v"1.8"
     include("passes.jl");
     include("codegen.jl");
-    include("frontend.jl");
     include("analysis.jl");
+    include("restructuring.jl");
+    include("frontend.jl");
   end;
 end;

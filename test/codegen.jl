@@ -52,9 +52,24 @@ using SPIRV: generate_ir
     end
     @test unwrap(validate(ir))
 
-    @testset "Loading and validating modules/$file" for file in readdir(joinpath(@__DIR__, "modules"))
-      ir = load_ir(file)
-      @test unwrap(validate(ir))
-    end
+    ir = load_ir("function_call")
+    @test unwrap(validate(ir))
+    ir = load_ir("single_block")
+    @test unwrap(validate(ir))
+    ir = load_ir("simple_conditional")
+    @test unwrap(validate(ir))
+    ir = load_ir("nested_conditional")
+    @test unwrap(validate(ir))
+    ir = load_ir("simple_loop")
+    @test unwrap(validate(ir))
+    ir = load_ir("simple_conditional_2")
+    @test unwrap(validate(ir))
+    ir = load_ir("simple_loop_2")
+    @test unwrap(validate(ir))
+
+    ir = load_ir("phi_variables")
+    # TODO: We should not have to do this by hand.
+    push!(ir.capabilities, SPIRV.CapabilityVariablePointers)
+    @test unwrap(validate(ir))
   end
 end;

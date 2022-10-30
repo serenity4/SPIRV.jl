@@ -2,6 +2,18 @@ using SPIRV, Test
 
 IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
 
+base_capabilities = """
+  OpCapability(VulkanMemoryModel)
+"""
+shader_capabilities = """
+  $base_capabilities
+  OpCapability(Shader)
+"""
+base_extensions = """
+  OpExtension("SPV_KHR_vulkan_memory_model")
+"""
+memory_model = "OpMemoryModel(Logical, Vulkan)"
+
 @testset "SPIR-V code generation" begin
   @testset "Composite SPIR-V types" begin
     function unicolor(position)
@@ -13,9 +25,9 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
     @test ir ≈ parse(
       SPIRV.Module,
         """
-        OpCapability(VulkanMemoryModel)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
+        $base_capabilities
+        $base_extensions
+        $memory_model
    %1 = OpTypeFloat(0x00000020)
    %2 = OpTypeVector(%1, 0x00000004)
    %3 = OpTypePointer(Function, %2)
@@ -47,9 +59,9 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
     @test ir ≈ parse(
       SPIRV.Module,
         """
-        OpCapability(VulkanMemoryModel)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
+        $base_capabilities
+        $base_extensions
+        $memory_model
    %1 = OpTypeBool()
    %2 = OpTypeInt(0x00000020, 0x00000001)
    %3 = OpTypeStruct(%1, %2)
@@ -83,10 +95,9 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
     @test ir ≈ parse(
       SPIRV.Module,
         """
-        OpCapability(VulkanMemoryModel)
-        OpCapability(Shader)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
+        $shader_capabilities
+        $base_extensions
+        $memory_model
    %1 = OpTypeFloat(0x00000020)
    %2 = OpTypeVector(%1, 0x00000004)
    %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
@@ -123,10 +134,9 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
     @test ir ≈ parse(
       SPIRV.Module,
         """
-        OpCapability(VulkanMemoryModel)
-        OpCapability(Shader)
-        OpExtension("SPV_KHR_vulkan_memory_model")
-        OpMemoryModel(Logical, Vulkan)
+        $shader_capabilities
+        $base_extensions
+        $memory_model
    %1 = OpTypeFloat(0x00000020)
    %2 = OpTypeVector(%1, 0x00000004)
    %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
@@ -163,11 +173,11 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
     @test ir ≈ parse(
       SPIRV.Module,
         """
-        OpCapability(VulkanMemoryModel)
+        $base_capabilities
         OpCapability(Float64)
-        OpExtension("SPV_KHR_vulkan_memory_model")
+        $base_extensions
    %8 = OpExtInstImport("GLSL.std.450")
-        OpMemoryModel(Logical, Vulkan)
+        $memory_model
    %1 = OpTypeFloat(0x00000040)
    %2 = OpTypeFunction(%1, %1, %1, %1)
    %3 = OpFunction(None, %2)::%1
@@ -186,10 +196,10 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
     @test ir ≈ parse(
       SPIRV.Module,
         """
-        OpCapability(VulkanMemoryModel)
-        OpExtension("SPV_KHR_vulkan_memory_model")
+        $base_capabilities
+        $base_extensions
    %6 = OpExtInstImport("GLSL.std.450")
-        OpMemoryModel(Logical, Vulkan)
+        $memory_model
    %1 = OpTypeFloat(0x00000020)
    %2 = OpTypeFunction(%1, %1)
    %9 = OpConstant(0x40400000)::%1
@@ -228,9 +238,9 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
       @test ir ≈ parse(
         SPIRV.Module,
           """
-          OpCapability(VulkanMemoryModel)
-          OpExtension("SPV_KHR_vulkan_memory_model")
-          OpMemoryModel(Logical, Vulkan)
+          $base_capabilities
+          $base_extensions
+          $memory_model
      %1 = OpTypeFloat(0x00000020)
      %2 = OpTypeFunction(%1, %1)
      %6 = OpConstant(0x3f800000)::%1
@@ -253,10 +263,10 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
       @test ir ≈ parse(
         SPIRV.Module,
           """
-          OpCapability(VulkanMemoryModel)
+          $base_capabilities
           OpCapability(Float64)
-          OpExtension("SPV_KHR_vulkan_memory_model")
-          OpMemoryModel(Logical, Vulkan)
+          $base_extensions
+          $memory_model
      %1 = OpTypeFloat(0x00000040)
      %2 = OpTypeFunction(%1, %1, %1, %1)
      %8 = OpTypeBool()
@@ -283,9 +293,9 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
       @test ir ≈ parse(
         SPIRV.Module,
           """
-          OpCapability(VulkanMemoryModel)
-          OpExtension("SPV_KHR_vulkan_memory_model")
-          OpMemoryModel(Logical, Vulkan)
+          $base_capabilities
+          $base_extensions
+          $memory_model
      %1 = OpTypeFloat(0x00000020)
      %2 = OpTypeFunction(%1, %1)
      %8 = OpConstant(0x00000000)::%1
@@ -295,7 +305,6 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
      %4 = OpFunctionParameter()::%1
      %5 = OpLabel()
     %10 = OpFOrdLessThan(%8, %4)::%9
-          OpSelectionMerge(%6, None)
           OpBranchConditional(%10, %6, %7)
      %6 = OpLabel()
     %12 = OpFAdd(%4, %11)::%1
@@ -324,10 +333,10 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
       @test ir ≈ parse(
         SPIRV.Module,
           """
-          OpCapability(VulkanMemoryModel)
-          OpExtension("SPV_KHR_vulkan_memory_model")
+          $base_capabilities
+          $base_extensions
     %13 = OpExtInstImport("GLSL.std.450")
-          OpMemoryModel(Logical, Vulkan)
+          $memory_model
      %1 = OpTypeFloat(0x00000020)
      %2 = OpTypeFunction(%1, %1)
     %14 = OpConstant(0x00000000)::%1
@@ -338,12 +347,10 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
      %5 = OpLabel()
     %16 = OpExtInst(%13, FClamp, %4, %14, %15)::%1
     %18 = OpFOrdEqual(%16, %14)::%17
-          OpSelectionMerge(%10, None)
           OpBranchConditional(%18, %6, %9)
      %6 = OpLabel()
     %19 = OpFMul(%4, %4)::%1
     %20 = OpFOrdLessThan(%15, %19)::%17
-          OpSelectionMerge(%7, None)
           OpBranchConditional(%20, %7, %8)
      %7 = OpLabel()
           OpReturnValue(%19)
@@ -356,7 +363,6 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
     %10 = OpLabel()
     %23 = OpPhi(%21 => %8, %22 => %9)::%1
     %24 = OpFOrdLessThan(%23, %14)::%17
-          OpSelectionMerge(%11, None)
           OpBranchConditional(%24, %11, %12)
     %11 = OpLabel()
           OpReturnValue(%16)
@@ -380,7 +386,7 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
         tex_offset = 1.0 ./ size(Image(reference), 0) .* blur.scale
         res = zero(Vec3)
         for i in eachindex(weights)
-          vec = direction == 1 ? Vec2(tex_offset.x * i, 0.0) : Vec2(0.0, tex_offset.y * i)
+          vec = direction == 1U ? Vec2(tex_offset.x * i, 0.0) : Vec2(0.0, tex_offset.y * i)
           res .+= reference(uv .+ vec).rgb .* weights[i] .* blur.strength
           res .+= reference(uv .- vec).rgb .* weights[i] .* blur.strength
         end
@@ -392,7 +398,13 @@ IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
       @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec3)
 
       # Loops are not supported yet.
-      @test_throws SPIRV.CompilationError @compile compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
+      ir = @compile compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
+      # TODO: We should not have to do this by hand.
+      push!(ir.capabilities, SPIRV.CapabilityVariablePointers)
+      # Unfortunately, the Khronos validator seems to disallow loops without merge header,
+      # even for generic SPIR-V modules that don't require structured control-flow.
+      # So we only test for validation rules until that one.
+      @test_throws "can only be formed between a block and a loop header" unwrap(validate(ir))
     end
   end
 end;

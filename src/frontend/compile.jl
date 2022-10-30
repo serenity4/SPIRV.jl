@@ -19,7 +19,7 @@ end
 struct IRMapping
   args::Dictionary{Core.Argument,SSAValue}
   "SPIR-V SSA values for basic blocks from Julia IR."
-  bbs::Dictionary{Int,SSAValue}
+  bbs::BijectiveMapping{Int,SSAValue}
   "SPIR-V SSA values for each `Core.SSAValue` that implicitly represents a basic block."
   bb_ssavals::Dictionary{Core.SSAValue,SSAValue}
   "SPIR-V SSA values that correspond semantically to `Core.SSAValue`s."
@@ -30,7 +30,7 @@ struct IRMapping
   globalrefs::Dictionary{Core.SSAValue,GlobalRef}
 end
 
-IRMapping() = IRMapping(Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary())
+IRMapping() = IRMapping(Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary())
 
 SSAValue(arg::Core.Argument, irmap::IRMapping) = irmap.args[arg]
 SSAValue(bb::Int, irmap::IRMapping) = irmap.bbs[bb]
@@ -192,69 +192,23 @@ end
 function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget)
   ranges = block_ranges(target)
   back_edges = backedges(target.cfg)
-  nodelist = traverse(target.cfg)
-  add_mapping!(irmap, ir, ranges, nodelist)
-  emit_nodes!(fdef, ir, irmap, target, ranges, nodelist, back_edges)
+  vs = traverse(target.cfg)
+  add_mapping!(irmap, ir, ranges, vs)
+  emit_nodes!(fdef, ir, irmap, target, ranges, vs, back_edges)
   replace_forwarded_ssa!(fdef, irmap)
 end
 
-function add_mapping!(irmap::IRMapping, ir::IR, ranges, nodelist)
-  for node in nodelist
+function add_mapping!(irmap::IRMapping, ir::IR, ranges, vs)
+  for v in vs
     id = next!(ir.ssacounter)
-    insert!(irmap.bbs, node, id)
-    insert!(irmap.bb_ssavals, Core.SSAValue(first(ranges[node])), id)
+    insert!(irmap.bbs, v, id)
+    insert!(irmap.bb_ssavals, Core.SSAValue(first(ranges[v])), id)
   end
 end
 
-function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget, ranges, nodelist, backedges)
-  (; cfg) = target
-  ctree = ControlTree(cfg.g)
-  for node in nodelist
-    emit!(fdef, ir, irmap, target, ranges[node], node)
-    ins = inneighbors(cfg, node)
-    outs = outneighbors(cfg, node)
-    length(ins) > 1 || length(outs) > 1 || continue
-
-    # Structured loop or selection.
-
-    # We iterate nodes in reverse post-order, so we will have to deal
-    # with outer structures first and inner structures last.
-    # We therefore get the control tree at the highest level.
-    ctree_local = outermost_tree(ctree, node)
-    if region_type(ctree_local) == REGION_NATURAL_LOOP
-      local_backedges = filter(in(backedges), map(Fix2(Edge, node), ins))
-      if length(local_backedges) > 1
-        throw(CompilationError("There is more than one backedge to a loop."))
-      end
-      vcont = src(only(local_backedges))
-      vmerge = nothing
-      cyclic_nodes = SPIRV.node.(Leaves(ctree_local))
-      vmerge_candidates = Set(dst.(findall(e -> !in(dst(e), cyclic_nodes) && in(src(e), cyclic_nodes), edges(cfg))))
-      @switch length(vmerge_candidates) begin
-        @case 0
-        throw(CompilationError("No merge candidate found for a loop."))
-        @case 1
-        vmerge = outs[only(vmerge_candidates)]
-        @case GuardBy(>(1))
-        throw(CompilationError("More than one candidates found for a loop."))
-      end
-      header = @inst OpLoopMerge(irmap.bbs[vmerge], irmap.bbs[vcont], SelectionControlNone)
-      block = last(fdef.blocks)
-      insert!(block.insts, lastindex(block.insts), header)
-    elseif length(outs) > 1
-      # We're branching.
-      vmerge = postdominator(target.cfg, node)
-      merge_id = if isnothing(vmerge)
-        # All target blocks return.
-        # Any block is valid in that case.
-        irmap.bbs[last(outs)]
-      else
-        irmap.bbs[vmerge]
-      end
-      header = @inst OpSelectionMerge(merge_id, SelectionControlNone)
-      block = last(fdef.blocks)
-      insert!(block.insts, lastindex(block.insts), header)
-    end
+function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget, ranges, vs, backedges)
+  for v in vs
+    emit!(fdef, ir, irmap, target, ranges[v], v)
   end
 end
 
@@ -298,11 +252,11 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRV
             @inst OpReturnValue(only(args))
           end
         end
-        push!(blk, irmap, spv_inst, core_ssaval)
+        add_instruction!(blk, irmap, spv_inst, core_ssaval)
         @case ::Core.GotoNode
         dest = irmap.bb_ssavals[Core.SSAValue(jinst.label)]
         spv_inst = @inst OpBranch(dest)
-        push!(blk, irmap, spv_inst, core_ssaval)
+        add_instruction!(blk, irmap, spv_inst, core_ssaval)
         @case ::Core.GotoIfNot
         # Core.GotoIfNot uses the SSA value of the first instruction of the target
         # block as its `dest`.
@@ -310,24 +264,28 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRV
         (; cond) = jinst
         cond_inst = isa(cond, Bool) ? emit!(ir, Constant(cond)) : SSAValue(cond, irmap)
         spv_inst = @inst OpBranchConditional(cond_inst, SSAValue(node + 1, irmap), dest)
-        push!(blk, irmap, spv_inst, core_ssaval)
+        add_instruction!(blk, irmap, spv_inst, core_ssaval)
         @case ::GlobalRef
         jtype <: Type || throw(CompilationError("Unhandled global reference $(repr(jtype))"))
         insert!(irmap.globalrefs, core_ssaval, jinst)
         @case _
         check_isvalid(jtype)
         if ismutabletype(jtype)
-          allocate_variable!(ir, irmap, fdef, jtype, core_ssaval)
+          # OpPhi will reuse existing variables, no need to allocate a new one.
+          !isa(jinst, Core.PhiNode) && allocate_variable!(ir, irmap, fdef, jtype, core_ssaval)
         end
         ret = emit_inst!(ir, irmap, target, fdef, jinst, jtype, blk)
         if isa(ret, Instruction)
-          if ismutabletype(jtype)
+          if ismutabletype(jtype) && !isa(jinst, Core.PhiNode)
             # The current core SSAValue has already been assigned (to the variable).
-            push!(blk, irmap, ret, nothing)
+            add_instruction!(blk, irmap, ret, nothing)
             # Store to the new variable.
-            push!(blk, irmap, @inst OpStore(irmap.ssavals[core_ssaval], ret.result_id::SSAValue))
+            add_instruction!(blk, irmap, @inst OpStore(irmap.ssavals[core_ssaval], ret.result_id::SSAValue))
+          elseif ismutabletype(jtype) && isa(jinst, Core.PhiNode)
+            insert!(irmap.variables, core_ssaval, Variable(ir.types[ret.type_id], StorageClassFunction))
+            add_instruction!(blk, irmap, ret, core_ssaval)
           else
-            push!(blk, irmap, ret, core_ssaval)
+            add_instruction!(blk, irmap, ret, core_ssaval)
           end
         elseif isa(ret, SSAValue)
           # The value is a SPIR-V global (possibly a constant),
@@ -346,18 +304,9 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRV
   # Implicit `goto` to the next block.
   if !is_termination_instruction(last(blk))
     spv_inst = @inst OpBranch(SSAValue(node + 1, irmap))
-    push!(blk, irmap, spv_inst)
+    add_instruction!(blk, irmap, spv_inst)
   end
 end
-
-const termination_instructions = Set([
-  OpBranch, OpBranchConditional,
-  OpReturn, OpReturnValue,
-  OpUnreachable,
-  OpKill, OpTerminateInvocation,
-])
-
-is_termination_instruction(inst::Instruction) = inst.opcode in termination_instructions
 
 function allocate_variable!(ir::IR, irmap::IRMapping, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
   # Create a SPIR-V variable to allow for future mutations.
@@ -370,7 +319,7 @@ function allocate_variable!(ir::IR, irmap::IRMapping, fdef::FunctionDefinition, 
   push!(fdef.local_vars, Instruction(var, id, ir))
 end
 
-function Base.push!(block::Block, irmap::IRMapping, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)
+function add_instruction!(block::Block, irmap::IRMapping, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)
   if !isnothing(inst.result_id) && !isnothing(core_ssaval)
     insert!(irmap.ssavals, core_ssaval, inst.result_id)
   end

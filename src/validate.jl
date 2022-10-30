@@ -7,7 +7,7 @@ Base.showerror(io::IO, err::ValidationError) = print(io, "ValidationError:\n\n$(
 function validate(mod::Module)
   ret = validate_types(mod)
   iserror(ret) && return ret
-  validate_khronos(mod; flags = ["--target-env", "spv1.5"])
+  validate(PhysicalModule(mod))
 end
 
 function validate_types(mod::Module)::Result{Bool,ValidationError}

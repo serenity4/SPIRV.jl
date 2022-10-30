@@ -10,6 +10,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
     SPIRV.CapabilityShader,
     SPIRV.CapabilityInt64,
     SPIRV.CapabilityPhysicalStorageBufferAddresses,
+    SPIRV.CapabilityVariablePointers,
   ],
 )
 
@@ -28,10 +29,9 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   @test mod == parse(
     SPIRV.Module,
       """
-      OpCapability(VulkanMemoryModel)
-      OpCapability(Shader)
-      OpExtension("SPV_KHR_vulkan_memory_model")
-      OpMemoryModel(Logical, Vulkan)
+      $shader_capabilities
+      $base_extensions
+      $memory_model
       OpEntryPoint(Vertex, %15, "main", %4)
       OpName(%6, "vert_shader!_Tuple{Vec4}")
       OpName(%4, "out_color")

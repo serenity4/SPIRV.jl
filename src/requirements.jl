@@ -42,6 +42,7 @@ end
 function FeatureRequirements(instructions, supported::FeatureSupport)
   required_exts = String[]
   required_caps = Capability[]
+  all(supports_capability(supported, cap) for cap in required_caps) || error("Certain base capabilities are not supported.")
   for inst in instructions
     inst_info = info(inst)
     add_requirements!(required_exts, required_caps, supported, inst_info.extensions, inst_info.capabilities)

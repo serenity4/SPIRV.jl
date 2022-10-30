@@ -206,7 +206,7 @@ function cyclic_region!(sccs, g, v, ec, doms, domtrees, backedges)
   entry_points = unique!(src.(entry_edges))
   entry = common_ancestor(domtrees[v], [domtrees[ep] for ep in entry_points])
   @assert !isnothing(entry) "Multiple-entry cyclic region encountered with no single dominator"
-  entry_node = node(entry)
+  entry_node = node_index(entry)
   vs = [entry_node]
   exclude_vertices = [entry_node]
   mec_entries = unique!(dst.(entry_edges))
@@ -225,7 +225,7 @@ function acyclic_region(g, v)
   doms = dominators(g)
   bedges = backedges(g, ec, doms)
   domtree = DominatorTree(doms)
-  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node(x))
+  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node_index(x))
   acyclic_region(g, v, ec, doms, domtrees, bedges)
 end
 
@@ -235,7 +235,7 @@ function cyclic_region(g, v)
   doms = dominators(g)
   bedges = backedges(g, ec, doms)
   domtree = DominatorTree(doms)
-  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node(x))
+  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node_index(x))
   sccs = strongly_connected_components(g)
   cyclic_region!(sccs, g, v, ec, doms, domtrees, bedges)
 end
@@ -248,7 +248,7 @@ end
 """
 Control tree.
 
-The leaves are labeled as [`REGION_BLOCK`](@ref) regions, with the distinguishing property that they no children.
+The leaves are labeled as [`REGION_BLOCK`](@ref) regions, with the distinguishing property that they have no children.
 
 Children nodes of any given subtree are in reverse postorder according to the
 original control-flow graph.
@@ -258,9 +258,12 @@ const ControlTree = SimpleTree{ControlNode}
 # Structures are constructed via pattern matching on the graph.
 
 "Get the node index of the control tree."
-node(tree::ControlTree) = nodevalue(tree).index
+node_index(tree::ControlTree) = nodevalue(tree).index
 region_type(tree::ControlTree) = nodevalue(tree).region_type
-ControlTree(node::Integer, region_type::RegionType, children = ControlTree[]) = ControlTree(ControlNode(node, region_type), children)
+ControlTree(v::Integer, region_type::RegionType, children = ControlTree[]) = ControlTree(ControlNode(v, region_type), children)
+
+is_loop(ctree::ControlTree) = in(region_type(tree), (REGION_NATURAL_LOOP, REGION_WHILE_LOOP))
+is_selection(ctree::ControlTree) = in(region_type(tree), (REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION))
 
 is_single_entry_single_exit(g::AbstractGraph, v) = length(inneighbors(g, v)) == 1 && length(outneighbors(g, v)) == 1
 is_single_entry_single_exit(g::AbstractGraph) = is_weakly_connected(g) && length(sinks(g)) == length(sources(g)) == 1
@@ -272,7 +275,7 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
   doms = dominators(cfg)
   bedges = backedges(cfg, ec, doms)
   domtree = DominatorTree(doms)
-  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node(x))
+  domtrees = sort(collect(PostOrderDFS(domtree)); by = x -> node_index(x))
   sccs = strongly_connected_components(cfg)
 
   control_trees = Dictionary{T, ControlTree}(copy(vertices(cfg)), ControlTree.(ControlNode.(copy(vertices(cfg)), REGION_BLOCK)))
@@ -298,7 +301,7 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
 
     # `ws` must be in reverse post-order.
     (region_type, ws) = ret
-    region = SimpleTree(ControlNode(v, region_type), control_trees[w] for w in [v; ws])
+    region = ControlTree(ControlNode(v, region_type), control_trees[w] for w in [v; ws])
 
     # Add the new region and merge region vertices.
     control_trees[v] = region
@@ -343,6 +346,6 @@ end
 
 function outermost_tree(ctree::ControlTree, v::Integer)
   for subtree in PreOrderDFS(ctree)
-    node(subtree) == v && return subtree
+    node_index(subtree) == v && return subtree
   end
 end

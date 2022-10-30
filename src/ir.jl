@@ -420,7 +420,14 @@ function Instruction(c::Constant, id::SSAValue, ir::IR)
     (false, true) => @inst id = OpSpecConstantFalse()::SSAValue(ir, BooleanType())
     ((ids::Vector{SSAValue}, type), false) => @inst id = OpConstantComposite(ids...)::SSAValue(ir, type)
     ((ids::Vector{SSAValue}, type), true) => @inst id = OpSpecConstantComposite(ids...)::SSAValue(ir, type)
-    (val, false) => @inst id = OpConstant(reinterpret(UInt32, val))::SSAValue(ir, typeof(val))
+    (val, false) => begin
+      if isa(val, UInt64) || isa(val, Int64) || isa(val, Float64)
+        # `val` is a 64-bit literal, and so takes two words.
+        @inst id = OpConstant(reinterpret(UInt32, [val])...)::SSAValue(ir, typeof(val))
+      else
+        @inst id = OpConstant(reinterpret(UInt32, val))::SSAValue(ir, typeof(val))
+      end
+    end
   end
 end
 

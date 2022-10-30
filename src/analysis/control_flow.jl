@@ -12,7 +12,18 @@ sources(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Fix1(inneighbors, g)
   data::T
   parent::Optional{SimpleTree{T}}
   children::Vector{SimpleTree{T}}
+  function SimpleTree{T}(data::T, parent, children) where {T}
+    tree = new{T}(data, parent, SimpleTree{T}[])
+    # Make sure that all the children mark this new tree as parent.
+    for c in children
+      push!(tree.children, @set c.parent = tree)
+    end
+    tree
+  end
 end
+SimpleTree{T}(data::T, children = SimpleTree{T}[]) where {T} = SimpleTree{T}(data, nothing, children)
+SimpleTree(data::T, parent, children) where {T} = SimpleTree{T}(data, parent, children)
+SimpleTree(data::T, children = SimpleTree{T}[]) where {T} = SimpleTree{T}(data, children)
 
 """
 Equality is defined for `SimpleTree`s over data and children. The equality of
@@ -20,17 +31,6 @@ parents is not tested to avoid infinite recursion, and only the presence of
 parents is tested instead.
 """
 Base.:(==)(x::SimpleTree{T}, y::SimpleTree{T}) where {T} = x.data == y.data && x.children == y.children && isnothing(x.parent) == isnothing(y.parent)
-SimpleTree(data::T) where {T} = SimpleTree{T}(data)
-SimpleTree{T}(data::T) where {T} = SimpleTree{T}(data, nothing, T[])
-
-SimpleTree(data::T, children) where {T} = SimpleTree{T}(data, children)
-function SimpleTree{T}(data::T, children) where {T}
-  tree = SimpleTree(data)
-  for c in children
-    push!(tree.children, @set c.parent = tree)
-  end
-  tree
-end
 
 Base.show(io::IO, ::MIME"text/plain", tree::SimpleTree) = isempty(children(tree)) ? print(io, typeof(tree), "(", tree.data, ", [])") : print(io, chomp(sprintc(print_tree, tree; maxdepth = 10)))
 Base.show(io::IO, tree::SimpleTree) = print(io, typeof(tree), "(", nodevalue(tree), isroot(tree) ? "" : string(", parent = ", nodevalue(parent(tree))), ", children = [", join(nodevalue.(children(tree)), ", "), "])")
@@ -167,8 +167,6 @@ function ControlFlowGraph(cfg::AbstractGraph)
   ControlFlowGraph(cfg, dfst, ec, is_reducible, is_structured)
 end
 
-control_flow_graph(fdef::FunctionDefinition) = control_flow_graph(collect(fdef.blocks))
-
 function control_flow_graph(amod::AnnotatedModule, af::AnnotatedFunction)
   cfg = SimpleDiGraph(length(af.blocks))
 
@@ -191,12 +189,6 @@ function control_flow_graph(amod::AnnotatedModule, af::AnnotatedFunction)
     end
   end
   cfg
-end
-
-function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::SSAValue)
-  for (i, block) in enumerate(af.blocks)
-    has_result_id(amod[block.start], id) && return i
-  end
 end
 
 function dominators(g::AbstractGraph{T}) where {T}
@@ -279,13 +271,13 @@ function postdominator(cfg::ControlFlowGraph, source)
   root_tree = DominatorTree(cfg)
   tree = nothing
   for subtree in PreOrderDFS(root_tree)
-    if node(subtree) == source
+    if node_index(subtree) == source
       tree = subtree
     end
   end
-  pdoms = findall(!in(v, outneighbors(cfg, node(tree))) for v in immediate_postdominators(tree))
-  @assert length(pdoms) ≤ 1 "Found $(length(pdoms)) postdominator(s)"
-  isempty(pdoms) ? nothing : node(tree[only(pdoms)])
+  pdoms = findall(!in(v, outneighbors(cfg, node_index(tree))) for v in immediate_postdominators(tree))
+  @assert length(pdoms) ≤ 1 "Found $(length(pdoms)) postdominator(s), expected one or none"
+  isempty(pdoms) ? nothing : node_index(tree[only(pdoms)])
 end
 
 struct DominatorNode
@@ -294,10 +286,10 @@ end
 
 const DominatorTree = SimpleTree{DominatorNode}
 
-node(tree::DominatorTree) = nodevalue(tree).index
+node_index(tree::DominatorTree) = nodevalue(tree).index
 
-immediate_postdominators(tree::DominatorTree) = node.(children(tree))
-immediate_dominator(tree::DominatorTree) = node(@something(parent(tree), return))
+immediate_postdominators(tree::DominatorTree) = node_index.(children(tree))
+immediate_dominator(tree::DominatorTree) = node_index(@something(parent(tree), return))
 
 DominatorTree(fdef::FunctionDefinition) = DominatorTree(control_flow_graph(fdef))
 DominatorTree(cfg::AbstractGraph) = DominatorTree(dominators(cfg))
@@ -369,5 +361,3 @@ function find_parent(f, tree)
     tree = parent(tree)
   end
 end
-
-traverse_cfg(fdef::FunctionDefinition) = (keys(fdef.blocks)[nodevalue(tree)] for tree in PreOrderDFS(dominance_tree(fdef)))

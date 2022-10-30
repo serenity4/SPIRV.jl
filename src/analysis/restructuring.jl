@@ -1,19 +1,107 @@
+function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction)
+  cfg = control_flow_graph(amod, af)
+  ctree_global = ControlTree(cfg)
+  back_edges = backedges(cfg)
+  traversed = BitVector(undef, nv(cfg))
+  for ctree in PreOrderDFS(ctree_global)
+    v = node_index(ctree)
+    traversed[v] && continue
+    traversed[v] = true
+
+    @tryswitch region_type(ctree) begin
+      @case GuardBy(is_loop)
+      local_back_edges = filter!(in(back_edges), [Edge(u, v) for u in inneighbors(cfg, v)])
+      if length(local_back_edges) > 1
+        throw(CompilationError("There is more than one backedge to a loop."))
+      end
+      vcont = src(only(local_back_edges))
+      vmerge = nothing
+      cyclic_nodes = node_index.(Leaves(ctree))
+      cfg_edges = edges(cfg)
+      vmerge_edge_indices = findall(e -> !in(dst(e), cyclic_nodes) && in(src(e), cyclic_nodes), cfg_edges)
+      vmerge_candidates = Set(dst(e) for e in cfg_edges[vmerge_edge_indices])
+      @switch length(vmerge_candidates) begin
+        @case 0
+        throw(CompilationError("No merge candidate found for a loop."))
+        @case 1
+        vmerge = only(vmerge_candidates)
+        @case GuardBy(>(1))
+        throw(CompilationError("More than one candidates found for a loop."))
+      end
+      header = @inst OpLoopMerge(SSAValue(amod, af, vmerge), SSAValue(amod, af, vcont), LoopControlNone)
+      insert!(diff, last(af.blocks[v]) - 1, header)
+
+      @case GuardBy(is_selection)
+      # We're branching.
+      vmerge = postdominator(cfg, v)
+      if isnothing(vmerge)
+        # All target blocks return or loop back to the current node.
+
+        # If there is a loop back to the current node, the branch
+        # statement is a loop break. In this case, no header is required.
+        is_breaking_node(ctree, cfg) && continue
+
+        @tryswitch region_type(ctree) begin
+          @case &REGION_TERMINATION
+          vmerge = node_index(ctree.children[findfirst(≠(v) ∘ node_index, ctree.children)])
+
+          @case &REGION_BLOCK
+          c = first(ctree.children)
+          if node_index(c) == v && region_type(c) == REGION_TERMINATION
+            # We have a branch to one or more termination nodes.
+            # Simply get the branch that does not terminate.
+            vmerge = node_index(ctree.children[2])
+          end
+        end
+
+        if isnothing(vmerge)
+          # Take any target that is not part of the current structure.
+          local_leaf_nodes = node_index.(Leaves(ctree))
+          vmerge_index = findfirst(!in(local_leaf_nodes), outs)
+          !isnothing(vmerge_index) && (vmerge = outs[vmerge_index])
+          if isnothing(vmerge)
+            # Otherwise, take any target that is a termination node.
+            ctree_parent = parent(ctree)
+            isnothing(ctree_parent) && (ctree_parent = ctree)
+
+            @assert region_type(ctree_parent) == REGION_BLOCK
+            vmerge_index = findfirst(==(v) ∘ node_index, ctree_parent.children)::Int + 1
+            vmerge = node_index(ctree_parent.children[vmerge_index])
+          end
+        end
+
+        @debug "No postdominator available on node $v to get a merge candidate, picking one with custom heuristics: $vmerge"
+      end
+      header = @inst OpSelectionMerge(SSAValue(amod, af, vmerge), SelectionControlNone)
+      insert!(diff, last(af.blocks[v]) - 1, header)
+    end
+  end
+end
+
+function is_breaking_node(ctree::ControlTree, cfg::AbstractGraph)
+  parent_loop = find_parent(is_loop, ctree)
+  isnothing(parent_loop) && return false
+  loop_nodes = node_index.(Leaves(parent_loop))
+  any(!in(loop_nodes), outneighbors(cfg, node_index(ctree)))
+end
+
 function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction)
   cfg = control_flow_graph(amod, af)
   merge_blocks = conflicted_merge_blocks(amod, af, cfg)
   isempty(merge_blocks) && return nothing
 
-  global_ctree = ControlTree(cfg)
-  for (merge_block, sources) in pairs(merge_blocks)
-    nested_sources = sort_blocks_by_nesting(global_ctree, sources)
+  ctree_global = ControlTree(cfg)
+  nesting = nesting_levels(ctree_global)
+  sort!(merge_blocks, by = x -> first(nesting[x]))
 
+  for (merge_block, sources) in pairs(merge_blocks)
     # Use a new merge block for all structured constructs except the outer one,
     # which gets to win over the others for the conflicting merge block.
-    for ctree in reverse(@view nested_sources[2:end])
+    for (_, ctree) in reverse(@view sources[2:end])
       # Create a new node and insert it appropriately into the CFG without changing semantics.
 
       _, merge_block_inst = block_instruction(amod, af, merge_block)
-      branching_blocks = [node(tree) for tree in Leaves(ctree) if in(merge_block, outneighbors(cfg, node(tree)))]
+      branching_blocks = [node_index(tree) for tree in Leaves(ctree) if in(merge_block, outneighbors(cfg, node_index(tree)))]
 
       new = @inst next!(diff) = Label()
       new_instructions = [new]
@@ -22,7 +110,7 @@ function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::Annota
       redirect_branches!(diff, amod, af, branching_blocks, merge_block_inst.result_id, new.result_id)
 
       # Update merge header.
-      (i, merge_inst) = merge_header(amod, af, node(ctree))
+      (i, merge_inst) = merge_header(amod, af, node_index(ctree))
       update!(diff, i => update_merge_block(merge_inst, new.result_id))
 
       # Intercept OpPhi instructions on the original merge block by the new block.
@@ -38,12 +126,18 @@ function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::Annota
   diff
 end
 
-function sort_blocks_by_nesting(ctree::ControlTree, blocks)
-  trees = ControlTree[]
+nesting_levels(ctree::ControlTree) = nesting_levels!(Dictionary{Int,Pair{ControlTree,Int}}(), ctree, 1)
 
-  # TODO
-
-  trees
+function nesting_levels!(nesting_levels, ctree::ControlTree, level::Integer)
+  i = node_index(ctree)
+  if !haskey(nesting_levels, i) && (region_type(ctree) ≠ REGION_BLOCK || isempty(children(ctree)))
+    insert!(nesting_levels, i, ctree => level)
+  end
+  next_level = region_type(ctree) == REGION_BLOCK ? level : level + 1
+  for tree in children(ctree)
+    nesting_levels!(nesting_levels, tree, next_level)
+  end
+  nesting_levels
 end
 
 function redirect_branches!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction, branching_blocks, from::SSAValue, to::SSAValue)
@@ -126,25 +220,6 @@ function find_merge_blocks(amod::AnnotatedModule, af::AnnotatedFunction, cfg::Co
     end
   end
   merge_blocks
-end
-
-"Get the [`Instruction`](@ref) declaring the block at provided block index in the control-flow graph."
-function block_instruction(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer)
-  i = first(af.blocks[block_index])
-  inst = instruction(amod, i)
-  @assert is_label_instruction(inst)
-  i, inst
-end
-
-is_merge_instruction(inst::Instruction) = in(inst.opcode, (OpSelectionMerge, OpLoopMerge))
-is_label_instruction(inst::Instruction) = inst.opcode == OpLabel
-is_phi_instruction(inst::Instruction) = inst.opcode == OpPhi
-
-function merge_header(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer)
-  i = af.blocks[block_index][end - 1]
-  inst = instruction(amod, i)
-  @assert is_merge_instruction(inst)
-  i, inst
 end
 
 function update_merge_block(inst::Instruction, new_merge_block::SSAValue)

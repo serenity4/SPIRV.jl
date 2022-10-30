@@ -1,6 +1,6 @@
 using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
-using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, node, cyclic_region, acyclic_region
+using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, node_index, cyclic_region, acyclic_region
 using SPIRV: REGION_BLOCK, REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION, REGION_PROPER, REGION_SELF_LOOP, REGION_WHILE_LOOP, REGION_NATURAL_LOOP, REGION_IMPROPER
 
 # All the following graphs are rooted in 1.
@@ -25,9 +25,39 @@ g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 
 g9() = DeltaGraph(4, 1 => 2, 2 => 3, 3 => 4, 4 => 2)
 "CFG with a branch between a loop and a termination node from a node dominating a loop, with that loop otherwise dominating the termination node."
 g10() = DeltaGraph(4, 1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
+"CFG with two nested `if-else` constructs pointing to a single common merge block."
+g11() = DeltaGraph(6, 1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 1 => 6, 6 => 5)
 
 # The core structure is `DeltaGraph(6, 1 => 2, 1 => 6, 2 => 3, 3 => 4, 4 => 5, 5 => 2, 5 => 6)`
 # g11() = DeltaGraph(10, 1 => 2, 1 => 10, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 9, 9 => 2, 8 => 10)
+
+test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
+
+function test_traversal(cfg::ControlFlowGraph)
+  visited = Int[]
+  scc = strongly_connected_components(cfg)
+  for v in traverse(cfg)
+    push!(visited, v)
+    @test all(x -> in(x, visited) || begin
+      idx = findfirst(v in c for c in scc)
+      !isnothing(idx) && x in scc[idx]
+    end, inneighbors(cfg, v))
+  end
+end
+
+function test_completeness(tree::DominatorTree, cfg::ControlFlowGraph)
+  @test node_index(tree) == 1 && isroot(tree) && Set(node_index.(collect(PostOrderDFS(tree)))) == Set(1:nv(cfg))
+  pdom = postdominator(cfg, 1)
+  @test isnothing(pdom) || in(pdom, immediate_postdominators(tree))
+
+  dominated = Int[]
+  for dom in PostOrderDFS(tree)
+    dom == tree && continue
+    @test !isnothing(parent(dom))
+    push!(dominated, node_index(dom))
+  end
+  @test sort(dominated) == 2:nv(cfg)
+end
 
 @testset "Function analysis" begin
   @testset "Static call graph traversal" begin
@@ -182,8 +212,6 @@ g10() = DeltaGraph(4, 1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
       end
 
       @testset "Control trees" begin
-        test_coverage(g, ctree) = Set([node(c) for c in Leaves(ctree)]) == Set(vertices(g))
-
         g = g1()
         ctree = ControlTree(g)
         test_coverage(g, ctree)
@@ -350,33 +378,23 @@ g10() = DeltaGraph(4, 1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
           ]),
           ControlTree(4, REGION_BLOCK),
         ])
-      end
-    end
 
-    function test_traversal(cfg)
-      visited = Int[]
-      scc = strongly_connected_components(cfg)
-      for v in traverse(cfg)
-        push!(visited, v)
-        @test all(x -> in(x, visited) || begin
-          idx = findfirst(v in c for c in scc)
-          !isnothing(idx) && x in scc[idx]
-        end, inneighbors(cfg, v))
+        g = g11()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_IF_THEN_ELSE, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_IF_THEN_ELSE, [
+              ControlTree(2, REGION_BLOCK),
+              ControlTree(3, REGION_BLOCK),
+              ControlTree(4, REGION_BLOCK),
+            ]),
+            ControlTree(6, REGION_BLOCK),
+          ]),
+          ControlTree(5, REGION_BLOCK),
+        ])
       end
-    end
-
-    function test_completeness(tree, cfg)
-      @test node(tree) == 1 && isroot(tree) && Set(node.(collect(PostOrderDFS(tree)))) == Set(1:nv(cfg))
-      pdom = postdominator(cfg, 1)
-      @test isnothing(pdom) || in(pdom, immediate_postdominators(tree))
-
-      dominated = Int[]
-      for dom in PostOrderDFS(tree)
-        dom == tree && continue
-        @test !isnothing(parent(dom))
-        push!(dominated, node(dom))
-      end
-      @test sort(dominated) == 2:nv(cfg)
     end
 
     cfg = ControlFlowGraph(g1())
@@ -438,6 +456,21 @@ g10() = DeltaGraph(4, 1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
     @test !cfg.is_reducible
 
     cfg = ControlFlowGraph(g8())
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
+    @test cfg.is_reducible
+
+    cfg = ControlFlowGraph(g9())
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
+    @test cfg.is_reducible
+
+    cfg = ControlFlowGraph(g10())
+    tree = DominatorTree(cfg)
+    test_completeness(tree, cfg)
+    @test cfg.is_reducible
+
+    cfg = ControlFlowGraph(g11())
     tree = DominatorTree(cfg)
     test_completeness(tree, cfg)
     @test cfg.is_reducible

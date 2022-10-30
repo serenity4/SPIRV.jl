@@ -144,7 +144,7 @@ function info(opcode::OpCode, arguments::AbstractVector, skip_ids::Bool = true)
   # Repeat the last info if there is a variable number of arguments.
   if !isempty(op_infos)
     linfo = last(op_infos)
-    if linfo.quantifier == "*"
+    if linfo.quantifier == "*" || opcode == OpConstant
       append!(op_infos, linfo for _ = 1:(length(arguments) - 1))
     end
   end
@@ -262,7 +262,7 @@ function strip_debug_info!(mod::Module)
 end
 strip_debug_info(mod::Module) = strip_debug_info!(@set mod.instructions = deepcopy(mod.instructions))
 
-@forward Module.instructions (Base.iterate, Base.getindex, Base.setindex!, Base.firstindex, Base.lastindex, Base.length)
+@forward Module.instructions (Base.iterate, Base.getindex, Base.setindex!, Base.firstindex, Base.lastindex, Base.length, Base.view)
 
 function Base.getindex(mod::Module, id::SSAValue)
   for inst in mod.instructions

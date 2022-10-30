@@ -34,7 +34,13 @@ function annotate_function(c::InstructionCursor)
 end
 
 """
-Module annotated with instruction ranges for each logical SPIR-V section.
+Module annotated with instruction ranges for each logical SPIR-V section, suitable for read-only operations and analyses.
+
+Any desired modifications of annotated modules should be staged and applied via a [`Diff`](@ref).
+
+!!! warn
+    This module *should not* be modified, and in particular *must not* have its structure affected in any way by the insertion or removal of instructions.
+    Modifications can cause the annotations to become out of sync with the updated state of the module, yielding undefined behavior.
 """
 @refbroadcast mutable struct AnnotatedModule
   mod::Module
@@ -56,7 +62,9 @@ Module annotated with instruction ranges for each logical SPIR-V section.
   AnnotatedModule(mod::Module, c::InstructionCursor) = new(mod, c)
 end
 
-@forward AnnotatedModule.mod (Base.getindex, Base.lastindex)
+@forward AnnotatedModule.mod (Base.getindex, Base.lastindex, Base.view)
+
+Module(amod::AnnotatedModule) = amod.mod
 
 function AnnotatedModule(mod::Module)
   c = InstructionCursor(mod.instructions)
@@ -108,8 +116,56 @@ function AnnotatedModule(mod::Module)
 end
 
 annotate(mod::Module) = AnnotatedModule(mod)
-instructions(amod::AnnotatedModule, indices) = @view amod.mod.instructions[indices]
-instruction(amod::AnnotatedModule, index::Integer) = amod.mod.instructions[index]
+
+instructions(amod::AnnotatedModule, indices) = @view amod[indices]
+instructions(amod::AnnotatedModule, af::AnnotatedFunction) = instructions(amod, af.range)
+instructions(amod::AnnotatedModule, af::AnnotatedFunction, block::Integer) = instructions(amod, af.blocks[block])
+
+const termination_instructions = Set([
+  OpBranch, OpBranchConditional,
+  OpReturn, OpReturnValue,
+  OpUnreachable,
+  OpKill, OpTerminateInvocation,
+])
+
+is_termination_instruction(inst::Instruction) = in(inst.opcode, termination_instructions)
+is_merge_instruction(inst::Instruction) = in(inst.opcode, (OpSelectionMerge, OpLoopMerge))
+is_label_instruction(inst::Instruction) = inst.opcode == OpLabel
+is_phi_instruction(inst::Instruction) = inst.opcode == OpPhi
+
+function termination_instruction(amod::AnnotatedModule, af::AnnotatedFunction, block::Integer)
+  index = last(af.blocks[block])
+  inst = amod[index]
+  @assert is_termination_instruction(inst)
+  index, inst
+end
+
+"Get the [`Instruction`](@ref) declaring the block at provided block index in the control-flow graph."
+function block_instruction(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer)
+  i = first(af.blocks[block_index])
+  inst = amod[i]
+  @assert is_label_instruction(inst)
+  i, inst
+end
+
+function merge_header(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer)
+  i = af.blocks[block_index][end - 1]
+  inst = amod[i]
+  @assert is_merge_instruction(inst)
+  i, inst
+end
+
+function phi_instructions(amod::AnnotatedModule, af::AnnotatedFunction, block::Integer)
+  indices = Int[]
+  insts = Instruction[]
+  for (i, inst) in enumerate(instructions(amod, af, block))
+    if inst.opcode == OpPhi
+      push!(indices, af.blocks[block].start + i - 1)
+      push!(insts, inst)
+    end
+  end
+  indices, insts
+end
 
 "Find the function index which contains the instruction with SSA value `index`."
 function find_function(amod::AnnotatedModule, fid::SSAValue)
@@ -134,3 +190,11 @@ function find_block(af::AnnotatedFunction, index::Integer)
   isnothing(found) && error("Index ", index, " points to an instruction occurring after the function body")
   found
 end
+
+function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::SSAValue)
+  for (i, block) in enumerate(af.blocks)
+    has_result_id(amod[block.start], id) && return i
+  end
+end
+
+SSAValue(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer) = block_instruction(amod, af, block_index).result_id

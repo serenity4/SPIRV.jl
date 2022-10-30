@@ -1,14 +1,30 @@
 function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
   type = spir_type(jtype, ir)
+  isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = PointerType(StorageClassFunction, type))
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => (OpCompositeConstruct, args)
-    ::Core.PhiNode =>
-      (OpPhi, Iterators.flatten(zip(jinst.values, SSAValue(findfirst(Fix1(in, e), block_ranges(target)), irmap) for e in jinst.edges)))
+    ::Core.PhiNode => begin
+      args = []
+      for (e, val) in zip(jinst.edges, jinst.values)
+        # `e` is the SSA value of the last instruction of the block `val` is assigned to.
+        from = SSAValue(findfirst(Fix1(in, e), block_ranges(target)), irmap)
+        push!(args, val, from)
+      end
+      # Repeat an arbitrary value for unspecified blocks.
+      for from in inneighbors(target.cfg, irmap.bbs[blk.id])
+        # Remap `from` to a SSAValue, using the SSA value of the first Julia instruction in that block.
+        from = irmap.bb_ssavals[Core.SSAValue(target.indices[from])]
+        if !in(from, @view args[2:2:end])
+          push!(args, args[end - 1], from)
+        end
+      end
+      (OpPhi, args)
+    end
     :($f($(args...))) => @match f begin
       ::GlobalRef => @match getfield(f.mod, f.name) begin
         # Loop constructs use `Base.not_int` seemingly from the C code, so we
         # need to handle it if encountered.
-        &Base.not_int => (OpNot, args)
+        &Base.not_int => (OpLogicalNot, args)
         ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$f'."))
         &getfield => begin
           composite = args[1]
@@ -32,7 +48,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::Functio
     Expr(:invoke, mi, f, args...) => begin
       isa(f, Core.SSAValue) && (f = irmap.globalrefs[f])
       @assert isa(f, GlobalRef)
-      if f.mod == @__MODULE__
+      if f.mod == @__MODULE__() || !in(f.mod, (Base, Core))
         opcode = @when let op::OpCode = try_getopcode(f.name)
           op
           @when op::OpCodeGLSL = try_getopcode(f.name, :GLSL)
@@ -103,7 +119,7 @@ end
 load_variable!(blk::Block, ir::IR, irmap::IRMapping, var::Variable, ssaval) = load_variable!(blk, ir, irmap, var.type, ssaval)
 function load_variable!(blk::Block, ir::IR, irmap::IRMapping, type::PointerType, ssaval)
   load = @inst next!(ir.ssacounter) = OpLoad(ssaval)::SSAValue(ir, type.type)
-  push!(blk, irmap, load)
+  add_instruction!(blk, irmap, load)
   load.result_id
 end
 
@@ -162,6 +178,8 @@ function load_variables!(args, blk::Block, ir::IR, irmap::IRMapping, fdef, opcod
     if i == 1 && opcode in (OpStore, OpAccessChain)
       continue
     end
+    # OpPhi must use variables directly (loading cannot happen before OpPhi instructions).
+    opcode == OpPhi && continue
     loaded_arg = load_if_variable!(blk, ir, irmap, fdef, arg)
     !isnothing(loaded_arg) && (args[i] = loaded_arg)
   end
@@ -212,7 +230,6 @@ end
 function literals_to_const!(args, ir::IR, irmap::IRMapping, opcode)
   for (i, arg) in enumerate(args)
     if isa(arg, Bool) || (isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, QuoteNode)) && !is_literal(opcode, args, i)
-      (isa(arg, Int64) || isa(arg, Float64) || isa(arg, UInt64)) && error("64-bit literals are not supported yet.")
       args[i] = emit!(ir, irmap, Constant(arg))
     end
   end

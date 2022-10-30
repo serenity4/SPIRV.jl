@@ -90,7 +90,7 @@ function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::A
 end
 
 function UseDefChain(amod::AnnotatedModule, af::AnnotatedFunction, use::SSAValue, stacktrace::StackTrace; warn_unresolved = true)
-  local_index = findfirst(has_result_id(use), instructions(amod, af.range))
+  local_index = findfirst(has_result_id(use), instructions(amod, af))
   !isnothing(local_index) || error("SSA value $use is not present within the provided function.")
   use_index = first(af.range) + local_index - 1
   inst = amod[use_index]

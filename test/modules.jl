@@ -1,19 +1,12 @@
 using SPIRV, Test
 using SPIRV: AnnotatedFunction
 
-resource(filename) = joinpath(@__DIR__, "resources", filename)
-
 modules = [
   "vert.spv",
   "frag.spv",
   "comp.spv",
   "decorations.spv",
 ]
-
-read_module(file) = read(joinpath(@__DIR__, "modules", file * (last(splitext(file)) == ".jl" ? "" : ".jl")), String)
-load_module_expr(file) = Meta.parse(string("quote; ", read_module(file), "; end")).args[1]
-load_ir(file) = eval(macroexpand(Main, :(@spv_ir $(load_module_expr(file)))))
-load_module(file) = eval(macroexpand(Main, :(@spv_module $(load_module_expr(file)))))
 
 @testset "SPIR-V modules" begin
   @testset "Testing SPIR-V module $file" for file in modules
