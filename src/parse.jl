@@ -281,7 +281,7 @@ function spirv_version(version::VersionNumber)
   version.major << 16 + version.minor << 8
 end
 
-Base.show(io::IO, mod::Module) = print(io, "Module(#instructions=$(length(mod.instructions)))")
+Base.show(io::IO, mod::Module) = print(io, "Module($(length(mod.instructions)) instructions)")
 
 Base.write(io::IO, mod::Module) = write(io, assemble(mod))
 

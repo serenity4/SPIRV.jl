@@ -262,8 +262,9 @@ node_index(tree::ControlTree) = nodevalue(tree).index
 region_type(tree::ControlTree) = nodevalue(tree).region_type
 ControlTree(v::Integer, region_type::RegionType, children = ControlTree[]) = ControlTree(ControlNode(v, region_type), children)
 
-is_loop(ctree::ControlTree) = in(region_type(tree), (REGION_NATURAL_LOOP, REGION_WHILE_LOOP))
-is_selection(ctree::ControlTree) = in(region_type(tree), (REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION))
+is_loop(ctree::ControlTree) = in(region_type(ctree), (REGION_NATURAL_LOOP, REGION_WHILE_LOOP))
+is_selection(ctree::ControlTree) = in(region_type(ctree), (REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION))
+is_block(ctree::ControlTree) = region_type(ctree) == REGION_BLOCK
 
 is_single_entry_single_exit(g::AbstractGraph, v) = length(inneighbors(g, v)) == 1 && length(outneighbors(g, v)) == 1
 is_single_entry_single_exit(g::AbstractGraph) = is_weakly_connected(g) && length(sinks(g)) == length(sources(g)) == 1

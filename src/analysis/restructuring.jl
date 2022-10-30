@@ -1,14 +1,22 @@
+function add_merge_headers!(diff::Diff, amod::AnnotatedModule)
+  for af in amod.annotated_functions
+    add_merge_headers!(diff, amod, af)
+  end
+  diff
+end
+
 function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction)
-  cfg = control_flow_graph(amod, af)
+  cfg = ControlFlowGraph(amod, af)
   ctree_global = ControlTree(cfg)
   back_edges = backedges(cfg)
   traversed = BitVector(undef, nv(cfg))
   for ctree in PreOrderDFS(ctree_global)
+    is_block(ctree) && continue
     v = node_index(ctree)
     traversed[v] && continue
     traversed[v] = true
 
-    @tryswitch region_type(ctree) begin
+    @switch ctree begin
       @case GuardBy(is_loop)
       local_back_edges = filter!(in(back_edges), [Edge(u, v) for u in inneighbors(cfg, v)])
       if length(local_back_edges) > 1
@@ -29,7 +37,7 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
         throw(CompilationError("More than one candidates found for a loop."))
       end
       header = @inst OpLoopMerge(SSAValue(amod, af, vmerge), SSAValue(amod, af, vcont), LoopControlNone)
-      insert!(diff, last(af.blocks[v]) - 1, header)
+      insert!(diff, last(af.blocks[v]), header)
 
       @case GuardBy(is_selection)
       # We're branching.
@@ -57,6 +65,7 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
         if isnothing(vmerge)
           # Take any target that is not part of the current structure.
           local_leaf_nodes = node_index.(Leaves(ctree))
+          outs = outneighbors(cfg, v)
           vmerge_index = findfirst(!in(local_leaf_nodes), outs)
           !isnothing(vmerge_index) && (vmerge = outs[vmerge_index])
           if isnothing(vmerge)
@@ -64,7 +73,10 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
             ctree_parent = parent(ctree)
             isnothing(ctree_parent) && (ctree_parent = ctree)
 
-            @assert region_type(ctree_parent) == REGION_BLOCK
+            if region_type(ctree_parent) ≠ REGION_BLOCK
+              error("Selection construct expected to have a block parent; control-flow may be unstructured")
+            end
+
             vmerge_index = findfirst(==(v) ∘ node_index, ctree_parent.children)::Int + 1
             vmerge = node_index(ctree_parent.children[vmerge_index])
           end
@@ -73,7 +85,7 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
         @debug "No postdominator available on node $v to get a merge candidate, picking one with custom heuristics: $vmerge"
       end
       header = @inst OpSelectionMerge(SSAValue(amod, af, vmerge), SelectionControlNone)
-      insert!(diff, last(af.blocks[v]) - 1, header)
+      insert!(diff, last(af.blocks[v]), header)
     end
   end
 end
@@ -85,41 +97,49 @@ function is_breaking_node(ctree::ControlTree, cfg::AbstractGraph)
   any(!in(loop_nodes), outneighbors(cfg, node_index(ctree)))
 end
 
+function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule)
+  for af in amod.annotated_functions
+    restructure_merge_blocks!(diff, amod, af)
+  end
+  diff
+end
+
 function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction)
-  cfg = control_flow_graph(amod, af)
-  merge_blocks = conflicted_merge_blocks(amod, af, cfg)
-  isempty(merge_blocks) && return nothing
-
+  cfg = ControlFlowGraph(amod, af)
   ctree_global = ControlTree(cfg)
-  nesting = nesting_levels(ctree_global)
-  sort!(merge_blocks, by = x -> first(nesting[x]))
 
-  for (merge_block, sources) in pairs(merge_blocks)
-    # Use a new merge block for all structured constructs except the outer one,
-    # which gets to win over the others for the conflicting merge block.
-    for (_, ctree) in reverse(@view sources[2:end])
-      # Create a new node and insert it appropriately into the CFG without changing semantics.
+  for ctree in PreOrderDFS(ctree_global)
+    @tryswitch ctree begin
+      @case GuardBy(is_selection) || GuardBy(is_loop)
+      v = node_index(ctree)
+      inner = last(ctree.children)
+      @tryswitch inner begin
+        @case GuardBy(is_selection) || GuardBy(is_loop)
+        p = find_parent(is_block, ctree)
+        isnothing(p) && error("Expected at least one block parent.")
+        i = findfirst(==(v) ∘ node_index, p.children)::Int
+        merge_block = node_index(p[i + 1])
+        merge_block_inst_index, merge_block_inst = block_instruction(amod, af, merge_block)
 
-      _, merge_block_inst = block_instruction(amod, af, merge_block)
-      branching_blocks = [node_index(tree) for tree in Leaves(ctree) if in(merge_block, outneighbors(cfg, node_index(tree)))]
+        # We will in general have only one branching block for selection constructs
+        # and possibly multiple ones for loops (as break statements are allowed).
+        # TODO: Optimize this by using the property above to avoid traversing all leaves.
+        branching_blocks = [node_index(tree) for tree in Leaves(inner) if in(merge_block, outneighbors(cfg, node_index(tree)))]
 
-      new = @inst next!(diff) = Label()
-      new_instructions = [new]
+        new = @inst next!(diff) = Label()
+        new_instructions = [new]
 
-      # Adjust branching instructions from branching blocks so that they branch to the new node instead.
-      redirect_branches!(diff, amod, af, branching_blocks, merge_block_inst.result_id, new.result_id)
+        # Adjust branching instructions from branching blocks so that they branch to the new node instead.
+        redirect_branches!(diff, amod, af, branching_blocks, merge_block_inst.result_id, new.result_id)
 
-      # Update merge header.
-      (i, merge_inst) = merge_header(amod, af, node_index(ctree))
-      update!(diff, i => update_merge_block(merge_inst, new.result_id))
+        # Intercept OpPhi instructions on the original merge block by the new block.
+        updated_phi_insts, new_phi_insts = intercept_phi_instructions!(diff.ssacounter, amod, af, branching_blocks, merge_block)
+        append!(new_instructions, new_phi_insts)
+        update!(diff, pairs(updated_phi_insts))
 
-      # Intercept OpPhi instructions on the original merge block by the new block.
-      updated_phi_insts, new_phi_insts = intercept_phi_instructions!(diff.ssacounter, amod, af, branching_blocks, merge_block)
-      append!(new_instructions, new_phi_insts)
-      update!(diff, pairs(updated_phi_insts))
-
-      push!(new_instructions, @inst Branch(merge_block_inst.result_id))
-      insert!(diff, i => inst for (i, new_inst) in zip(merge_block_index:length(new_instructions), new_instructions))
+        push!(new_instructions, @inst Branch(merge_block_inst.result_id))
+        insert!(diff, merge_block_inst_index, new_instructions)
+      end
     end
   end
 
@@ -173,7 +193,7 @@ with possibly more than one corresponding `OpPhi` instructions.
 function intercept_phi_instructions!(counter::SSACounter, amod::AnnotatedModule, af::AnnotatedFunction, branching_blocks, target::Integer)
   (phi_indices, phi_insts) = phi_instructions(amod, af, target)
 
-  updated_phi_insts = Ditionary{Int,Instruction}()
+  updated_phi_insts = Dictionary{Int,Instruction}()
   new_phi_insts = Dictionary{Int,Instruction}()
 
   for block in branching_blocks
@@ -203,19 +223,19 @@ function remove_phi_duplicates(inst::Instruction)
   @set inst.arguments = collect(Iterators.flatten(unique_pairs))
 end
 
-function conflicted_merge_blocks(amod::AnnotatedModule, af::AnnotatedFunction, cfg::ControlFlowGraph)
-  merge_blocks = find_merge_blocks(amod, af, cfg)
+function conflicted_merge_blocks(amod::AnnotatedModule, af::AnnotatedFunction)
+  merge_blocks = find_merge_blocks(amod, af)
   filter!(>(1) ∘ length, merge_blocks)
 end
 
 "Find blocks that are the target of merge headers, along with the list of nodes that declared it with as a merge header."
-function find_merge_blocks(amod::AnnotatedModule, af::AnnotatedFunction, cfg::ControlFlowGraph)
+function find_merge_blocks(amod::AnnotatedModule, af::AnnotatedFunction)
   merge_blocks = Dictionary{Int,Vector{Int}}()
   for (i, block) in enumerate(af.blocks)
     for inst in instructions(amod, block[end-1:end])
       is_merge_instruction(inst) || continue
       merge_block = first(inst.arguments)
-      push!(get!(Vector{Int}, merge_blocks, merge_block), i)
+      push!(get!(Vector{Int}, merge_blocks, id(merge_block)), i)
       break
     end
   end

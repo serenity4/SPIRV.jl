@@ -197,4 +197,4 @@ function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::SSAValue)
   end
 end
 
-SSAValue(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer) = block_instruction(amod, af, block_index).result_id
+SSAValue(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer) = last(block_instruction(amod, af, block_index)).result_id

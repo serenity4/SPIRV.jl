@@ -12,34 +12,34 @@ struct Diff
   deletions::Vector{Int}
 end
 
-Diff(mod::Module) = Diff(mod, SSACounter(mod.bound), [], [], [])
+Diff(mod::Module) = Diff(mod, SSACounter(mod.bound - 1), [], [], [])
 Diff(x) = Diff(Module(x))
 
 next!(diff::Diff) = next!(diff.ssacounter)
 
 function apply!(diff::Diff)
-  (; mod) = diff
+  (; mod, insertions, deletions) = diff
   (; instructions) = mod
   for (line, inst) in diff.modifications
     instructions[line] = inst
   end
-  insertion_order = sort(diff.insertions, by = first)
-  deletion_order = sort(diff.deletions)
-  n = lastindex(instructions)
-  @assert (isempty(insertion_order) || n ≥ first(first(insertion_order))) && n ≥ get(deletion_order, 1, 0)
-  insert_i = lastindex(insertion_order)
-  delete_i = lastindex(deletion_order)
-  for i in reverse(eachindex(instructions))
-    insert_i == delete_i && error("Cannot delete and insert at the same location. Use explicit modifications instead.")
-    if get(deletion_order, delete_i, 0) == i
+
+  sort!(insertions, by = first)
+  sort!(deletions)
+
+  while !isempty(insertions) || !isempty(deletions)
+    next_insertion = isempty(insertions) ? typemin(Int) : first(last(insertions))
+    next_deletion = isempty(deletions) ? typemin(Int) : last(deletions)
+    next_insertion == next_deletion && error("Cannot delete and insert at the same location. Use explicit modifications instead.")
+    if next_insertion > next_deletion
+      (i, instruction) = pop!(insertions)
+      insert!(instructions, i, instruction)
+    else
+      i = pop!(deletions)
       deleteat!(instructions, i)
-      delete_i = prevind(deletion_order, delete_i)
-    elseif firstindex(insertion_order) ≤ insert_i ≤ lastindex(insertion_order) && first(insertion_order[insert_i]) == i
-      insert!(instructions, i, last(insertion_order[insert_i]))
-      insert_i = prevind(insertion_order, insert_i)
     end
   end
-  mod
+  @set mod.bound = id(SSAValue(diff.ssacounter)) + 1
 end
 
 function update!(diff::Diff, insts)
@@ -54,14 +54,29 @@ function update!(diff::Diff, pair::Pair{<:Integer,Instruction})
   diff
 end
 
+Base.insert!(diff::Diff, i::Integer, inst::Instruction) = insert!(diff, i => inst)
+
 function Base.insert!(diff::Diff, pair::Pair{<:Integer, Instruction})
   push!(diff.insertions, pair)
   diff
 end
 
-function Base.insert!(diff::Diff, insts)
-  for pair in insts
+"Record all insertion independently. Must not be used for chunks, or all insertions must have the chunk start location as index."
+function Base.insert!(diff::Diff, insertions)
+  for pair in insertions
     insert!(diff, pair)
   end
   diff
+end
+
+"Insert instructions as part of the same chunk."
+function Base.insert!(diff::Diff, i::Integer, insts)
+  for inst in insts
+    insert!(diff, i => inst)
+  end
+  diff
+end
+
+function Base.show(io::IO, ::MIME"text/plain", diff::Diff)
+  print(io, Diff, '(', diff.mod, ", ", diff.ssacounter, ", ", length(diff.insertions), " insertions, ", length(diff.deletions), " deletions and ", length(diff.modifications), " modifications)")
 end

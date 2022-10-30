@@ -3,8 +3,10 @@ using SPIRV, Test
 resource(filename) = joinpath(@__DIR__, "resources", filename)
 read_module(file) = read(joinpath(@__DIR__, "modules", file * (last(splitext(file)) == ".jl" ? "" : ".jl")), String)
 load_module_expr(file) = Meta.parse(string("quote; ", read_module(file), "; end")).args[1]
-load_ir(file) = eval(macroexpand(Main, :(@spv_ir $(load_module_expr(file)))))
-load_module(file) = eval(macroexpand(Main, :(@spv_module $(load_module_expr(file)))))
+load_ir(ex::Expr) = eval(macroexpand(Main, :(@spv_ir $ex)))
+load_ir(file) = load_ir(load_module_expr(file))
+load_module(ex::Expr) = eval(macroexpand(Main, :(@spv_module $ex)))
+load_module(file) = load_module(load_module_expr(file))
 
 @testset "SPIRV.jl" begin
   include("deltagraph.jl");
