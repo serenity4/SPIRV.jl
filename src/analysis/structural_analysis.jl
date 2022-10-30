@@ -269,6 +269,8 @@ is_block(ctree::ControlTree) = region_type(ctree) == REGION_BLOCK
 is_single_entry_single_exit(g::AbstractGraph, v) = length(inneighbors(g, v)) == 1 && length(outneighbors(g, v)) == 1
 is_single_entry_single_exit(g::AbstractGraph) = is_weakly_connected(g) && length(sinks(g)) == length(sources(g)) == 1
 
+ControlTree(cfg::ControlFlowGraph) = ControlTree(cfg.g)
+
 function ControlTree(cfg::AbstractGraph{T}) where {T}
   dfst = SpanningTreeDFS(cfg)
   abstract_graph = DeltaGraph(cfg)

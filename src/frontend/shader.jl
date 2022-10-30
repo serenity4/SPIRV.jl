@@ -40,27 +40,30 @@ It is assumed that the function arguments are typed to use same storage classes.
 """
 function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, variables)
   fdef = FunctionDefinition(ir, mi)
-  main_t = FunctionType(VoidType(), [])
-  main = FunctionDefinition(main_t)
-  ep = EntryPoint(:main, emit!(ir, main), interface.execution_model, [], fdef.global_vars)
-  interface.execution_model == ExecutionModelFragment && push!(ep.modes, @inst OpExecutionMode(ep.func, ExecutionModeOriginUpperLeft))
-  insert!(ir.entry_points, ep.func, ep)
+  define_entry_point!(ir, fdef, interface)
 
   add_variable_decorations!(ir, variables, interface)
   add_type_layouts!(ir, interface.layout)
   add_type_metadata!(ir, interface)
   add_align_operands!(ir, fdef, interface.layout)
 
+  satisfy_requirements!(ir, interface.features)
+end
+
+function define_entry_point!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterface)
+  main = FunctionDefinition(FunctionType(VoidType(), []))
+  ep = EntryPoint(:main, emit!(ir, main), interface.execution_model, [], fdef.global_vars)
+
   # Fill function body.
   blk = new_block!(main, next!(ir.ssacounter))
-
   # The dictionary loses some of its elements to #undef values.
   #TODO: fix this hack in Dictionaries.jl
   fid = findfirst(==(fdef), ir.fdefs.forward)
-
   push!(blk, @inst next!(ir.ssacounter) = OpFunctionCall(fid)::SSAValue(ir, fdef.type.rettype))
   push!(blk, @inst OpReturn())
-  satisfy_requirements!(ir, interface.features)
+
+  interface.execution_model == ExecutionModelFragment && push!(ep.modes, @inst OpExecutionMode(ep.func, ExecutionModeOriginUpperLeft))
+  insert!(ir.entry_points, ep.func, ep)
 end
 
 function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)
