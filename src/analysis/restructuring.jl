@@ -25,7 +25,7 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
       vcont = src(only(local_back_edges))
       vmerge = nothing
       cyclic_nodes = node_index.(Leaves(ctree))
-      cfg_edges = edges(cfg)
+      cfg_edges = collect(edges(cfg))
       vmerge_edge_indices = findall(e -> !in(dst(e), cyclic_nodes) && in(src(e), cyclic_nodes), cfg_edges)
       vmerge_candidates = Set(dst(e) for e in cfg_edges[vmerge_edge_indices])
       @switch length(vmerge_candidates) begin
@@ -109,37 +109,41 @@ function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::Annota
   ctree_global = ControlTree(cfg)
 
   for ctree in PreOrderDFS(ctree_global)
-    @tryswitch ctree begin
-      @case GuardBy(is_selection) || GuardBy(is_loop)
-      v = node_index(ctree)
-      inner = last(ctree.children)
-      @tryswitch inner begin
-        @case GuardBy(is_selection) || GuardBy(is_loop)
-        p = find_parent(is_block, ctree)
-        isnothing(p) && error("Expected at least one block parent.")
-        i = findfirst(==(v) ∘ node_index, p.children)::Int
-        merge_block = node_index(p[i + 1])
-        merge_block_inst_index, merge_block_inst = block_instruction(amod, af, merge_block)
+    is_selection(ctree) || is_loop(ctree) || continue
+    v = node_index(ctree)
+    for inner in ctree.children
+      node_index(inner) == v && continue
+      is_selection(inner) || is_loop(inner) || continue
 
-        # We will in general have only one branching block for selection constructs
-        # and possibly multiple ones for loops (as break statements are allowed).
-        # TODO: Optimize this by using the property above to avoid traversing all leaves.
-        branching_blocks = [node_index(tree) for tree in Leaves(inner) if in(merge_block, outneighbors(cfg, node_index(tree)))]
+      # We have a selection or loop construct nested directly inside another selection or loop construct.
+      # If we had a properly nested construct, with its merge block strictly contained in the outer construct,
+      # then we would have a block region consisting of the inner construct + the inner merge block.
+      # To restructure this inner construct, we first identify such structured construct on the outside to know
+      # which block we impliticly treated as merge block for our inner construct.
+      p = find_parent(is_block, ctree)
+      isnothing(p) && error("Expected at least one parent that is a block region.")
+      i = findfirst(==(v) ∘ node_index, p.children)::Int
+      merge_block = node_index(p[i + 1])
+      merge_block_inst_index, merge_block_inst = block_instruction(amod, af, merge_block)
 
-        new = @inst next!(diff) = Label()
-        new_instructions = [new]
+      # We will in general have only one branching block for selection constructs
+      # and possibly multiple ones for loops (as break statements are allowed).
+      # TODO: Optimize this by using the property above to avoid traversing all leaves.
+      branching_blocks = [node_index(tree) for tree in Leaves(inner) if in(merge_block, outneighbors(cfg, node_index(tree)))]
 
-        # Adjust branching instructions from branching blocks so that they branch to the new node instead.
-        redirect_branches!(diff, amod, af, branching_blocks, merge_block_inst.result_id, new.result_id)
+      new = @inst next!(diff) = Label()
+      new_instructions = [new]
 
-        # Intercept OpPhi instructions on the original merge block by the new block.
-        updated_phi_insts, new_phi_insts = intercept_phi_instructions!(diff.ssacounter, amod, af, branching_blocks, merge_block)
-        append!(new_instructions, new_phi_insts)
-        update!(diff, pairs(updated_phi_insts))
+      # Adjust branching instructions from branching blocks so that they branch to the new node instead.
+      redirect_branches!(diff, amod, af, branching_blocks, merge_block_inst.result_id, new.result_id)
 
-        push!(new_instructions, @inst Branch(merge_block_inst.result_id))
-        insert!(diff, merge_block_inst_index, new_instructions)
-      end
+      # Intercept OpPhi instructions on the original merge block by the new block.
+      updated_phi_insts, new_phi_insts = intercept_phi_instructions!(diff.ssacounter, amod, af, branching_blocks, merge_block)
+      append!(new_instructions, new_phi_insts)
+      update!(diff, pairs(updated_phi_insts))
+
+      push!(new_instructions, @inst Branch(merge_block_inst.result_id))
+      insert!(diff, merge_block_inst_index, new_instructions)
     end
   end
 

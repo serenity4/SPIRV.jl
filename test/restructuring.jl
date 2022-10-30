@@ -48,16 +48,40 @@ function module_from_cfg(cfg; ir = false)
 end
 
 @testset "Restructuring utilities" begin
-  ir = module_from_cfg(g11(); ir = true)
-  @test unwrap(validate(ir))
+  for i in 1:11
+    # Skip a few tricky cases for now.
+    in(i, (6, 8)) && continue
+    @eval ir = module_from_cfg($(Symbol(:g, i))(); ir = true)
+    @test unwrap(validate(ir))
+  end
 
   # Starting module: two conditionals sharing the same merge block.
   original_mod = module_from_cfg(g11())
   amod = annotate(original_mod)
-
   # Restructure merge blocks.
   diff = restructure_merge_blocks!(Diff(amod), amod)
+  # A new dummy block needs to be inserted (2 instructions), and 2 branching blocks needed to be updated to branch to the new block.
   @test length(diff.insertions) == 2 && length(diff.modifications) == 2
+  mod = apply!(diff)
+  @test mod.bound == original_mod.bound + 1
+  @test unwrap(validate(IR(mod)))
+
+  # Add merge headers.
+  amod = annotate(mod)
+  diff = add_merge_headers!(Diff(amod), amod)
+  @test length(diff.insertions) == 2
+  mod = apply!(diff)
+  amod = annotate(mod)
+  af = only(amod.annotated_functions)
+  @test length(find_merge_blocks(amod, af)) == 2
+  @test isempty(conflicted_merge_blocks(amod, af))
+
+  # Starting module: A conditional and a loop sharing the same merge block, with the loop inside the conditional.
+  original_mod = module_from_cfg(g10())
+  amod = annotate(original_mod)
+  diff = restructure_merge_blocks!(Diff(amod), amod)
+  # There is only one update to make to the branching node 3.
+  @test length(diff.insertions) == 2 && length(diff.modifications) == 1
   mod = apply!(diff)
   @test mod.bound == original_mod.bound + 1
   @test unwrap(validate(IR(mod)))
