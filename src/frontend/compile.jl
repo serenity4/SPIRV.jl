@@ -1,22 +1,26 @@
-function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}), args...; interp = SPIRVInterpreter())
-  compile(SPIRVTarget(f, argtypes; interp), args...)
+struct ModuleTarget
+  extinst_imports::Dictionary{String,SSAValue}
+  types::BijectiveMapping{SSAValue,SPIRType}
+  constants::BijectiveMapping{SSAValue,Constant}
+  global_vars::BijectiveMapping{SSAValue,Variable}
+  fdefs::BijectiveMapping{SSAValue,FunctionDefinition}
+  metadata::SSADict{Metadata}
+  debug::DebugInfo
+  ssacounter::SSACounter
 end
 
-compile(target::SPIRVTarget, args...) = compile!(IR(), target, args...)
+@forward ModuleTarget.metadata (metadata!, decorations!, decorations, has_decoration, decorate!)
 
-function compile!(ir::IR, target::SPIRVTarget, variables::Dictionary{Int,Variable} = Dictionary{Int,Variable}())
-  # TODO: restructure CFG
-  inferred = infer(target)
-  emit!(ir, inferred, variables)
-  ir
+ModuleTarget() = ModuleTarget(Dictionary(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), DebugInfo(), SSACounter(0))
+
+GlobalsInfo(mt::ModuleTarget) = GlobalsInfo(mt.types, mt.constants, mt.global_vars)
+
+function set_name!(mt::ModuleTarget, id::SSAValue, name::Symbol)
+  set!(mt.debug.names, id, name)
+  set_name!(metadata!(mt.metadata, id), name)
 end
 
-function compile!(ir::IR, target::SPIRVTarget, features::FeatureSupport, variables = Dictionary{Int,Variable}())
-  ir = compile!(ir, target, variables)
-  satisfy_requirements!(ir, features)
-end
-
-struct IRMapping
+struct Translation
   args::Dictionary{Core.Argument,SSAValue}
   "SPIR-V SSA values for basic blocks from Julia IR."
   bbs::BijectiveMapping{Int,SSAValue}
@@ -26,15 +30,50 @@ struct IRMapping
   ssavals::Dictionary{Core.SSAValue,SSAValue}
   "Intermediate results that correspond to SPIR-V `Variable`s. Typically, these results have a mutable Julia type."
   variables::Dictionary{Core.SSAValue,Variable}
-  types::Dictionary{Type,SSAValue}
+  tmap::TypeMap
+  "SPIR-V types derived from Julia types."
+  types::Dictionary{DataType,SSAValue}
   globalrefs::Dictionary{Core.SSAValue,GlobalRef}
 end
 
-IRMapping() = IRMapping(Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), Dictionary(), Dictionary())
+Translation() = Translation(Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), TypeMap(), Dictionary(), Dictionary())
 
-SSAValue(arg::Core.Argument, irmap::IRMapping) = irmap.args[arg]
-SSAValue(bb::Int, irmap::IRMapping) = irmap.bbs[bb]
-SSAValue(ssaval::Core.SSAValue, irmap::IRMapping) = irmap.ssavals[ssaval]
+SSAValue(arg::Core.Argument, tr::Translation) = tr.args[arg]
+SSAValue(bb::Int, tr::Translation) = tr.bbs[bb]
+SSAValue(ssaval::Core.SSAValue, tr::Translation) = tr.ssavals[ssaval]
+
+function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}), args...; interp = SPIRVInterpreter())
+  compile(SPIRVTarget(f, argtypes; interp), args...)
+end
+
+compile(target::SPIRVTarget, args...) = compile!(ModuleTarget(), Translation(), target, args...)
+
+function compile!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables::Dictionary{Int,Variable} = Dictionary{Int,Variable}())
+  # TODO: restructure CFG
+  inferred = infer(target)
+  emit!(mt, tr, inferred, variables)
+  mt
+end
+
+function compile!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, features::FeatureSupport, variables = Dictionary{Int,Variable}())
+  mt = compile!(mt, tr, target, variables)
+  ir = IR(mt, tr)
+  satisfy_requirements!(ir, features)
+end
+
+function IR(mt::ModuleTarget, tr::Translation)
+  ir = IR()
+  merge!(ir.extinst_imports, mt.extinst_imports)
+  ir.types = mt.types
+  ir.constants = mt.constants
+  ir.global_vars = mt.global_vars
+  ir.fdefs = mt.fdefs
+  ir.debug = mt.debug
+  ir.ssacounter = mt.ssacounter
+  ir.tmap = tr.tmap
+  ir.metadata = mt.metadata
+  ir
+end
 
 mutable struct CompilationError <: Exception
   msg::String
@@ -78,23 +117,22 @@ function Base.showerror(io::IO, err::CompilationError)
   println(io)
 end
 
-function emit!(ir::IR, target::SPIRVTarget, variables = Dictionary{Int,Variable}())
+function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables = Dictionary{Int,Variable}())
   # Declare a new function.
-  fdef = define_function!(ir, target, variables)
-  fid = emit!(ir, fdef)
-  set_name!(ir, fid, make_name(target.mi))
-  irmap = IRMapping()
+  fdef = define_function!(mt, tr, target, variables)
+  fid = emit!(mt, tr, fdef)
+  set_name!(mt, fid, make_name(target.mi))
   arg_idx = 0
   gvar_idx = 0
   for i in 2:target.mi.def.nargs
     argid = haskey(variables, i - 1) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
-    insert!(irmap.args, Core.Argument(i), argid)
-    set_name!(ir, argid, target.code.slotnames[i])
+    insert!(tr.args, Core.Argument(i), argid)
+    set_name!(mt, argid, target.code.slotnames[i])
   end
 
   try
     # Fill the SPIR-V function with instructions generated from the target's inferred code.
-    emit!(fdef, ir, irmap, target)
+    emit!(fdef, mt, tr, target)
   catch e
     throw_compilation_error(e, (; target.mi))
   end
@@ -105,13 +143,13 @@ function make_name(mi::MethodInstance)
   Symbol(replace(string(mi.def.name, '_', Base.tuple_type_tail(mi.specTypes)), ' ' => ""))
 end
 
-function define_function!(ir::IR, target::SPIRVTarget, variables::Dictionary{Int,Variable})
+function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables::Dictionary{Int,Variable})
   argtypes = SPIRType[]
   global_vars = SSAValue[]
   (; mi) = target
 
   for (i, t) in enumerate(mi.specTypes.types[2:end])
-    type = spir_type(t, ir; wrap_mutable = true)
+    type = spir_type(t, tr.tmap; wrap_mutable = true)
     var = get(variables, i, nothing)
     @switch var begin
       @case ::Nothing
@@ -121,113 +159,110 @@ function define_function!(ir::IR, target::SPIRVTarget, variables::Dictionary{Int
         @case &StorageClassFunction
         push!(argtypes, type)
         @case ::StorageClass
-        push!(global_vars, emit!(ir, var))
+        push!(global_vars, emit!(mt, tr, var))
       end
     end
   end
   ci = target.interp.global_cache[mi]
-  ftype = FunctionType(spir_type(ci.rettype, ir), argtypes)
+  ftype = FunctionType(spir_type(ci.rettype, tr.tmap), argtypes)
   FunctionDefinition(ftype, FunctionControlNone, [], [], SSADict(), global_vars)
 end
 
-function emit!(ir::IR, fdef::FunctionDefinition)
-  emit!(ir, fdef.type)
-  fid = next!(ir.ssacounter)
-  append!(fdef.args, next!(ir.ssacounter) for _ = 1:length(fdef.type.argtypes))
-  insert!(ir.fdefs, fid, fdef)
+function emit!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition)
+  emit!(mt, tr, fdef.type)
+  fid = next!(mt.ssacounter)
+  append!(fdef.args, next!(mt.ssacounter) for _ = 1:length(fdef.type.argtypes))
+  insert!(mt.fdefs, fdef, fid)
   fid
 end
 
-emit!(ir::IR, irmap::IRMapping, c::Constant) = emit!(ir, c)
-emit!(ir::IR, irmap::IRMapping, @nospecialize(type::SPIRType)) = emit!(ir, type)
-
-function emit!(ir::IR, @nospecialize(type::SPIRType))
-  haskey(ir.types, type) && return ir.types[type]
+function emit!(mt::ModuleTarget, tr::Translation, @nospecialize(type::SPIRType))
+  haskey(mt.types, type) && return mt.types[type]
   @switch type begin
     @case ::PointerType
-    emit!(ir, type.type)
+    emit!(mt, tr, type.type)
     @case (::ArrayType && GuardBy(isnothing ∘ Fix2(getproperty, :size))) || ::VectorType || ::MatrixType
-    emit!(ir, type.eltype)
+    emit!(mt, tr, type.eltype)
     @case ::ArrayType
-    emit!(ir, type.eltype)
-    emit!(ir, type.size)
+    emit!(mt, tr, type.eltype)
+    emit!(mt, tr, type.size)
     @case ::StructType
     for t in type.members
-      emit!(ir, t)
+      emit!(mt, tr, t)
     end
     @case ::ImageType
-    emit!(ir, type.sampled_type)
+    emit!(mt, tr, type.sampled_type)
     @case ::SampledImageType
-    emit!(ir, type.image_type)
+    emit!(mt, tr, type.image_type)
     @case ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType || ::SamplerType
     nothing
     @case ::FunctionType
-    emit!(ir, type.rettype)
+    emit!(mt, tr, type.rettype)
     for t in type.argtypes
-      emit!(ir, t)
+      emit!(mt, tr, t)
     end
   end
 
-  id = next!(ir.ssacounter)
-  insert!(ir.types, id, type)
+  id = next!(mt.ssacounter)
+  insert!(mt.types, type, id)
   id
 end
 
-function emit!(ir::IR, c::Constant)
-  haskey(ir.constants, c) && return ir.constants[c]
-  emit!(ir, SPIRType(c, ir))
-  id = next!(ir.ssacounter)
-  insert!(ir.constants, id, c)
+function emit!(mt::ModuleTarget, tr::Translation, c::Constant)
+  haskey(mt.constants, c) && return mt.constants[c]
+  emit!(mt, tr, SPIRType(c, tr.tmap))
+  id = next!(mt.ssacounter)
+  insert!(mt.constants, c, id)
   id
 end
 
-function emit!(ir::IR, var::Variable)
-  haskey(ir.global_vars, var) && return ir.global_vars[var]
-  emit!(ir, var.type)
-  id = next!(ir.ssacounter)
-  insert!(ir.global_vars, id, var)
+function emit!(mt::ModuleTarget, tr::Translation, var::Variable)
+  haskey(mt.global_vars, var) && return mt.global_vars[var]
+  emit!(mt, tr, var.type)
+  id = next!(mt.ssacounter)
+  insert!(mt.global_vars, var, id)
   id
 end
 
-function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget)
+function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, target::SPIRVTarget)
   ranges = block_ranges(target)
   back_edges = backedges(target.cfg)
   vs = traverse(target.cfg)
-  add_mapping!(irmap, ir, ranges, vs)
-  emit_nodes!(fdef, ir, irmap, target, ranges, vs, back_edges)
-  replace_forwarded_ssa!(fdef, irmap)
+  add_mapping!(tr, mt.ssacounter, ranges, vs)
+  emit_nodes!(fdef, mt, tr, target, ranges, vs, back_edges)
+  replace_forwarded_ssa!(fdef, tr)
 end
 
-function add_mapping!(irmap::IRMapping, ir::IR, ranges, vs)
+function add_mapping!(tr::Translation, counter::SSACounter, ranges, vs)
   for v in vs
-    id = next!(ir.ssacounter)
-    insert!(irmap.bbs, v, id)
-    insert!(irmap.bb_ssavals, Core.SSAValue(first(ranges[v])), id)
+    id = next!(counter)
+    insert!(tr.bbs, v, id)
+    insert!(tr.bb_ssavals, Core.SSAValue(first(ranges[v])), id)
   end
 end
 
-function emit_nodes!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget, ranges, vs, backedges)
+function emit_nodes!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, target::SPIRVTarget, ranges, vs, backedges)
   for v in vs
-    emit!(fdef, ir, irmap, target, ranges[v], v)
+    emit!(fdef, mt, tr, target, ranges[v], v)
   end
 end
 
 """
 Replace forward references to `Core.SSAValue`s by their appropriate `SSAValue`.
 """
-function replace_forwarded_ssa!(fdef::FunctionDefinition, irmap::IRMapping)
+function replace_forwarded_ssa!(fdef::FunctionDefinition, tr::Translation)
   for block in fdef.blocks
     for inst in block.insts
       for (i, arg) in enumerate(inst.arguments)
-        isa(arg, Core.SSAValue) && (inst.arguments[i] = SSAValue(arg, irmap))
+        isa(arg, Core.SSAValue) && (inst.arguments[i] = SSAValue(arg, tr))
       end
     end
   end
 end
 
-function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRVTarget, range::UnitRange, node::Integer)
+function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, target::SPIRVTarget, range::UnitRange, node::Integer)
   (; code, ssavaluetypes, slottypes) = target.code
-  blk = new_block!(fdef, SSAValue(node, irmap))
+  blk = new_block!(fdef, SSAValue(node, tr))
   for i in range
     jinst = code[i]
     # Ignore single `nothing::Nothing` instructions.
@@ -247,51 +282,51 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRV
           ::Nothing => @inst OpReturn()
           val => begin
             args = Any[val]
-            load_variables!(args, blk, ir, irmap, fdef, OpReturnValue)
-            remap_args!(args, ir, irmap, OpReturnValue)
+            load_variables!(args, blk, mt, tr, fdef, OpReturnValue)
+            remap_args!(args, mt, tr, OpReturnValue)
             @inst OpReturnValue(only(args))
           end
         end
-        add_instruction!(blk, irmap, spv_inst, core_ssaval)
+        add_instruction!(blk, tr, spv_inst, core_ssaval)
         @case ::Core.GotoNode
-        dest = irmap.bb_ssavals[Core.SSAValue(jinst.label)]
+        dest = tr.bb_ssavals[Core.SSAValue(jinst.label)]
         spv_inst = @inst OpBranch(dest)
-        add_instruction!(blk, irmap, spv_inst, core_ssaval)
+        add_instruction!(blk, tr, spv_inst, core_ssaval)
         @case ::Core.GotoIfNot
         # Core.GotoIfNot uses the SSA value of the first instruction of the target
         # block as its `dest`.
-        dest = irmap.bb_ssavals[Core.SSAValue(jinst.dest)]
+        dest = tr.bb_ssavals[Core.SSAValue(jinst.dest)]
         (; cond) = jinst
-        cond_inst = isa(cond, Bool) ? emit!(ir, Constant(cond)) : SSAValue(cond, irmap)
-        spv_inst = @inst OpBranchConditional(cond_inst, SSAValue(node + 1, irmap), dest)
-        add_instruction!(blk, irmap, spv_inst, core_ssaval)
+        cond_inst = isa(cond, Bool) ? emit!(mt, tr, Constant(cond)) : SSAValue(cond, tr)
+        spv_inst = @inst OpBranchConditional(cond_inst, SSAValue(node + 1, tr), dest)
+        add_instruction!(blk, tr, spv_inst, core_ssaval)
         @case ::GlobalRef
         jtype <: Type || throw(CompilationError("Unhandled global reference $(repr(jtype))"))
-        insert!(irmap.globalrefs, core_ssaval, jinst)
+        insert!(tr.globalrefs, core_ssaval, jinst)
         @case _
         check_isvalid(jtype)
         if ismutabletype(jtype)
           # OpPhi will reuse existing variables, no need to allocate a new one.
-          !isa(jinst, Core.PhiNode) && allocate_variable!(ir, irmap, fdef, jtype, core_ssaval)
+          !isa(jinst, Core.PhiNode) && allocate_variable!(mt, tr, fdef, jtype, core_ssaval)
         end
-        ret = emit_inst!(ir, irmap, target, fdef, jinst, jtype, blk)
+        ret, stype = emit_inst!(mt, tr, target, fdef, jinst, jtype, blk)
         if isa(ret, Instruction)
           if ismutabletype(jtype) && !isa(jinst, Core.PhiNode)
             # The current core SSAValue has already been assigned (to the variable).
-            add_instruction!(blk, irmap, ret, nothing)
+            add_instruction!(blk, tr, ret, nothing)
             # Store to the new variable.
-            add_instruction!(blk, irmap, @inst OpStore(irmap.ssavals[core_ssaval], ret.result_id::SSAValue))
+            add_instruction!(blk, tr, @inst OpStore(tr.ssavals[core_ssaval], ret.result_id::SSAValue))
           elseif ismutabletype(jtype) && isa(jinst, Core.PhiNode)
-            insert!(irmap.variables, core_ssaval, Variable(ir.types[ret.type_id], StorageClassFunction))
-            add_instruction!(blk, irmap, ret, core_ssaval)
+            insert!(tr.variables, core_ssaval, Variable(stype, StorageClassFunction))
+            add_instruction!(blk, tr, ret, core_ssaval)
           else
-            add_instruction!(blk, irmap, ret, core_ssaval)
+            add_instruction!(blk, tr, ret, core_ssaval)
           end
         elseif isa(ret, SSAValue)
           # The value is a SPIR-V global (possibly a constant),
           # so no need to push a new function instruction.
           # Just map the current SSA value to the global.
-          insert!(irmap.ssavals, core_ssaval, ret)
+          insert!(tr.ssavals, core_ssaval, ret)
         end
       end
     catch e
@@ -303,49 +338,33 @@ function emit!(fdef::FunctionDefinition, ir::IR, irmap::IRMapping, target::SPIRV
 
   # Implicit `goto` to the next block.
   if !is_termination_instruction(last(blk))
-    spv_inst = @inst OpBranch(SSAValue(node + 1, irmap))
-    add_instruction!(blk, irmap, spv_inst)
+    spv_inst = @inst OpBranch(SSAValue(node + 1, tr))
+    add_instruction!(blk, tr, spv_inst)
   end
 end
 
-function allocate_variable!(ir::IR, irmap::IRMapping, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
+function allocate_variable!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
   # Create a SPIR-V variable to allow for future mutations.
-  id = next!(ir.ssacounter)
-  type = PointerType(StorageClassFunction, spir_type(jtype, ir))
+  id = next!(mt.ssacounter)
+  type = PointerType(StorageClassFunction, spir_type(jtype, tr.tmap))
   var = Variable(type)
-  emit!(ir, type)
-  insert!(irmap.variables, core_ssaval, var)
-  insert!(irmap.ssavals, core_ssaval, id)
-  push!(fdef.local_vars, Instruction(var, id, ir))
+  emit!(mt, tr, type)
+  insert!(tr.variables, core_ssaval, var)
+  insert!(tr.ssavals, core_ssaval, id)
+  push!(fdef.local_vars, Instruction(var, id, GlobalsInfo(mt)))
 end
 
-function add_instruction!(block::Block, irmap::IRMapping, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)
+function add_instruction!(block::Block, tr::Translation, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)
   if !isnothing(inst.result_id) && !isnothing(core_ssaval)
-    insert!(irmap.ssavals, core_ssaval, inst.result_id)
+    insert!(tr.ssavals, core_ssaval, inst.result_id)
   end
   push!(block.insts, inst)
 end
 
-function julia_type(@nospecialize(t::SPIRType), ir::IR)
-  @match t begin
-    &(IntegerType(8, false)) => UInt8
-    &(IntegerType(16, false)) => UInt16
-    &(IntegerType(32, false)) => UInt32
-    &(IntegerType(64, false)) => UInt64
-    &(IntegerType(8, true)) => Int8
-    &(IntegerType(16, true)) => Int16
-    &(IntegerType(32, true)) => Int32
-    &(IntegerType(64, true)) => Int64
-    &(FloatType(16)) => Float16
-    &(FloatType(32)) => Float32
-    &(FloatType(64)) => Float64
-  end
-end
-
-function emit_extinst!(ir::IR, extinst)
-  haskey(ir.extinst_imports, extinst) && return ir.extinst_imports[extinst]
-  id = next!(ir.ssacounter)
-  insert!(ir.extinst_imports, id, extinst)
+function emit_extinst!(mt::ModuleTarget, extinst)
+  haskey(mt.extinst_imports, extinst) && return mt.extinst_imports[extinst]
+  id = next!(mt.ssacounter)
+  insert!(mt.extinst_imports, extinst, id)
   id
 end
 

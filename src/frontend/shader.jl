@@ -1,16 +1,16 @@
 """
 Declare an entry point named `:main` that calls the provided method instance.
 """
-function FunctionDefinition(ir::IR, name::Symbol)
-  for (id, val) in pairs(ir.debug.names)
-    if val == name && haskey(ir.fdefs, id)
-      return ir.fdefs[id]
+function FunctionDefinition(mt::ModuleTarget, name::Symbol)
+  for (id, val) in pairs(mt.debug.names)
+    if val == name && haskey(mt.fdefs, id)
+      return mt.fdefs[id]
     end
   end
   error("No function named '$name' could be found.")
 end
 
-FunctionDefinition(ir::IR, mi::MethodInstance) = FunctionDefinition(ir, make_name(mi))
+FunctionDefinition(mt::ModuleTarget, mi::MethodInstance) = FunctionDefinition(mt, make_name(mi))
 
 struct ShaderInterface
   execution_model::ExecutionModel
@@ -31,17 +31,14 @@ function ShaderInterface(; execution_model = ExecutionModelVertex, storage_class
 end
 
 """
-Wrap a given method instance for use in a shader.
+Wrap a given function definition for use in a shader.
 
-All function arguments from the given method instance will be filled with global variables.
+All function arguments will be filled with global variables.
 The provided interface describes storage locations and decorations for those global variables.
 
-It is assumed that the function arguments are typed to use same storage classes.
+It is assumed that the function arguments are typed to use the same storage classes.
 """
-function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, variables)
-  fdef = FunctionDefinition(ir, mi)
-  define_entry_point!(ir, fdef, interface)
-
+function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterface, variables)
   add_variable_decorations!(ir, variables, interface)
   add_type_layouts!(ir, interface.layout)
   add_type_metadata!(ir, interface)
@@ -50,20 +47,20 @@ function make_shader!(ir::IR, mi::MethodInstance, interface::ShaderInterface, va
   satisfy_requirements!(ir, interface.features)
 end
 
-function define_entry_point!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterface)
+function define_entry_point!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, execution_model::ExecutionModel)
   main = FunctionDefinition(FunctionType(VoidType(), []))
-  ep = EntryPoint(:main, emit!(ir, main), interface.execution_model, [], fdef.global_vars)
+  ep = EntryPoint(:main, emit!(mt, tr, main), execution_model, [], fdef.global_vars)
 
   # Fill function body.
-  blk = new_block!(main, next!(ir.ssacounter))
+  blk = new_block!(main, next!(mt.ssacounter))
   # The dictionary loses some of its elements to #undef values.
   #TODO: fix this hack in Dictionaries.jl
-  fid = findfirst(==(fdef), ir.fdefs.forward)
-  push!(blk, @inst next!(ir.ssacounter) = OpFunctionCall(fid)::SSAValue(ir, fdef.type.rettype))
+  fid = findfirst(==(fdef), mt.fdefs.forward)
+  push!(blk, @inst next!(mt.ssacounter) = OpFunctionCall(fid)::mt.types[fdef.type.rettype])
   push!(blk, @inst OpReturn())
 
-  interface.execution_model == ExecutionModelFragment && push!(ep.modes, @inst OpExecutionMode(ep.func, ExecutionModeOriginUpperLeft))
-  insert!(ir.entry_points, ep.func, ep)
+  execution_model == ExecutionModelFragment && push!(ep.modes, @inst OpExecutionMode(ep.func, ExecutionModeOriginUpperLeft))
+  ep
 end
 
 function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)
@@ -74,7 +71,7 @@ end
 
 function add_type_metadata!(ir::IR, interface::ShaderInterface)
   for (target, meta) in pairs(interface.type_metadata)
-    merge_metadata!(ir, target, meta)
+    merge_metadata!(ir, ir.types[ir.tmap[target]], meta)
   end
 end
 
@@ -141,22 +138,26 @@ Shader(target::SPIRVTarget, interface::ShaderInterface) = Shader(IR(target, inte
 assemble(shader::Shader) = assemble(shader.mod)
 
 function IR(target::SPIRVTarget, interface::ShaderInterface)
-  ir = IR()
+  mt = ModuleTarget()
+  tr = Translation()
   variables = Dictionary{Int,Variable}()
   for (i, sc) in enumerate(interface.storage_classes)
     if sc ≠ StorageClassFunction
-      t = spir_type(target.mi.specTypes.parameters[i + 1], ir; storage_class = sc)
+      t = spir_type(target.mi.specTypes.parameters[i + 1], tr.tmap; storage_class = sc)
       if sc in (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer)
-        decorate!(ir, emit!(ir, t), DecorationBlock)
+        decorate!(mt, emit!(mt, tr, t), DecorationBlock)
       end
       ptr_type = PointerType(sc, t)
       var = Variable(ptr_type)
       insert!(variables, i, var)
     end
   end
-  compile!(ir, target, variables)
-  make_shader!(ir, target.mi, interface, variables)
-  ir
+  compile!(mt, tr, target, variables)
+  fdef = FunctionDefinition(mt, target.mi)
+  ep = define_entry_point!(mt, tr, fdef, interface.execution_model)
+  ir = IR(mt, tr)
+  insert!(ir.entry_points, ep.func, ep)
+  make_shader!(ir, fdef, interface, variables)
 end
 
 struct MemoryResourceExtraction

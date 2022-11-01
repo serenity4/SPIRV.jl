@@ -1,20 +1,19 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, payload_sizes, getstride, reinterpret_spirv
+using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, payload_sizes, getstride, reinterpret_spirv, TypeInfo, TypeMetadata, metadata!
 
-function test_has_offset(ir, T, field, offset)
-  decs = decorations(ir, T, field)
+function test_has_offset(tmeta, T, field, offset)
+  decs = decorations(tmeta, tmeta.tmap[T], field)
   @test has_decoration(decs, SPIRV.DecorationOffset)
   @test decs.offset == offset
 end
 
-function ir_with_type(T; storage_classes = [])
-  ir = IR()
-  type = spir_type(T, ir)
-  emit!(ir, type)
+function type_metadata(T; storage_classes = [])
+  tmeta = TypeMetadata()
+  type = spir_type(T, tmeta.tmap)
   for sc in storage_classes
-    emit!(ir, PointerType(sc, type))
+    metadata!(tmeta, PointerType(sc, type))
   end
-  ir
+  tmeta
 end
 
 layout = VulkanLayout()
@@ -59,62 +58,62 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
 
 @testset "Structure layouts" begin
   @testset "Alignments" begin
-    ir = ir_with_type(Align1)
-    add_type_layouts!(ir, layout)
-    test_has_offset(ir, Align1, 1, 0)
-    test_has_offset(ir, Align1, 2, 8)
+    tmeta = type_metadata(Align1)
+    add_type_layouts!(tmeta, layout)
+    test_has_offset(tmeta, Align1, 1, 0)
+    test_has_offset(tmeta, Align1, 2, 8)
 
-    ir = ir_with_type(Align2)
-    add_type_layouts!(ir, layout)
-    test_has_offset(ir, Align2, 1, 0)
-    test_has_offset(ir, Align2, 2, 8)
+    tmeta = type_metadata(Align2)
+    add_type_layouts!(tmeta, layout)
+    test_has_offset(tmeta, Align2, 1, 0)
+    test_has_offset(tmeta, Align2, 2, 8)
 
-    ir = ir_with_type(Align3)
-    add_type_layouts!(ir, layout)
-    test_has_offset(ir, Align3, 1, 0)
-    test_has_offset(ir, Align3, 2, 8)
-    test_has_offset(ir, Align3, 3, 12)
+    tmeta = type_metadata(Align3)
+    add_type_layouts!(tmeta, layout)
+    test_has_offset(tmeta, Align3, 1, 0)
+    test_has_offset(tmeta, Align3, 2, 8)
+    test_has_offset(tmeta, Align3, 3, 12)
 
-    ir = ir_with_type(Align4)
-    add_type_layouts!(ir, layout)
-    test_has_offset(ir, Align4, 1, 0)
-    test_has_offset(ir, Align4, 2, 8)
-    test_has_offset(ir, Align4, 3, 10)
-    @test compute_minimal_size(Align4, ir, layout) == 14
+    tmeta = type_metadata(Align4)
+    add_type_layouts!(tmeta, layout)
+    test_has_offset(tmeta, Align4, 1, 0)
+    test_has_offset(tmeta, Align4, 2, 8)
+    test_has_offset(tmeta, Align4, 3, 10)
+    @test compute_minimal_size(Align4, tmeta, layout) == 14
 
-    ir = ir_with_type(Align5)
-    add_type_layouts!(ir, layout)
-    test_has_offset(ir, Align5, 1, 0)
-    test_has_offset(ir, Align5, 2, 8)
-    test_has_offset(ir, Align5, 3, 22)
-    @test compute_minimal_size(Align5, ir, layout) == 23
+    tmeta = type_metadata(Align5)
+    add_type_layouts!(tmeta, layout)
+    test_has_offset(tmeta, Align5, 1, 0)
+    test_has_offset(tmeta, Align5, 2, 8)
+    test_has_offset(tmeta, Align5, 3, 22)
+    @test compute_minimal_size(Align5, tmeta, layout) == 23
 
-    ir = ir_with_type(Align5; storage_classes = [StorageClassUniform])
-    decorate!(ir, Align5, DecorationBlock)
-    add_type_layouts!(ir, layout)
-    test_has_offset(ir, Align5, 1, 0)
-    test_has_offset(ir, Align5, 2, 16)
-    test_has_offset(ir, Align5, 3, 30)
-    @test compute_minimal_size(Align5, ir, layout) == 31
+    tmeta = type_metadata(Align5; storage_classes = [StorageClassUniform])
+    decorate!(tmeta, tmeta.tmap[Align5], DecorationBlock)
+    add_type_layouts!(tmeta, layout)
+    test_has_offset(tmeta, Align5, 1, 0)
+    test_has_offset(tmeta, Align5, 2, 16)
+    test_has_offset(tmeta, Align5, 3, 30)
+    @test compute_minimal_size(Align5, tmeta, layout) == 31
 
-    ir = ir_with_type(Align7)
-    add_type_layouts!(ir, layout)
-    test_has_offset(ir, Align7, 1, 0)
-    test_has_offset(ir, Align7, 2, 16)
+    tmeta = type_metadata(Align7)
+    add_type_layouts!(tmeta, layout)
+    test_has_offset(tmeta, Align7, 1, 0)
+    test_has_offset(tmeta, Align7, 2, 16)
   end
 
   @testset "Array/Matrix layouts" begin
     T = Arr{4, Tuple{Float64, Float64}}
-    ir = ir_with_type(T)
-    add_type_layouts!(ir, layout)
-    decs = decorations(ir, T)
+    tmeta = type_metadata(T)
+    add_type_layouts!(tmeta, layout)
+    decs = decorations(tmeta, tmeta.tmap[T])
     @test has_decoration(decs, SPIRV.DecorationArrayStride)
     @test decs.array_stride == 16
 
     T = Align7
-    ir = ir_with_type(T)
-    add_type_layouts!(ir, layout)
-    decs = decorations(ir, T, 2)
+    tmeta = type_metadata(T)
+    add_type_layouts!(tmeta, layout)
+    decs = decorations(tmeta, tmeta.tmap[T], 2)
     @test has_decoration(decs, SPIRV.DecorationMatrixStride)
     @test decs.matrix_stride == 4
   end
@@ -122,57 +121,57 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
   @testset "Byte extraction and alignment" begin
     bytes = extract_bytes(Align1(1, 2))
     @test bytes == reinterpret(UInt8, [1, 2])
-    ir = ir_with_type(Align1)
-    add_type_layouts!(ir, layout)
-    t = spir_type(Align1, ir)
-    @test getoffsets(ir, t) == [0, 8]
+    tmeta = type_metadata(Align1)
+    add_type_layouts!(tmeta, layout)
+    t = tmeta.tmap[Align1]
+    @test getoffsets(tmeta, t) == [0, 8]
     @test payload_sizes(t) == [8, 8]
-    @test align(bytes, t, ir) == bytes
-    @test bytes == align(bytes, [8, 8], [0, 8]) == align(bytes, t, [0, 8]) == align(bytes, Align1, ir)
+    @test align(bytes, t, tmeta) == bytes
+    @test bytes == align(bytes, [8, 8], [0, 8]) == align(bytes, t, [0, 8]) == align(bytes, Align1, tmeta)
 
     bytes = extract_bytes(Align2(1, 2))
     @test bytes == reinterpret(UInt8, [1U, 2U, 0U])
-    ir = ir_with_type(Align2)
-    add_type_layouts!(ir, layout)
-    t = spir_type(Align2, ir)
-    @test getoffsets(ir, t) == [0, 8]
+    tmeta = type_metadata(Align2)
+    add_type_layouts!(tmeta, layout)
+    t = tmeta.tmap[Align2]
+    @test getoffsets(tmeta, t) == [0, 8]
     @test payload_sizes(t) == [4, 8]
-    @test align(bytes, t, ir) == reinterpret(UInt8, [1, 2])
+    @test align(bytes, t, tmeta) == reinterpret(UInt8, [1, 2])
 
     bytes = extract_bytes(Align3(1, 2, 3))
     @test bytes == reinterpret(UInt8, [1U, 0U, 2U, 3U])
-    ir = ir_with_type(Align3)
-    add_type_layouts!(ir, layout)
-    t = spir_type(Align3, ir)
-    @test getoffsets(ir, t) == [0, 8, 12]
+    tmeta = type_metadata(Align3)
+    add_type_layouts!(tmeta, layout)
+    t = tmeta.tmap[Align3]
+    @test getoffsets(tmeta, t) == [0, 8, 12]
     @test payload_sizes(t) == [8, 4, 4]
-    @test align(bytes, t, ir) == bytes
+    @test align(bytes, t, tmeta) == bytes
 
     bytes = extract_bytes(Align4(1, 2, Vec(3, 4)))
     @test bytes == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x00, 0x04, 0x00]
-    ir = ir_with_type(Align4)
-    add_type_layouts!(ir, layout)
-    t = spir_type(Align4, ir)
-    @test getoffsets(ir, t) == [0, 8, 10]
+    tmeta = type_metadata(Align4)
+    add_type_layouts!(tmeta, layout)
+    t = tmeta.tmap[Align4]
+    @test getoffsets(tmeta, t) == [0, 8, 10]
     @test payload_sizes(t) == [8, 1, 4]
-    @test align(bytes, t, ir) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00]
+    @test align(bytes, t, tmeta) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00]
 
     bytes = extract_bytes(Align5(1, Align4(2, 3, Vec(4, 5)), 6))
     @test bytes == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x00, 0x05, 0x00, 0x06]
-    ir = ir_with_type(Align5)
-    add_type_layouts!(ir, layout)
-    t = spir_type(Align5, ir)
-    @test getoffsets(ir, t) == [0, 8, 16, 18, 22]
+    tmeta = type_metadata(Align5)
+    add_type_layouts!(tmeta, layout)
+    t = tmeta.tmap[Align5]
+    @test getoffsets(tmeta, t) == [0, 8, 16, 18, 22]
     @test payload_sizes(t) == [8, 8, 1, 4, 1]
-    @test align(bytes, t, ir) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06]
+    @test align(bytes, t, tmeta) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06]
 
     bytes = extract_bytes(Align6(Align5(1, Align4(2, 3, Vec(4, 5)), 6), Align5(2, Align4(2, 3, Vec(4, 5)), 6)))
     @test bytes == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x00, 0x05, 0x00, 0x06, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x00, 0x05, 0x00, 0x06]
-    ir = ir_with_type(Align6)
-    add_type_layouts!(ir, layout)
-    t = spir_type(Align6, ir)
-    @test getstride(ir, t) == 24
-    @test align(bytes, t, ir) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06]
+    tmeta = type_metadata(Align6)
+    add_type_layouts!(tmeta, layout)
+    t = tmeta.tmap[Align6]
+    @test getstride(tmeta, t) == 24
+    @test align(bytes, t, tmeta) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06]
 
     bytes = extract_bytes(Align7(1, @mat Float32[
       1 2 3 4
@@ -181,12 +180,12 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
       13 14 15 16
     ]))
     @test length(bytes) == payload_size(Align7) == 1 + 4 * 4 * 4
-    ir = ir_with_type(Align7)
-    add_type_layouts!(ir, layout)
-    t = spir_type(Align7, ir)
-    @test getoffsets(ir, t) == [0, 16]
+    tmeta = type_metadata(Align7)
+    add_type_layouts!(tmeta, layout)
+    t = tmeta.tmap[Align7]
+    @test getoffsets(tmeta, t) == [0, 16]
     @test payload_sizes(t) == [1, 64]
-    @test compute_minimal_size(Align7, ir, layout) == 16 + 64
+    @test compute_minimal_size(Align7, tmeta, layout) == 16 + 64
   end
 
   @testset "TypeInfo" begin
@@ -199,7 +198,7 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     ]
     type_info = TypeInfo(Ts, layout)
     for T in Ts
-      @test getoffsets(type_info, T) == getoffsets(add_type_layouts!(ir_with_type(T), layout), T)
+      @test getoffsets(type_info, T) == getoffsets(add_type_layouts!(type_metadata(T), layout), T)
     end
   end
 

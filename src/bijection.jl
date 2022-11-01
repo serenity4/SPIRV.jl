@@ -6,6 +6,12 @@ end
 BijectiveMapping{T1,T2}() where {T1,T2} = BijectiveMapping{T1,T2}(Dictionary(), Dictionary())
 BijectiveMapping() = BijectiveMapping{Any,Any}()
 
+function Base.merge!(bmap::BijectiveMapping{T1,T2}, d::Union{Dictionary{T1,T2},Dictionary{T2,T1}}) where {T1,T2}
+  for (key, val) in pairs(d)
+    insert!(bmap, val, key)
+  end
+end
+
 function Base.convert(::Type{BijectiveMapping{T1,T2}}, bmap::BijectiveMapping{T3,T4}) where {T1,T2,T3,T4}
   BijectiveMapping(convert(Dictionary{T1,T2}, bmap.forward), convert(Dictionary{T2,T1}, bmap.backward))
 end

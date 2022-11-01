@@ -138,3 +138,123 @@ function Base.parse(::Type{SPIRType}, inst::Instruction, types::BijectiveMapping
     _ => error("$op does not represent a SPIR-V type or the corresponding type is not implemented.")
   end
 end
+
+function julia_type(@nospecialize(t::SPIRType))
+  @match t begin
+    &(IntegerType(8, false)) => UInt8
+    &(IntegerType(16, false)) => UInt16
+    &(IntegerType(32, false)) => UInt32
+    &(IntegerType(64, false)) => UInt64
+    &(IntegerType(8, true)) => Int8
+    &(IntegerType(16, true)) => Int16
+    &(IntegerType(32, true)) => Int32
+    &(IntegerType(64, true)) => Int64
+    &(FloatType(16)) => Float16
+    &(FloatType(32)) => Float32
+    &(FloatType(64)) => Float64
+  end
+end
+
+@refbroadcast struct TypeMap
+  d::Dictionary{DataType,SPIRType}
+end
+
+TypeMap() = TypeMap(Dictionary())
+
+@forward TypeMap.d (Base.getindex, Base.haskey, Base.get, Base.get!, Base.iterate, Base.length, Base.insert!)
+Base.setindex!(tmap::TypeMap, type::SPIRType, T::DataType) = set!(tmap.d, T, type)
+
+"""
+Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is provided.
+
+If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
+"""
+function spir_type(t::DataType, tmap::Optional{TypeMap} = nothing; wrap_mutable = false, storage_class = nothing)
+  wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, spir_type(t, tmap))
+  !isnothing(tmap) && isnothing(storage_class) && haskey(tmap, t) && return tmap[t]
+  type = @match t begin
+    &Float16 => FloatType(16)
+    &Float32 => FloatType(32)
+    &Float64 => FloatType(64)
+    &Nothing => VoidType()
+    &Bool => BooleanType()
+    &UInt8 => IntegerType(8, false)
+    &UInt16 => IntegerType(16, false)
+    &UInt32 => IntegerType(32, false)
+    &UInt64 => IntegerType(64, false)
+    &Int8 => IntegerType(8, true)
+    &Int16 => IntegerType(16, true)
+    &Int32 => IntegerType(32, true)
+    &Int64 => IntegerType(64, true)
+    ::Type{<:Array} => begin
+      eltype, n = t.parameters
+      @match n begin
+        1 => ArrayType(spir_type(eltype, tmap), nothing)
+        _ => ArrayType(spir_type(Array{eltype,n - 1}, tmap), nothing)
+      end
+    end
+    ::Type{<:Tuple} => @match (n = length(t.parameters), t) begin
+      (GuardBy(>(1)), ::Type{<:NTuple}) => ArrayType(spir_type(eltype(t), tmap), Constant(UInt32(n)))
+      # Generate structure on the fly.
+      _ => StructType(spir_type.(t.parameters, tmap))
+    end
+    ::Type{<:Pointer} => PointerType(StorageClassPhysicalStorageBuffer, spir_type(eltype(t), tmap))
+    ::Type{<:Vec} => VectorType(spir_type(eltype(t), tmap), length(t))
+    ::Type{<:Mat} => MatrixType(spir_type(Vec{nrows(t),eltype(t)}, tmap), ncols(t))
+    ::Type{<:Arr} => ArrayType(spir_type(eltype(t), tmap), Constant(UInt32(length(t))))
+    ::Type{Sampler} => SamplerType()
+    ::Type{<:Image} => ImageType(spir_type(component_type(t), tmap), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
+    ::Type{<:SampledImage} => SampledImageType(spir_type(image_type(t), tmap))
+    GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type.(t.types, tmap))
+    GuardBy(isprimitivetype) => primitive_type_to_spirv(t)
+    _ => error("Type $t does not have a corresponding SPIR-V type.")
+  end
+
+  #TODO: WIP, need to insert an `OpCompositeExtract` for all uses if the type changed.
+  promoted_type = promote_to_interface_block(type, storage_class)
+  if type ≠ promoted_type
+    error("The provided type must be a struct or an array of structs. The automation of this requirement is a work in progress.")
+  end
+
+  if type == promoted_type && !isnothing(tmap)
+    tmap[t] = type
+  end
+
+  promoted_type
+end
+
+"""
+    primitive_type_to_spirv(::Type{T})::SPIRType where {T}
+
+Specify which SPIR-V type corresponds to a given primitive type.
+Both types must have the same number of bits.
+"""
+function primitive_type_to_spirv end
+
+primitive_type_to_spirv(T::DataType) = error("Primitive type $T has no known SPIR-V type. This function must be extended to choose which SPIR-V type to map this primitive type to.")
+
+function promote_to_interface_block(type, storage_class)
+  @tryswitch storage_class begin
+    @case &StorageClassPushConstant
+    # Type must be a struct.
+    !isa(type, StructType) && return StructType([type])
+    @case &StorageClassUniform || &StorageClassStorageBuffer
+    # Type must be a struct or an array of structs.
+    @tryswitch type begin
+      @case ::StructType
+      nothing
+      @case ::ArrayType
+      !isa(type.eltype, StructType) && return @set type.eltype = StructType([type.eltype])
+      @case _
+      return StructType([type])
+    end
+  end
+  type
+end
+
+function SPIRType(c::Constant, tmap::TypeMap)
+  @match c.value begin
+    (_, type::SPIRType) || (_, type::SPIRType) => type
+    val => spir_type(typeof(val), tmap)
+  end
+end

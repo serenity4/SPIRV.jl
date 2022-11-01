@@ -1,3 +1,22 @@
+"""
+Type metadata meant to be analyzed and modified to generate appropriate decorations.
+"""
+struct TypeMetadata
+  tmap::TypeMap
+  d::Dictionary{SPIRType, Metadata}
+end
+
+TypeMetadata() = TypeMetadata(TypeMap(), Dictionary())
+
+@forward TypeMetadata.d (metadata!, has_decoration, decorate!, decorations)
+
+function Base.merge!(ir::IR, tmeta::TypeMetadata)
+  for (t, meta) in pairs(tmeta.d)
+    tid = ir.types[t]
+    merge_metadata!(ir, tid, meta)
+  end
+end
+
 scalar_alignment(::BooleanType) = 0
 scalar_alignment(t::Union{IntegerType,FloatType}) = t.width ÷ 8
 scalar_alignment(t::Union{VectorType,MatrixType,ArrayType}) = scalar_alignment(t.eltype)
@@ -70,60 +89,67 @@ function alignment(layout::VulkanLayout, t::SPIRType, storage_classes, is_interf
   end
 end
 
-function storage_classes(ir::IR, t::SPIRType)
-  Set(type.storage_class for type in ir.types if isa(type, PointerType) && type.type == t)
+function storage_classes(types, t::SPIRType)
+  Set(type.storage_class for type in types if isa(type, PointerType) && type.type == t)
 end
+storage_classes(tmeta::TypeMetadata, t::SPIRType) = storage_classes(keys(tmeta.d), t)
 
 function add_type_layouts!(ir::IR, layout::LayoutStrategy)
-  for t in ir.typerefs
+  tmeta = TypeMetadata(ir.tmap, Dictionary())
+  add_type_layouts!(tmeta, layout)
+  merge!(ir, tmeta)
+end
+
+function add_type_layouts!(tmeta::TypeMetadata, layout::LayoutStrategy)
+  for t in tmeta.tmap
     @tryswitch t begin
       @case ::ArrayType && if !isa(t.eltype, SampledImageType) && !isa(t.eltype, ImageType) && !isa(t.eltype, SamplerType)
       end
-      add_array_stride!(ir, t, layout)
+      add_array_stride!(tmeta, t, layout)
 
       @case ::StructType
-      add_offsets!(ir, t, layout)
-      add_matrix_layouts!(ir, t, layout)
+      add_offsets!(tmeta, t, layout)
+      add_matrix_layouts!(tmeta, t, layout)
     end
   end
-  ir
+  tmeta
 end
 
-function add_array_stride!(ir::IR, t::ArrayType, layout::LayoutStrategy)
+function add_array_stride!(tmeta::TypeMetadata, t::ArrayType, layout::LayoutStrategy)
   # Array of shader resources. Must not be decorated.
-  isa(t.eltype, StructType) && has_decoration(ir, t.eltype, DecorationBlock) && return
-  stride = compute_stride(t.eltype, ir, layout)
-  isa(t, ArrayType) ? decorate!(ir, t, DecorationArrayStride, stride) : decorate!(ir, t, DecorationMatrixStride, stride)
-  decorate!(ir, t, DecorationArrayStride, stride)
+  isa(t.eltype, StructType) && has_decoration(tmeta, t.eltype, DecorationBlock) && return
+  stride = compute_stride(t.eltype, tmeta, layout)
+  isa(t, ArrayType) ? decorate!(tmeta, t, DecorationArrayStride, stride) : decorate!(tmeta, t, DecorationMatrixStride, stride)
+  decorate!(tmeta, t, DecorationArrayStride, stride)
 end
 
-function add_matrix_layouts!(ir::IR, t::StructType, layout::LayoutStrategy)
+function add_matrix_layouts!(tmeta::TypeMetadata, t::StructType, layout::LayoutStrategy)
   for (i, subt) in enumerate(t.members)
     if isa(subt, MatrixType)
-      add_matrix_stride!(ir, t, i, subt, layout)
-      add_matrix_layout!(ir, t, i, subt)
+      add_matrix_stride!(tmeta, t, i, subt, layout)
+      add_matrix_layout!(tmeta, t, i, subt)
     end
   end
 end
 
-function add_matrix_stride!(ir::IR, t::StructType, i, subt::MatrixType, layout::LayoutStrategy)
-  stride = compute_stride(subt.eltype.eltype, ir, layout)
-  decorate!(ir, t, i, DecorationMatrixStride, stride)
+function add_matrix_stride!(tmeta::TypeMetadata, t::StructType, i, subt::MatrixType, layout::LayoutStrategy)
+  stride = compute_stride(subt.eltype.eltype, tmeta, layout)
+  decorate!(tmeta, t, i, DecorationMatrixStride, stride)
 end
 
 "Follow Julia's column major layout by default, consistently with the `Mat` frontend type."
-add_matrix_layout!(ir::IR, t::StructType, i, subt::MatrixType) = decorate!(ir, t, i, subt.is_column_major ? DecorationColMajor : DecorationRowMajor)
+add_matrix_layout!(tmeta::TypeMetadata, t::StructType, i, subt::MatrixType) = decorate!(tmeta, t, i, subt.is_column_major ? DecorationColMajor : DecorationRowMajor)
 
-add_offsets!(ir::IR, T::DataType, layout::LayoutStrategy) = add_offsets!(ir, ir.typerefs[T], layout)
-function add_offsets!(ir::IR, t::StructType, layout::LayoutStrategy)
-  scs = storage_classes(ir, t)
+add_offsets!(tmeta::TypeMetadata, T::DataType, layout::LayoutStrategy) = add_offsets!(tmeta, tmeta.tmap[T], layout)
+function add_offsets!(tmeta::TypeMetadata, t::StructType, layout::LayoutStrategy)
+  scs = storage_classes(tmeta, t)
   current_offset = 0
   n = length(t.members)
   for (i, subt) in enumerate(t.members)
-    alignmt = alignment(layout, subt, scs, has_decoration(ir, t, DecorationBlock))
+    alignmt = alignment(layout, subt, scs, has_decoration(tmeta, t, DecorationBlock))
     current_offset = alignmt * cld(current_offset, alignmt)
-    decorate!(ir, t, i, DecorationOffset, current_offset)
-    i ≠ n && (current_offset += compute_minimal_size(subt, ir, layout))
+    decorate!(tmeta, t, i, DecorationOffset, current_offset)
+    i ≠ n && (current_offset += compute_minimal_size(subt, tmeta, layout))
   end
 end
 
@@ -146,8 +172,8 @@ Compute the minimal size that a type `T` should have, using the alignments compu
 """
 function compute_minimal_size end
 
-compute_minimal_size(T::DataType, ir::IR, layout::LayoutStrategy) = compute_minimal_size(ir.typerefs[T], ir, layout)
-compute_minimal_size(t::SPIRType, ir::IR, layout::LayoutStrategy) = compute_minimal_size(t, Base.Fix1(storage_classes, ir), t -> has_decoration(ir, t, DecorationBlock), layout)
+compute_minimal_size(T::DataType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_minimal_size(tmeta.tmap[T], tmeta, layout)
+compute_minimal_size(t::SPIRType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_minimal_size(t, Base.Fix1(storage_classes, tmeta), t -> has_decoration(tmeta, t, DecorationBlock), layout)
 compute_minimal_size(t::ScalarType, storage_classes, is_interface, layout::LayoutStrategy) = scalar_alignment(t)
 compute_minimal_size(t::Union{VectorType, MatrixType}, storage_classes, is_interface, layout::LayoutStrategy) = t.n * compute_minimal_size(t.eltype, storage_classes, is_interface, layout)
 compute_minimal_size(t::ArrayType, storage_classes, is_interface, layout::LayoutStrategy) = extract_size(t) * compute_minimal_size(t.eltype, storage_classes, is_interface, layout)
@@ -166,14 +192,14 @@ function compute_minimal_size(t::StructType, storage_classes, is_interface, layo
 end
 
 """
-    compute_stride(T, ir::IR, layout::LayoutStrategy)
+    compute_stride(T, tmap::TypeMap, layout::LayoutStrategy)
 
 Compute the stride that an array containing `T` should have, using module member offset declarations and with an extra padding at the end corresponding to the alignment of `T`.
 """
 function compute_stride end
 
-compute_stride(T::DataType, ir::IR, layout::LayoutStrategy) = compute_stride(ir.typerefs[T], ir, layout)
-compute_stride(t::SPIRType, ir::IR, layout::LayoutStrategy) = compute_stride(t, Base.Fix1(storage_classes, ir), t -> has_decoration(ir, t, DecorationBlock), Base.Fix1(getoffsets, ir), layout)
+compute_stride(T::DataType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_stride(tmeta.tmap[T], tmeta, layout)
+compute_stride(t::SPIRType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_stride(t, Base.Fix1(storage_classes, tmeta), t -> has_decoration(tmeta, t, DecorationBlock), Base.Fix1(getoffsets, tmeta), layout)
 compute_stride(t::ScalarType, storage_classes, is_interface, getoffsets, layout::LayoutStrategy) = scalar_alignment(t)
 compute_stride(t::Union{VectorType, MatrixType}, storage_classes, is_interface, getoffsets, layout::LayoutStrategy) = t.n * compute_stride(t.eltype, storage_classes, is_interface, getoffsets, layout)
 compute_stride(t::ArrayType, storage_classes, is_interface, getoffsets, layout::LayoutStrategy) = extract_size(t) * compute_stride(t.eltype, storage_classes, is_interface, getoffsets, layout)
@@ -214,8 +240,8 @@ extract_bytes(data::AbstractVector) = reduce(vcat, extract_bytes.(data); init = 
 extract_bytes(data::AbstractSPIRVArray) = Base.@invoke extract_bytes(data::T where T)
 extract_bytes(data1, data2, data...) = reduce(vcat, vcat(extract_bytes(data2), extract_bytes.(data)...); init = extract_bytes(data1))
 
-function getoffset(ir::IR, t, i)
-  decs = decorations(ir, t, i)
+function getoffset(tmeta::TypeMetadata, t, i)
+  decs = decorations(tmeta, t, i)
   isnothing(decs) && error("Missing decorations on member ", i, " of the aggregate type ", t)
   has_decoration(decs, DecorationOffset) || error("Missing offset declaration for member ", i, " on ", t)
   decs.offset
@@ -259,8 +285,7 @@ end
 
 getoffsets(getoffset, t::SPIRType) = getoffsets!(UInt32[], 0U, getoffset, t)
 getoffsets(T::DataType) = getoffsets!(UInt32[], 0U, fieldoffset, T)
-getoffsets(ir::IR, t::SPIRType) = getoffsets((t, i) -> getoffset(ir, t, i), t)
-getoffsets(ir::IR, T::DataType) = getoffsets(ir, ir.typerefs[T])
+getoffsets(tmeta::TypeMetadata, t::SPIRType) = getoffsets((t, i) -> getoffset(tmeta, t, i), t)
 
 """
 Return a vector of bytes where every logical piece of data (delimited via the provided `sizes`)
@@ -284,33 +309,34 @@ function align(data::AbstractVector{UInt8}, sizes::AbstractVector{<:Integer}, of
 end
 
 align(data::AbstractVector{UInt8}, t::StructType, offsets::AbstractVector{<:Integer}; callback = nothing) = align(data, payload_sizes(t), offsets; callback)
-align(data::AbstractVector{UInt8}, T::DataType, ir::IR) = align(data, ir.typerefs[T], ir)
 
 """
 Type information used for associating Julia-level data types with SPIR-V types and
 for applying offsets to pad payload bytes extracted from Julia values.
+
+Meant to be used in a read-only fashion only.
 """
 @auto_hash_equals struct TypeInfo
-  mapping::Dictionary{DataType, SPIRType}
-  offsets::Dictionary{StructType, Vector{UInt32}}
+  tmap::TypeMap
+  offsets::Dictionary{StructType,Vector{UInt32}}
   strides::Dictionary{ArrayType,UInt32}
 end
 
-TypeInfo(mapping = Dictionary{DataType, SPIRType}()) = TypeInfo(mapping, Dictionary{StructType, Vector{UInt32}}(), Dictionary{Union{ArrayType,MatrixType},UInt32}())
+TypeInfo(tmap::TypeMap = TypeMap()) = TypeInfo(tmap, Dictionary(), Dictionary())
 
 """
-Extract a [`TypeInfo`](@ref) from the existing IR type mapping.
+Extract a [`TypeInfo`](@ref) from the existing type mapping.
 
 !!! warn
-    The type mapping is not copied from the IR for performance reasons.
-    It must not be changed in the IR later on or correctness issues may appear.
+    The type mapping is not copied for performance reasons.
+    It must not be modified or correctness issues may appear.
 """
-function TypeInfo(ir::IR)
-  info = TypeInfo(ir.typerefs)
-  for t in ir.typerefs
-    isa(t, StructType) && insert!(info.offsets, t, getoffsets(ir, t))
+function TypeInfo(tmeta::TypeMetadata)
+  info = TypeInfo(tmeta.tmap)
+  for t in tmeta.tmap
+    isa(t, StructType) && insert!(info.offsets, t, getoffsets(tmeta, t))
     if isa(t, ArrayType)
-      decs = decorations(ir, t)
+      decs = decorations(tmeta, t)
       !isnothing(decs) && has_decoration(decs, DecorationArrayStride) && insert!(info.strides, t, decs.array_stride)
     end
   end
@@ -330,7 +356,7 @@ function TypeInfo(Ts::AbstractVector{DataType}, layout::LayoutStrategy)
   worklist = SPIRType[]
   for T in Ts
     t = spir_type(T)
-    insert!(info.mapping, T, t)
+    insert!(info.tmap, T, t)
     push!(worklist, t)
   end
 
@@ -357,14 +383,16 @@ function TypeInfo(Ts::AbstractVector{DataType}, layout::LayoutStrategy)
   info
 end
 
-getoffsets(type_info::TypeInfo, T::DataType) = getoffsets(type_info, type_info.mapping[T])
-getoffsets(type_info::TypeInfo, t::SPIRType) = getoffsets((t, i) -> type_info.offsets[t][i], t)
-align(data::AbstractVector{UInt8}, t::StructType, x::Union{IR, TypeInfo}; callback = nothing) = align(data, t, getoffsets(x, t); callback)
-align(data::AbstractVector{UInt8}, t::ArrayType, x::Union{IR, TypeInfo}; callback = nothing) = align(data, t, getstride(x, t), getoffsets(x, t.eltype); callback)
-align(data::AbstractVector{UInt8}, t::SPIRType, x::Union{IR, TypeInfo}; callback = nothing) = t
+getoffsets(tinfo::TypeInfo, t::SPIRType) = getoffsets((t, i) -> tinfo.offsets[t][i], t)
+getoffsets(tdata::Union{TypeMetadata,TypeInfo}, T::DataType) = getoffsets(tdata, tdata.tmap[T])
 
-getstride(info::TypeInfo, t::ArrayType) = info.strides[t]
-getstride(ir::IR, t::ArrayType) = decorations(ir, t).array_stride
+align(data::AbstractVector{UInt8}, t::StructType, tdata::Union{TypeMetadata,TypeInfo}; callback = nothing) = align(data, t, getoffsets(tdata, t); callback)
+align(data::AbstractVector{UInt8}, t::ArrayType, tdata::Union{TypeMetadata,TypeInfo}; callback = nothing) = align(data, t, getstride(tdata, t), getoffsets(tdata, t.eltype); callback)
+align(data::AbstractVector{UInt8}, t::SPIRType, tdata::Union{TypeMetadata,TypeInfo}; callback = nothing) = t
+align(data::AbstractVector{UInt8}, T::DataType, tdata::Union{TypeMetadata,TypeInfo}) = align(data, tdata.tmap[T], tdata)
+
+getstride(tinfo::TypeInfo, t::ArrayType) = tinfo.strides[t]
+getstride(tmeta::TypeMetadata, t::ArrayType) = decorations(tmeta, t).array_stride
 
 """
 Return a new vector of bytes which correspond to the `data` array payload after each element being

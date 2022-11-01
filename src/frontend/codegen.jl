@@ -1,5 +1,5 @@
-function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
-  type = spir_type(jtype, ir)
+function emit_inst!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
+  type = spir_type(jtype, tr.tmap)
   isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = PointerType(StorageClassFunction, type))
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => (OpCompositeConstruct, args)
@@ -7,13 +7,13 @@ function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::Functio
       args = []
       for (e, val) in zip(jinst.edges, jinst.values)
         # `e` is the SSA value of the last instruction of the block `val` is assigned to.
-        from = SSAValue(findfirst(Fix1(in, e), block_ranges(target)), irmap)
+        from = SSAValue(findfirst(Fix1(in, e), block_ranges(target)), tr)
         push!(args, val, from)
       end
       # Repeat an arbitrary value for unspecified blocks.
-      for from in inneighbors(target.cfg, irmap.bbs[blk.id])
+      for from in inneighbors(target.cfg, tr.bbs[blk.id])
         # Remap `from` to a SSAValue, using the SSA value of the first Julia instruction in that block.
-        from = irmap.bb_ssavals[Core.SSAValue(target.indices[from])]
+        from = tr.bb_ssavals[Core.SSAValue(target.indices[from])]
         if !in(from, @view args[2:2:end])
           push!(args, args[end - 1], from)
         end
@@ -46,7 +46,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::Functio
       _ => throw(CompilationError("Call to unknown function $f"))
     end
     Expr(:invoke, mi, f, args...) => begin
-      isa(f, Core.SSAValue) && (f = irmap.globalrefs[f])
+      isa(f, Core.SSAValue) && (f = tr.globalrefs[f])
       @assert isa(f, GlobalRef)
       if f.mod == @__MODULE__() || !in(f.mod, (Base, Core))
         opcode = @when let op::OpCode = try_getopcode(f.name)
@@ -60,16 +60,16 @@ function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::Functio
             @case ::OpCode
             (opcode, args)
             @case ::OpCodeGLSL
-            args = (emit_extinst!(ir, "GLSL.std.450"), opcode, args...)
+            args = (emit_extinst!(mt, "GLSL.std.450"), opcode, args...)
             (OpExtInst, args)
           end
         else
-          args, variables = peel_global_vars(args, ir, irmap, fdef)
-          (OpFunctionCall, (emit_new!(ir, target.interp, mi, fdef, variables), args...))
+          args, variables = peel_global_vars(args, mt, tr, fdef)
+          (OpFunctionCall, (emit_new!(mt, target.interp, mi, fdef, variables), args...))
         end
       else
-        args, variables = peel_global_vars(args, ir, irmap, fdef)
-        (OpFunctionCall, (emit_new!(ir, target.interp, mi, fdef, variables), args...))
+        args, variables = peel_global_vars(args, mt, tr, fdef)
+        (OpFunctionCall, (emit_new!(mt, target.interp, mi, fdef, variables), args...))
       end
     end
     _ => throw(CompilationError("Expected call or invoke expression, got $(repr(jinst))"))
@@ -87,7 +87,7 @@ function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::Functio
   if isa(type, PointerType) && opcode in (OpAccessChain, OpPtrAccessChain)
     # Propagate storage class to the result.
     ptr = first(args)
-    sc = storage_class(ptr, ir, irmap, fdef)
+    sc = storage_class(ptr, mt, tr, fdef)
     if isnothing(sc)
       @assert type.storage_class == StorageClassPhysicalStorageBuffer
     else
@@ -95,17 +95,18 @@ function emit_inst!(ir::IR, irmap::IRMapping, target::SPIRVTarget, fdef::Functio
     end
   end
 
-  load_variables!(args, blk, ir, irmap, fdef, opcode)
-  remap_args!(args, ir, irmap, opcode)
+  load_variables!(args, blk, mt, tr, fdef, opcode)
+  remap_args!(args, mt, tr, opcode)
 
   if opcode == OpStore
     result_id = type_id = nothing
   else
-    type_id = emit!(ir, irmap, type)
-    result_id = next!(ir.ssacounter)
+    type_id = emit!(mt, tr, type)
+    result_id = next!(mt.ssacounter)
   end
 
-  @inst result_id = opcode(args...)::type_id
+  inst = @inst result_id = opcode(args...)::type_id
+  (inst, type)
 end
 
 function get_type(arg, target::SPIRVTarget)
@@ -116,27 +117,27 @@ function get_type(arg, target::SPIRVTarget)
   end
 end
 
-load_variable!(blk::Block, ir::IR, irmap::IRMapping, var::Variable, ssaval) = load_variable!(blk, ir, irmap, var.type, ssaval)
-function load_variable!(blk::Block, ir::IR, irmap::IRMapping, type::PointerType, ssaval)
-  load = @inst next!(ir.ssacounter) = OpLoad(ssaval)::SSAValue(ir, type.type)
-  add_instruction!(blk, irmap, load)
+load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, var::Variable, ssaval) = load_variable!(blk, mt, tr, var.type, ssaval)
+function load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, type::PointerType, ssaval)
+  load = @inst next!(mt.ssacounter) = OpLoad(ssaval)::mt.types[type.type]
+  add_instruction!(blk, tr, load)
   load.result_id
 end
 
-function storage_class(arg, ir::IR, irmap::IRMapping, fdef::FunctionDefinition)
+function storage_class(arg, mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition)
   var_or_type = @match arg begin
-    ::Core.SSAValue => get(irmap.variables, arg, nothing)
+    ::Core.SSAValue => get(tr.variables, arg, nothing)
     ::Core.Argument => begin
-      id = irmap.args[arg]
+      id = tr.args[arg]
       lvar_idx = findfirst(==(id), fdef.args)
       if !isnothing(lvar_idx)
         fdef.type.argtypes[lvar_idx]
       else
         gvar = get(fdef.global_vars, arg.n - 1, nothing)
-        isnothing(gvar) ? nothing : ir.global_vars[gvar]
+        isnothing(gvar) ? nothing : mt.global_vars[gvar]
       end
     end
-    ::SSAValue => get(ir.global_vars, arg, nothing)
+    ::SSAValue => get(mt.global_vars, arg, nothing)
     _ => nothing
   end
   @match var_or_type begin
@@ -145,15 +146,15 @@ function storage_class(arg, ir::IR, irmap::IRMapping, fdef::FunctionDefinition)
   end
 end
 
-function peel_global_vars(args, ir::IR, irmap, fdef)
+function peel_global_vars(args, mt::ModuleTarget, tr, fdef)
   fargs = []
   variables = Dictionary{Int,Variable}()
   for (i, arg) in enumerate(args)
-    @switch storage_class(arg, ir, irmap, fdef) begin
+    @switch storage_class(arg, mt, tr, fdef) begin
       @case ::Nothing || &StorageClassFunction
       push!(fargs, arg)
       @case ::StorageClass
-      insert!(variables, i, ir.global_vars[arg::SSAValue])
+      insert!(variables, i, mt.global_vars[arg::SSAValue])
     end
   end
   fargs, variables
@@ -164,15 +165,15 @@ function try_getopcode(name, prefix = "")
   isdefined(@__MODULE__, maybe_opname) ? getproperty(@__MODULE__, maybe_opname) : nothing
 end
 
-function remap_args!(args, ir::IR, irmap::IRMapping, opcode)
-  arguments_to_ssa!(args, irmap)
-  replace_ssa!(args, irmap, opcode)
+function remap_args!(args, mt::ModuleTarget, tr::Translation, opcode)
+  arguments_to_ssa!(args, tr)
+  replace_ssa!(args, tr, opcode)
   replace_globalrefs!(args)
-  literals_to_const!(args, ir, irmap, opcode)
+  literals_to_const!(args, mt, tr, opcode)
   args
 end
 
-function load_variables!(args, blk::Block, ir::IR, irmap::IRMapping, fdef, opcode)
+function load_variables!(args, blk::Block, mt::ModuleTarget, tr::Translation, fdef, opcode)
   for (i, arg) in enumerate(args)
     # Don't load pointers in pointer operations.
     if i == 1 && opcode in (OpStore, OpAccessChain)
@@ -180,44 +181,44 @@ function load_variables!(args, blk::Block, ir::IR, irmap::IRMapping, fdef, opcod
     end
     # OpPhi must use variables directly (loading cannot happen before OpPhi instructions).
     opcode == OpPhi && continue
-    loaded_arg = load_if_variable!(blk, ir, irmap, fdef, arg)
+    loaded_arg = load_if_variable!(blk, mt, tr, fdef, arg)
     !isnothing(loaded_arg) && (args[i] = loaded_arg)
   end
 end
 
-function load_if_variable!(blk::Block, ir::IR, irmap::IRMapping, fdef::FunctionDefinition, arg)
+function load_if_variable!(blk::Block, mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, arg)
   @trymatch arg begin
-    ::Core.SSAValue => @trymatch get(irmap.variables, arg, nothing) begin
-        var::Variable => load_variable!(blk, ir, irmap, var, irmap.ssavals[arg])
+    ::Core.SSAValue => @trymatch get(tr.variables, arg, nothing) begin
+        var::Variable => load_variable!(blk, mt, tr, var, tr.ssavals[arg])
       end
     ::Core.Argument => begin
-        id = irmap.args[arg]
-        var = get(ir.global_vars, id, nothing)
-        !isnothing(var) && return load_variable!(blk, ir, irmap, var, id)
+        id = tr.args[arg]
+        var = get(mt.global_vars, id, nothing)
+        !isnothing(var) && return load_variable!(blk, mt, tr, var, id)
         index = findfirst(==(id), fdef.args)
         if !isnothing(index)
           type = fdef.type.argtypes[index]
           if isa(type, PointerType)
-            load_variable!(blk, ir, irmap, type, id)
+            load_variable!(blk, mt, tr, type, id)
           end
         end
       end
   end
 end
 
-function arguments_to_ssa!(args, irmap::IRMapping)
+function arguments_to_ssa!(args, tr::Translation)
   for (i, arg) in enumerate(args)
-    isa(arg, Core.Argument) && (args[i] = SSAValue(arg, irmap))
+    isa(arg, Core.Argument) && (args[i] = SSAValue(arg, tr))
   end
 end
 
 """
 Replace `Core.SSAValue` by `SSAValue`, ignoring forward references.
 """
-function replace_ssa!(args, irmap::IRMapping, opcode)
+function replace_ssa!(args, tr::Translation, opcode)
   for (i, arg) in enumerate(args)
     # Phi nodes may have forward references.
-    isa(arg, Core.SSAValue) && opcode ≠ OpPhi && (args[i] = SSAValue(arg, irmap))
+    isa(arg, Core.SSAValue) && opcode ≠ OpPhi && (args[i] = SSAValue(arg, tr))
   end
 end
 
@@ -227,14 +228,14 @@ function replace_globalrefs!(args)
   end
 end
 
-function literals_to_const!(args, ir::IR, irmap::IRMapping, opcode)
+function literals_to_const!(args, mt::ModuleTarget, tr::Translation, opcode)
   for (i, arg) in enumerate(args)
     if isa(arg, Bool) || (isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, QuoteNode)) && !is_literal(opcode, args, i)
-      args[i] = emit!(ir, irmap, Constant(arg))
+      args[i] = emit!(mt, tr, Constant(arg))
     end
   end
 end
 
-function emit_new!(ir::IR, interp::SPIRVInterpreter, mi::MethodInstance, fdef::FunctionDefinition, variables)
-  emit!(ir, SPIRVTarget(mi, interp; inferred = true), variables)
+function emit_new!(mt::ModuleTarget, interp::SPIRVInterpreter, mi::MethodInstance, fdef::FunctionDefinition, variables)
+  emit!(mt, SPIRVTarget(mi, interp; inferred = true), variables)
 end

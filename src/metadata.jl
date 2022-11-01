@@ -271,3 +271,46 @@ function set_name!(meta::Metadata, member_index::Int, name::Symbol)
   set_name!(metadata!(meta, member_index), name)
   meta
 end
+
+metadata!(meta::Dictionary{T,Metadata}, key::T) where {T} = get!(Metadata, meta, key)
+metadata!(meta::Dictionary{T,Metadata}, key::T, i::Int) where {T} = metadata!(metadata!(meta, key), i)
+decorate!(meta::Dictionary{T,Metadata}, key::T, args...) where {T} = decorate!(metadata!(meta, key), args...)
+decorate!(meta::Dictionary{T,Metadata}, key::T, i::Int, args...) where {T} = decorate!(metadata!(meta, key, i), args...)
+
+function has_decoration(meta::Dictionary{T,Metadata}, key::T, dec::Decoration) where {T}
+  meta = get(meta, key, nothing)
+  isnothing(meta) && return false
+  has_decoration(meta, dec)
+end
+
+function has_decoration(meta::Dictionary{T,Metadata}, key::T, i::Int, dec::Decoration) where {T}
+  meta = get(meta, key, nothing)
+  isnothing(meta) && return false
+  has_decoration(meta, dec, i)
+end
+
+function decorations(meta::Dictionary{T,Metadata}, key::T) where {T}
+  meta = get(meta, key, nothing)
+  isnothing(meta) && return nothing
+  decorations(meta)
+end
+
+function decorations(meta::Dictionary{T,Metadata}, key::T, i::Int) where {T}
+  meta = get(meta, key, nothing)
+  isnothing(meta) && return nothing
+  decorations(meta, i)
+end
+
+set_name!(meta::Dictionary{T,Metadata}, key::T, i::Int, name::Symbol) where {T} = set_name!(metadata!(meta, key), i, name)
+
+function append_annotations!(insts, metadata::SSADict{Metadata})
+  for (id, meta) in pairs(metadata)
+    append_decorations!(insts, id, meta)
+  end
+end
+
+function append_debug_instructions!(insts, metadata::SSADict{Metadata})
+  for (id, meta) in pairs(metadata)
+    append_debug_annotations!(insts, id, meta)
+  end
+end
