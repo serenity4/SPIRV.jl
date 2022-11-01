@@ -198,3 +198,11 @@ function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::SSAValue)
 end
 
 SSAValue(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer) = last(block_instruction(amod, af, block_index)).result_id
+
+function add_capabilities!(diff::Diff, amod::AnnotatedModule, capabilities)
+  insert!(diff, last(amod.capabilities) + 1, [(@inst Capability(cap)) for cap in capabilities])
+end
+
+function add_extensions!(diff::Diff, amod::AnnotatedModule, extensions)
+  insert!(diff, last(amod.extensions) + 1, [(@inst Extension(ext)) for ext in extensions])
+end

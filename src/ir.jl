@@ -110,9 +110,14 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
       @case "Constant-Creation"
       c = @match opcode begin
         &OpConstant || &OpSpecConstant => begin
-          literal = only(arguments)
           t = types[type_id]
-          Constant(reinterpret(julia_type(t), literal), opcode == OpSpecConstant)
+          T = julia_type(t)
+          literal = @match T begin
+            &Float32 || &UInt32 || &Int32 => reinterpret(T, only(arguments))
+            &Float64 || &UInt64 || &Int64 => only(reinterpret(T, [arguments[1]::Word, arguments[2]::Word]))
+            _ => error("Unexpected literal of type $T found in constant instruction with arguments $arguments")
+          end
+          Constant(literal, opcode == OpSpecConstant)
         end
         &OpConstantFalse || &OpConstantTrue => Constant(opcode == OpConstantTrue)
         &OpSpecConstantFalse || &OpSpecConstantTrue => Constant(opcode == OpSpecConstantTrue, true)

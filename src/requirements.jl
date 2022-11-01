@@ -96,3 +96,9 @@ function satisfy_requirements!(ir::IR, features::FeatureSupport)
   end
   ir
 end
+
+function satisfy_requirements!(diff::Diff, amod::AnnotatedModule, features::FeatureSupport)
+  reqs = FeatureRequirements(Module(amod), features)
+  add_capabilities!(diff, amod, reqs.capabilities)
+  add_extensions!(diff, amod, reqs.extensions)
+end

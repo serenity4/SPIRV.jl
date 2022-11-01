@@ -43,8 +43,7 @@ function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterfa
   add_type_layouts!(ir, interface.layout)
   add_type_metadata!(ir, interface)
   add_align_operands!(ir, fdef, interface.layout)
-
-  satisfy_requirements!(ir, interface.features)
+  ir
 end
 
 function define_entry_point!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, execution_model::ExecutionModel)
@@ -127,13 +126,15 @@ Module(shader::Shader) = shader.mod
 
 validate(shader::Shader) = validate_shader(IR(Module(shader); satisfy_requirements = false))
 
-function Shader(ir::IR)
-  ep = entry_point(ir, :main)
-  mod = Module(ir)
-  Shader(mod, ep.func, memory_resources(mod, ep.func))
+function Shader(target::SPIRVTarget, interface::ShaderInterface)
+  ir = IR(target, interface)
+  ep = entry_point(ir, :main).func
+  mod = annotate(Module(ir))
+  mod = annotate(apply!(restructure_merge_blocks!(Diff(mod), mod)))
+  mod = annotate(apply!(add_merge_headers!(Diff(mod), mod)))
+  mod = apply!(satisfy_requirements!(Diff(mod), mod, interface.features))
+  Shader(mod, ep, memory_resources(mod, ep))
 end
-
-Shader(target::SPIRVTarget, interface::ShaderInterface) = Shader(IR(target, interface))
 
 assemble(shader::Shader) = assemble(shader.mod)
 
@@ -156,6 +157,7 @@ function IR(target::SPIRVTarget, interface::ShaderInterface)
   fdef = FunctionDefinition(mt, target.mi)
   ep = define_entry_point!(mt, tr, fdef, interface.execution_model)
   ir = IR(mt, tr)
+  ir.addressing_model = AddressingModelPhysicalStorageBuffer64
   insert!(ir.entry_points, ep.func, ep)
   make_shader!(ir, fdef, interface, variables)
 end

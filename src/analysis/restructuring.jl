@@ -143,7 +143,8 @@ function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::Annota
       update!(diff, pairs(updated_phi_insts))
 
       push!(new_instructions, @inst Branch(merge_block_inst.result_id))
-      insert!(diff, merge_block_inst_index, new_instructions)
+      # Insert just after the merge block.
+      insert!(diff, last(af.blocks[merge_block]) + 1, new_instructions)
     end
   end
 

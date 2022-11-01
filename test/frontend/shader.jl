@@ -11,6 +11,8 @@ SUPPORTED_FEATURES = SupportedFeatures(
     SPIRV.CapabilityInt64,
     SPIRV.CapabilityPhysicalStorageBufferAddresses,
     SPIRV.CapabilityVariablePointers,
+    SPIRV.CapabilityStorageImageExtendedFormats,
+    SPIRV.CapabilityImageQuery,
   ],
 )
 
@@ -21,7 +23,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     out_color.a = 1F
   end
 
-  target = @target vert_shader!(::Vec{4,Float32})
+  target = @target vert_shader!(::Vec4)
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
   shader = Shader(target, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput]))
@@ -29,9 +31,11 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   @test mod == parse(
     SPIRV.Module,
       """
-      $shader_capabilities
-      $base_extensions
-      $memory_model
+      OpCapability(PhysicalStorageBufferAddresses)
+      OpCapability(VulkanMemoryModel)
+      OpExtension("SPV_EXT_physical_storage_buffer")
+      OpExtension("SPV_KHR_vulkan_memory_model")
+      OpMemoryModel(PhysicalStorageBuffer64, Vulkan)
       OpEntryPoint(Vertex, %15, "main", %4)
       OpName(%6, "vert_shader!_Tuple{Vec4}")
       OpName(%4, "out_color")
@@ -66,7 +70,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     out_color[] = Vec(0.1F, 0.1F, 0.1F, 1F)
   end
 
-  target = @target vert_shader_2!(::Vec{4,Float32})
+  target = @target vert_shader_2!(::Vec4)
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
   interface = ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => Decorations(SPIRV.DecorationLocation, 0)]))
@@ -83,7 +87,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     out_pos.y = point.y
   end
 
-  target = @target vert_shader_3!(::Vec{4,Float32}, ::Point)
+  target = @target vert_shader_3!(::Vec4, ::Point)
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
   interface = ShaderInterface(SPIRV.ExecutionModelVertex,
@@ -116,8 +120,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     position.x = index
   end
 
-  target = @target vert_shader_4!(::Vec{4,Float32}, ::UInt32, ::Vec{4,Float32})
-  SPIRV.@code_typed vert_shader_4!(::Vec{4,Float32}, ::UInt32, ::Vec{4,Float32})
+  target = @target vert_shader_4!(::Vec4, ::UInt32, ::Vec4)
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
   interface = ShaderInterface(SPIRV.ExecutionModelVertex,
@@ -138,7 +141,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   end
 
   struct VertexData
-    pos::Vec{2,Float32}
+    pos::Vec2
     color::NTuple{3,Float32}
   end
 
@@ -150,13 +153,13 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   end
 
   # Non-Vulkan interpreter
-  target = @target interp_novulkan vert_shader_5!(::Vec{4,Float32}, ::Vec{4,Float32}, ::UInt32, ::DrawData)
+  target = @target interp_novulkan vert_shader_5!(::Vec4, ::Vec4, ::UInt32, ::DrawData)
   ir = compile(target, AllSupported())
   # Access to PhysicalStorageBuffer must use Aligned.
   @test iserror(validate(ir))
 
   # Default Vulkan interpreter
-  target = @target vert_shader_5!(::Vec{4,Float32}, ::Vec{4,Float32}, ::UInt32, ::DrawData)
+  target = @target vert_shader_5!(::Vec4, ::Vec4, ::UInt32, ::DrawData)
   ir = compile(target, AllSupported())
   # Access to PhysicalStorageBuffer must use Aligned.
   @test iserror(validate(ir))
@@ -190,7 +193,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     out_color[] = frag_color
   end
 
-  target = @target frag_shader!(::Vec{4,Float32}, ::Vec{4,Float32})
+  target = @target frag_shader!(::Vec4, ::Vec4)
   interface = ShaderInterface(
     execution_model = SPIRV.ExecutionModelFragment,
     storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput],
@@ -201,4 +204,45 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   )
   shader = Shader(target, interface)
   @test unwrap(validate(shader))
+
+  @testset "Structured control-flow" begin
+    function vert_branch!(out, x)
+      y = x > 0F ? x + 1F : x - 1F
+      out.x = y
+    end
+
+    target = @target vert_branch!(::Vec4, ::Float32)
+    ir = compile(target, AllSupported())
+    @test unwrap(validate(ir))
+    interface = ShaderInterface(SPIRV.ExecutionModelVertex,
+      [SPIRV.StorageClassOutput, SPIRV.StorageClassInput],
+      dictionary([
+        1 => Decorations(SPIRV.DecorationLocation, 0),
+        2 => Decorations(SPIRV.DecorationLocation, 0),
+      ]),
+    )
+    shader = Shader(target, interface)
+    @test unwrap(validate(shader))
+
+
+    function compute_blur!(res::Vec3, blur::GaussianBlur, reference, direction, uv)
+      res[] = compute_blur(blur, reference, direction, uv)
+    end
+
+    target = @target compute_blur!(::Vec3, ::GaussianBlur, ::SPIRV.SampledImage{SPIRV.image_type(SPIRV.ImageFormatR16f,SPIRV.Dim2D,0,false,false,1)}, ::UInt32, ::Vec2)
+    interface = ShaderInterface(;
+      execution_model = SPIRV.ExecutionModelFragment,
+      storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassUniformConstant, SPIRV.StorageClassInput, SPIRV.StorageClassInput],
+      variable_decorations = dictionary([
+        1 => Decorations(SPIRV.DecorationLocation, 0),
+        2 => Decorations(SPIRV.DecorationLocation, 0),
+        3 => Decorations(SPIRV.DecorationDescriptorSet, 0).decorate!(SPIRV.DecorationBinding, 0),
+        4 => Decorations(SPIRV.DecorationLocation, 2),
+        5 => Decorations(SPIRV.DecorationLocation, 3),
+      ]),
+      features = SUPPORTED_FEATURES,
+    )
+    shader = Shader(target, interface)
+    @test unwrap(validate(shader))
+  end
 end;

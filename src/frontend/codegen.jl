@@ -10,12 +10,19 @@ function emit_inst!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef
         from = SSAValue(findfirst(Fix1(in, e), block_ranges(target)), tr)
         push!(args, val, from)
       end
+      # SPIR-V requires all branching nodes to give a result, while Julia does not if the Phi instructions
+      # will never get used if coming from branches that are not covered.
+      # This is a problem because SPIR-V will want a value, and coming up with a dummy value to put
+      # is not trivial for composite data structures. For literals we can manage with `zero(T)` constants,
+      # but if in the future we have instances of composite types then we will need to think about other ways.
+
       # Repeat an arbitrary value for unspecified blocks.
       for from in inneighbors(target.cfg, tr.bbs[blk.id])
         # Remap `from` to a SSAValue, using the SSA value of the first Julia instruction in that block.
         from = tr.bb_ssavals[Core.SSAValue(target.indices[from])]
         if !in(from, @view args[2:2:end])
-          push!(args, args[end - 1], from)
+          @assert jtype <: Integer || jtype <: AbstractFloat || "A dummy non-numeric value is required for OpPhi instruction, which at the moment is not clear how to get. Please report an issue."
+          push!(args, zero(jtype), from)
         end
       end
       (OpPhi, args)
@@ -146,7 +153,7 @@ function storage_class(arg, mt::ModuleTarget, tr::Translation, fdef::FunctionDef
   end
 end
 
-function peel_global_vars(args, mt::ModuleTarget, tr, fdef)
+function peel_global_vars(args, mt::ModuleTarget, tr::Translation, fdef)
   fargs = []
   variables = Dictionary{Int,Variable}()
   for (i, arg) in enumerate(args)
@@ -154,6 +161,7 @@ function peel_global_vars(args, mt::ModuleTarget, tr, fdef)
       @case ::Nothing || &StorageClassFunction
       push!(fargs, arg)
       @case ::StorageClass
+      isa(arg, Core.Argument) && (arg = SSAValue(arg, tr))
       insert!(variables, i, mt.global_vars[arg::SSAValue])
     end
   end
@@ -237,5 +245,5 @@ function literals_to_const!(args, mt::ModuleTarget, tr::Translation, opcode)
 end
 
 function emit_new!(mt::ModuleTarget, interp::SPIRVInterpreter, mi::MethodInstance, fdef::FunctionDefinition, variables)
-  emit!(mt, SPIRVTarget(mi, interp; inferred = true), variables)
+  emit!(mt, Translation(), SPIRVTarget(mi, interp; inferred = true), variables)
 end
