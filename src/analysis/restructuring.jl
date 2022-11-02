@@ -131,7 +131,7 @@ function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::Annota
       # TODO: Optimize this by using the property above to avoid traversing all leaves.
       branching_blocks = [node_index(tree) for tree in Leaves(inner) if in(merge_block, outneighbors(cfg, node_index(tree)))]
 
-      new = @inst next!(diff) = Label()
+      new = @inst next!(diff) = OpLabel()
       new_instructions = [new]
 
       # Adjust branching instructions from branching blocks so that they branch to the new node instead.
@@ -142,7 +142,7 @@ function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::Annota
       append!(new_instructions, new_phi_insts)
       update!(diff, pairs(updated_phi_insts))
 
-      push!(new_instructions, @inst Branch(merge_block_inst.result_id))
+      push!(new_instructions, @inst OpBranch(merge_block_inst.result_id))
       # Insert just after the merge block.
       insert!(diff, last(af.blocks[merge_block]) + 1, new_instructions)
     end

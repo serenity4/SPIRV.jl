@@ -80,7 +80,7 @@ mutable struct CompilationError <: Exception
   mi::MethodInstance
   jinst::Any
   jtype::Type
-  inst::Instruction
+  ex::Expression
   CompilationError(msg::AbstractString) = (err = new(); err.msg = msg; err)
 end
 
@@ -110,9 +110,9 @@ function Base.showerror(io::IO, err::CompilationError)
   if isdefined(err, :jinst)
     print(io, "\n", error_field("Julia instruction"), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
   end
-  if isdefined(err, :inst)
-    print(io, "\n", error_field("Wrapped SPIR-V instruction"))
-    emit(io, err.inst)
+  if isdefined(err, :ex)
+    print(io, "\n", error_field("Wrapped SPIR-V expression"))
+    emit(io, err.ex)
   end
   println(io)
 end
@@ -176,45 +176,8 @@ function emit!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition)
   fid
 end
 
-function emit!(mt::ModuleTarget, tr::Translation, @nospecialize(type::SPIRType))
-  haskey(mt.types, type) && return mt.types[type]
-  @switch type begin
-    @case ::PointerType
-    emit!(mt, tr, type.type)
-    @case (::ArrayType && GuardBy(isnothing ∘ Fix2(getproperty, :size))) || ::VectorType || ::MatrixType
-    emit!(mt, tr, type.eltype)
-    @case ::ArrayType
-    emit!(mt, tr, type.eltype)
-    emit!(mt, tr, type.size)
-    @case ::StructType
-    for t in type.members
-      emit!(mt, tr, t)
-    end
-    @case ::ImageType
-    emit!(mt, tr, type.sampled_type)
-    @case ::SampledImageType
-    emit!(mt, tr, type.image_type)
-    @case ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType || ::SamplerType
-    nothing
-    @case ::FunctionType
-    emit!(mt, tr, type.rettype)
-    for t in type.argtypes
-      emit!(mt, tr, t)
-    end
-  end
-
-  id = next!(mt.idcounter)
-  insert!(mt.types, type, id)
-  id
-end
-
-function emit!(mt::ModuleTarget, tr::Translation, c::Constant)
-  haskey(mt.constants, c) && return mt.constants[c]
-  emit!(mt, tr, SPIRType(c, tr.tmap))
-  id = next!(mt.idcounter)
-  insert!(mt.constants, c, id)
-  id
-end
+emit!(mt::ModuleTarget, tr::Translation, @nospecialize(type::SPIRType)) = emit_type!(mt.types, mt.idcounter, mt.constants, tr.tmap, type)
+emit!(mt::ModuleTarget, tr::Translation, c::Constant) = emit_constant!(mt.constants, mt.idcounter, mt.types, tr.tmap, c)
 
 function emit!(mt::ModuleTarget, tr::Translation, var::Variable)
   haskey(mt.global_vars, var) && return mt.global_vars[var]
@@ -252,9 +215,9 @@ Replace forward references to `Core.SSAValue`s by their appropriate `ResultID`.
 """
 function replace_forwarded_ssa!(fdef::FunctionDefinition, tr::Translation)
   for block in fdef.blocks
-    for inst in block.insts
-      for (i, arg) in enumerate(inst.arguments)
-        isa(arg, Core.SSAValue) && (inst.arguments[i] = ResultID(arg, tr))
+    for ex in block
+      for (i, arg) in enumerate(ex)
+        isa(arg, Core.SSAValue) && (ex[i] = ResultID(arg, tr))
       end
     end
   end
@@ -272,34 +235,34 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     (isnothing(jinst) || jinst === GlobalRef(Base, :nothing)) && continue
     jtype = ssavaluetypes[i]
     core_ssaval = Core.SSAValue(i)
-    spv_inst = nothing
+    ex = nothing
     @assert !(jtype <: Core.IntrinsicFunction) "Encountered illegal core intrinsic $jinst."
     jtype ≠ Union{} || throw(CompilationError("Encountered bottom type $jtype, which may indicate an error in the original code."))
     try
       @switch jinst begin
         @case ::Core.ReturnNode
-        spv_inst = @match jinst.val begin
-          ::Nothing => @inst OpReturn()
+        ex = @match jinst.val begin
+          ::Nothing => @ex OpReturn()
           val => begin
             args = Any[val]
             load_variables!(args, blk, mt, tr, fdef, OpReturnValue)
             remap_args!(args, mt, tr, OpReturnValue)
-            @inst OpReturnValue(only(args))
+            @ex OpReturnValue(only(args))
           end
         end
-        add_instruction!(blk, tr, spv_inst, core_ssaval)
+        add_expression!(blk, tr, ex, core_ssaval)
         @case ::Core.GotoNode
         dest = tr.bb_results[Core.SSAValue(jinst.label)]
-        spv_inst = @inst OpBranch(dest)
-        add_instruction!(blk, tr, spv_inst, core_ssaval)
+        ex = @ex OpBranch(dest)
+        add_expression!(blk, tr, ex, core_ssaval)
         @case ::Core.GotoIfNot
         # Core.GotoIfNot uses the SSA value of the first instruction of the target
         # block as its `dest`.
         dest = tr.bb_results[Core.SSAValue(jinst.dest)]
         (; cond) = jinst
-        cond_inst = isa(cond, Bool) ? emit!(mt, tr, Constant(cond)) : ResultID(cond, tr)
-        spv_inst = @inst OpBranchConditional(cond_inst, ResultID(node + 1, tr), dest)
-        add_instruction!(blk, tr, spv_inst, core_ssaval)
+        cond_id = isa(cond, Bool) ? emit!(mt, tr, Constant(cond)) : ResultID(cond, tr)
+        ex = @ex OpBranchConditional(cond_id, ResultID(node + 1, tr), dest)
+        add_expression!(blk, tr, ex, core_ssaval)
         @case ::GlobalRef
         jtype <: Type || throw(CompilationError("Unhandled global reference $(repr(jtype))"))
         insert!(tr.globalrefs, core_ssaval, jinst)
@@ -309,37 +272,37 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
           # OpPhi will reuse existing variables, no need to allocate a new one.
           !isa(jinst, Core.PhiNode) && allocate_variable!(mt, tr, fdef, jtype, core_ssaval)
         end
-        ret, stype = emit_inst!(mt, tr, target, fdef, jinst, jtype, blk)
-        if isa(ret, Instruction)
+        ret, stype = emit_expression!(mt, tr, target, fdef, jinst, jtype, blk)
+        if isa(ret, Expression)
           if ismutabletype(jtype) && !isa(jinst, Core.PhiNode)
             # The current core ResultID has already been assigned (to the variable).
-            add_instruction!(blk, tr, ret, nothing)
+            add_expression!(blk, tr, ret, nothing)
             # Store to the new variable.
-            add_instruction!(blk, tr, @inst OpStore(tr.results[core_ssaval], ret.result_id::ResultID))
+            add_expression!(blk, tr, @ex OpStore(tr.results[core_ssaval], ret.result::ResultID))
           elseif ismutabletype(jtype) && isa(jinst, Core.PhiNode)
             insert!(tr.variables, core_ssaval, Variable(stype, StorageClassFunction))
-            add_instruction!(blk, tr, ret, core_ssaval)
+            add_expression!(blk, tr, ret, core_ssaval)
           else
-            add_instruction!(blk, tr, ret, core_ssaval)
+            add_expression!(blk, tr, ret, core_ssaval)
           end
         elseif isa(ret, ResultID)
           # The value is a SPIR-V global (possibly a constant),
-          # so no need to push a new function instruction.
+          # so no need to push a new expression.
           # Just map the current SSA value to the global.
           insert!(tr.results, core_ssaval, ret)
         end
       end
     catch e
       fields = (; jinst, jtype)
-      !isnothing(spv_inst) && (fields = (; fields..., inst = spv_inst))
+      !isnothing(ex) && (fields = (; fields..., ex))
       throw_compilation_error(e, fields)
     end
   end
 
   # Implicit `goto` to the next block.
   if !is_termination_instruction(last(blk))
-    spv_inst = @inst OpBranch(ResultID(node + 1, tr))
-    add_instruction!(blk, tr, spv_inst)
+    ex = @ex OpBranch(ResultID(node + 1, tr))
+    add_expression!(blk, tr, ex)
   end
 end
 
@@ -351,14 +314,14 @@ function allocate_variable!(mt::ModuleTarget, tr::Translation, fdef::FunctionDef
   emit!(mt, tr, type)
   insert!(tr.variables, core_ssaval, var)
   insert!(tr.results, core_ssaval, id)
-  push!(fdef.local_vars, Instruction(var, id, GlobalsInfo(mt)))
+  push!(fdef.local_vars, Expression(var, id))
 end
 
-function add_instruction!(block::Block, tr::Translation, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)
-  if !isnothing(inst.result_id) && !isnothing(core_ssaval)
-    insert!(tr.results, core_ssaval, inst.result_id)
+function add_expression!(block::Block, tr::Translation, ex::Expression, core_ssaval::Optional{Core.SSAValue} = nothing)
+  if !isnothing(ex.result) && !isnothing(core_ssaval)
+    insert!(tr.results, core_ssaval, ex.result)
   end
-  push!(block.insts, inst)
+  push!(block, ex)
 end
 
 function emit_extinst!(mt::ModuleTarget, extinst)

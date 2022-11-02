@@ -12,9 +12,9 @@ function AbstractTrees.childindices(call_tree::StaticCallTree, index::ResultID)
   children = Set{ResultID}()
   fdef = call_tree[index]
   for blk in fdef.blocks
-    for inst in blk
-      if inst.opcode == OpFunctionCall
-        fid = inst.arguments[1]::ResultID
+    for ex in blk
+      if ex.op == OpFunctionCall
+        fid = ex[1]::ResultID
         if haskey(call_tree.ir.fdefs, fid)
           push!(children, fid)
         else
@@ -47,11 +47,11 @@ AbstractTrees.ChildIndexing(::Type{Frame}) = IndexedChildren()
 
 function AbstractTrees.children(frame::Frame)
   fdef = frame.ir.fdefs[frame.fid]
-  inst = fdef[frame.block][frame.instruction_index]
+  ex = fdef[frame.block][frame.instruction_index]
   parent_frames = [frame.parent_frames; frame]
 
   # traverse_cfg(fdef)
-  # if inst.opcode == OpFunctionCall
-  #   (Frame(frame.ir, first(inst.arguments)::ResultID, parent_frames))
+  # if ex.op == OpFunctionCall
+  #   (Frame(frame.ir, ex[1]::ResultID, parent_frames))
   # end
 end

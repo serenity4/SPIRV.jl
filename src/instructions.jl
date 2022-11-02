@@ -6,6 +6,7 @@ SPIR-V instruction. Must contain an opcode, and optionally a type id and a resul
 @refbroadcast abstract type AbstractInstruction end
 
 opcode(inst::AbstractInstruction) = inst.opcode
+result_id(inst::AbstractInstruction) = inst.result_id
 
 """
 SPIR-V instruction in binary format.
@@ -34,5 +35,5 @@ const InstructionCursor = ArrayCursor{Instruction}
 
 assert_opcode(opcode, inst) = opcode == inst.opcode || error("Expected $opcode instruction, got ", sprintc(emit, inst))
 
-has_result_id(inst::Instruction, id::ResultID) = inst.result_id === id
+has_result_id(inst::AbstractInstruction, id::ResultID) = result_id(inst) === id
 has_result_id(id::ResultID) = Fix2(has_result_id, id)

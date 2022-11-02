@@ -140,26 +140,26 @@ memory_model = "OpMemoryModel(Logical, Vulkan)"
    %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
    %4 = OpTypeSampler()
    %5 = OpTypeFunction(%2, %3, %4)
-  %10 = OpTypeSampledImage(%3)
-  %13 = OpTypeVector(%1, 0x00000002)
-  %14 = OpTypePointer(Function, %13)
-  %15 = OpConstant(0x40400000)::%1
-  %16 = OpConstant(0x40800000)::%1
-  %19 = OpTypePointer(Function, %2)
+  %12 = OpTypeVector(%1, 0x00000002)
+  %13 = OpTypePointer(Function, %12)
+  %14 = OpConstant(0x40400000)::%1
+  %15 = OpConstant(0x40800000)::%1
+  %18 = OpTypePointer(Function, %2)
+  %22 = OpTypeSampledImage(%3)
    %6 = OpFunction(None, %5)::%2
    %7 = OpFunctionParameter()::%3
    %8 = OpFunctionParameter()::%4
    %9 = OpLabel()
-  %12 = OpVariable(Function)::%14
-  %18 = OpVariable(Function)::%19
-  %11 = OpSampledImage(%7, %8)::%10
-  %17 = OpCompositeConstruct(%15, %16)::%13
-        OpStore(%12, %17)
-  %20 = OpLoad(%12)::%13
-  %21 = OpImageSampleImplicitLod(%11, %20)::%2
-        OpStore(%18, %21)
-  %22 = OpLoad(%18)::%2
-        OpReturnValue(%22)
+  %11 = OpVariable(Function)::%13
+  %17 = OpVariable(Function)::%18
+  %10 = OpSampledImage(%7, %8)::%22
+  %16 = OpCompositeConstruct(%14, %15)::%12
+        OpStore(%11, %16)
+  %19 = OpLoad(%11)::%12
+  %20 = OpImageSampleImplicitLod(%10, %19)::%2
+        OpStore(%17, %20)
+  %21 = OpLoad(%17)::%2
+        OpReturnValue(%21)
         OpFunctionEnd()
       """
     )
@@ -267,17 +267,17 @@ memory_model = "OpMemoryModel(Logical, Vulkan)"
           $memory_model
      %1 = OpTypeFloat(0x00000040)
      %2 = OpTypeFunction(%1, %1, %1, %1)
-     %8 = OpTypeBool()
+     %12 = OpTypeBool()
      %3 = OpFunction(None, %2)::%1
      %4 = OpFunctionParameter()::%1
      %5 = OpFunctionParameter()::%1
      %6 = OpFunctionParameter()::%1
      %7 = OpLabel()
-     %9 = OpFOrdLessThan(%6, %4)::%8
-    %10 = OpFOrdLessThan(%4, %5)::%8
-    %11 = OpSelect(%10, %5, %4)::%1
-    %12 = OpSelect(%9, %6, %11)::%1
-          OpReturnValue(%12)
+     %8 = OpFOrdLessThan(%6, %4)::%12
+     %9 = OpFOrdLessThan(%4, %5)::%12
+     %10 = OpSelect(%9, %5, %4)::%1
+     %11 = OpSelect(%8, %6, %10)::%1
+          OpReturnValue(%11)
           OpFunctionEnd()
       """,
       )
@@ -297,19 +297,19 @@ memory_model = "OpMemoryModel(Logical, Vulkan)"
      %1 = OpTypeFloat(0x00000020)
      %2 = OpTypeFunction(%1, %1)
      %8 = OpConstant(0x00000000)::%1
-     %9 = OpTypeBool()
-    %11 = OpConstant(0x3f800000)::%1
+    %10 = OpConstant(0x3f800000)::%1
+    %13 = OpTypeBool()
      %3 = OpFunction(None, %2)::%1
      %4 = OpFunctionParameter()::%1
      %5 = OpLabel()
-    %10 = OpFOrdLessThan(%8, %4)::%9
-          OpBranchConditional(%10, %6, %7)
+     %9 = OpFOrdLessThan(%8, %4)::%13
+          OpBranchConditional(%9, %6, %7)
      %6 = OpLabel()
-    %12 = OpFAdd(%4, %11)::%1
-          OpReturnValue(%12)
+    %11 = OpFAdd(%4, %10)::%1
+          OpReturnValue(%11)
      %7 = OpLabel()
-    %13 = OpFSub(%4, %11)::%1
-          OpReturnValue(%13)
+    %12 = OpFSub(%4, %10)::%1
+          OpReturnValue(%12)
           OpFunctionEnd()
         """,
       )
@@ -339,34 +339,34 @@ memory_model = "OpMemoryModel(Logical, Vulkan)"
      %2 = OpTypeFunction(%1, %1)
     %14 = OpConstant(0x00000000)::%1
     %15 = OpConstant(0x3f800000)::%1
-    %17 = OpTypeBool()
+    %25 = OpTypeBool()
      %3 = OpFunction(None, %2)::%1
      %4 = OpFunctionParameter()::%1
      %5 = OpLabel()
     %16 = OpExtInst(%13, FClamp, %4, %14, %15)::%1
-    %18 = OpFOrdEqual(%16, %14)::%17
-          OpBranchConditional(%18, %6, %9)
+    %17 = OpFOrdEqual(%16, %14)::%25
+          OpBranchConditional(%17, %6, %9)
      %6 = OpLabel()
-    %19 = OpFMul(%4, %4)::%1
-    %20 = OpFOrdLessThan(%15, %19)::%17
-          OpBranchConditional(%20, %7, %8)
+    %18 = OpFMul(%4, %4)::%1
+    %19 = OpFOrdLessThan(%15, %18)::%25
+          OpBranchConditional(%19, %7, %8)
      %7 = OpLabel()
-          OpReturnValue(%19)
+          OpReturnValue(%18)
      %8 = OpLabel()
-    %21 = OpFAdd(%4, %19)::%1
+    %20 = OpFAdd(%4, %18)::%1
           OpBranch(%10)
      %9 = OpLabel()
-    %22 = OpFSub(%4, %15)::%1
+    %21 = OpFSub(%4, %15)::%1
           OpBranch(%10)
     %10 = OpLabel()
-    %23 = OpPhi(%21 => %8, %22 => %9)::%1
-    %24 = OpFOrdLessThan(%23, %14)::%17
-          OpBranchConditional(%24, %11, %12)
+    %22 = OpPhi(%20 => %8, %21 => %9)::%1
+    %23 = OpFOrdLessThan(%22, %14)::%25
+          OpBranchConditional(%23, %11, %12)
     %11 = OpLabel()
           OpReturnValue(%16)
     %12 = OpLabel()
-    %25 = OpFAdd(%23, %16)::%1
-          OpReturnValue(%25)
+    %24 = OpFAdd(%22, %16)::%1
+          OpReturnValue(%24)
           OpFunctionEnd()
         """
       )

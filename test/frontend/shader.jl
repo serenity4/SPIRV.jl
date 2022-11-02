@@ -36,7 +36,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       OpExtension("SPV_EXT_physical_storage_buffer")
       OpExtension("SPV_KHR_vulkan_memory_model")
       OpMemoryModel(PhysicalStorageBuffer64, Vulkan)
-      OpEntryPoint(Vertex, %15, "main", %4)
+      OpEntryPoint(Vertex, %14, "main", %4)
       OpName(%6, "vert_shader!_Tuple{Vec4}")
       OpName(%4, "out_color")
  %1 = OpTypeFloat(0x00000020)
@@ -46,19 +46,19 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
  %5 = OpTypeFunction(%1)
  %8 = OpTypeInt(0x00000020, 0x00000000)
  %9 = OpConstant(0x00000003)::%8
-%10 = OpTypePointer(Output, %1)
-%12 = OpConstant(0x3f800000)::%1
-%13 = OpTypeVoid()
-%14 = OpTypeFunction(%13)
+%11 = OpConstant(0x3f800000)::%1
+%12 = OpTypeVoid()
+%13 = OpTypeFunction(%12)
+%17 = OpTypePointer(Output, %1)
  %6 = OpFunction(None, %5)::%1
  %7 = OpLabel()
-%11 = OpAccessChain(%4, %9)::%10
-      OpStore(%11, %12)
-      OpReturnValue(%12)
+%10 = OpAccessChain(%4, %9)::%17
+      OpStore(%10, %11)
+      OpReturnValue(%11)
       OpFunctionEnd()
-%15 = OpFunction(None, %14)::%13
-%16 = OpLabel()
-%17 = OpFunctionCall(%6)::%1
+%14 = OpFunction(None, %13)::%12
+%15 = OpLabel()
+%16 = OpFunctionCall(%6)::%1
       OpReturn()
       OpFunctionEnd()
 """,

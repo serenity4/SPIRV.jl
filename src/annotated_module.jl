@@ -128,10 +128,10 @@ const termination_instructions = Set([
   OpKill, OpTerminateInvocation,
 ])
 
-is_termination_instruction(inst::Instruction) = in(inst.opcode, termination_instructions)
-is_merge_instruction(inst::Instruction) = in(inst.opcode, (OpSelectionMerge, OpLoopMerge))
-is_label_instruction(inst::Instruction) = inst.opcode == OpLabel
-is_phi_instruction(inst::Instruction) = inst.opcode == OpPhi
+is_termination_instruction(inst::AbstractInstruction) = in(opcode(inst), termination_instructions)
+is_merge_instruction(inst::AbstractInstruction) = in(opcode(inst), (OpSelectionMerge, OpLoopMerge))
+is_label_instruction(inst::AbstractInstruction) = opcode(inst) == OpLabel
+is_phi_instruction(inst::AbstractInstruction) = opcode(inst) == OpPhi
 
 function termination_instruction(amod::AnnotatedModule, af::AnnotatedFunction, block::Integer)
   index = last(af.blocks[block])
@@ -159,7 +159,7 @@ function phi_instructions(amod::AnnotatedModule, af::AnnotatedFunction, block::I
   indices = Int[]
   insts = Instruction[]
   for (i, inst) in enumerate(instructions(amod, af, block))
-    if inst.opcode == OpPhi
+    if opcode(inst) == OpPhi
       push!(indices, af.blocks[block].start + i - 1)
       push!(insts, inst)
     end
@@ -200,9 +200,9 @@ end
 ResultID(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer) = last(block_instruction(amod, af, block_index)).result_id
 
 function add_capabilities!(diff::Diff, amod::AnnotatedModule, capabilities)
-  insert!(diff, last(amod.capabilities) + 1, [(@inst Capability(cap)) for cap in capabilities])
+  insert!(diff, last(amod.capabilities) + 1, [(@inst OpCapability(cap)) for cap in capabilities])
 end
 
 function add_extensions!(diff::Diff, amod::AnnotatedModule, extensions)
-  insert!(diff, last(amod.extensions) + 1, [(@inst Extension(ext)) for ext in extensions])
+  insert!(diff, last(amod.extensions) + 1, [(@inst OpExtension(ext)) for ext in extensions])
 end

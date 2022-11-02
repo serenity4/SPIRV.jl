@@ -40,6 +40,7 @@ It is assumed that the function arguments are typed to use the same storage clas
 """
 function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterface, variables)
   add_variable_decorations!(ir, variables, interface)
+  emit_types!(ir)
   add_type_layouts!(ir, interface.layout)
   add_type_metadata!(ir, interface)
   add_align_operands!(ir, fdef, interface.layout)
@@ -55,8 +56,8 @@ function define_entry_point!(mt::ModuleTarget, tr::Translation, fdef::FunctionDe
   # The dictionary loses some of its elements to #undef values.
   #TODO: fix this hack in Dictionaries.jl
   fid = findfirst(==(fdef), mt.fdefs.forward)
-  push!(blk, @inst next!(mt.idcounter) = OpFunctionCall(fid)::mt.types[fdef.type.rettype])
-  push!(blk, @inst OpReturn())
+  push!(blk, @ex next!(mt.idcounter) = OpFunctionCall(fid)::fdef.type.rettype)
+  push!(blk, @ex OpReturn())
 
   execution_model == ExecutionModelFragment && push!(ep.modes, @inst OpExecutionMode(ep.func, ExecutionModeOriginUpperLeft))
   ep
@@ -82,30 +83,26 @@ function find_definition(id::ResultID, insts)
 end
 
 function add_align_operands!(ir::IR, fdef::FunctionDefinition, layout::LayoutStrategy)
-  insts = body(fdef)
-  for inst in insts
-    (; opcode, arguments) = inst
-    @tryswitch opcode begin
+  exs = body(fdef)
+  for ex in exs
+    @tryswitch opcode(ex) begin
       @case &OpLoad || &OpStore
-      pointer_id = first(inst.arguments)
+      pointer_id = ex[1]::ResultID
       def = @something(
         get(ir.global_vars, pointer_id, nothing),
         find_definition(pointer_id, fdef.local_vars),
-        find_definition(pointer_id, insts),
+        find_definition(pointer_id, exs),
       )
       isnothing(def) && error("Could not retrieve definition for $pointer_id")
-      pointer = @match def begin
-        ::Instruction => ir.types[def.type_id::ResultID]
-        ::Variable => def.type
-      end
+      pointer = def.type
       (; type, storage_class) = pointer
       if storage_class == StorageClassPhysicalStorageBuffer
         # We assume that no other storage class uses the pointer.
-        push!(inst.arguments, MemoryAccessAligned, UInt32(alignment(layout, type, [storage_class], false)))
+        push!(ex, MemoryAccessAligned, UInt32(alignment(layout, type, [storage_class], false)))
       end
       @case &OpFunctionCall
       # Recurse into function calls.
-      callee = ir.fdefs[first(arguments)]
+      callee = ir.fdefs[ex[1]::ResultID]
       add_align_operands!(ir, callee, layout)
     end
   end
@@ -176,13 +173,14 @@ end
 
 function (extract::MemoryResourceExtraction)(interpret::AbstractInterpretation, frame::InterpretationFrame, inst::Instruction)
   @tryswitch opcode(inst) begin
-  @case &OpConvertUToPtr
+    @case &OpConvertUToPtr
     if !in(inst, extract.conversions)
       insert!(extract.conversions, inst.result_id, inst)
     else
       interpret.converged = true
     end
-  @case &OpLoad || &OpAccessChain
+
+    @case &OpLoad || &OpAccessChain
     # TODO: Use a def-use chain to make it more robust.
     # For example, one may pass the pointer to a function call
     # and a different ID (associated with an `OpFunctionParameter`) would be used as operand.

@@ -1,3 +1,11 @@
+"""
+Intermediate representation of SPIR-V modules.
+
+The `types` and `constants` mappings can be updated at any time without explicitly notifying of
+the mutation behavior (i.e. functions may not end with `!`), so long as additions only are performed.
+Such additions are currently done upon construction of `GlobalsInfo`.
+The ID counter can also be incremented without notice.
+"""
 @refbroadcast mutable struct IR
   ir_meta::ModuleMetadata
   capabilities::Vector{Capability}
@@ -12,7 +20,6 @@
   constants::BijectiveMapping{ResultID,Constant}
   global_vars::BijectiveMapping{ResultID,Variable}
   fdefs::BijectiveMapping{ResultID,FunctionDefinition}
-  results::ResultDict{Any}
   debug::DebugInfo
   idcounter::IDCounter
   "SPIR-V types derived from Julia types."
@@ -23,12 +30,13 @@ end
 
 function IR(; ir_meta::ModuleMetadata = ModuleMetadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
   IR(ir_meta, [], [], BijectiveMapping(), addressing_model, memory_model, ResultDict(), ResultDict(),
-    BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), ResultDict(), DebugInfo(), IDCounter(0), TypeMap())
+    BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), DebugInfo(), IDCounter(0), TypeMap())
 end
 
 function IR(mod::Module; satisfy_requirements = true, features = AllSupported()) #= ::FeatureSupport =#
   ir = IR(; ir_meta = mod.meta)
-  (; debug, metadata, types, results) = ir
+  (; debug, metadata, types) = ir
+  max_id = 0
 
   current_function = nothing
 
@@ -130,12 +138,13 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
       @case "Memory"
       @tryswitch opcode begin
         @case &OpVariable
-        storage_class = first(arguments)
+        ex = Expression(inst, types)
+        storage_class = ex[1]::StorageClass
         if storage_class ≠ StorageClassFunction
-          insert!(ir.global_vars, result_id, Variable(inst, types[inst.type_id]))
+          insert!(ir.global_vars, result_id, Variable(ex))
         end
         if !isnothing(current_function)
-          push!(current_function.local_vars, inst)
+          push!(current_function.local_vars, ex)
         end
       end
       @case "Function"
@@ -152,18 +161,19 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
       @case "Control-Flow"
       @assert !isnothing(current_function)
       if opcode == OpLabel
-        insert!(current_function.blocks, inst.result_id, Block(inst.result_id))
+        ex = Expression(inst, types)
+        insert!(current_function.blocks, ex.result, Block(ex.result))
       end
     end
     if !isnothing(current_function) && !isempty(current_function.blocks) && opcode ≠ OpVariable
-      push!(last(values(current_function.blocks)).insts, inst)
+      ex = Expression(inst, types)
+      block = last(values(current_function.blocks))
+      push!(block, ex)
     end
-    if !isnothing(result_id)
-      insert!(results, result_id, inst)
-    end
+    !isnothing(result_id) && (max_id = max(max_id, UInt32(result_id)))
   end
 
-  set!(ir.idcounter, ResultID(maximum(UInt32.(keys(ir.results)))))
+  set!(ir.idcounter, ResultID(max_id))
   satisfy_requirements && satisfy_requirements!(ir, features)
   ir
 end
@@ -184,7 +194,10 @@ function entry_point(ir::IR, name::Symbol)
   error("No entry point found with name '$name'")
 end
 
-GlobalsInfo(ir::IR) = GlobalsInfo(ir.types, ir.constants, ir.global_vars)
+function GlobalsInfo(ir::IR)
+  emit_types!(ir)
+  GlobalsInfo(ir.types, ir.constants, ir.global_vars)
+end
 
 ResultID(ir::IR, t::DataType) = ResultID(ir, spir_type(t, ir.tmap))
 ResultID(ir::IR, t::SPIRType) = ir.types[t]
@@ -195,6 +208,22 @@ function merge_metadata!(ir::IR, id::ResultID, meta::Metadata)
     !isnothing(t) && !isa(t, StructType) && error("Trying to set metadata which contains member metadata on a non-aggregate type.")
   end
   merge!(metadata!(ir, id), meta)
+end
+
+function emit_types!(ir::IR)
+  for fdef in ir.fdefs
+    for blk in fdef.blocks
+      emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, fdef.type)
+      for ex in blk
+        isnothing(ex.type) && continue
+        emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, ex.type)
+      end
+    end
+  end
+  for var in ir.global_vars
+    emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, var.type)
+  end
+  ir
 end
 
 function Module(ir::IR; debug_info = true)

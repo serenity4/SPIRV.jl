@@ -8,17 +8,28 @@ Semantically, `Expression`s do not express type declarations.
   type::Optional{SPIRType}
   result::Optional{ResultID}
   args::Vector{Any}
+  Expression(op::OpCode, type::Optional{SPIRType}, result::Optional{ResultID}, args::AbstractVector) = new(op, type, result, args)
+  Expression(op::OpCode, type::Optional{SPIRType}, result::Optional{ResultID}, args...) = Expression(op, type, result, collect(args))
 end
 
-opcode(ex::Expression) = ex.opcode
+@forward Expression.args (Base.getindex, Base.length, Base.iterate, Base.setindex!, Base.push!, Base.append!)
+
+opcode(ex::Expression) = ex.op
+result_id(ex::Expression) = ex.result
 
 function Instruction(ex::Expression, types #= SPIRType => ResultID =#)
+  (; args) = ex
+  if ex.op == OpFunction
+    if isa(ex.args[end], FunctionType)
+      @reset args[end] = types[ex.args[end]]
+    end
+  end
   type_id = nothing
   if !isnothing(ex.type)
     type_id = get(types, ex.type, nothing)
     isnothing(type_id) && error("No type ID available for SPIR-V type ", ex.type)
   end
-  Instruction(ex.op, type_id, ex.result, ex.args)
+  Instruction(ex.op, type_id, ex.result, args)
 end
 
 function Expression(inst::Instruction, types #= ResultID => SPIRType =#)

@@ -1,4 +1,4 @@
-function emit_inst!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
+function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
   type = spir_type(jtype, tr.tmap)
   isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = PointerType(StorageClassFunction, type))
   (opcode, args) = @match jinst begin
@@ -107,14 +107,14 @@ function emit_inst!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef
   remap_args!(args, mt, tr, opcode)
 
   if opcode == OpStore
-    result_id = type_id = nothing
+    result = nothing
+    type = nothing
   else
-    type_id = emit!(mt, tr, type)
-    result_id = next!(mt.idcounter)
+    result = next!(mt.idcounter)
   end
 
-  inst = @inst result_id = opcode(args...)::type_id
-  (inst, type)
+  ex = @ex result = opcode(args...)::type
+  (ex, type)
 end
 
 function get_type(arg, target::SPIRVTarget)
@@ -127,9 +127,9 @@ end
 
 load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, var::Variable, id::ResultID) = load_variable!(blk, mt, tr, var.type, id)
 function load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, type::PointerType, id::ResultID)
-  load = @inst next!(mt.idcounter) = OpLoad(id)::mt.types[type.type]
-  add_instruction!(blk, tr, load)
-  load.result_id
+  load = @ex next!(mt.idcounter) = OpLoad(id)::type.type
+  add_expression!(blk, tr, load)
+  load.result
 end
 
 function storage_class(arg, mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition)

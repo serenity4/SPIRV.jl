@@ -16,10 +16,10 @@ Variable(type::SPIRType, storage_class::StorageClass = StorageClassFunction, ini
 Variable(PointerType(storage_class, type), initializer)
 Variable(type::PointerType, ::StorageClass, initializer::Optional{ResultID} = nothing) = Variable(type, initializer)
 
-function Variable(inst::Instruction, type::PointerType)
-  storage_class = inst.arguments[1]::StorageClass
-  initializer = length(inst.arguments) == 2 ? SSAValue(inst.arguments[2]::UInt32) : nothing
-  Variable(type, initializer)
+function Variable(ex::Expression)
+  storage_class = ex[1]::StorageClass
+  initializer = length(ex) == 2 ? ResultID(ex[2]::UInt32) : nothing
+  Variable(ex.type, initializer)
 end
 
 struct GlobalsInfo
@@ -71,47 +71,48 @@ function Instruction(t::FunctionType, id::ResultID, globals::GlobalsInfo)
   append!(inst.arguments, globals.types[argtype] for argtype in t.argtypes)
   inst
 end
-function Instruction(c::Constant, id::ResultID, globals::GlobalsInfo)
+function Expression(c::Constant, id::ResultID)
   @match (c.value, c.is_spec_const) begin
-    ((::Nothing, type), false) => @inst id = OpConstantNull()::globals.types[type]
-    (true, false) => @inst id = OpConstantTrue()::globals.types[BooleanType()]
-    (true, true) => @inst id = OpSpecConstantTrue()::globals.types[BooleanType()]
-    (false, false) => @inst id = OpConstantFalse()::globals.types[BooleanType()]
-    (false, true) => @inst id = OpSpecConstantFalse()::globals.types[BooleanType()]
-    ((ids::Vector{ResultID}, type), false) => @inst id = OpConstantComposite(ids...)::globals.types[type]
-    ((ids::Vector{ResultID}, type), true) => @inst id = OpSpecConstantComposite(ids...)::globals.types[type]
+    ((::Nothing, type), false) => @ex id = OpConstantNull()::type
+    (true, false) => @ex id = OpConstantTrue()::BooleanType()
+    (true, true) => @ex id = OpSpecConstantTrue()::BooleanType()
+    (false, false) => @ex id = OpConstantFalse()::BooleanType()
+    (false, true) => @ex id = OpSpecConstantFalse()::BooleanType()
+    ((ids::Vector{ResultID}, type), false) => @ex id = OpConstantComposite(ids...)::type
+    ((ids::Vector{ResultID}, type), true) => @ex id = OpSpecConstantComposite(ids...)::type
     (val, false) => begin
       if isa(val, UInt64) || isa(val, Int64) || isa(val, Float64)
         # `val` is a 64-bit literal, and so takes two words.
-        @inst id = OpConstant(reinterpret(UInt32, [val])...)::globals.types[spir_type(typeof(val))]
+        @ex id = OpConstant(reinterpret(UInt32, [val])...)::spir_type(typeof(val))
       else
-        @inst id = OpConstant(reinterpret(UInt32, val))::globals.types[spir_type(typeof(val))]
+        @ex id = OpConstant(reinterpret(UInt32, val))::spir_type(typeof(val))
       end
     end
   end
 end
+Instruction(c::Constant, id::ResultID, globals::GlobalsInfo) = Instruction(Expression(c, id), globals.types)
 
 function append_functions!(insts, fdefs, globals::GlobalsInfo)
   for (id, fdef) in pairs(fdefs)
-    append!(insts, instructions(fdef, id, globals))
+    append!(insts, Instruction(ex, globals.types) for ex in expressions(fdef, id))
   end
 end
 
-function instructions(fdef::FunctionDefinition, id::ResultID, globals::GlobalsInfo)
-  insts = Instruction[]
+function expressions(fdef::FunctionDefinition, id::ResultID)
+  exs = Expression[]
   (; type) = fdef
-  push!(insts, @inst id = OpFunction(fdef.control, globals.types[type])::globals.types[type.rettype])
-  append!(insts, @inst(id = OpFunctionParameter()::globals.types[argtype]) for (id, argtype) in zip(fdef.args, type.argtypes))
+  push!(exs, @ex id = OpFunction(fdef.control, type)::type.rettype)
+  append!(exs, @ex(id = OpFunctionParameter()::argtype) for (id, argtype) in zip(fdef.args, type.argtypes))
   fbody = body(fdef)
   if !isempty(fbody)
     label = first(fbody)
-    @assert label.opcode == OpLabel
-    push!(insts, label)
-    append!(insts, fdef.local_vars)
-    append!(insts, fbody[2:end])
+    @assert label.op == OpLabel
+    push!(exs, label)
+    append!(exs, fdef.local_vars)
+    append!(exs, fbody[2:end])
   end
-  push!(insts, @inst OpFunctionEnd())
-  insts
+  push!(exs, @ex OpFunctionEnd())
+  exs
 end
 
 function append_globals!(insts, globals::GlobalsInfo)
@@ -120,8 +121,50 @@ function append_globals!(insts, globals::GlobalsInfo)
   append!(insts, Instruction(val, id, globals) for (id, val) in pairs(all_globals))
 end
 
-function Instruction(var::Variable, id::ResultID, globals::GlobalsInfo)
-  inst = @inst id = OpVariable(var.storage_class)::globals.types[var.type]
-  !isnothing(var.initializer) && push!(inst.arguments, var.initializer)
-  inst
+function Expression(var::Variable, id::ResultID)
+  ex = @ex id = OpVariable(var.storage_class)::var.type
+  !isnothing(var.initializer) && push!(ex, var.initializer)
+  ex
+end
+
+Instruction(var::Variable, id::ResultID, globals::GlobalsInfo) = Instruction(Expression(var, id), globals.types)
+
+function emit_constant!(constants, counter::IDCounter, types, tmap::TypeMap, c::Constant)
+  haskey(constants, c) && return constants[c]
+  emit_type!(types, counter, constants, tmap, SPIRType(c, tmap))
+  id = next!(counter)
+  insert!(constants, c, id)
+  id
+end
+
+function emit_type!(types, counter::IDCounter, constants, tmap::TypeMap, @nospecialize(type::SPIRType))
+  haskey(types, type) && return types[type]
+  @switch type begin
+    @case ::PointerType
+    emit_type!(types, counter, constants, tmap, type.type)
+    @case (::ArrayType && GuardBy(isnothing ∘ Fix2(getproperty, :size))) || ::VectorType || ::MatrixType
+    emit_type!(types, counter, constants, tmap, type.eltype)
+    @case ::ArrayType
+    emit_type!(types, counter, constants, tmap, type.eltype)
+    emit_constant!(constants, counter, types, tmap, type.size)
+    @case ::StructType
+    for t in type.members
+      emit_type!(types, counter, constants, tmap, t)
+    end
+    @case ::ImageType
+    emit_type!(types, counter, constants, tmap, type.sampled_type)
+    @case ::SampledImageType
+    emit_type!(types, counter, constants, tmap, type.image_type)
+    @case ::VoidType || ::IntegerType || ::FloatType || ::BooleanType || ::OpaqueType || ::SamplerType
+    nothing
+    @case ::FunctionType
+    emit_type!(types, counter, constants, tmap, type.rettype)
+    for t in type.argtypes
+      emit_type!(types, counter, constants, tmap, t)
+    end
+  end
+
+  id = next!(counter)
+  insert!(types, type, id)
+  id
 end
