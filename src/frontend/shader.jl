@@ -127,9 +127,9 @@ function Shader(target::SPIRVTarget, interface::ShaderInterface)
   ir = IR(target, interface)
   ep = entry_point(ir, :main).func
   mod = annotate(Module(ir))
-  mod = annotate(apply!(restructure_merge_blocks!(Diff(mod), mod)))
-  mod = annotate(apply!(add_merge_headers!(Diff(mod), mod)))
-  mod = apply!(satisfy_requirements!(Diff(mod), mod, interface.features))
+  mod = annotate(apply!(mod, restructure_merge_blocks!(Diff(mod), mod)))
+  mod = annotate(apply!(mod, add_merge_headers!(Diff(mod), mod)))
+  mod = apply!(mod, satisfy_requirements!(Diff(mod), mod, interface.features))
   Shader(mod, ep, memory_resources(mod, ep))
 end
 

@@ -62,7 +62,7 @@ end
   diff = restructure_merge_blocks!(Diff(amod), amod)
   # A new dummy block needs to be inserted (2 instructions), and 2 branching blocks needed to be updated to branch to the new block.
   @test length(diff.insertions) == 2 && length(diff.modifications) == 2
-  mod = apply!(diff)
+  mod = apply!(original_mod, diff)
   @test mod.bound == original_mod.bound + 1
   @test unwrap(validate(IR(mod)))
 
@@ -70,7 +70,7 @@ end
   amod = annotate(mod)
   diff = add_merge_headers!(Diff(amod), amod)
   @test length(diff.insertions) == 2
-  mod = apply!(diff)
+  mod = apply!(mod, diff)
   amod = annotate(mod)
   af = only(amod.annotated_functions)
   @test length(find_merge_blocks(amod, af)) == 2
@@ -82,7 +82,7 @@ end
   diff = restructure_merge_blocks!(Diff(amod), amod)
   # There is only one update to make to the branching node 3.
   @test length(diff.insertions) == 2 && length(diff.modifications) == 1
-  mod = apply!(diff)
+  mod = apply!(original_mod, diff)
   @test mod.bound == original_mod.bound + 1
   @test unwrap(validate(IR(mod)))
 
@@ -90,7 +90,7 @@ end
   amod = annotate(mod)
   diff = add_merge_headers!(Diff(amod), amod)
   @test length(diff.insertions) == 2
-  mod = apply!(diff)
+  mod = apply!(mod, diff)
   amod = annotate(mod)
   af = only(amod.annotated_functions)
   @test length(find_merge_blocks(amod, af)) == 2

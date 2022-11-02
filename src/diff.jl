@@ -5,20 +5,22 @@ This is especially useful to design algorithms which can therefore process a giv
 about past analyses being outdated while recording changes to apply as the result of the processing.
 """
 struct Diff
-  mod::Module
   idcounter::IDCounter
   insertions::Vector{Pair{Int,Instruction}}
   modifications::Vector{Pair{Int,Instruction}}
   deletions::Vector{Int}
 end
 
-Diff(mod::Module) = Diff(mod, IDCounter(mod.bound - 1), [], [], [])
-Diff(x) = Diff(Module(x))
+Diff(idcounter::IDCounter) = Diff(idcounter, [], [], [])
+Diff(mod::Module) = Diff(IDCounter(mod.bound - 1))
 
 next!(diff::Diff) = next!(diff.idcounter)
 
-function apply!(diff::Diff)
-  (; mod, insertions, deletions) = diff
+Diff(x) = Diff(Module(x))
+apply!(x, diff::Diff) = apply!(Module(x), diff)
+
+function apply!(mod::Module, diff::Diff)
+  (; insertions, deletions) = diff
   (; instructions) = mod
   for (line, inst) in diff.modifications
     instructions[line] = inst
