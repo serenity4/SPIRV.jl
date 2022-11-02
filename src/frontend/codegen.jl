@@ -6,10 +6,11 @@ function emit_inst!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef
     ::Core.PhiNode => begin
       args = []
       for (e, val) in zip(jinst.edges, jinst.values)
-        # `e` is the SSA value of the last instruction of the block `val` is assigned to.
-        from = SSAValue(findfirst(Fix1(in, e), block_ranges(target)), tr)
+        # `e` is the index of the last instruction of the block `val` is assigned to.
+        from = ResultID(findfirst(Fix1(in, e), block_ranges(target)), tr)
         push!(args, val, from)
       end
+
       # SPIR-V requires all branching nodes to give a result, while Julia does not if the Phi instructions
       # will never get used if coming from branches that are not covered.
       # This is a problem because SPIR-V will want a value, and coming up with a dummy value to put
@@ -18,8 +19,8 @@ function emit_inst!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef
 
       # Repeat an arbitrary value for unspecified blocks.
       for from in inneighbors(target.cfg, tr.bbs[blk.id])
-        # Remap `from` to a SSAValue, using the SSA value of the first Julia instruction in that block.
-        from = tr.bb_ssavals[Core.SSAValue(target.indices[from])]
+        # Remap `from` to a ResultID, using the implicit mapping from the block's first instruction index to a SSA value.
+        from = tr.bb_results[Core.SSAValue(target.indices[from])]
         if !in(from, @view args[2:2:end])
           @assert jtype <: Integer || jtype <: AbstractFloat || "A dummy non-numeric value is required for OpPhi instruction, which at the moment is not clear how to get. Please report an issue."
           push!(args, zero(jtype), from)
@@ -109,7 +110,7 @@ function emit_inst!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef
     result_id = type_id = nothing
   else
     type_id = emit!(mt, tr, type)
-    result_id = next!(mt.ssacounter)
+    result_id = next!(mt.idcounter)
   end
 
   inst = @inst result_id = opcode(args...)::type_id
@@ -124,9 +125,9 @@ function get_type(arg, target::SPIRVTarget)
   end
 end
 
-load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, var::Variable, ssaval) = load_variable!(blk, mt, tr, var.type, ssaval)
-function load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, type::PointerType, ssaval)
-  load = @inst next!(mt.ssacounter) = OpLoad(ssaval)::mt.types[type.type]
+load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, var::Variable, id::ResultID) = load_variable!(blk, mt, tr, var.type, id)
+function load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, type::PointerType, id::ResultID)
+  load = @inst next!(mt.idcounter) = OpLoad(id)::mt.types[type.type]
   add_instruction!(blk, tr, load)
   load.result_id
 end
@@ -144,7 +145,7 @@ function storage_class(arg, mt::ModuleTarget, tr::Translation, fdef::FunctionDef
         isnothing(gvar) ? nothing : mt.global_vars[gvar]
       end
     end
-    ::SSAValue => get(mt.global_vars, arg, nothing)
+    ::ResultID => get(mt.global_vars, arg, nothing)
     _ => nothing
   end
   @match var_or_type begin
@@ -161,8 +162,8 @@ function peel_global_vars(args, mt::ModuleTarget, tr::Translation, fdef)
       @case ::Nothing || &StorageClassFunction
       push!(fargs, arg)
       @case ::StorageClass
-      isa(arg, Core.Argument) && (arg = SSAValue(arg, tr))
-      insert!(variables, i, mt.global_vars[arg::SSAValue])
+      isa(arg, Core.Argument) && (arg = ResultID(arg, tr))
+      insert!(variables, i, mt.global_vars[arg::ResultID])
     end
   end
   fargs, variables
@@ -174,7 +175,7 @@ function try_getopcode(name, prefix = "")
 end
 
 function remap_args!(args, mt::ModuleTarget, tr::Translation, opcode)
-  arguments_to_ssa!(args, tr)
+  replace_core_arguments!(args, tr)
   replace_ssa!(args, tr, opcode)
   replace_globalrefs!(args)
   literals_to_const!(args, mt, tr, opcode)
@@ -197,7 +198,7 @@ end
 function load_if_variable!(blk::Block, mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, arg)
   @trymatch arg begin
     ::Core.SSAValue => @trymatch get(tr.variables, arg, nothing) begin
-        var::Variable => load_variable!(blk, mt, tr, var, tr.ssavals[arg])
+        var::Variable => load_variable!(blk, mt, tr, var, tr.results[arg])
       end
     ::Core.Argument => begin
         id = tr.args[arg]
@@ -214,28 +215,29 @@ function load_if_variable!(blk::Block, mt::ModuleTarget, tr::Translation, fdef::
   end
 end
 
-function arguments_to_ssa!(args, tr::Translation)
+"Replace `Core.Argument` by `ResultID`."
+function replace_core_arguments!(args, tr::Translation)
   for (i, arg) in enumerate(args)
-    isa(arg, Core.Argument) && (args[i] = SSAValue(arg, tr))
+    isa(arg, Core.Argument) && (args[i] = ResultID(arg, tr))
   end
 end
 
-"""
-Replace `Core.SSAValue` by `SSAValue`, ignoring forward references.
-"""
+"Replace `Core.SSAValue` by `ResultID`, ignoring forward references."
 function replace_ssa!(args, tr::Translation, opcode)
   for (i, arg) in enumerate(args)
     # Phi nodes may have forward references.
-    isa(arg, Core.SSAValue) && opcode ≠ OpPhi && (args[i] = SSAValue(arg, tr))
+    isa(arg, Core.SSAValue) && opcode ≠ OpPhi && (args[i] = ResultID(arg, tr))
   end
 end
 
+"Replace `GlobalRef`s by their actual values."
 function replace_globalrefs!(args)
   for (i, arg) in enumerate(args)
     isa(arg, GlobalRef) && (args[i] = getproperty(arg.mod, arg.name))
   end
 end
 
+"Turn all literals passed in non-literal SPIR-V operands into `Constant`s."
 function literals_to_const!(args, mt::ModuleTarget, tr::Translation, opcode)
   for (i, arg) in enumerate(args)
     if isa(arg, Bool) || (isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, QuoteNode)) && !is_literal(opcode, args, i)

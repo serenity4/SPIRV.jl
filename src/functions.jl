@@ -1,9 +1,9 @@
 @refbroadcast struct Block
-  id::SSAValue
+  id::ResultID
   insts::Vector{Instruction}
 end
 
-Block(id::SSAValue) = Block(id, [])
+Block(id::ResultID) = Block(id, [])
 
 @forward Block.insts (Base.getindex, Base.iterate, Base.length, Base.push!, Base.pushfirst!, Base.pop!, Base.popfirst!, Base.firstindex, Base.lastindex)
 
@@ -11,26 +11,26 @@ Block(id::SSAValue) = Block(id, [])
   type::FunctionType
   control::FunctionControl
   "Function arguments, after promoting non-local pointer arguments to global variables. Argument types match the function `type`."
-  args::Vector{SSAValue}
+  args::Vector{ResultID}
   "Declaration of variables which hold function-local pointers."
   local_vars::Vector{Instruction}
-  blocks::SSADict{Block}
+  blocks::ResultDict{Block}
   "Arguments promoted to global variables."
-  global_vars::Vector{SSAValue}
+  global_vars::Vector{ResultID}
 end
 
 @forward FunctionDefinition.blocks (Base.getindex, Base.keys)
 
 function FunctionDefinition(type::FunctionType, control::FunctionControl = FunctionControlNone)
-  FunctionDefinition(type, control, [], [], SSADict(), [])
+  FunctionDefinition(type, control, [], [], ResultDict(), [])
 end
 
 function body(fdef::FunctionDefinition)
   foldl(append!, map(x -> x.insts, values(fdef.blocks)); init = Instruction[])
 end
 
-function new_block!(fdef::FunctionDefinition, id::SSAValue)
-  blk = Block(id, [@inst id = OpLabel()])
+function new_block!(fdef::FunctionDefinition, id::ResultID)
+  blk = Block(id, [@inst id = Label()])
   insert!(fdef.blocks, id, blk)
   blk
 end

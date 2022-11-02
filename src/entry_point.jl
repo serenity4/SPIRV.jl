@@ -1,7 +1,7 @@
 @refbroadcast mutable struct EntryPoint
   name::Symbol
-  func::SSAValue
+  func::ResultID
   model::ExecutionModel
   modes::Vector{Instruction}
-  interfaces::Vector{SSAValue}
+  interfaces::Vector{ResultID}
 end

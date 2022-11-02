@@ -1,20 +1,20 @@
 struct StaticCallTree
   ir::IR
-  root::SSAValue
+  root::ResultID
 end
 
 AbstractTrees.ChildIndexing(::Type{StaticCallTree}) = IndexedChildren()
 AbstractTrees.rootindex(call_tree::StaticCallTree) = call_tree.root
 
-Base.getindex(call_tree::StaticCallTree, index::SSAValue) = call_tree.ir.fdefs[index]
+Base.getindex(call_tree::StaticCallTree, index::ResultID) = call_tree.ir.fdefs[index]
 
-function AbstractTrees.childindices(call_tree::StaticCallTree, index::SSAValue)
-  children = Set{SSAValue}()
+function AbstractTrees.childindices(call_tree::StaticCallTree, index::ResultID)
+  children = Set{ResultID}()
   fdef = call_tree[index]
   for blk in fdef.blocks
     for inst in blk
       if inst.opcode == OpFunctionCall
-        fid = inst.arguments[1]::SSAValue
+        fid = inst.arguments[1]::ResultID
         if haskey(call_tree.ir.fdefs, fid)
           push!(children, fid)
         else
@@ -27,20 +27,20 @@ function AbstractTrees.childindices(call_tree::StaticCallTree, index::SSAValue)
   children
 end
 
-function dependent_functions(ir::IR, fid::SSAValue)
-  haskey(ir.fdefs, fid) || error("SSA value $fid is not a known function.")
+function dependent_functions(ir::IR, fid::ResultID)
+  haskey(ir.fdefs, fid) || error("No function known for function id ", fid)
   unique(nodevalue(node) for node in PreOrderDFS(IndexNode(StaticCallTree(ir, fid))))
 end
 
 struct Frame
   ir::IR
-  fid::SSAValue
-  block::SSAValue
+  fid::ResultID
+  block::ResultID
   instruction_index::Int
   parent_frames::Vector{Frame}
 end
 
-Frame(ir::IR, fid::SSAValue, parent_frames = Frame[]) = Frame(ir, fid, first(keys(ir.fdefs[fid])), 1, parent_frames)
+Frame(ir::IR, fid::ResultID, parent_frames = Frame[]) = Frame(ir, fid, first(keys(ir.fdefs[fid])), 1, parent_frames)
 
 AbstractTrees.NodeType(::Type{Frame}) = Frame
 AbstractTrees.ChildIndexing(::Type{Frame}) = IndexedChildren()
@@ -52,6 +52,6 @@ function AbstractTrees.children(frame::Frame)
 
   # traverse_cfg(fdef)
   # if inst.opcode == OpFunctionCall
-  #   (Frame(frame.ir, first(inst.arguments)::SSAValue, parent_frames))
+  #   (Frame(frame.ir, first(inst.arguments)::ResultID, parent_frames))
   # end
 end

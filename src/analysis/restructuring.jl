@@ -36,7 +36,7 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
         @case GuardBy(>(1))
         throw(CompilationError("More than one candidates found for a loop."))
       end
-      header = @inst OpLoopMerge(SSAValue(amod, af, vmerge), SSAValue(amod, af, vcont), LoopControlNone)
+      header = @inst OpLoopMerge(ResultID(amod, af, vmerge), ResultID(amod, af, vcont), LoopControlNone)
       insert!(diff, last(af.blocks[v]), header)
 
       @case GuardBy(is_selection)
@@ -84,7 +84,7 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
 
         @debug "No postdominator available on node $v to get a merge candidate, picking one with custom heuristics: $vmerge"
       end
-      header = @inst OpSelectionMerge(SSAValue(amod, af, vmerge), SelectionControlNone)
+      header = @inst OpSelectionMerge(ResultID(amod, af, vmerge), SelectionControlNone)
       insert!(diff, last(af.blocks[v]), header)
     end
   end
@@ -138,7 +138,7 @@ function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::Annota
       redirect_branches!(diff, amod, af, branching_blocks, merge_block_inst.result_id, new.result_id)
 
       # Intercept OpPhi instructions on the original merge block by the new block.
-      updated_phi_insts, new_phi_insts = intercept_phi_instructions!(diff.ssacounter, amod, af, branching_blocks, merge_block)
+      updated_phi_insts, new_phi_insts = intercept_phi_instructions!(diff.idcounter, amod, af, branching_blocks, merge_block)
       append!(new_instructions, new_phi_insts)
       update!(diff, pairs(updated_phi_insts))
 
@@ -165,7 +165,7 @@ function nesting_levels!(nesting_levels, ctree::ControlTree, level::Integer)
   nesting_levels
 end
 
-function redirect_branches!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction, branching_blocks, from::SSAValue, to::SSAValue)
+function redirect_branches!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction, branching_blocks, from::ResultID, to::ResultID)
   for block in branching_blocks
     (i, terminst) = termination_instruction(amod, af, block)
     @switch terminst.opcode begin
@@ -189,13 +189,13 @@ of the block. The keys of the relevant dictionary should be ignored.
 
 As a given `OpPhi` instruction on the target may not be covered fully by the branching blocks (i.e. without further assumptions it may depend on other
 branching blocks), they are not deleted. Instead, the `%value => %branching_block` pairs are replaced by `%new_value => %intercepting_block` where
-`%new_value` is the SSA value of the result of the relevant `OpPhi` instruction in the intercepting block. Should a given `OpPhi` instruction on the
+`%new_value` is the result ID of the relevant `OpPhi` instruction in the intercepting block. Should a given `OpPhi` instruction on the
 target be fully covered by the branching blocks, it will be transformed into a single-branch `%result = OpPhi(%new_value => %intercepting_block)`.
 
 Noting that the target block may have several `OpPhi` instructions involving all or part of the branching blocks, the intercepting block will end up
 with possibly more than one corresponding `OpPhi` instructions.
 """
-function intercept_phi_instructions!(counter::SSACounter, amod::AnnotatedModule, af::AnnotatedFunction, branching_blocks, target::Integer)
+function intercept_phi_instructions!(counter::IDCounter, amod::AnnotatedModule, af::AnnotatedFunction, branching_blocks, target::Integer)
   (phi_indices, phi_insts) = phi_instructions(amod, af, target)
 
   updated_phi_insts = Dictionary{Int,Instruction}()
@@ -240,14 +240,14 @@ function find_merge_blocks(amod::AnnotatedModule, af::AnnotatedFunction)
     for inst in instructions(amod, block[end-1:end])
       is_merge_instruction(inst) || continue
       merge_block = first(inst.arguments)
-      push!(get!(Vector{Int}, merge_blocks, id(merge_block)), i)
+      push!(get!(Vector{Int}, merge_blocks, UInt32(merge_block)), i)
       break
     end
   end
   merge_blocks
 end
 
-function update_merge_block(inst::Instruction, new_merge_block::SSAValue)
+function update_merge_block(inst::Instruction, new_merge_block::ResultID)
   @assert is_merge_instruction(inst)
   @set inst.arguments[1] = new_merge_block
 end

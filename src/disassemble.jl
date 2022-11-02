@@ -113,7 +113,7 @@ end
 
 padding(id, bound) = length(string(bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
 
-function print_instructions(io::IO, insts::AbstractVector{Instruction}, bound = id(compute_ssa_bound(insts)))
+function print_instructions(io::IO, insts::AbstractVector{Instruction}, bound = UInt32(compute_id_bound(insts)))
   for inst in insts
     print_instruction(io, inst, bound)
   end

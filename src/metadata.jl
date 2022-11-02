@@ -21,9 +21,9 @@ mutable struct Decorations
   input_attachment_index::UInt32
   alignment::UInt32
   max_byte_offset::UInt32
-  alignment_id::SSAValue
-  max_byte_offset_id::SSAValue
-  counter_buffer::SSAValue
+  alignment_id::ResultID
+  max_byte_offset_id::ResultID
+  counter_buffer::ResultID
   user_semantic::String
   Decorations() = new(Set{Decoration}())
 end
@@ -101,8 +101,8 @@ function Base.merge(xs::Decorations...)
   res
 end
 
-append_decorations!(insts, id::SSAValue, decs::Decorations, member_index::Signed) = append_decorations!(insts, id, decs, UInt32(member_index - 1))
-function append_decorations!(insts, id::SSAValue, decs::Decorations, member_index::Optional{UInt32} = nothing)
+append_decorations!(insts, id::ResultID, decs::Decorations, member_index::Signed) = append_decorations!(insts, id, decs, UInt32(member_index - 1))
+function append_decorations!(insts, id::ResultID, decs::Decorations, member_index::Optional{UInt32} = nothing)
   for dec in sort(collect(decs.defined))
     inst = instruction(decs, dec, member_index)
     if !isnothing(inst)
@@ -241,7 +241,7 @@ function has_decoration(meta::Metadata, dec::Decoration)
   has_decoration(decs, dec)
 end
 
-function append_decorations!(insts, id::SSAValue, meta::Metadata)
+function append_decorations!(insts, id::ResultID, meta::Metadata)
   if isdefined(meta, :decorations)
     append_decorations!(insts, id, meta.decorations)
   end
@@ -253,7 +253,7 @@ function append_decorations!(insts, id::SSAValue, meta::Metadata)
   end
 end
 
-function append_debug_annotations!(insts, id::SSAValue, meta::Metadata)
+function append_debug_annotations!(insts, id::ResultID, meta::Metadata)
   isdefined(meta, :name) && push!(insts, @inst OpName(id, String(meta.name)))
   if isdefined(meta, :member_metadata)
     for (member_index, member_meta) in pairs(meta.member_metadata)
@@ -303,13 +303,13 @@ end
 
 set_name!(meta::Dictionary{T,Metadata}, key::T, i::Int, name::Symbol) where {T} = set_name!(metadata!(meta, key), i, name)
 
-function append_annotations!(insts, metadata::SSADict{Metadata})
+function append_annotations!(insts, metadata::ResultDict{Metadata})
   for (id, meta) in pairs(metadata)
     append_decorations!(insts, id, meta)
   end
 end
 
-function append_debug_instructions!(insts, metadata::SSADict{Metadata})
+function append_debug_instructions!(insts, metadata::ResultDict{Metadata})
   for (id, meta) in pairs(metadata)
     append_debug_annotations!(insts, id, meta)
   end

@@ -2,19 +2,19 @@
   ir_meta::ModuleMetadata
   capabilities::Vector{Capability}
   extensions::Vector{String}
-  extinst_imports::BijectiveMapping{SSAValue,String}
+  extinst_imports::BijectiveMapping{ResultID,String}
   addressing_model::AddressingModel
   memory_model::MemoryModel
-  entry_points::SSADict{EntryPoint}
-  metadata::SSADict{Metadata}
-  types::BijectiveMapping{SSAValue,SPIRType}
+  entry_points::ResultDict{EntryPoint}
+  metadata::ResultDict{Metadata}
+  types::BijectiveMapping{ResultID,SPIRType}
   "Constants, including specialization constants."
-  constants::BijectiveMapping{SSAValue,Constant}
-  global_vars::BijectiveMapping{SSAValue,Variable}
-  fdefs::BijectiveMapping{SSAValue,FunctionDefinition}
-  results::SSADict{Any}
+  constants::BijectiveMapping{ResultID,Constant}
+  global_vars::BijectiveMapping{ResultID,Variable}
+  fdefs::BijectiveMapping{ResultID,FunctionDefinition}
+  results::ResultDict{Any}
   debug::DebugInfo
-  ssacounter::SSACounter
+  idcounter::IDCounter
   "SPIR-V types derived from Julia types."
   tmap::TypeMap
 end
@@ -22,8 +22,8 @@ end
 @forward IR.metadata (decorate!, metadata!, has_decoration, decorations, set_name!)
 
 function IR(; ir_meta::ModuleMetadata = ModuleMetadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
-  IR(ir_meta, [], [], BijectiveMapping(), addressing_model, memory_model, SSADict(), SSADict(),
-    BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), DebugInfo(), SSACounter(0), TypeMap())
+  IR(ir_meta, [], [], BijectiveMapping(), addressing_model, memory_model, ResultDict(), ResultDict(),
+    BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), ResultDict(), DebugInfo(), IDCounter(0), TypeMap())
 end
 
 function IR(mod::Module; satisfy_requirements = true, features = AllSupported()) #= ::FeatureSupport =#
@@ -76,11 +76,11 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
         !isnothing(debug.source) || error("Source extension was declared before the source, or the source was not declared at all.")
         push!(debug.source.extensions, arguments[1])
         @case &OpName
-        id = arguments[1]::SSAValue
+        id = arguments[1]::ResultID
         name = arguments[2]::String
         set_name!(ir, id, Symbol(name))
         @case &OpMemberName
-        id = arguments[1]::SSAValue
+        id = arguments[1]::ResultID
         member_index = arguments[2]::UInt32 + 1
         name = arguments[3]::String
         set_name!(ir, id, member_index, Symbol(name))
@@ -88,12 +88,12 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
       @case "Annotation"
       @tryswitch opcode begin
         @case &OpDecorate
-        id = arguments[1]::SSAValue
+        id = arguments[1]::ResultID
         dec = arguments[2]::Decoration
         length(arguments) == 2 ? decorate!(ir, id, dec) : decorate!(ir, id, dec, arguments[3:end]...)
 
         @case &OpMemberDecorate
-        id = arguments[1]::SSAValue
+        id = arguments[1]::ResultID
         member_index = arguments[2]::UInt32 + 1 # convert to 1-based indexing
         dec = arguments[3]::Decoration
         length(arguments) == 3 ? decorate!(ir, id, member_index, dec) : decorate!(ir, id, member_index, dec, arguments[4:end]...)
@@ -101,8 +101,8 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
       @case "Type-Declaration"
       @switch opcode begin
         @case &OpTypeFunction
-        rettype = types[arguments[1]::SSAValue]
-        argtypes = [types[id::SSAValue] for id in arguments[2:end]]
+        rettype = types[arguments[1]::ResultID]
+        argtypes = [types[id::ResultID] for id in arguments[2:end]]
         insert!(types, result_id, FunctionType(rettype, argtypes))
         @case _
         insert!(types, result_id, parse(SPIRType, inst, types, ir.constants))
@@ -123,7 +123,7 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
         &OpSpecConstantFalse || &OpSpecConstantTrue => Constant(opcode == OpSpecConstantTrue, true)
         &OpConstantNull => Constant((nothing, types[type_id]))
         &OpConstantComposite || &OpSpecConstantComposite =>
-          Constant((convert(Vector{SSAValue}, arguments), types[type_id]), opcode == OpSpecConstantComposite)
+          Constant((convert(Vector{ResultID}, arguments), types[type_id]), opcode == OpSpecConstantComposite)
         _ => error("Unsupported constant instruction $inst")
       end
       insert!(ir.constants, result_id, c)
@@ -163,18 +163,18 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
     end
   end
 
-  ir.ssacounter.val = SSAValue(maximum(id.(keys(ir.results))))
+  set!(ir.idcounter, ResultID(maximum(UInt32.(keys(ir.results)))))
   satisfy_requirements && satisfy_requirements!(ir, features)
   ir
 end
 
-ssa_bound(ir::IR) = SSAValue(id(SSAValue(ir.ssacounter)) + 1)
+id_bound(ir::IR) = ResultID(UInt32(ResultID(ir.idcounter)) + 1)
 
-function set_name!(ir::IR, id::SSAValue, name::Symbol)
+function set_name!(ir::IR, id::ResultID, name::Symbol)
   set!(ir.debug.names, id, name)
   set_name!(metadata!(ir, id), name)
 end
-set_name!(ir::IR, id::SSAValue, i::Int, name::Symbol) = set_name!(ir.metadata, id, i, name)
+set_name!(ir::IR, id::ResultID, i::Int, name::Symbol) = set_name!(ir.metadata, id, i, name)
 
 "Return the first entry point corresponding to `name`."
 function entry_point(ir::IR, name::Symbol)
@@ -186,10 +186,10 @@ end
 
 GlobalsInfo(ir::IR) = GlobalsInfo(ir.types, ir.constants, ir.global_vars)
 
-SSAValue(ir::IR, t::DataType) = SSAValue(ir, spir_type(t, ir.tmap))
-SSAValue(ir::IR, t::SPIRType) = ir.types[t]
+ResultID(ir::IR, t::DataType) = ResultID(ir, spir_type(t, ir.tmap))
+ResultID(ir::IR, t::SPIRType) = ir.types[t]
 
-function merge_metadata!(ir::IR, id::SSAValue, meta::Metadata)
+function merge_metadata!(ir::IR, id::ResultID, meta::Metadata)
   if isdefined(meta, :member_metadata) && !isempty(meta.member_metadata)
     t = get(ir.types, id, nothing)
     !isnothing(t) && !isa(t, StructType) && error("Trying to set metadata which contains member metadata on a non-aggregate type.")
@@ -217,11 +217,11 @@ function Module(ir::IR; debug_info = true)
   append_globals!(insts, globals)
   append_functions!(insts, ir.fdefs, globals)
 
-  Module(ir.ir_meta, ssa_bound(ir), insts)
+  Module(ir.ir_meta, id_bound(ir), insts)
 end
 
-function replace_name(val::SSAValue, names)
-  name = get(names, val, id(val))
+function replace_name(id::ResultID, names)
+  name = get(names, id, UInt32(id))
   "%$name"
 end
 
@@ -232,8 +232,8 @@ function Base.show(io::IO, mime::MIME"text/plain", (mod, debug)::Pair{Module,Deb
     !contains(line, "OpName") && !contains(line, "OpMemberName")
   end
   lines = map(lines) do line
-    replace(line, r"%\d+" => id -> replace_name(parse(SSAValue, id), debug.filenames))
-    replace(line, r"%\d+" => id -> replace_name(parse(SSAValue, id), debug.names))
+    replace(line, r"%\d+" => id -> replace_name(parse(ResultID, id), debug.filenames))
+    replace(line, r"%\d+" => id -> replace_name(parse(ResultID, id), debug.names))
   end
   print(io, join(lines, '\n'))
 end

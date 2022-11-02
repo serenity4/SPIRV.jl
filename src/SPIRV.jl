@@ -46,9 +46,10 @@ include("generated/extinsts.jl")
 include("utils.jl")
 include("bijection.jl")
 include("cursor.jl")
-include("ssa.jl")
+include("result.jl")
 include("instructions.jl")
 include("spir_types.jl")
+include("expressions.jl")
 include("parse.jl")
 include("diff.jl")
 include("annotated_module.jl")
@@ -141,9 +142,9 @@ export
   # IR
   annotate, AnnotatedModule,
   IR,
-  SSAValue,
+  ResultID,
   ModuleMetadata,
-  SSADict,
+  ResultDict,
   @inst, @block, @spv_ir, @spv_module,
   FeatureRequirements,
   FeatureSupport, AllSupported, SupportedFeatures,

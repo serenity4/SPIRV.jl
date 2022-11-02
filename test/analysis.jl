@@ -62,17 +62,17 @@ end
 @testset "Function analysis" begin
   @testset "Static call graph traversal" begin
     ir = IR(SPIRV.Module(resource("comp.spv")); satisfy_requirements = false)
-    fdefs = dependent_functions(ir, SSAValue(4)) # main
+    fdefs = dependent_functions(ir, ResultID(4)) # main
 
     @test Set(fdefs) == Set(ir.fdefs)
 
-    plane_intersect = ir.fdefs[SSAValue(46)]
-    fdefs = dependent_functions(ir, SSAValue(46)) # planeIntersect
-    @test fdefs == [ir.fdefs[SSAValue(46)]]
+    plane_intersect = ir.fdefs[ResultID(46)]
+    fdefs = dependent_functions(ir, ResultID(46)) # planeIntersect
+    @test fdefs == [ir.fdefs[ResultID(46)]]
 
-    fdefs = dependent_functions(ir, SSAValue(71)) # renderScene
+    fdefs = dependent_functions(ir, ResultID(71)) # renderScene
     @test length(fdefs) == 10
-    main = ir.fdefs[SSAValue(4)]
+    main = ir.fdefs[ResultID(4)]
     @test !in(main, fdefs)
   end
 
@@ -567,41 +567,41 @@ end
 
   @testset "Use-def chains" begin
     amod = annotate(load_module("single_block"))
-    iadd = SSAValue(9)
+    iadd = ResultID(9)
     st = StackTrace()
     chain = UseDefChain(amod, only(amod.annotated_functions), iadd, st)
     @test chain.use == amod[iadd]
-    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(6), SSAValue(7)])
-    fadd = SSAValue(11)
+    @test nodevalue.(chain.defs) == getindex.(amod, [ResultID(6), ResultID(7)])
+    fadd = ResultID(11)
     chain = UseDefChain(amod, only(amod.annotated_functions), fadd, st)
-    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(10), SSAValue(3)])
-    @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(6), SSAValue(7), SSAValue(3)])
+    @test nodevalue.(chain.defs) == getindex.(amod, [ResultID(10), ResultID(3)])
+    @test nodevalue.(Leaves(chain)) == getindex.(amod, [ResultID(6), ResultID(7), ResultID(3)])
 
     amod = annotate(load_module("function_call"))
-    isub = SSAValue(18)
-    st = StackTrace([StackFrame(amod, SSAValue(11))])
+    isub = ResultID(18)
+    st = StackTrace([StackFrame(amod, ResultID(11))])
     chain = UseDefChain(amod, amod.annotated_functions[2], isub, st)
     @test chain.use == amod[isub]
-    @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(7), SSAValue(8)])
+    @test nodevalue.(chain.defs) == getindex.(amod, [ResultID(7), ResultID(8)])
 
     amod = annotate(load_module("simple_conditional"))
-    fadd = SSAValue(16)
+    fadd = ResultID(16)
     st = StackTrace()
     # chain = UseDefChain(amod, only(amod.annotated_functions), fadd, st)
-    # @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(8), SSAValue(9), SSAValue(4)])
-    # @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(15), SSAValue(4)])
+    # @test nodevalue.(Leaves(chain)) == getindex.(amod, [ResultID(8), ResultID(9), ResultID(4)])
+    # @test nodevalue.(chain.defs) == getindex.(amod, [ResultID(15), ResultID(4)])
 
     # FIXME: back-edges for `reverse(control_flow_graph(amod, only(amod.annotated_functions)))` seem off.
     # We get that almost all edges (or all) are back-edges, which should not be the case even for a reverse CFG.
     # amod = annotate(load_module("simple_loop.jl"))
-    # iadd = SSAValue(30)
+    # iadd = ResultID(30)
     # st = StackTrace()
     # g = reverse(ControlFlowGraph(amod, only(amod.annotated_functions)).g)
     # plotgraph(g)
     # SPIRV.backedges(g, 3)
 
     # chain = UseDefChain(amod, only(amod.annotated_functions), iadd, st)
-    # @test nodevalue.(Leaves(chain)) == getindex.(amod, [SSAValue(8), SSAValue(9), SSAValue(4)])
-    # @test nodevalue.(chain.defs) == getindex.(amod, [SSAValue(15), SSAValue(4)])
+    # @test nodevalue.(Leaves(chain)) == getindex.(amod, [ResultID(8), ResultID(9), ResultID(4)])
+    # @test nodevalue.(chain.defs) == getindex.(amod, [ResultID(15), ResultID(4)])
   end
 end;

@@ -3,7 +3,7 @@ struct StackFrame
   function_index::Int
 end
 
-function StackFrame(amod::AnnotatedModule, caller::SSAValue)
+function StackFrame(amod::AnnotatedModule, caller::ResultID)
   callsite = findfirst(has_result_id(caller), amod.mod.instructions)
   findex = find_function(amod, callsite)
   StackFrame(callsite, findex)
@@ -136,7 +136,7 @@ function interpret_block(f, interpret::AbstractInterpretation, frame::Interpreta
       # Recurse into function call.
       # Self-recursive functions are not authorized in SPIR-V,
       # so valid SPIR-V code should not induce any related stack overflows.
-      fid = inst.arguments[1]::SSAValue
+      fid = inst.arguments[1]::ResultID
       findex = find_function(amod, fid)
       callee_frame = InterpretationFrame(interpret, amod, amod.annotated_functions[findex], push(frame.stacktrace, StackFrame(block[i], findex)))
       caller_converged = interpret.converged

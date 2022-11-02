@@ -167,8 +167,8 @@ function phi_instructions(amod::AnnotatedModule, af::AnnotatedFunction, block::I
   indices, insts
 end
 
-"Find the function index which contains the instruction with SSA value `index`."
-function find_function(amod::AnnotatedModule, fid::SSAValue)
+"Find the function index which contains the instruction with result ID `fid`."
+function find_function(amod::AnnotatedModule, fid::ResultID)
   for (i, af) in enumerate(amod.annotated_functions)
     inst = amod[first(af.range)]
     has_result_id(inst, fid) && return i
@@ -191,13 +191,13 @@ function find_block(af::AnnotatedFunction, index::Integer)
   found
 end
 
-function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::SSAValue)
+function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::ResultID)
   for (i, block) in enumerate(af.blocks)
     has_result_id(amod[block.start], id) && return i
   end
 end
 
-SSAValue(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer) = last(block_instruction(amod, af, block_index)).result_id
+ResultID(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer) = last(block_instruction(amod, af, block_index)).result_id
 
 function add_capabilities!(diff::Diff, amod::AnnotatedModule, capabilities)
   insert!(diff, last(amod.capabilities) + 1, [(@inst Capability(cap)) for cap in capabilities])

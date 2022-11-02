@@ -1,7 +1,7 @@
 is_function_macro(x) = Meta.isexpr(x, :macrocall) && x.args[1] == Symbol("@function")
 
 struct Bindings
-  dict::Dictionary{Symbol,SSAValue}
+  dict::Dictionary{Symbol,ResultID}
 end
 
 function Base.getindex(bindings::Bindings, x::Symbol)
@@ -32,11 +32,11 @@ Functions are defined with expressions of the form
 end
 ```
 
-where arguments must be typed, as well as the function return type. With this information, a proper `OpFunctionType` type declaration and `OpFunction` instructions will be inserted, along with `OpFunctionParameter`s and `OpFunctionEnd`. The types, just like for any other instruction, are either SSA values or bindings to global variables.
+where arguments must be typed, as well as the function return type. With this information, a proper `OpFunctionType` type declaration and `OpFunction` instructions will be inserted, along with `OpFunctionParameter`s and `OpFunctionEnd`. The types, just like for any other instruction, are either result IDs or bindings to global variables.
 
-Except for function definitions, all statements are parsed the same way as with [`@inst`](@ref), with the additional feature that symbols are allowed instead of raw SSA values. These symbols will be referred to as bindings.
+Except for function definitions, all statements are parsed the same way as with [`@inst`](@ref), with the additional feature that symbols are allowed instead of raw result IDs. These symbols will be referred to as bindings.
 
-SSA values will be computed for each defined binding (that is, a binding on a LHS of an expression), which will be substituted by the computed ID. Every binding must be unique, except in function scope where shadowing of global bindings is allowed. One reason for this simple design is that in presence of arbitrary CFG structures, including very messy ones, more elaborate scoping rules would be very hard to come up with. The same is true for re-assignments, which typically need to insert `OpPhi` nodes after analysis of the CFG; since the goal is to provide code that is in close correspondence with the generated SPIR-V code, we prefer to avoid such nontrivial and opaque modifications.
+Result IDs will be computed for each defined binding (that is, a binding on a LHS of an expression), which will be substituted by the computed ID. Every binding must be unique, except in function scope where shadowing of global bindings is allowed. One reason for this simple design is that in presence of arbitrary CFG structures, including very messy ones, more elaborate scoping rules would be very hard to come up with. The same is true for re-assignments, which typically need to insert `OpPhi` nodes after analysis of the CFG; since the goal is to provide code that is in close correspondence with the generated SPIR-V code, we prefer to avoid such nontrivial and opaque modifications.
 """
 function generate_ir(ex::Expr)
   ex = deepcopy(ex)
@@ -95,8 +95,8 @@ function generate_ir(ex::Expr)
     end
   end
 
-  # Assign SSA values for each binding.
-  counter = SSACounter()
+  # Assign result IDs for each binding.
+  counter = IDCounter()
   global_ids = Bindings()
   local_ids = Dictionary{Symbol,Bindings}()
   for binding in global_bindings
@@ -109,7 +109,7 @@ function generate_ir(ex::Expr)
     end
   end
 
-  # Replace all bindings with their SSA value.
+  # Replace all bindings with their result ID.
   for (i, st) in enumerate(statements[globals])
     isline(st) && continue
     @tryswitch st begin
@@ -164,13 +164,13 @@ function generate_ir(ex::Expr)
     end
   end
 
-  ftypes = Dictionary{Expr, SSAValue}()
+  ftypes = Dictionary{Expr, ResultID}()
   # Gather `OpTypeFunction` statements.
   for (i, f_st) in enumerate(statements[functions])
     isline(f_st) && continue
     @switch f_st begin
-      @case :(@function $_ $(f::SSAValue)($(args...))::$T $_)
-      argtypes = [arg.args[2]::SSAValue for arg in args]
+      @case :(@function $_ $(f::ResultID)($(args...))::$T $_)
+      argtypes = [arg.args[2]::ResultID for arg in args]
       rhs = :(TypeFunction($T, $(argtypes...)))
       id = next!(counter)
       insert!(ftypes, rhs, id)
@@ -192,12 +192,12 @@ function generate_ir(ex::Expr)
       continue
     end
     @switch f_st begin
-      @case :(@function $_ $(f::SSAValue)($(args...))::$T $block)
-      argids = SSAValue[]
-      argtypes = SSAValue[]
+      @case :(@function $_ $(f::ResultID)($(args...))::$T $block)
+      argids = ResultID[]
+      argtypes = ResultID[]
       for arg in args
         @switch arg begin
-          @case :($(x::SSAValue)::$(AT::SSAValue))
+          @case :($(x::ResultID)::$(AT::ResultID))
           push!(argids, x)
           push!(argtypes, AT)
         end

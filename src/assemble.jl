@@ -48,7 +48,7 @@ function SerializedArgument(arg::AbstractString)
   SerializedArgument(collect(reinterpret(Word, utf8_chars)))
 end
 
-add_operand!(operands, arg::Union{SSAValue,Vector{SSAValue}}) = push!(operands, arg)
+add_operand!(operands, arg::Union{ResultID,Vector{ResultID}}) = push!(operands, arg)
 add_operand!(operands, arg) = add_operand!(operands, SerializedArgument(arg))
 add_operand!(operands, arg::SerializedArgument) = append!(operands, arg.words)
 
@@ -138,13 +138,13 @@ function Base.read(::Type{Module}, io::IO)
       category = kind_to_category[kind]
       @switch kind begin
         @case &IdResult
-        result_id = parse(SSAValue, op)
+        result_id = parse(ResultID, op)
         @case &IdResultType
-        type_id = parse(SSAValue, op)
+        type_id = parse(ResultID, op)
         @case _
         t = isa(kind, DataType) ? kind : typeof(kind)
         arg = @match name = nameof(t) begin
-          :Id => parse(SSAValue, op)
+          :Id => parse(ResultID, op)
           :Literal => @match kind begin
             &LiteralExtInstInteger => begin
               if isdigit(first(op))
@@ -164,9 +164,9 @@ function Base.read(::Type{Module}, io::IO)
                 pair_info = kind => last(pair_info) + 1
               end
               @match kind begin
-                &PairLiteralIntegerIdRef => last(pair_info) % 2 == 0 ? parse(UInt32, op) : parse(SSAValue, op)
-                &PairIdRefLiteralInteger => last(pair_info) % 2 == 1 ? parse(UInt32, op) : parse(SSAValue, op)
-                &PairIdRefIdRef => parse(SSAValue, op)
+                &PairLiteralIntegerIdRef => last(pair_info) % 2 == 0 ? parse(UInt32, op) : parse(ResultID, op)
+                &PairIdRefLiteralInteger => last(pair_info) % 2 == 1 ? parse(UInt32, op) : parse(ResultID, op)
+                &PairIdRefIdRef => parse(ResultID, op)
               end
           end
           _ => getproperty(@__MODULE__, Symbol(name, op))
@@ -178,7 +178,7 @@ function Base.read(::Type{Module}, io::IO)
     end
     push!(insts, Instruction(opcode, type_id, result_id, arguments))
   end
-  Module(ModuleMetadata(), compute_ssa_bound(insts), insts)
+  Module(ModuleMetadata(), compute_id_bound(insts), insts)
 end
 
 Base.parse(::Type{Module}, str::AbstractString) = read(Module, IOBuffer(str))

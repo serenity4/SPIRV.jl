@@ -10,7 +10,7 @@ AbstractTrees.children(chain::UseDefChain) = chain.defs
 AbstractTrees.printnode(io::IO, chain::UseDefChain) = show(io, MIME"text/plain"(), nodevalue(chain))
 Base.show(io::IO, ::MIME"text/plain", chain::UseDefChain) = print(io, chomp(sprintc(print_tree, chain)))
 
-function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, insts)
+function expand_chains!(target_defs::Vector{Pair{ResultID,UseDefChain}}, insts)
   any_expanded = false
 
   for inst in insts
@@ -20,9 +20,9 @@ function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, insts)
       # mark stores as definitions even before we encounter the OpVariable instruction.
       # If we stumble upon an OpVariable definition instruction, the dependency will be
       # with that of the initializer (if any) or an implicit value (e.g. an interface variable filled externally).
-      result_id = first(inst.arguments)::SSAValue
+      result_id = first(inst.arguments)::ResultID
     end
-    if isa(result_id, SSAValue)
+    if isa(result_id, ResultID)
       for (target, prev_chain) in target_defs
         if target == result_id
           any_expanded = true
@@ -40,7 +40,7 @@ end
 
 function add_targets!(target_defs, args, chain)
   for arg in args
-    isa(arg, SSAValue) && push!(target_defs, arg => chain)
+    isa(arg, ResultID) && push!(target_defs, arg => chain)
   end
 end
 
@@ -55,11 +55,11 @@ function add_targets!(target_defs, inst::Instruction, chain)
   end
 end
 
-function expand_chains_from_caller!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::AnnotatedModule, af::AnnotatedFunction, stacktrace::StackTrace)
+function expand_chains_from_caller!(target_defs::Vector{Pair{ResultID,UseDefChain}}, amod::AnnotatedModule, af::AnnotatedFunction, stacktrace::StackTrace)
   stackframe = last(stacktrace)
 
   # Remap OpFunctionParameter instructions to the caller arguments.
-  arg_indices = Dictionary{SSAValue,Int}()
+  arg_indices = Dictionary{ResultID,Int}()
   i = 0
   for inst in instructions(amod, af.parameters)
     insert!(arg_indices, inst.result_id, (i += 1))
@@ -67,7 +67,7 @@ function expand_chains_from_caller!(target_defs::Vector{Pair{SSAValue,UseDefChai
   call = amod[stackframe.callsite]
   for (i, (target, chain)) in enumerate(target_defs)
     if target in keys(arg_indices)
-      target_defs[i] = call.arguments[1 + arg_indices[target]]::SSAValue => chain
+      target_defs[i] = call.arguments[1 + arg_indices[target]]::ResultID => chain
     end
   end
 
@@ -75,7 +75,7 @@ function expand_chains_from_caller!(target_defs::Vector{Pair{SSAValue,UseDefChai
   expand_chains!(target_defs, amod, af_caller, find_block(af_caller, stackframe.callsite), stacktrace[1:end-1])
 end
 
-function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::AnnotatedModule, af::AnnotatedFunction, block::Integer, stacktrace::StackTrace, cfg::ControlFlowGraph = ControlFlowGraph(amod, af))
+function expand_chains!(target_defs::Vector{Pair{ResultID,UseDefChain}}, amod::AnnotatedModule, af::AnnotatedFunction, block::Integer, stacktrace::StackTrace, cfg::ControlFlowGraph = ControlFlowGraph(amod, af))
   expand_chains!(target_defs, instructions(amod, reverse(af.blocks[block])))
 
   flow_through(reverse(cfg), block) do e
@@ -89,14 +89,14 @@ function expand_chains!(target_defs::Vector{Pair{SSAValue,UseDefChain}}, amod::A
   end
 end
 
-function UseDefChain(amod::AnnotatedModule, af::AnnotatedFunction, use::SSAValue, stacktrace::StackTrace; warn_unresolved = true)
+function UseDefChain(amod::AnnotatedModule, af::AnnotatedFunction, use::ResultID, stacktrace::StackTrace; warn_unresolved = true)
   local_index = findfirst(has_result_id(use), instructions(amod, af))
-  !isnothing(local_index) || error("SSA value $use is not present within the provided function.")
+  !isnothing(local_index) || error("No result ID corresponding to $use was found within the provided function.")
   use_index = first(af.range) + local_index - 1
   inst = amod[use_index]
 
   chain = UseDefChain(inst)
-  target_defs = Pair{SSAValue,UseDefChain}[]
+  target_defs = Pair{ResultID,UseDefChain}[]
   add_targets!(target_defs, inst, chain)
 
   expand_chains!(target_defs, amod, af, find_block(af, use_index), stacktrace)

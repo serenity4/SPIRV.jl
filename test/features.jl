@@ -1,7 +1,7 @@
 using SPIRV, Test
 
 @testset "Feature requirements" begin
-  inst = @inst SPIRV.OpImageSampleImplicitLod(SSAValue(1), SSAValue(2), SPIRV.ImageOperandsOffset | SPIRV.ImageOperandsMinLod, SSAValue(4), SSAValue(5))::SSAValue(3)
+  inst = @inst SPIRV.OpImageSampleImplicitLod(ResultID(1), ResultID(2), SPIRV.ImageOperandsOffset | SPIRV.ImageOperandsMinLod, ResultID(4), ResultID(5))::ResultID(3)
   reqs = FeatureRequirements([inst], AllSupported())
   @test reqs == FeatureRequirements(
     [],

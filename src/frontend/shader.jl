@@ -51,11 +51,11 @@ function define_entry_point!(mt::ModuleTarget, tr::Translation, fdef::FunctionDe
   ep = EntryPoint(:main, emit!(mt, tr, main), execution_model, [], fdef.global_vars)
 
   # Fill function body.
-  blk = new_block!(main, next!(mt.ssacounter))
+  blk = new_block!(main, next!(mt.idcounter))
   # The dictionary loses some of its elements to #undef values.
   #TODO: fix this hack in Dictionaries.jl
   fid = findfirst(==(fdef), mt.fdefs.forward)
-  push!(blk, @inst next!(mt.ssacounter) = OpFunctionCall(fid)::mt.types[fdef.type.rettype])
+  push!(blk, @inst next!(mt.idcounter) = OpFunctionCall(fid)::mt.types[fdef.type.rettype])
   push!(blk, @inst OpReturn())
 
   execution_model == ExecutionModelFragment && push!(ep.modes, @inst OpExecutionMode(ep.func, ExecutionModeOriginUpperLeft))
@@ -74,7 +74,7 @@ function add_type_metadata!(ir::IR, interface::ShaderInterface)
   end
 end
 
-function find_definition(id::SSAValue, insts)
+function find_definition(id::ResultID, insts)
   idx = findfirst(has_result_id(id), insts)
   if !isnothing(idx)
     insts[idx]
@@ -95,7 +95,7 @@ function add_align_operands!(ir::IR, fdef::FunctionDefinition, layout::LayoutStr
       )
       isnothing(def) && error("Could not retrieve definition for $pointer_id")
       pointer = @match def begin
-        ::Instruction => ir.types[def.type_id::SSAValue]
+        ::Instruction => ir.types[def.type_id::ResultID]
         ::Variable => def.type
       end
       (; type, storage_class) = pointer
@@ -112,14 +112,14 @@ function add_align_operands!(ir::IR, fdef::FunctionDefinition, layout::LayoutStr
 end
 
 struct MemoryResource
-  address::SSAValue
-  type::SSAValue
+  address::ResultID
+  type::ResultID
 end
 
 struct Shader
   mod::Module
-  entry_point::SSAValue
-  memory_resources::SSADict{MemoryResource}
+  entry_point::ResultID
+  memory_resources::ResultDict{MemoryResource}
 end
 
 Module(shader::Shader) = shader.mod
@@ -163,12 +163,12 @@ function IR(target::SPIRVTarget, interface::ShaderInterface)
 end
 
 struct MemoryResourceExtraction
-  conversions::SSADict{Instruction}
-  loaded_addresses::SSADict{InterpretationFrame}
-  resources::SSADict{MemoryResource}
+  conversions::ResultDict{Instruction}
+  loaded_addresses::ResultDict{InterpretationFrame}
+  resources::ResultDict{MemoryResource}
 end
 
-MemoryResourceExtraction() = MemoryResourceExtraction(SSADict(), Set(), SSADict())
+MemoryResourceExtraction() = MemoryResourceExtraction(ResultDict(), Set(), ResultDict())
 
 function (extract::MemoryResourceExtraction)(interpret::AbstractInterpretation, frame::InterpretationFrame)
   nothing
@@ -186,14 +186,14 @@ function (extract::MemoryResourceExtraction)(interpret::AbstractInterpretation, 
     # TODO: Use a def-use chain to make it more robust.
     # For example, one may pass the pointer to a function call
     # and a different ID (associated with an `OpFunctionParameter`) would be used as operand.
-    loaded = inst.arguments[1]::SSAValue
+    loaded = inst.arguments[1]::ResultID
     c = get(extract.conversions, loaded, nothing)
-    !isnothing(c) && insert!(extract.loaded_addresses, c.arguments[1]::SSAValue, frame)
+    !isnothing(c) && insert!(extract.loaded_addresses, c.arguments[1]::ResultID, frame)
   end
 end
 
-function memory_resources(mod::Module, fid::SSAValue)
-  memory_resources = SSADict{MemoryResource}()
+function memory_resources(mod::Module, fid::ResultID)
+  memory_resources = ResultDict{MemoryResource}()
   return memory_resources
   amod = annotate(mod)
   af = amod.annotated_functions[find_function(amod, fid)]
@@ -219,7 +219,7 @@ function memory_resources(mod::Module, fid::SSAValue)
     for leaf in Leaves(chain)
       inst = nodevalue(leaf)
       opcode(inst) == OpConstant && continue
-      insert!(memory_resources, address, MemoryResource(inst.result_id::SSAValue, inst.type_id::SSAValue))
+      insert!(memory_resources, address, MemoryResource(inst.result_id::ResultID, inst.type_id::ResultID))
     end
   end
 end

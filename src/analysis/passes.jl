@@ -3,8 +3,8 @@ function renumber_ssa(mod::Module)
 end
 
 function renumber_ssa(amod::AnnotatedModule)
-  counter = SSACounter()
-  swaps = SSADict{SSAValue}()
+  counter = IDCounter()
+  swaps = ResultDict{ResultID}()
   new_insts = Instruction[]
 
   for inst in instructions(amod, first(amod.capabilities):(first(amod.functions) - 1))
@@ -26,9 +26,9 @@ function renumber_ssa(amod::AnnotatedModule)
 
   for (i, inst) in enumerate(new_insts)
     for (j, arg) in enumerate(inst.arguments)
-      isa(arg, SSAValue) && (inst.arguments[j] = swaps[arg])
+      isa(arg, ResultID) && (inst.arguments[j] = swaps[arg])
     end
-    if isa(inst.type_id, SSAValue)
+    if isa(inst.type_id, ResultID)
       new_insts[i] = @set inst.type_id = swaps[inst.type_id]
     end
   end
@@ -36,9 +36,9 @@ function renumber_ssa(amod::AnnotatedModule)
   annotate(Module(amod.mod.meta, new_insts))
 end
 
-function swap_result_id!(swaps::SSADict{SSAValue}, counter::SSACounter, inst::Instruction)
+function swap_result_id!(swaps::ResultDict{ResultID}, counter::IDCounter, inst::Instruction)
   isnothing(inst.result_id) && return @set inst.arguments = copy(inst.arguments)
-  ssa = next!(counter)
-  insert!(swaps, inst.result_id, ssa)
-  @set inst.result_id = ssa
+  id = next!(counter)
+  insert!(swaps, inst.result_id, id)
+  @set inst.result_id = id
 end

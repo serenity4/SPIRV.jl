@@ -15,7 +15,11 @@ macro inst(ex)
   inst_expr(ex)
 end
 
-function inst_expr(ex)
+macro ex(ex)
+  inst_expr(ex; expression = true)
+end
+
+function inst_expr(ex; expression = false)
   Base.remove_linenums!(ex)
   result_id, inst = @match ex begin
     :($result_id = $inst) => (result_id, inst)
@@ -40,13 +44,18 @@ function inst_expr(ex)
     opcode = esc(opcode)
   end
 
-  res = :(Instruction($opcode, $(esc(type_id)), $(esc(result_id)), $(esc.(args)...)))
+  res = if expression
+    type, result = type_id, result_id
+    :(Expression($opcode, $(esc(type)), $(esc(result)), $(esc.(args)...)))
+  else
+    :(Instruction($opcode, $(esc(type_id)), $(esc(result_id)), $(esc.(args)...)))
+  end
 
-  # Substitute arguments of the form $1, $2, $n... to SSAValue(1), SSAValue(2), ...
+  # Substitute arguments of the form $1, $2, $n... to ResultID(1), ResultID(2), ...
   for (i, arg) in enumerate(res.args)
     Meta.isexpr(arg, :escape) || continue
     arg = arg.args[1]
-    Meta.isexpr(arg, :&) && (res.args[i] = SSAValue(only(arg.args)))
+    Meta.isexpr(arg, :&) && (res.args[i] = ResultID(only(arg.args)))
   end
   res
 end

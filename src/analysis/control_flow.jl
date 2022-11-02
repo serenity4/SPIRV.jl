@@ -175,15 +175,15 @@ function control_flow_graph(amod::AnnotatedModule, af::AnnotatedFunction)
       (; arguments) = inst
       @tryswitch opcode(inst) begin
         @case &OpBranch
-        dst = arguments[1]::SSAValue
+        dst = arguments[1]::ResultID
         add_edge!(cfg, i, find_block(amod, af, dst))
         @case &OpBranchConditional
-        dst1, dst2 = arguments[2]::SSAValue, arguments[3]::SSAValue
+        dst1, dst2 = arguments[2]::ResultID, arguments[3]::ResultID
         add_edge!(cfg, i, find_block(amod, af, dst1))
         add_edge!(cfg, i, find_block(amod, af, dst2))
         @case &OpSwitch
         for dst in arguments[2:end]
-          add_edge!(cfg, i, find_block(amod, af, dst::SSAValue))
+          add_edge!(cfg, i, find_block(amod, af, dst::ResultID))
         end
       end
     end

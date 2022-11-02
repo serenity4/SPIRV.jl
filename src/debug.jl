@@ -13,13 +13,13 @@ struct LineInfo
 end
 
 mutable struct DebugInfo
-  filenames::SSADict{String}
-  names::SSADict{Symbol}
-  lines::SSADict{LineInfo}
+  filenames::ResultDict{String}
+  names::ResultDict{Symbol}
+  lines::ResultDict{LineInfo}
   source::Optional{Source}
 end
 
-DebugInfo() = DebugInfo(SSADict(), SSADict(), SSADict(), nothing)
+DebugInfo() = DebugInfo(ResultDict(), ResultDict(), ResultDict(), nothing)
 
 function append_debug_instructions!(insts, debug::DebugInfo)
   if !isnothing(debug.source)

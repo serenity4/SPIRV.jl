@@ -23,8 +23,8 @@ Parsed SPIR-V instruction. It represents an instruction of the form `%result_id 
 """
 @auto_hash_equals struct Instruction <: AbstractInstruction
   opcode::OpCode
-  type_id::Optional{SSAValue}
-  result_id::Optional{SSAValue}
+  type_id::Optional{ResultID}
+  result_id::Optional{ResultID}
   arguments::Vector{Any}
   Instruction(opcode, type_id, result_id, arguments::AbstractVector) = new(opcode, type_id, result_id, arguments)
 end
@@ -34,5 +34,5 @@ const InstructionCursor = ArrayCursor{Instruction}
 
 assert_opcode(opcode, inst) = opcode == inst.opcode || error("Expected $opcode instruction, got ", sprintc(emit, inst))
 
-has_result_id(inst::Instruction, id::SSAValue) = inst.result_id === id
-has_result_id(id::SSAValue) = Fix2(has_result_id, id)
+has_result_id(inst::Instruction, id::ResultID) = inst.result_id === id
+has_result_id(id::ResultID) = Fix2(has_result_id, id)

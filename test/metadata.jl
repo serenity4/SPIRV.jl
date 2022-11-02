@@ -46,7 +46,7 @@ using SPIRV: append_decorations!, append_debug_annotations!
   @testset "Instructions" begin
     insts = Instruction[]
     decs = Decorations()
-    id = SSAValue(1)
+    id = ResultID(1)
     append_decorations!(insts, id, decs)
     @test isempty(insts)
     decorate!(decs, SPIRV.DecorationOffset, 4)
@@ -59,7 +59,7 @@ using SPIRV: append_decorations!, append_debug_annotations!
 
     meta = Metadata()
     insts = Instruction[]
-    id = SSAValue(1)
+    id = ResultID(1)
     append_decorations!(insts, id, meta)
     @test isempty(insts)
     decorate!(meta, SPIRV.DecorationOffset, 4)

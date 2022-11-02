@@ -181,7 +181,7 @@ function Instruction(inst::PhysicalInstruction)
       error("Unhandled '?' quantifier for instruction $opcode")
       @case "*" || nothing
       j, arg = next_argument(operands[i:end], info)
-      category == "Id" && (arg = SSAValue(arg))
+      category == "Id" && (arg = ResultID(arg))
       push!(arguments, arg)
       add_extra_operands!(op_infos, i, arg, info)
       i += j
@@ -244,7 +244,7 @@ end
 Module(mod::PhysicalModule) =
   Module(ModuleMetadata(mod.magic_number, mod.generator_magic_number, spirv_version(mod.version), mod.schema), mod.bound, Instruction.(mod.instructions))
 Module(source) = Module(PhysicalModule(source))
-Module(meta::ModuleMetadata, insts::AbstractVector{Instruction}, bound = compute_ssa_bound(insts)) = Module(meta, bound, insts)
+Module(meta::ModuleMetadata, insts::AbstractVector{Instruction}, bound = compute_id_bound(insts)) = Module(meta, bound, insts)
 
 function Base.isapprox(mod1::Module, mod2::Module; compare_debug_info = false)
   if !compare_debug_info
@@ -264,7 +264,7 @@ strip_debug_info(mod::Module) = strip_debug_info!(@set mod.instructions = deepco
 
 @forward Module.instructions (Base.iterate, Base.getindex, Base.setindex!, Base.firstindex, Base.lastindex, Base.length, Base.view)
 
-function Base.getindex(mod::Module, id::SSAValue)
+function Base.getindex(mod::Module, id::ResultID)
   for inst in mod.instructions
     inst.result_id === id && return inst
   end
@@ -299,5 +299,5 @@ function print_diff(mod1::Module, mod2::Module)
   end
 end
 
-compute_ssa_bound(insts::Vector{Instruction}) = SSAValue(1 + id(maximum(x -> something(x.result_id, SSAValue(0)), insts)))
-ssa_bound(mod::Union{PhysicalModule,Module}) = SSAValue(mod.bound)
+compute_id_bound(insts::Vector{Instruction}) = ResultID(1 + UInt32(maximum(x -> something(x.result_id, ResultID(0)), insts)))
+id_bound(mod::Union{PhysicalModule,Module}) = ResultID(mod.bound)

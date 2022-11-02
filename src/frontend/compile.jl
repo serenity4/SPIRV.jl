@@ -1,46 +1,46 @@
 struct ModuleTarget
-  extinst_imports::Dictionary{String,SSAValue}
-  types::BijectiveMapping{SSAValue,SPIRType}
-  constants::BijectiveMapping{SSAValue,Constant}
-  global_vars::BijectiveMapping{SSAValue,Variable}
-  fdefs::BijectiveMapping{SSAValue,FunctionDefinition}
-  metadata::SSADict{Metadata}
+  extinst_imports::Dictionary{String,ResultID}
+  types::BijectiveMapping{ResultID,SPIRType}
+  constants::BijectiveMapping{ResultID,Constant}
+  global_vars::BijectiveMapping{ResultID,Variable}
+  fdefs::BijectiveMapping{ResultID,FunctionDefinition}
+  metadata::ResultDict{Metadata}
   debug::DebugInfo
-  ssacounter::SSACounter
+  idcounter::IDCounter
 end
 
 @forward ModuleTarget.metadata (metadata!, decorations!, decorations, has_decoration, decorate!)
 
-ModuleTarget() = ModuleTarget(Dictionary(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), SSADict(), DebugInfo(), SSACounter(0))
+ModuleTarget() = ModuleTarget(Dictionary(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), ResultDict(), DebugInfo(), IDCounter(0))
 
 GlobalsInfo(mt::ModuleTarget) = GlobalsInfo(mt.types, mt.constants, mt.global_vars)
 
-function set_name!(mt::ModuleTarget, id::SSAValue, name::Symbol)
+function set_name!(mt::ModuleTarget, id::ResultID, name::Symbol)
   set!(mt.debug.names, id, name)
   set_name!(metadata!(mt.metadata, id), name)
 end
 
 struct Translation
-  args::Dictionary{Core.Argument,SSAValue}
-  "SPIR-V SSA values for basic blocks from Julia IR."
-  bbs::BijectiveMapping{Int,SSAValue}
-  "SPIR-V SSA values for each `Core.SSAValue` that implicitly represents a basic block."
-  bb_ssavals::Dictionary{Core.SSAValue,SSAValue}
-  "SPIR-V SSA values that correspond semantically to `Core.SSAValue`s."
-  ssavals::Dictionary{Core.SSAValue,SSAValue}
+  args::Dictionary{Core.Argument,ResultID}
+  "Result IDs for basic blocks from Julia IR."
+  bbs::BijectiveMapping{Int,ResultID}
+  "Result IDs for each `Core.SSAValue` that implicitly represents a basic block."
+  bb_results::Dictionary{Core.SSAValue,ResultID}
+  "Result IDs that correspond semantically to `Core.SSAValue`s."
+  results::Dictionary{Core.SSAValue,ResultID}
   "Intermediate results that correspond to SPIR-V `Variable`s. Typically, these results have a mutable Julia type."
   variables::Dictionary{Core.SSAValue,Variable}
   tmap::TypeMap
   "SPIR-V types derived from Julia types."
-  types::Dictionary{DataType,SSAValue}
+  types::Dictionary{DataType,ResultID}
   globalrefs::Dictionary{Core.SSAValue,GlobalRef}
 end
 
 Translation() = Translation(Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), TypeMap(), Dictionary(), Dictionary())
 
-SSAValue(arg::Core.Argument, tr::Translation) = tr.args[arg]
-SSAValue(bb::Int, tr::Translation) = tr.bbs[bb]
-SSAValue(ssaval::Core.SSAValue, tr::Translation) = tr.ssavals[ssaval]
+ResultID(arg::Core.Argument, tr::Translation) = tr.args[arg]
+ResultID(bb::Int, tr::Translation) = tr.bbs[bb]
+ResultID(val::Core.SSAValue, tr::Translation) = tr.results[val]
 
 function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}), args...; interp = SPIRVInterpreter())
   compile(SPIRVTarget(f, argtypes; interp), args...)
@@ -69,7 +69,7 @@ function IR(mt::ModuleTarget, tr::Translation)
   ir.global_vars = mt.global_vars
   ir.fdefs = mt.fdefs
   ir.debug = mt.debug
-  ir.ssacounter = mt.ssacounter
+  ir.idcounter = mt.idcounter
   ir.tmap = tr.tmap
   ir.metadata = mt.metadata
   ir
@@ -145,7 +145,7 @@ end
 
 function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables::Dictionary{Int,Variable})
   argtypes = SPIRType[]
-  global_vars = SSAValue[]
+  global_vars = ResultID[]
   (; mi) = target
 
   for (i, t) in enumerate(mi.specTypes.types[2:end])
@@ -165,13 +165,13 @@ function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
   end
   ci = target.interp.global_cache[mi]
   ftype = FunctionType(spir_type(ci.rettype, tr.tmap), argtypes)
-  FunctionDefinition(ftype, FunctionControlNone, [], [], SSADict(), global_vars)
+  FunctionDefinition(ftype, FunctionControlNone, [], [], ResultDict(), global_vars)
 end
 
 function emit!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition)
   emit!(mt, tr, fdef.type)
-  fid = next!(mt.ssacounter)
-  append!(fdef.args, next!(mt.ssacounter) for _ = 1:length(fdef.type.argtypes))
+  fid = next!(mt.idcounter)
+  append!(fdef.args, next!(mt.idcounter) for _ = 1:length(fdef.type.argtypes))
   insert!(mt.fdefs, fdef, fid)
   fid
 end
@@ -203,7 +203,7 @@ function emit!(mt::ModuleTarget, tr::Translation, @nospecialize(type::SPIRType))
     end
   end
 
-  id = next!(mt.ssacounter)
+  id = next!(mt.idcounter)
   insert!(mt.types, type, id)
   id
 end
@@ -211,7 +211,7 @@ end
 function emit!(mt::ModuleTarget, tr::Translation, c::Constant)
   haskey(mt.constants, c) && return mt.constants[c]
   emit!(mt, tr, SPIRType(c, tr.tmap))
-  id = next!(mt.ssacounter)
+  id = next!(mt.idcounter)
   insert!(mt.constants, c, id)
   id
 end
@@ -219,7 +219,7 @@ end
 function emit!(mt::ModuleTarget, tr::Translation, var::Variable)
   haskey(mt.global_vars, var) && return mt.global_vars[var]
   emit!(mt, tr, var.type)
-  id = next!(mt.ssacounter)
+  id = next!(mt.idcounter)
   insert!(mt.global_vars, var, id)
   id
 end
@@ -228,16 +228,16 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
   ranges = block_ranges(target)
   back_edges = backedges(target.cfg)
   vs = traverse(target.cfg)
-  add_mapping!(tr, mt.ssacounter, ranges, vs)
+  add_mapping!(tr, mt.idcounter, ranges, vs)
   emit_nodes!(fdef, mt, tr, target, ranges, vs, back_edges)
   replace_forwarded_ssa!(fdef, tr)
 end
 
-function add_mapping!(tr::Translation, counter::SSACounter, ranges, vs)
+function add_mapping!(tr::Translation, counter::IDCounter, ranges, vs)
   for v in vs
     id = next!(counter)
     insert!(tr.bbs, v, id)
-    insert!(tr.bb_ssavals, Core.SSAValue(first(ranges[v])), id)
+    insert!(tr.bb_results, Core.SSAValue(first(ranges[v])), id)
   end
 end
 
@@ -248,13 +248,13 @@ function emit_nodes!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation
 end
 
 """
-Replace forward references to `Core.SSAValue`s by their appropriate `SSAValue`.
+Replace forward references to `Core.SSAValue`s by their appropriate `ResultID`.
 """
 function replace_forwarded_ssa!(fdef::FunctionDefinition, tr::Translation)
   for block in fdef.blocks
     for inst in block.insts
       for (i, arg) in enumerate(inst.arguments)
-        isa(arg, Core.SSAValue) && (inst.arguments[i] = SSAValue(arg, tr))
+        isa(arg, Core.SSAValue) && (inst.arguments[i] = ResultID(arg, tr))
       end
     end
   end
@@ -262,7 +262,7 @@ end
 
 function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, target::SPIRVTarget, range::UnitRange, node::Integer)
   (; code, ssavaluetypes, slottypes) = target.code
-  blk = new_block!(fdef, SSAValue(node, tr))
+  blk = new_block!(fdef, ResultID(node, tr))
   for i in range
     jinst = code[i]
     # Ignore single `nothing::Nothing` instructions.
@@ -289,16 +289,16 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         end
         add_instruction!(blk, tr, spv_inst, core_ssaval)
         @case ::Core.GotoNode
-        dest = tr.bb_ssavals[Core.SSAValue(jinst.label)]
+        dest = tr.bb_results[Core.SSAValue(jinst.label)]
         spv_inst = @inst OpBranch(dest)
         add_instruction!(blk, tr, spv_inst, core_ssaval)
         @case ::Core.GotoIfNot
         # Core.GotoIfNot uses the SSA value of the first instruction of the target
         # block as its `dest`.
-        dest = tr.bb_ssavals[Core.SSAValue(jinst.dest)]
+        dest = tr.bb_results[Core.SSAValue(jinst.dest)]
         (; cond) = jinst
-        cond_inst = isa(cond, Bool) ? emit!(mt, tr, Constant(cond)) : SSAValue(cond, tr)
-        spv_inst = @inst OpBranchConditional(cond_inst, SSAValue(node + 1, tr), dest)
+        cond_inst = isa(cond, Bool) ? emit!(mt, tr, Constant(cond)) : ResultID(cond, tr)
+        spv_inst = @inst OpBranchConditional(cond_inst, ResultID(node + 1, tr), dest)
         add_instruction!(blk, tr, spv_inst, core_ssaval)
         @case ::GlobalRef
         jtype <: Type || throw(CompilationError("Unhandled global reference $(repr(jtype))"))
@@ -312,21 +312,21 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         ret, stype = emit_inst!(mt, tr, target, fdef, jinst, jtype, blk)
         if isa(ret, Instruction)
           if ismutabletype(jtype) && !isa(jinst, Core.PhiNode)
-            # The current core SSAValue has already been assigned (to the variable).
+            # The current core ResultID has already been assigned (to the variable).
             add_instruction!(blk, tr, ret, nothing)
             # Store to the new variable.
-            add_instruction!(blk, tr, @inst OpStore(tr.ssavals[core_ssaval], ret.result_id::SSAValue))
+            add_instruction!(blk, tr, @inst OpStore(tr.results[core_ssaval], ret.result_id::ResultID))
           elseif ismutabletype(jtype) && isa(jinst, Core.PhiNode)
             insert!(tr.variables, core_ssaval, Variable(stype, StorageClassFunction))
             add_instruction!(blk, tr, ret, core_ssaval)
           else
             add_instruction!(blk, tr, ret, core_ssaval)
           end
-        elseif isa(ret, SSAValue)
+        elseif isa(ret, ResultID)
           # The value is a SPIR-V global (possibly a constant),
           # so no need to push a new function instruction.
           # Just map the current SSA value to the global.
-          insert!(tr.ssavals, core_ssaval, ret)
+          insert!(tr.results, core_ssaval, ret)
         end
       end
     catch e
@@ -338,32 +338,32 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
 
   # Implicit `goto` to the next block.
   if !is_termination_instruction(last(blk))
-    spv_inst = @inst OpBranch(SSAValue(node + 1, tr))
+    spv_inst = @inst OpBranch(ResultID(node + 1, tr))
     add_instruction!(blk, tr, spv_inst)
   end
 end
 
 function allocate_variable!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
   # Create a SPIR-V variable to allow for future mutations.
-  id = next!(mt.ssacounter)
+  id = next!(mt.idcounter)
   type = PointerType(StorageClassFunction, spir_type(jtype, tr.tmap))
   var = Variable(type)
   emit!(mt, tr, type)
   insert!(tr.variables, core_ssaval, var)
-  insert!(tr.ssavals, core_ssaval, id)
+  insert!(tr.results, core_ssaval, id)
   push!(fdef.local_vars, Instruction(var, id, GlobalsInfo(mt)))
 end
 
 function add_instruction!(block::Block, tr::Translation, inst::Instruction, core_ssaval::Optional{Core.SSAValue} = nothing)
   if !isnothing(inst.result_id) && !isnothing(core_ssaval)
-    insert!(tr.ssavals, core_ssaval, inst.result_id)
+    insert!(tr.results, core_ssaval, inst.result_id)
   end
   push!(block.insts, inst)
 end
 
 function emit_extinst!(mt::ModuleTarget, extinst)
   haskey(mt.extinst_imports, extinst) && return mt.extinst_imports[extinst]
-  id = next!(mt.ssacounter)
+  id = next!(mt.idcounter)
   insert!(mt.extinst_imports, extinst, id)
   id
 end

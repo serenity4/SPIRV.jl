@@ -6,16 +6,16 @@ about past analyses being outdated while recording changes to apply as the resul
 """
 struct Diff
   mod::Module
-  ssacounter::SSACounter
+  idcounter::IDCounter
   insertions::Vector{Pair{Int,Instruction}}
   modifications::Vector{Pair{Int,Instruction}}
   deletions::Vector{Int}
 end
 
-Diff(mod::Module) = Diff(mod, SSACounter(mod.bound - 1), [], [], [])
+Diff(mod::Module) = Diff(mod, IDCounter(mod.bound - 1), [], [], [])
 Diff(x) = Diff(Module(x))
 
-next!(diff::Diff) = next!(diff.ssacounter)
+next!(diff::Diff) = next!(diff.idcounter)
 
 function apply!(diff::Diff)
   (; mod, insertions, deletions) = diff
@@ -39,7 +39,7 @@ function apply!(diff::Diff)
       deleteat!(instructions, i)
     end
   end
-  @set mod.bound = id(SSAValue(diff.ssacounter)) + 1
+  @set mod.bound = UInt32(ResultID(diff.idcounter)) + 1
 end
 
 function update!(diff::Diff, insts)
@@ -78,5 +78,5 @@ function Base.insert!(diff::Diff, i::Integer, insts)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", diff::Diff)
-  print(io, Diff, '(', diff.mod, ", ", diff.ssacounter, ", ", length(diff.insertions), " insertions, ", length(diff.deletions), " deletions and ", length(diff.modifications), " modifications)")
+  print(io, Diff, '(', diff.mod, ", ", diff.idcounter, ", ", length(diff.insertions), " insertions, ", length(diff.deletions), " deletions and ", length(diff.modifications), " modifications)")
 end
