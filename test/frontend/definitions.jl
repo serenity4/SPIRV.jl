@@ -27,6 +27,8 @@ function compute_blur(blur::GaussianBlur, reference, direction, uv)
   res
 end
 
+IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
+
 @testset "Definitions" begin
   image = SampledImage(IT(zeros(32, 32)))
   blur = GaussianBlur(1.0, 1.0)

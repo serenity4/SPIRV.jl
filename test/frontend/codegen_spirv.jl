@@ -1,7 +1,5 @@
 using SPIRV, Test
 
-IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
-
 base_capabilities = """
   OpCapability(VulkanMemoryModel)
 """
