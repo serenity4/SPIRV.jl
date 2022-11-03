@@ -162,7 +162,7 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
       @assert !isnothing(current_function)
       if opcode == OpLabel
         ex = Expression(inst, types)
-        insert!(current_function.blocks, ex.result, Block(ex.result))
+        push!(current_function, Block(ex.result))
       end
     end
     if !isnothing(current_function) && !isempty(current_function.blocks) && opcode ≠ OpVariable
@@ -212,7 +212,7 @@ end
 
 function emit_types!(ir::IR)
   for fdef in ir.fdefs
-    for blk in fdef.blocks
+    for blk in fdef
       emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, fdef.type)
       for ex in blk
         isnothing(ex.type) && continue

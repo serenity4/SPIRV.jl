@@ -44,6 +44,11 @@ function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterfa
   add_type_layouts!(ir, interface.layout)
   add_type_metadata!(ir, interface)
   add_align_operands!(ir, fdef, interface.layout)
+
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+
+  satisfy_requirements!(ir, interface.features)
   ir
 end
 
@@ -126,11 +131,7 @@ validate(shader::Shader) = validate_shader(IR(Module(shader); satisfy_requiremen
 function Shader(target::SPIRVTarget, interface::ShaderInterface)
   ir = IR(target, interface)
   ep = entry_point(ir, :main).func
-  mod = annotate(Module(ir))
-  mod = annotate(apply!(mod, restructure_merge_blocks!(Diff(mod), mod)))
-  mod = annotate(apply!(mod, add_merge_headers!(Diff(mod), mod)))
-  mod = apply!(mod, satisfy_requirements!(Diff(mod), mod, interface.features))
-  Shader(mod, ep, memory_resources(mod, ep))
+  Shader(Module(ir), ep, memory_resources(ir, ep))
 end
 
 assemble(shader::Shader) = assemble(shader.mod)
@@ -190,11 +191,10 @@ function (extract::MemoryResourceExtraction)(interpret::AbstractInterpretation, 
   end
 end
 
-function memory_resources(mod::Module, fid::ResultID)
+function memory_resources(ir::IR, fid::ResultID)
   memory_resources = ResultDict{MemoryResource}()
   return memory_resources
-  amod = annotate(mod)
-  af = amod.annotated_functions[find_function(amod, fid)]
+  fdef = ir.fdefs[fid]
 
   #=
 

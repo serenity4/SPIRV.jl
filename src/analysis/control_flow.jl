@@ -167,6 +167,29 @@ function ControlFlowGraph(cfg::AbstractGraph)
   ControlFlowGraph(cfg, dfst, ec, is_reducible, is_structured)
 end
 
+function control_flow_graph(fdef::FunctionDefinition)
+  cfg = SimpleDiGraph(length(fdef))
+
+  for (i, block) in enumerate(fdef)
+    for ex in block
+      @tryswitch ex.op begin
+        @case &OpBranch
+        dst = ex[1]::ResultID
+        add_edge!(cfg, i, block_index(fdef, fdef[dst]))
+        @case &OpBranchConditional
+        dst1, dst2 = ex[2]::ResultID, ex[3]::ResultID
+        add_edge!(cfg, i, block_index(fdef, fdef[dst1]))
+        add_edge!(cfg, i, block_index(fdef, fdef[dst2]))
+        @case &OpSwitch
+        for dst::ResultID in ex[4:2:end]
+          add_edge!(cfg, i, block_index(fdef, fdef[dst]))
+        end
+      end
+    end
+  end
+  cfg
+end
+
 function control_flow_graph(amod::AnnotatedModule, af::AnnotatedFunction)
   cfg = SimpleDiGraph(length(af.blocks))
 
@@ -182,7 +205,7 @@ function control_flow_graph(amod::AnnotatedModule, af::AnnotatedFunction)
         add_edge!(cfg, i, find_block(amod, af, dst1))
         add_edge!(cfg, i, find_block(amod, af, dst2))
         @case &OpSwitch
-        for dst in arguments[2:end]
+        for dst in arguments[4:2:end]
           add_edge!(cfg, i, find_block(amod, af, dst::ResultID))
         end
       end

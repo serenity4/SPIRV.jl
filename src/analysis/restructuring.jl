@@ -1,12 +1,12 @@
-function add_merge_headers!(diff::Diff, amod::AnnotatedModule)
-  for af in amod.annotated_functions
-    add_merge_headers!(diff, amod, af)
+function add_merge_headers!(ir::IR)
+  for fdef in ir.fdefs
+    add_merge_headers!(fdef)
   end
-  diff
+  ir
 end
 
-function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction)
-  cfg = ControlFlowGraph(amod, af)
+function add_merge_headers!(fdef::FunctionDefinition)
+  cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
   back_edges = backedges(cfg)
   traversed = BitVector(undef, nv(cfg))
@@ -15,6 +15,7 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
     v = node_index(ctree)
     traversed[v] && continue
     traversed[v] = true
+    blk = fdef[v]
 
     @switch ctree begin
       @case GuardBy(is_loop)
@@ -34,10 +35,10 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
         @case 1
         vmerge = only(vmerge_candidates)
         @case GuardBy(>(1))
-        throw(CompilationError("More than one candidates found for a loop."))
+        throw(CompilationError("More than one merge candidates found for a loop."))
       end
-      header = @inst OpLoopMerge(ResultID(amod, af, vmerge), ResultID(amod, af, vcont), LoopControlNone)
-      insert!(diff, last(af.blocks[v]), header)
+      header = @ex OpLoopMerge(fdef[vmerge].id, fdef[vcont].id, LoopControlNone)
+      insert!(blk, lastindex(blk), header)
 
       @case GuardBy(is_selection)
       # We're branching.
@@ -74,7 +75,7 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
             isnothing(ctree_parent) && (ctree_parent = ctree)
 
             if region_type(ctree_parent) ≠ REGION_BLOCK
-              error("Selection construct expected to have a block parent; control-flow may be unstructured")
+              error("Selection construct expected to have a blk parent; control-flow may be unstructured")
             end
 
             vmerge_index = findfirst(==(v) ∘ node_index, ctree_parent.children)::Int + 1
@@ -84,8 +85,8 @@ function add_merge_headers!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
 
         @debug "No postdominator available on node $v to get a merge candidate, picking one with custom heuristics: $vmerge"
       end
-      header = @inst OpSelectionMerge(ResultID(amod, af, vmerge), SelectionControlNone)
-      insert!(diff, last(af.blocks[v]), header)
+      header = @ex OpSelectionMerge(fdef[vmerge].id, SelectionControlNone)
+      insert!(blk, lastindex(blk), header)
     end
   end
 end
@@ -97,15 +98,15 @@ function is_breaking_node(ctree::ControlTree, cfg::AbstractGraph)
   any(!in(loop_nodes), outneighbors(cfg, node_index(ctree)))
 end
 
-function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule)
-  for af in amod.annotated_functions
-    restructure_merge_blocks!(diff, amod, af)
+function restructure_merge_blocks!(ir::IR)
+  for fdef in ir.fdefs
+    restructure_merge_blocks!(fdef, ir.idcounter)
   end
-  diff
+  ir
 end
 
-function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction)
-  cfg = ControlFlowGraph(amod, af)
+function restructure_merge_blocks!(fdef::FunctionDefinition, idcounter::IDCounter)
+  cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
 
   for ctree in PreOrderDFS(ctree_global)
@@ -123,28 +124,23 @@ function restructure_merge_blocks!(diff::Diff, amod::AnnotatedModule, af::Annota
       p = find_parent(is_block, ctree)
       isnothing(p) && error("Expected at least one parent that is a block region.")
       i = findfirst(==(v) ∘ node_index, p.children)::Int
-      merge_block = node_index(p[i + 1])
-      merge_block_inst_index, merge_block_inst = block_instruction(amod, af, merge_block)
+      w = node_index(p[i + 1])
+      merge_blk = fdef[w]
 
       # We will in general have only one branching block for selection constructs
       # and possibly multiple ones for loops (as break statements are allowed).
       # TODO: Optimize this by using the property above to avoid traversing all leaves.
-      branching_blocks = [node_index(tree) for tree in Leaves(inner) if in(merge_block, outneighbors(cfg, node_index(tree)))]
+      branching_blks = Block[fdef[node_index(tree)] for tree in Leaves(inner) if in(w, outneighbors(cfg, node_index(tree)))]
 
-      new = @inst next!(diff) = OpLabel()
-      new_instructions = [new]
+      new = new_block!(fdef, next!(idcounter))
 
       # Adjust branching instructions from branching blocks so that they branch to the new node instead.
-      redirect_branches!(diff, amod, af, branching_blocks, merge_block_inst.result_id, new.result_id)
+      redirect_branches!(branching_blks, merge_blk.id, new.id)
 
-      # Intercept OpPhi instructions on the original merge block by the new block.
-      updated_phi_insts, new_phi_insts = intercept_phi_instructions!(diff.idcounter, amod, af, branching_blocks, merge_block)
-      append!(new_instructions, new_phi_insts)
-      update!(diff, pairs(updated_phi_insts))
+      # Intercept OpPhi instructions in the original merge block by the new block.
+      intercept_phi_instructions!!(idcounter, branching_blks, new, merge_blk)
 
-      push!(new_instructions, @inst OpBranch(merge_block_inst.result_id))
-      # Insert just after the merge block.
-      insert!(diff, last(af.blocks[merge_block]) + 1, new_instructions)
+      push!(new, @ex OpBranch(merge_blk.id))
     end
   end
 
@@ -165,16 +161,20 @@ function nesting_levels!(nesting_levels, ctree::ControlTree, level::Integer)
   nesting_levels
 end
 
-function redirect_branches!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunction, branching_blocks, from::ResultID, to::ResultID)
-  for block in branching_blocks
-    (i, terminst) = termination_instruction(amod, af, block)
-    @switch terminst.opcode begin
+function redirect_branches!(branching_blks::AbstractVector{Block}, dst::ResultID, new::ResultID)
+  for blk in branching_blks
+    ex = termination_instruction(blk)
+    @switch ex.op begin
       @case &OpBranch
-      update!(diff, i => @set terminst.arguments[1] = to)
+      ex[1] = new
 
-      @case &OpBranchConditional || &OpSwitch
-      index = findfirst(==(from), terminst.arguments)
-      update!(diff, i => @set terminst.arguments[index] = to)
+      @case &OpBranchConditional
+      index = findfirst(==(dst), ex)
+      ex[index] = new
+
+      @case &OpSwitch
+      indices = findall(==(dst), ex)
+      ex[indices] .= new
     end
   end
 
@@ -182,10 +182,7 @@ function redirect_branches!(diff::Diff, amod::AnnotatedModule, af::AnnotatedFunc
 end
 
 """
-Return dictionaries of updated and new instructions required to intercept `OpPhi` instructions coming from branching blocks to the provided target into an intercepting block.
-
-New instructions are returned such that the intercepting block can incorporate these new `OpPhi` instructions into its body, at the start
-of the block. The keys of the relevant dictionary should be ignored.
+Intercept `OpPhi` instructions coming from branching blocks to the provided target and put them in an intercepting block.
 
 As a given `OpPhi` instruction on the target may not be covered fully by the branching blocks (i.e. without further assumptions it may depend on other
 branching blocks), they are not deleted. Instead, the `%value => %branching_block` pairs are replaced by `%new_value => %intercepting_block` where
@@ -195,59 +192,61 @@ target be fully covered by the branching blocks, it will be transformed into a s
 Noting that the target block may have several `OpPhi` instructions involving all or part of the branching blocks, the intercepting block will end up
 with possibly more than one corresponding `OpPhi` instructions.
 """
-function intercept_phi_instructions!(counter::IDCounter, amod::AnnotatedModule, af::AnnotatedFunction, branching_blocks, target::Integer)
-  (phi_indices, phi_insts) = phi_instructions(amod, af, target)
+function intercept_phi_instructions!!(idcounter::IDCounter, from::AbstractVector{Block}, intercepter::Block, target::Block)
+  exs = phi_expressions(target)
 
-  updated_phi_insts = Dictionary{Int,Instruction}()
-  new_phi_insts = Dictionary{Int,Instruction}()
+  # Mapping from original Phi instructions to Phi instructions in the intercepter.
+  intercepts = Dictionary{Expression,Expression}()
 
-  for block in branching_blocks
-    _, block_inst = block_instruction(amod, af, block)
-    for (i, phi_inst) in zip(phi_indices, phi_insts)
-      j = findfirst(==(block_inst.result_id), phi_inst.arguments)
-      if !isnothing(j)
+  for blk in from
+    for ex in exs
+      i = findfirst(==(blk.id), ex)
+      if !isnothing(i)
         # A phi instruction from the target block used <block>. This will trigger the use of a dummy variable
-        # in the factorizing block, along with an update for that phi instruction to use the dummy variable instead.
-        new_phi_inst = get!(() -> @inst(next!(counter) = Phi()::phi_inst.result_id), new_phi_insts, i)
-        push!(new_phi_insts.arguments, phi_inst.arguments[j + 1], block_inst.result_id)
-        updated_phi_inst = get!(updated_phi_insts, i, phi_inst)
-        updated_phi_insts[i] = @set updated_phi_inst.arguments[j] = new_phi_inst.var
+        # in the intercepting block, along with an update for that phi instruction to use the dummy variable instead.
+        new_ex = get!(intercepts, ex) do
+          intercept = @ex next!(idcounter) = Phi()::ex.type
+          push!(intercepter, intercept)
+          intercept
+        end
+        push!(new_ex, ex[i + 1], blk.id)
+        ex[i] = new_ex.id
       end
     end
   end
 
-  updated_phi_insts .= remove_phi_duplicates.(updated_phi_insts)
-
-  updated_phi_insts, new_phi_insts
+  for ex in exs
+    remove_phi_duplicates!(ex)
+  end
 end
 
 "Remove duplicates of the form `%val1 => %parent1`, `%val1 => %parent1`."
-function remove_phi_duplicates(inst::Instruction)
-  @assert is_phi_instruction(inst)
-  unique_pairs = unique!([value => parent for (value, parent) in Iterators.partition(inst.arguments, 2)])
-  @set inst.arguments = collect(Iterators.flatten(unique_pairs))
+function remove_phi_duplicates!(ex::Expression)
+  @assert is_phi_instruction(ex)
+  pairs = Set{Pair{ResultID, ResultID}}()
+  for (i, (value, parent)) in enumerate(Iterators.partition(ex, 2))
+    if in(value => parent, pairs)
+      ex[2i - 1] = nothing
+      ex[2i] = nothing
+    else
+      push!(pairs, value => parent)
+    end
+  end
+  filter!(!isnothing, ex.args)
 end
 
-function conflicted_merge_blocks(amod::AnnotatedModule, af::AnnotatedFunction)
-  merge_blocks = find_merge_blocks(amod, af)
-  filter!(>(1) ∘ length, merge_blocks)
-end
+conflicted_merge_blocks(fdef::FunctionDefinition) = filter!(>(1) ∘ length, merge_blocks(fdef))
 
 "Find blocks that are the target of merge headers, along with the list of nodes that declared it with as a merge header."
-function find_merge_blocks(amod::AnnotatedModule, af::AnnotatedFunction)
-  merge_blocks = Dictionary{Int,Vector{Int}}()
-  for (i, block) in enumerate(af.blocks)
-    for inst in instructions(amod, block[end-1:end])
-      is_merge_instruction(inst) || continue
-      merge_block = first(inst.arguments)
-      push!(get!(Vector{Int}, merge_blocks, UInt32(merge_block)), i)
+function merge_blocks(fdef::FunctionDefinition)
+  merge_blks = Dictionary{ResultID,Vector{ResultID}}()
+  for blk in fdef
+    for ex in @view blk[end-1:end]
+      is_merge_instruction(ex) || continue
+      merge_blk = fdef[ex[1]::ResultID]
+      push!(get!(Vector{ResultID}, merge_blks, merge_blk.id), blk.id)
       break
     end
   end
-  merge_blocks
-end
-
-function update_merge_block(inst::Instruction, new_merge_block::ResultID)
-  @assert is_merge_instruction(inst)
-  @set inst.arguments[1] = new_merge_block
+  merge_blks
 end

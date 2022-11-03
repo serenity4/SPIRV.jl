@@ -133,38 +133,26 @@ is_merge_instruction(inst::AbstractInstruction) = in(opcode(inst), (OpSelectionM
 is_label_instruction(inst::AbstractInstruction) = opcode(inst) == OpLabel
 is_phi_instruction(inst::AbstractInstruction) = opcode(inst) == OpPhi
 
-function termination_instruction(amod::AnnotatedModule, af::AnnotatedFunction, block::Integer)
-  index = last(af.blocks[block])
-  inst = amod[index]
-  @assert is_termination_instruction(inst)
-  index, inst
+function termination_instruction(blk::Block)
+  ex = blk[end]
+  @assert is_termination_instruction(ex)
+  ex
 end
 
-"Get the [`Instruction`](@ref) declaring the block at provided block index in the control-flow graph."
-function block_instruction(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer)
-  i = first(af.blocks[block_index])
-  inst = amod[i]
-  @assert is_label_instruction(inst)
-  i, inst
+function merge_header(blk::Block)
+  ex = blk[end]
+  @assert is_merge_instruction(ex)
+  ex
 end
 
-function merge_header(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer)
-  i = af.blocks[block_index][end - 1]
-  inst = amod[i]
-  @assert is_merge_instruction(inst)
-  i, inst
-end
-
-function phi_instructions(amod::AnnotatedModule, af::AnnotatedFunction, block::Integer)
-  indices = Int[]
-  insts = Instruction[]
-  for (i, inst) in enumerate(instructions(amod, af, block))
-    if opcode(inst) == OpPhi
-      push!(indices, af.blocks[block].start + i - 1)
-      push!(insts, inst)
+function phi_expressions(blk::Block)
+  exs = Expression[]
+  for ex in blk
+    if ex.op == OpPhi
+      push!(exs, ex)
     end
   end
-  indices, insts
+  exs
 end
 
 "Find the function index which contains the instruction with result ID `fid`."

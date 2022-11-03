@@ -165,7 +165,7 @@ function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
   end
   ci = target.interp.global_cache[mi]
   ftype = FunctionType(spir_type(ci.rettype, tr.tmap), argtypes)
-  FunctionDefinition(ftype, FunctionControlNone, [], [], ResultDict(), global_vars)
+  FunctionDefinition(ftype, FunctionControlNone, [], [], ResultDict(), [], global_vars)
 end
 
 function emit!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition)
@@ -214,7 +214,7 @@ end
 Replace forward references to `Core.SSAValue`s by their appropriate `ResultID`.
 """
 function replace_forwarded_ssa!(fdef::FunctionDefinition, tr::Translation)
-  for block in fdef.blocks
+  for block in fdef
     for ex in block
       for (i, arg) in enumerate(ex)
         isa(arg, Core.SSAValue) && (ex[i] = ResultID(arg, tr))

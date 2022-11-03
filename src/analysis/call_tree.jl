@@ -11,7 +11,7 @@ Base.getindex(call_tree::StaticCallTree, index::ResultID) = call_tree.ir.fdefs[i
 function AbstractTrees.childindices(call_tree::StaticCallTree, index::ResultID)
   children = Set{ResultID}()
   fdef = call_tree[index]
-  for blk in fdef.blocks
+  for blk in fdef
     for ex in blk
       if ex.op == OpFunctionCall
         fid = ex[1]::ResultID

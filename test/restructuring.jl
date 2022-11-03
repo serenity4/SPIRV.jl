@@ -1,5 +1,5 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: nesting_levels, find_merge_blocks, conflicted_merge_blocks, restructure_merge_blocks!, add_merge_headers!, Diff, apply!
+using SPIRV: nesting_levels, merge_blocks, conflicted_merge_blocks, restructure_merge_blocks!, add_merge_headers!, id_bound, nexs
 
 """
 Generate a minimal SPIR-V IR or module which contains dummy blocks realizing the provided control-flow graph.
@@ -9,7 +9,7 @@ Blocks that branch to more than one target will either branch with a `BranchCond
 The selectors for conditionals or switches are exposed as function arguments. Note that the argument will be a `Bool` for conditionals and `Int32`
 for switches.
 """
-function module_from_cfg(cfg; ir = false)
+function ir_from_cfg(cfg)
   global_decls = quote
     Bool = TypeBool()
     Float32 = TypeFloat(32)
@@ -44,57 +44,53 @@ function module_from_cfg(cfg; ir = false)
   end)
 
   ex = Expr(:block, global_decls.args..., func)
-  ir ? load_ir(ex) : load_module(ex)
+  load_ir(ex)
 end
 
 @testset "Restructuring utilities" begin
   for i in 1:11
     # Skip a few tricky cases for now.
     in(i, (6, 8)) && continue
-    @eval ir = module_from_cfg($(Symbol(:g, i))(); ir = true)
+    ir = ir_from_cfg(getproperty(@__MODULE__, Symbol(:g, i))())
     @test unwrap(validate(ir))
   end
 
   # Starting module: two conditionals sharing the same merge block.
-  original_mod = module_from_cfg(g11())
-  amod = annotate(original_mod)
+  ir = ir_from_cfg(g11())
   # Restructure merge blocks.
-  diff = restructure_merge_blocks!(Diff(amod), amod)
+  fdef = only(ir.fdefs)
+  n = nexs(fdef)
+  bound = id_bound(ir)
+  restructure_merge_blocks!(ir)
   # A new dummy block needs to be inserted (2 instructions), and 2 branching blocks needed to be updated to branch to the new block.
-  @test length(diff.insertions) == 2 && length(diff.modifications) == 2
-  mod = apply!(original_mod, diff)
-  @test mod.bound == original_mod.bound + 1
-  @test unwrap(validate(IR(mod)))
+  @test nexs(fdef) == n + 2
+  @test id_bound(ir) == ResultID(UInt32(bound) + 1)
+  @test unwrap(validate(ir))
 
   # Add merge headers.
-  amod = annotate(mod)
-  diff = add_merge_headers!(Diff(amod), amod)
-  @test length(diff.insertions) == 2
-  mod = apply!(mod, diff)
-  amod = annotate(mod)
-  af = only(amod.annotated_functions)
-  @test length(find_merge_blocks(amod, af)) == 2
-  @test isempty(conflicted_merge_blocks(amod, af))
+  add_merge_headers!(ir)
+  @test nexs(fdef) == n + 4
+  @test length(merge_blocks(fdef)) == 2
+  @test isempty(conflicted_merge_blocks(fdef))
+  @test unwrap(validate(ir))
 
   # Starting module: A conditional and a loop sharing the same merge block, with the loop inside the conditional.
-  original_mod = module_from_cfg(g10())
-  amod = annotate(original_mod)
-  diff = restructure_merge_blocks!(Diff(amod), amod)
+  ir = ir_from_cfg(g10())
+  fdef = only(ir.fdefs)
+  n = nexs(fdef)
+  bound = id_bound(ir)
+  restructure_merge_blocks!(ir)
   # There is only one update to make to the branching node 3.
-  @test length(diff.insertions) == 2 && length(diff.modifications) == 1
-  mod = apply!(original_mod, diff)
-  @test mod.bound == original_mod.bound + 1
-  @test unwrap(validate(IR(mod)))
+  @test nexs(fdef) == n + 2
+  @test id_bound(ir) == ResultID(UInt32(bound) + 1)
+  @test unwrap(validate(ir))
 
   # Add merge headers.
-  amod = annotate(mod)
-  diff = add_merge_headers!(Diff(amod), amod)
-  @test length(diff.insertions) == 2
-  mod = apply!(mod, diff)
-  amod = annotate(mod)
-  af = only(amod.annotated_functions)
-  @test length(find_merge_blocks(amod, af)) == 2
-  @test isempty(conflicted_merge_blocks(amod, af))
+  add_merge_headers!(ir)
+  @test nexs(fdef) == n + 4
+  @test length(merge_blocks(fdef)) == 2
+  @test isempty(conflicted_merge_blocks(fdef))
+  @test unwrap(validate(ir))
 
   ctree = ControlTree(g11())
   nesting = nesting_levels(ctree)
