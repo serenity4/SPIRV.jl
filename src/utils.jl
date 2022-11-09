@@ -81,6 +81,12 @@ function rmlines(ex)
 end
 
 macro refbroadcast(ex)
+  original_ex = ex
+
+  while Meta.isexpr(ex, :macrocall)
+    ex = ex.args[3]
+  end
+
   T = @match ex begin
     :(struct $T
       $(fields...)
@@ -102,7 +108,7 @@ macro refbroadcast(ex)
   end
 
   quote
-    Base.@__doc__ $(esc(ex))
+    Base.@__doc__ $(esc(original_ex))
     Base.broadcastable(x::$(esc(T))) = Ref(x)
   end
 end

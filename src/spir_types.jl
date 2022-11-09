@@ -155,13 +155,13 @@ function julia_type(@nospecialize(t::SPIRType))
   end
 end
 
-@refbroadcast struct TypeMap
+@refbroadcast @auto_hash_equals struct TypeMap
   d::Dictionary{DataType,SPIRType}
 end
 
 TypeMap() = TypeMap(Dictionary())
 
-@forward TypeMap.d (Base.getindex, Base.haskey, Base.get, Base.get!, Base.iterate, Base.length, Base.insert!)
+@forward TypeMap.d (Base.getindex, Base.haskey, Base.get, Base.get!, Base.iterate, Base.keys, Base.length, Base.insert!)
 Base.setindex!(tmap::TypeMap, type::SPIRType, T::DataType) = set!(tmap.d, T, type)
 
 """

@@ -6,7 +6,19 @@ struct TypeMetadata
   d::Dictionary{SPIRType, Metadata}
 end
 
-TypeMetadata() = TypeMetadata(TypeMap(), Dictionary())
+TypeMetadata(tmap = TypeMap()) = TypeMetadata(tmap, Dictionary())
+
+function TypeMetadata(ir::IR)
+  tmeta = TypeMetadata(ir.tmap)
+  for t in ir.tmap
+    tid = get(ir.types, t, nothing)
+    isnothing(tid) && !isa(t, PointerType) && error("Expected type $t to have a corresponding type ID")
+    meta = get(ir.metadata, tid, nothing)
+    isnothing(meta) && continue
+    insert!(tmeta.d, t, meta)
+  end
+  tmeta
+end
 
 @forward TypeMetadata.d (metadata!, has_decoration, decorate!, decorations)
 
@@ -382,6 +394,8 @@ function TypeInfo(Ts::AbstractVector{DataType}, layout::LayoutStrategy)
 
   info
 end
+
+TypeInfo(ir::IR) = TypeInfo(TypeMetadata(ir))
 
 getoffsets(tinfo::TypeInfo, t::SPIRType) = getoffsets((t, i) -> tinfo.offsets[t][i], t)
 getoffsets(tdata::Union{TypeMetadata,TypeInfo}, T::DataType) = getoffsets(tdata, tdata.tmap[T])
