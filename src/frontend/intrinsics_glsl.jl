@@ -28,7 +28,7 @@ end
 @override_glsl sqrt(x::IEEEFloat) = Sqrt(x)
 @noinline Sqrt(x)                 = Base.sqrt_llvm(x)
 
-@override_glsl trunc(x::IEEEFloat, r::RoundingMode{:ToZero})  = Trunc(x)
+@override_glsl round(x::IEEEFloat, r::RoundingMode{:ToZero})  = Trunc(x)
 @noinline Trunc(x)                                            = Base.trunc_llvm(x)
 @override_glsl round(x::IEEEFloat, r::RoundingMode{:Down})    = Floor(x)
 @noinline Floor(x)                                            = Base.floor_llvm(x)

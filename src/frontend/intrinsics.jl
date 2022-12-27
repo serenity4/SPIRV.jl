@@ -108,6 +108,11 @@ end
 @override (::Type{T})(x::BitUnsigned) where {T<:IEEEFloat} = ConvertUToF(T, x)
 @noinline ConvertUToF(to::Type{T}, x::BitUnsigned) where {T<:IEEEFloat} = Base.uitofp(to, x)
 
+### There is no possibility to throw errors in SPIR-V, so replace safe operations with unsafe ones.
+@override trunc(::Type{T}, x::IEEEFloat) where {T<:BitInteger} = unsafe_trunc(T, x)
+@override (::Type{T})(x::IEEEFloat) where {T<:BitInteger} = unsafe_trunc(T, x)
+@override trunc(x::IEEEFloat) = round(x, RoundToZero)
+
 # Integers.
 
 ## Integer conversions.

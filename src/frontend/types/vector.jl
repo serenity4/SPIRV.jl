@@ -160,7 +160,6 @@ end
 @inline Base.broadcasted(f::F, v::T) where {F,T<:Vec} = T(f.(getcomponents(v)))
 @inline Base.broadcasted(f::F, v1::T, v2::T...) where {F,T<:Vec} = T(f.((getcomponents(v) for v in (v1, v2...))...))
 @inline Base.broadcasted(f::F, v1::Vec, v2::Vec...) where {F} = Base.broadcasted(f, promote(v1, v2...)...)
-@inline Base.broadcasted(f::F, v1::Vec, v2::Vec...) where {F} = Base.broadcasted(f, promote(v1, v2...)...)
 @inline Base.broadcasted(f::F, x::Vec, y::Scalar, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
 @inline Base.broadcasted(f::F, x::Scalar, y::Vec, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
 

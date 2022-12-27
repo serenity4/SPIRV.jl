@@ -383,4 +383,12 @@ memory_model = "OpMemoryModel(Logical, Vulkan)"
       @test_throws "can only be formed between a block and a loop header" unwrap(validate(ir))
     end
   end
+
+  @testset "Coverage of intrinsics and Base functions" begin
+    @test unwrap(validate(@compile (x -> UInt32(ceil(x)))(::Float32)))
+    @test unwrap(validate(@compile (x -> exp(sin(acos(x))))(::Float32)))
+    @test unwrap(validate(@compile (x -> round(x, RoundNearest))(::Float32)))
+    @test unwrap(validate(@compile trunc(::Float32)))
+    @test unwrap(validate(@compile (x -> trunc(UInt32, x))(::Float32)))
+  end
 end;
