@@ -90,6 +90,7 @@ include("frontend/compile.jl")
 include("frontend/codegen.jl")
 include("frontend/shader.jl")
 
+include("passes.jl")
 include("spirv_dsl.jl")
 
 # These precompile directives should be regenerated regularly

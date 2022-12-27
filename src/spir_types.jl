@@ -169,7 +169,8 @@ Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is p
 
 If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
 """
-function spir_type(t::DataType, tmap::Optional{TypeMap} = nothing; wrap_mutable = false, storage_class = nothing)
+function spir_type(@nospecialize(t::Union{DataType,Type{Union{}}}), tmap::Optional{TypeMap} = nothing; wrap_mutable = false, storage_class = nothing)
+  t === Union{} && error("Bottom type Union{} reached. This suggests that an error was encoutered in the Julia function during its compilation.")
   wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, spir_type(t, tmap))
   !isnothing(tmap) && isnothing(storage_class) && haskey(tmap, t) && return tmap[t]
   type = @match t begin
@@ -207,6 +208,7 @@ function spir_type(t::DataType, tmap::Optional{TypeMap} = nothing; wrap_mutable 
     ::Type{<:SampledImage} => SampledImageType(spir_type(image_type(t), tmap))
     GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type.(t.types, tmap))
     GuardBy(isprimitivetype) => primitive_type_to_spirv(t)
+    GuardBy(isabstracttype) => error("Abstract types cannot be mapped to SPIR-V types.")
     _ => error("Type $t does not have a corresponding SPIR-V type.")
   end
 

@@ -1,5 +1,5 @@
 using SPIRV, Test
-using SPIRV: Constant
+using SPIRV: Constant, TypeMap
 
 @testset "SPIR-V types" begin
   i32 = IntegerType(32, true)
@@ -13,3 +13,16 @@ using SPIRV: Constant
   t2_ptr = PointerType(SPIRV.StorageClassFunction, t2)
   @test t_ptr ≈ t2_ptr
 end
+
+@testset "TypeMap" begin
+  tmap = TypeMap()
+  t = spir_type(Tuple{Int,Int}, tmap)
+  @test t === spir_type(Tuple{Int,Int}, tmap)
+  pt = spir_type(Pointer{Tuple{Int,Int}}, tmap)
+  @test t === pt.type
+  @test_throws "Abstract types" spir_type(Ref{Tuple{Int,Int}}, tmap; wrap_mutable = true)
+  pt = spir_type(Base.RefValue{Tuple{Int,Int}}, tmap; wrap_mutable = true)
+  ref_t = pt.type
+  @test t === only(ref_t.members)
+  @test_throws "Bottom type" spir_type(Union{}, tmap)
+end;

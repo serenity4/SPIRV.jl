@@ -102,7 +102,7 @@ function alignment(layout::VulkanLayout, t::SPIRType, storage_classes, is_interf
 end
 
 function storage_classes(types, t::SPIRType)
-  Set(type.storage_class for type in types if isa(type, PointerType) && type.type == t)
+  Set{StorageClass}(type.storage_class for type in types if isa(type, PointerType) && type.type == t)
 end
 storage_classes(tmeta::TypeMetadata, t::SPIRType) = storage_classes(keys(tmeta.d), t)
 
@@ -153,26 +153,29 @@ end
 add_matrix_layout!(tmeta::TypeMetadata, t::StructType, i, subt::MatrixType) = decorate!(tmeta, t, i, subt.is_column_major ? DecorationColMajor : DecorationRowMajor)
 
 add_offsets!(tmeta::TypeMetadata, T::DataType, layout::LayoutStrategy) = add_offsets!(tmeta, tmeta.tmap[T], layout)
+isinterface(tmeta::TypeMetadata, t::SPIRType) = has_decoration(tmeta, t, DecorationBlock)
+isinterface(tmeta::TypeMetadata) = t -> isinterface(tmeta, t)
 function add_offsets!(tmeta::TypeMetadata, t::StructType, layout::LayoutStrategy)
   scs = storage_classes(tmeta, t)
   current_offset = 0
   n = length(t.members)
   for (i, subt) in enumerate(t.members)
-    alignmt = alignment(layout, subt, scs, has_decoration(tmeta, t, DecorationBlock))
+    alignmt = alignment(layout, subt, scs, isinterface(tmeta, t))
     current_offset = alignmt * cld(current_offset, alignmt)
     decorate!(tmeta, t, i, DecorationOffset, current_offset)
     i ≠ n && (current_offset += compute_minimal_size(subt, tmeta, layout))
   end
 end
 
-function member_offsets(t::StructType, layout::LayoutStrategy, storage_classes::Dictionary{SPIRType, Set{StorageClass}}, interfaces::Set{StructType})
+function member_offsets(isinterface, t::StructType, layout::LayoutStrategy, storage_classes::Dictionary{SPIRType, Set{StorageClass}})
   offsets = UInt32[]
   base = 0U
   for (i, subt) in enumerate(t.members)
-    alignmt = alignment(layout, subt, get(Set{StorageClass}, storage_classes, subt), in(subt, interfaces))
+    alignmt = alignment(layout, subt, get(Set{StorageClass}, storage_classes, subt), isinterface(subt))
     base = alignmt * cld(base, alignmt)
     push!(offsets, base)
-    base += compute_minimal_size(subt, t -> get(Set{StorageClass}, storage_classes, t), Base.Fix2(in, interfaces), layout)
+    isa(subt, ArrayType) && isnothing(subt.size) && i == lastindex(t.members) && break
+    base += compute_minimal_size(subt, t -> get(Set{StorageClass}, storage_classes, t), isinterface, layout)
   end
   offsets
 end
@@ -185,7 +188,7 @@ Compute the minimal size that a type `T` should have, using the alignments compu
 function compute_minimal_size end
 
 compute_minimal_size(T::DataType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_minimal_size(tmeta.tmap[T], tmeta, layout)
-compute_minimal_size(t::SPIRType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_minimal_size(t, Base.Fix1(storage_classes, tmeta), t -> has_decoration(tmeta, t, DecorationBlock), layout)
+compute_minimal_size(t::SPIRType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_minimal_size(t, Base.Fix1(storage_classes, tmeta), isinterface(tmeta), layout)
 compute_minimal_size(t::ScalarType, storage_classes, is_interface, layout::LayoutStrategy) = scalar_alignment(t)
 compute_minimal_size(t::Union{VectorType, MatrixType}, storage_classes, is_interface, layout::LayoutStrategy) = t.n * compute_minimal_size(t.eltype, storage_classes, is_interface, layout)
 compute_minimal_size(t::ArrayType, storage_classes, is_interface, layout::LayoutStrategy) = extract_size(t) * compute_minimal_size(t.eltype, storage_classes, is_interface, layout)
@@ -211,7 +214,7 @@ Compute the stride that an array containing `T` should have, using module member
 function compute_stride end
 
 compute_stride(T::DataType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_stride(tmeta.tmap[T], tmeta, layout)
-compute_stride(t::SPIRType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_stride(t, Base.Fix1(storage_classes, tmeta), t -> has_decoration(tmeta, t, DecorationBlock), Base.Fix1(getoffsets, tmeta), layout)
+compute_stride(t::SPIRType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_stride(t, Base.Fix1(storage_classes, tmeta), isinterface(tmeta), Base.Fix1(getoffsets, tmeta), layout)
 compute_stride(t::ScalarType, storage_classes, is_interface, getoffsets, layout::LayoutStrategy) = scalar_alignment(t)
 compute_stride(t::Union{VectorType, MatrixType}, storage_classes, is_interface, getoffsets, layout::LayoutStrategy) = t.n * compute_stride(t.eltype, storage_classes, is_interface, getoffsets, layout)
 compute_stride(t::ArrayType, storage_classes, is_interface, getoffsets, layout::LayoutStrategy) = extract_size(t) * compute_stride(t.eltype, storage_classes, is_interface, getoffsets, layout)
@@ -299,6 +302,12 @@ getoffsets(getoffset, t::SPIRType) = getoffsets!(UInt32[], 0U, getoffset, t)
 getoffsets(T::DataType) = getoffsets!(UInt32[], 0U, fieldoffset, T)
 getoffsets(tmeta::TypeMetadata, t::SPIRType) = getoffsets((t, i) -> getoffset(tmeta, t, i), t)
 
+function validate_offsets(offsets)
+  allunique(offsets) || error("Non-unique offsets detected. They must be unique, or otherwise data will be overwritten.")
+  sortperm(offsets) == eachindex(offsets) || error("Non-monotonous offsets detected.")
+  true
+end
+
 """
 Return a vector of bytes where every logical piece of data (delimited via the provided `sizes`)
 has been aligned according to the provided offsets.
@@ -310,6 +319,8 @@ function align(data::AbstractVector{UInt8}, sizes::AbstractVector{<:Integer}, of
   total = sum(sizes)
   total == length(data) || error("Size mismatch between the provided data (", length(data), " bytes) and the corresponding SPIR-V type (", total, " bytes)")
   data_byte = 1
+  @assert length(sizes) == length(offsets) "Size mismatch between the list of sizes and the list of offsets"
+  @assert validate_offsets(offsets)
   for (offset, size) in zip(offsets, sizes)
     from = data_byte:(data_byte + size - 1)
     to = (offset + 1):(offset + size)
@@ -343,10 +354,12 @@ Extract a [`TypeInfo`](@ref) from the existing type mapping.
     The type mapping is not copied for performance reasons.
     It must not be modified or correctness issues may appear.
 """
-function TypeInfo(tmeta::TypeMetadata)
-  info = TypeInfo(tmeta.tmap)
-  for t in tmeta.tmap
-    isa(t, StructType) && insert!(info.offsets, t, getoffsets(tmeta, t))
+function TypeInfo(tmeta::TypeMetadata, layout::LayoutStrategy)
+  (; tmap) = tmeta
+  info = TypeInfo(tmap)
+  scs = dictionary([t => storage_classes(tmeta, t) for t in tmap])
+  for t in tmap
+    isa(t, StructType) && insert!(info.offsets, t, member_offsets(isinterface(tmeta), t, layout, scs))
     if isa(t, ArrayType)
       decs = decorations(tmeta, t)
       !isnothing(decs) && has_decoration(decs, DecorationArrayStride) && insert!(info.strides, t, decs.array_stride)
@@ -364,7 +377,7 @@ This is primarily intended for testing purposes.
 function TypeInfo(Ts::AbstractVector{DataType}, layout::LayoutStrategy)
   info = TypeInfo()
   storage_classes = Dictionary{SPIRType,Set{StorageClass}}()
-  interfaces = Set{StructType}()
+  isinterface = Returns(false)
   worklist = SPIRType[]
   for T in Ts
     t = spir_type(T)
@@ -380,22 +393,22 @@ function TypeInfo(Ts::AbstractVector{DataType}, layout::LayoutStrategy)
       push!(worklist, t.eltype)
     end
     isa(t, StructType) || continue
-    insert!(info.offsets, t, member_offsets(t, layout, storage_classes, interfaces))
+    insert!(info.offsets, t, member_offsets(isinterface, t, layout, storage_classes))
     for subt in t.members
       isa(subt, StructType) || continue
-      insert!(info.offsets, subt, member_offsets(subt, layout, storage_classes, interfaces))
+      insert!(info.offsets, subt, member_offsets(isinterface, subt, layout, storage_classes))
     end
   end
 
   for t in array_types
-    stride = compute_stride(t.eltype, t -> get(Set{StorageClass}, storage_classes, t), Base.Fix2(in, interfaces), Base.Fix1(getoffsets, info), layout)
+    stride = compute_stride(t.eltype, t -> get(Set{StorageClass}, storage_classes, t), isinterface, Base.Fix1(getoffsets, info), layout)
     insert!(info.strides, t, stride)
   end
 
   info
 end
 
-TypeInfo(ir::IR) = TypeInfo(TypeMetadata(ir))
+TypeInfo(ir::IR, layout::LayoutStrategy) = TypeInfo(TypeMetadata(ir), layout)
 
 getoffsets(tinfo::TypeInfo, t::SPIRType) = getoffsets((t, i) -> tinfo.offsets[t][i], t)
 getoffsets(tdata::Union{TypeMetadata,TypeInfo}, T::DataType) = getoffsets(tdata, tdata.tmap[T])

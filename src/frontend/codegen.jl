@@ -73,11 +73,11 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
           end
         else
           args, variables = peel_global_vars(args, mt, tr, fdef)
-          (OpFunctionCall, (emit_new!(mt, target.interp, mi, fdef, variables), args...))
+          (OpFunctionCall, (emit_new!(mt, tr, target.interp, mi, fdef, variables), args...))
         end
       else
         args, variables = peel_global_vars(args, mt, tr, fdef)
-        (OpFunctionCall, (emit_new!(mt, target.interp, mi, fdef, variables), args...))
+        (OpFunctionCall, (emit_new!(mt, tr, target.interp, mi, fdef, variables), args...))
       end
     end
     _ => throw(CompilationError("Expected call or invoke expression, got $(repr(jinst))"))
@@ -190,6 +190,8 @@ function load_variables!(args, blk::Block, mt::ModuleTarget, tr::Translation, fd
     end
     # OpPhi must use variables directly (loading cannot happen before OpPhi instructions).
     opcode == OpPhi && continue
+    # OpFunctionCall must use variables directly, as mutable argument types will wrapped in pointers.
+    opcode == OpFunctionCall && continue
     loaded_arg = load_if_variable!(blk, mt, tr, fdef, arg)
     !isnothing(loaded_arg) && (args[i] = loaded_arg)
   end
@@ -246,6 +248,6 @@ function literals_to_const!(args, mt::ModuleTarget, tr::Translation, opcode)
   end
 end
 
-function emit_new!(mt::ModuleTarget, interp::SPIRVInterpreter, mi::MethodInstance, fdef::FunctionDefinition, variables)
-  emit!(mt, Translation(), SPIRVTarget(mi, interp; inferred = true), variables)
+function emit_new!(mt::ModuleTarget, tr::Translation, interp::SPIRVInterpreter, mi::MethodInstance, fdef::FunctionDefinition, variables)
+  emit!(mt, Translation(tr.tmap, tr.types), SPIRVTarget(mi, interp; inferred = true), variables)
 end

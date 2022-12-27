@@ -1,5 +1,5 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, payload_sizes, getstride, reinterpret_spirv, TypeInfo, TypeMetadata, metadata!
+using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, payload_sizes, getstride, reinterpret_spirv, TypeInfo, TypeMetadata, metadata!, validate_offsets
 
 function test_has_offset(tmeta, T, field, offset)
   decs = decorations(tmeta, tmeta.tmap[T], field)
@@ -195,10 +195,13 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
       Align3,
       Align4,
       Align5,
+      Tuple{Tuple{Int64,Int64}, Tuple{Float32, Float32}},
     ]
     type_info = TypeInfo(Ts, layout)
     for T in Ts
-      @test getoffsets(type_info, T) == getoffsets(add_type_layouts!(type_metadata(T), layout), T)
+      offsets = getoffsets(type_info, T)
+      @test validate_offsets(offsets)
+      @test offsets == getoffsets(add_type_layouts!(type_metadata(T), layout), T)
     end
   end
 

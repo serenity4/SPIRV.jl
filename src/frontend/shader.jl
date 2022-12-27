@@ -80,39 +80,6 @@ function add_type_metadata!(ir::IR, interface::ShaderInterface)
   end
 end
 
-function find_definition(id::ResultID, insts)
-  idx = findfirst(has_result_id(id), insts)
-  if !isnothing(idx)
-    insts[idx]
-  end
-end
-
-function add_align_operands!(ir::IR, fdef::FunctionDefinition, layout::LayoutStrategy)
-  exs = body(fdef)
-  for ex in exs
-    @tryswitch opcode(ex) begin
-      @case &OpLoad || &OpStore
-      pointer_id = ex[1]::ResultID
-      def = @something(
-        get(ir.global_vars, pointer_id, nothing),
-        find_definition(pointer_id, fdef.local_vars),
-        find_definition(pointer_id, exs),
-      )
-      isnothing(def) && error("Could not retrieve definition for $pointer_id")
-      pointer = def.type
-      (; type, storage_class) = pointer
-      if storage_class == StorageClassPhysicalStorageBuffer
-        # We assume that no other storage class uses the pointer.
-        push!(ex, MemoryAccessAligned, UInt32(alignment(layout, type, [storage_class], false)))
-      end
-      @case &OpFunctionCall
-      # Recurse into function calls.
-      callee = ir.fdefs[ex[1]::ResultID]
-      add_align_operands!(ir, callee, layout)
-    end
-  end
-end
-
 struct MemoryResource
   address::ResultID
   type::ResultID

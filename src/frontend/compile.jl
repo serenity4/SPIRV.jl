@@ -36,7 +36,8 @@ struct Translation
   globalrefs::Dictionary{Core.SSAValue,GlobalRef}
 end
 
-Translation() = Translation(Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), TypeMap(), Dictionary(), Dictionary())
+Translation(tmap, types) = Translation(Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), tmap, types, Dictionary())
+Translation() = Translation(TypeMap(), Dictionary())
 
 ResultID(arg::Core.Argument, tr::Translation) = tr.args[arg]
 ResultID(bb::Int, tr::Translation) = tr.bbs[bb]
