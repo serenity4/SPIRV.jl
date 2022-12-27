@@ -20,6 +20,7 @@ end)
 
 Base.length(::Type{<:Vec{N}}) where {N} = N
 Base.size(T::Type{<:Vec}) = (length(T),)
+Base.axes(T::Type{<:Vec}) = (Base.OneTo(length(T)),)
 Base.zero(T::Type{<:Vec}) = T(ntuple(Returns(zero(eltype(T))), length(T)))
 Base.one(T::Type{<:Vec}) = T(ntuple(Returns(one(eltype(T))), length(T)))
 Base.promote_rule(::Type{Vec{N,T1}}, ::Type{Vec{N,T2}}) where {N,T1,T2} = Vec{N,promote_type(T1, T2)}
@@ -132,7 +133,6 @@ struct BroadcastStyleSPIRV{T} <: BroadcastStyle end
 Base.BroadcastStyle(T::Type{<:Vec}) = BroadcastStyleSPIRV{T}()
 Base.BroadcastStyle(::BroadcastStyleSPIRV{T1}, ::BroadcastStyleSPIRV{T2}) where {T1,T2} = BroadcastStyleSPIRV{promote_type(T1,T2)}()
 Base.BroadcastStyle(::DefaultArrayStyle{0}, style::BroadcastStyleSPIRV) = style
-Base.BroadcastStyle(style::BroadcastStyleSPIRV, ::DefaultArrayStyle{0}) = style
 Base.similar(bc::Broadcasted{BroadcastStyleSPIRV{T}}, ::Type) where {T} = zero(T)
 @inline Broadcast.instantiate(bc::Broadcasted{BroadcastStyleSPIRV{T}}) where {T<:Vec} = bc
 @inline Base.materialize!(v::T, bc::Broadcasted{BroadcastStyleSPIRV{T}}) where {T<:Vec} = copyto!(v, only(bc.args))
@@ -148,15 +148,27 @@ for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, 
   # `vectorize` is used as a CPU implementation of vector-wide instructions.
   @eval @noinline $(Symbol(:F, op))(v1::T, v2::T) where {T<:Vec} = vectorize($f, v1, v2)
   @eval @noinline $(Symbol(:I, op))(v1::T, v2::T) where {T<:Vec} = vectorize($f, v1, v2)
-
-  @eval Base.copy(bc::Broadcasted{<:BroadcastStyleSPIRV{<:Vec},<:Any,typeof($f)}) = reduce($f, bc.args)
-  @eval Base.broadcasted(::typeof($f), x::Vec, y::Vec) = $f(x, y)
-  @eval Base.broadcasted(::typeof($f), x::Vec, y::Scalar) = $f(x, y)
-  @eval Base.broadcasted(::typeof($f), x::Scalar, y::Vec) = $f(x, y)
 end
+
+for (f, op) in zip((:ceil, :exp), (:Ceil, :Exp))
+  # Define FAdd, IMul, etc. for vectors of matching type.
+  # `vectorize` is used as a CPU implementation of vector-wide instructions.
+  @eval @noinline $op(v::T) where {T<:Vec} = vectorize($f, v)
+  @eval Base.$f(v::Vec) = $op(v)
+end
+
+@inline Base.broadcasted(f::F, v::T) where {F,T<:Vec} = T(f.(getcomponents(v)))
+@inline Base.broadcasted(f::F, v1::T, v2::T...) where {F,T<:Vec} = T(f.((getcomponents(v) for v in (v1, v2...))...))
+@inline Base.broadcasted(f::F, v1::Vec, v2::Vec...) where {F} = Base.broadcasted(f, promote(v1, v2...)...)
+@inline Base.broadcasted(f::F, v1::Vec, v2::Vec...) where {F} = Base.broadcasted(f, promote(v1, v2...)...)
+@inline Base.broadcasted(f::F, x::Vec, y::Scalar, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
+@inline Base.broadcasted(f::F, x::Scalar, y::Vec, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
+
+getcomponents(v::Vec{N}) where {N} = ntuple(i -> getindex(v, i), N)
 
 vectorize(op, v1::T, v2::T) where {T<:Vec} = T(op.(v1.data, v2.data))
 vectorize(op, v::T, x::Scalar) where {T<:Vec} = T(op.(v.data, x))
+vectorize(op, v::T) where {T<:Vec} = T(op.(v.data))
 
 Base.copyto!(dst::T1, src::T2) where {T1<:Vec, T2<:Vec} = dst[] = src
 

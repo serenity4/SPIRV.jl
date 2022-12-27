@@ -35,7 +35,7 @@ Base.eachindex(T::Type{<:AbstractSPIRVArray}) = 0U:((lastindex(T) - 1) * U)
 Base.similar(T::Type{<:AbstractSPIRVArray}, element_type, dims) = zero(T)
 Base.similar(T::Type{<:AbstractSPIRVArray}) = similar(T, eltype(T), size(T))
 
-for f in (:length, :eltype, :size, :firstindex, :lastindex, :zero, :one, :similar, :eachindex)
+for f in (:length, :eltype, :size, :firstindex, :lastindex, :zero, :one, :similar, :eachindex, :axes)
   @eval Base.$f(v::AbstractSPIRVArray) = $f(typeof(v))
 end
 

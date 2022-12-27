@@ -176,7 +176,7 @@ macro code_typed(debuginfo, interp, ex)
     _ => error("Expected 'debuginfo = <value>' where <value> is one of (:source, :none)")
   end
   ex = quote
-    target = $(esc(:(@target $interp $ex)))
+    target = $(esc(:(SPIRV.@target $interp $ex)))
     code = target.code
     $debuginfo == :none && Base.remove_linenums!(code)
     code

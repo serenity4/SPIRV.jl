@@ -56,6 +56,7 @@ using SPIRV: component_type, texel_type, sampled_type
     @test v ./ Vec(1, 1) == v * Vec(1, 1) == v
     @test 1 .* v == 1 * v == v
     @test v .* v .+ v .* 1 == v * v + v * 1 == Vec2(2, 6)
+    @test ceil.(v .* 0.3F .+ exp.(v)) == Vec2(4, 8)
   end
 
   @testset "Mat" begin
