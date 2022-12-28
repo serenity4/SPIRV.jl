@@ -36,6 +36,8 @@ Base.show(io::IO, ::MIME"text/plain", tree::SimpleTree) = isempty(children(tree)
 Base.show(io::IO, tree::SimpleTree) = print(io, typeof(tree), "(", nodevalue(tree), isroot(tree) ? "" : string(", parent = ", nodevalue(parent(tree))), ", children = [", join(nodevalue.(children(tree)), ", "), "])")
 
 Base.getindex(tree::SimpleTree, index) = children(tree)[index]
+Base.firstindex(tree::SimpleTree) = firstindex(children(tree))
+Base.lastindex(tree::SimpleTree) = lastindex(children(tree))
 
 AbstractTrees.nodetype(T::Type{<:SimpleTree}) = T
 AbstractTrees.NodeType(::Type{SimpleTree{T}}) where {T} = HasNodeType()
@@ -358,7 +360,7 @@ function common_ancestor(tree, trees)
   common_ancestor = tree
   parent_chain = parents(common_ancestor)
   for candidate in trees
-    common_ancestor = find_parent(in(parent_chain), candidate)
+    common_ancestor = in(candidate, parent_chain) ? candidate : find_parent(in(parent_chain), candidate)
     parent_chain = parents(common_ancestor)
     isnothing(common_ancestor) && return nothing
   end
@@ -378,9 +380,18 @@ function parents(tree)
 end
 
 function find_parent(f, tree)
+  original = tree
   while true
-    f(tree) === true && return tree
+    f(tree) === true && tree !== original && return tree
     isroot(tree) && break
     tree = parent(tree)
   end
+end
+
+function find_subtree(f, tree::SimpleTree)
+  original = tree
+  for tree in PreOrderDFS(tree)
+    f(tree) === true && tree !== original && return tree
+  end
+  nothing
 end

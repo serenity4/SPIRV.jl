@@ -36,29 +36,29 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       OpExtension("SPV_EXT_physical_storage_buffer")
       OpExtension("SPV_KHR_vulkan_memory_model")
       OpMemoryModel(PhysicalStorageBuffer64, Vulkan)
-      OpEntryPoint(Vertex, %14, "main", %4)
-      OpName(%6, "vert_shader!_Tuple{Vec4}")
+      OpEntryPoint(Vertex, %15, "main", %4)
+      OpName(%12, "vert_shader!_Tuple{Vec4}")
       OpName(%4, "out_color")
  %1 = OpTypeFloat(0x00000020)
  %2 = OpTypeVector(%1, 0x00000004)
  %3 = OpTypePointer(Output, %2)
  %4 = OpVariable(Output)::%3
  %5 = OpTypeFunction(%1)
- %8 = OpTypeInt(0x00000020, 0x00000000)
- %9 = OpConstant(0x00000003)::%8
-%11 = OpConstant(0x3f800000)::%1
-%12 = OpTypeVoid()
-%13 = OpTypeFunction(%12)
-%17 = OpTypePointer(Output, %1)
- %6 = OpFunction(None, %5)::%1
- %7 = OpLabel()
-%10 = OpAccessChain(%4, %9)::%17
-      OpStore(%10, %11)
-      OpReturnValue(%11)
+ %6 = OpTypeInt(0x00000020, 0x00000000)
+ %7 = OpConstant(0x00000003)::%6
+ %8 = OpConstant(0x3f800000)::%1
+ %9 = OpTypeVoid()
+%10 = OpTypeFunction(%9)
+%11 = OpTypePointer(Output, %1)
+%12 = OpFunction(None, %5)::%1
+%13 = OpLabel()
+%14 = OpAccessChain(%4, %7)::%11
+      OpStore(%14, %8)
+      OpReturnValue(%8)
       OpFunctionEnd()
-%14 = OpFunction(None, %13)::%12
-%15 = OpLabel()
-%16 = OpFunctionCall(%6)::%1
+%15 = OpFunction(None, %10)::%9
+%16 = OpLabel()
+%17 = OpFunctionCall(%12)::%1
       OpReturn()
       OpFunctionEnd()
 """,
@@ -239,6 +239,25 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
         3 => Decorations(SPIRV.DecorationDescriptorSet, 0).decorate!(SPIRV.DecorationBinding, 0),
         4 => Decorations(SPIRV.DecorationLocation, 2),
         5 => Decorations(SPIRV.DecorationLocation, 3),
+      ]),
+      features = SUPPORTED_FEATURES,
+    )
+    shader = Shader(target, interface)
+    @test unwrap(validate(shader))
+
+    function compute_blur_2!(res::Vec3, blur::GaussianBlur, reference, uv)
+      res[] = compute_blur_2(blur, reference, uv)
+    end
+
+    target = @target compute_blur_2!(::Vec3, ::GaussianBlur, ::SPIRV.SampledImage{SPIRV.image_type(SPIRV.ImageFormatR16f,SPIRV.Dim2D,0,false,false,1)}, ::Vec2)
+    interface = ShaderInterface(;
+      execution_model = SPIRV.ExecutionModelFragment,
+      storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassUniformConstant, SPIRV.StorageClassInput],
+      variable_decorations = dictionary([
+        1 => Decorations(SPIRV.DecorationLocation, 0),
+        2 => Decorations(SPIRV.DecorationLocation, 0),
+        3 => Decorations(SPIRV.DecorationDescriptorSet, 0).decorate!(SPIRV.DecorationBinding, 0),
+        4 => Decorations(SPIRV.DecorationLocation, 2),
       ]),
       features = SUPPORTED_FEATURES,
     )

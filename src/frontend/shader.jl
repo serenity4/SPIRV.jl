@@ -98,7 +98,8 @@ validate(shader::Shader) = validate_shader(IR(Module(shader); satisfy_requiremen
 function Shader(target::SPIRVTarget, interface::ShaderInterface)
   ir = IR(target, interface)
   ep = entry_point(ir, :main).func
-  Shader(Module(ir), ep, memory_resources(ir, ep))
+  mod = Module(ir)
+  Shader(renumber_ssa(mod), ep, memory_resources(ir, ep))
 end
 
 assemble(shader::Shader) = assemble(shader.mod)

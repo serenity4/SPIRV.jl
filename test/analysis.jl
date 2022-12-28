@@ -6,30 +6,31 @@ using SPIRV: REGION_BLOCK, REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REG
 # All the following graphs are rooted in 1.
 
 "Symmetric diverge/merge point."
-g1() = DeltaGraph(4, 1 => 2, 1 => 3, 2 => 4, 3 => 4)
+g1() = DeltaGraph(1 => 2, 1 => 3, 2 => 4, 3 => 4)
 "No merge point, two sinks."
-g2() = DeltaGraph(4, 1 => 2, 1 => 3, 3 => 4)
+g2() = DeltaGraph(1 => 2, 1 => 3, 3 => 4)
 "Graph with a merge point that is the target of both a primary and a secondary branching construct (nested within the primary)."
-g3() = DeltaGraph(6, 1 => 2, 1 => 3, 2 => 4, 2 => 5, 4 => 6, 5 => 6, 3 => 6)
+g3() = DeltaGraph(1 => 2, 1 => 3, 2 => 4, 2 => 5, 4 => 6, 5 => 6, 3 => 6)
 "Graph with a merge point dominated by a cycle."
-g4() = DeltaGraph(8, 1 => 2, 1 => 3, 2 => 4, 4 => 5, 4 => 7, 5 => 6, 6 => 4, 7 => 8, 3 => 8)
+g4() = DeltaGraph(1 => 2, 1 => 3, 2 => 4, 4 => 5, 4 => 7, 5 => 6, 6 => 4, 7 => 8, 3 => 8)
 "Graph with three sinks and a merge point dominated by a branching construct wherein one branch is a sink."
-g5() = DeltaGraph(8, 1 => 2, 2 => 3, 2 => 4, 4 => 6, 1 => 5, 5 => 6, 6 => 7, 6 => 8)
+g5() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 4 => 6, 1 => 5, 5 => 6, 6 => 7, 6 => 8)
 "Graph with a simple source, a central vertex and a simple sink. The central vertex contains two separate loops with one having a symmetric branching construct inside."
-g6() = DeltaGraph(9, 1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 2, 2 => 9)
+g6() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 2, 2 => 9)
 "Basic irreducible CFG."
-g7() = DeltaGraph(5, 1 => 2, 1 => 3, 2 => 3, 3 => 2, 2 => 4, 3 => 5)
+g7() = DeltaGraph(1 => 2, 1 => 3, 2 => 3, 3 => 2, 2 => 4, 3 => 5)
 "CFG from https://www.sable.mcgill.ca/~hendren/621/ControlFlowAnalysis_Handouts.pdf"
-g8() = DeltaGraph(11, 1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 5, 8 => 9, 9 => 11, 11 => 8, 9 => 10, 10 => 2, 9 => 4)
+g8() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 4, 4 => 5, 5 => 4, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 5, 8 => 9, 9 => 11, 11 => 8, 9 => 10, 10 => 2, 9 => 4)
 "Entry node leading to a pure cycle between three nodes."
-g9() = DeltaGraph(4, 1 => 2, 2 => 3, 3 => 4, 4 => 2)
+g9() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 2)
 "CFG with a branch between a loop and a termination node from a node dominating a loop, with that loop otherwise dominating the termination node."
-g10() = DeltaGraph(4, 1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
+g10() = DeltaGraph(1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
 "CFG with two nested `if-else` constructs pointing to a single common merge block."
-g11() = DeltaGraph(6, 1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 1 => 6, 6 => 5)
-
-# The core structure is `DeltaGraph(6, 1 => 2, 1 => 6, 2 => 3, 3 => 4, 4 => 5, 5 => 2, 5 => 6)`
-# g11() = DeltaGraph(10, 1 => 2, 1 => 10, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 5 => 6, 5 => 7, 6 => 8, 7 => 8, 8 => 9, 9 => 2, 8 => 10)
+g11() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 1 => 6, 6 => 5)
+"CFG with a conditional which contains nested block regions before actually branching."
+g12() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 5, 4 => 6, 5 => 7, 6 => 7)
+"CFG with a loop which contains nested block regions before actually branching."
+g13() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 5, 5 => 6, 6 => 4, 6 => 7)
 
 test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
 
@@ -394,6 +395,52 @@ end
           ]),
           ControlTree(5, REGION_BLOCK),
         ])
+
+        g = g11()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_IF_THEN_ELSE, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_IF_THEN_ELSE, [
+              ControlTree(2, REGION_BLOCK),
+              ControlTree(3, REGION_BLOCK),
+              ControlTree(4, REGION_BLOCK),
+            ]),
+            ControlTree(6, REGION_BLOCK),
+          ]),
+          ControlTree(5, REGION_BLOCK),
+        ])
+
+        g = g12()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_BLOCK),
+          ControlTree(3, REGION_BLOCK),
+          ControlTree(4, REGION_IF_THEN_ELSE, [
+            ControlTree(4, REGION_BLOCK),
+            ControlTree(5, REGION_BLOCK),
+            ControlTree(6, REGION_BLOCK),
+          ]),
+          ControlTree(7, REGION_BLOCK),
+        ])
+
+        # g = g13()
+        # ctree = ControlTree(g)
+        # test_coverage(g, ctree)
+        # @test ctree == ControlTree(1, REGION_BLOCK, [
+        #   ControlTree(1, REGION_BLOCK),
+        #   ControlTree(2, REGION_BLOCK),
+        #   ControlTree(3, REGION_BLOCK),
+        #   ControlTree(4, REGION_NATURAL_LOOP, [
+        #     ControlTree(4, REGION_BLOCK),
+        #     ControlTree(5, REGION_BLOCK),
+        #     ControlTree(6, REGION_BLOCK),
+        #   ]),
+        #   ControlTree(7, REGION_BLOCK),
+        # ])
       end
     end
 
@@ -455,25 +502,13 @@ end
     test_completeness(tree, cfg)
     @test !cfg.is_reducible
 
-    cfg = ControlFlowGraph(g8())
-    tree = DominatorTree(cfg)
-    test_completeness(tree, cfg)
-    @test cfg.is_reducible
-
-    cfg = ControlFlowGraph(g9())
-    tree = DominatorTree(cfg)
-    test_completeness(tree, cfg)
-    @test cfg.is_reducible
-
-    cfg = ControlFlowGraph(g10())
-    tree = DominatorTree(cfg)
-    test_completeness(tree, cfg)
-    @test cfg.is_reducible
-
-    cfg = ControlFlowGraph(g11())
-    tree = DominatorTree(cfg)
-    test_completeness(tree, cfg)
-    @test cfg.is_reducible
+    for i in 8:13
+      f = getproperty(@__MODULE__, Symbol(:g, i))
+      cfg = ControlFlowGraph(f())
+      tree = DominatorTree(cfg)
+      test_completeness(tree, cfg)
+      @test cfg.is_reducible
+    end
   end
 
   @testset "Flow analysis" begin

@@ -25,6 +25,8 @@ function DeltaGraph{T}(n::Integer) where {T}
   add_vertices!(dg, n)
   dg
 end
+DeltaGraph(edges...) = DeltaGraph(collect(edges))
+DeltaGraph(edges::AbstractVector) = DeltaGraph(maximum(x -> max(x.first, x.second), edges), edges)
 
 function vertex_index(dg::DeltaGraph, v)
   idx = findfirst(==(v), dg.vertices)

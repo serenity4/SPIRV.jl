@@ -99,21 +99,26 @@ function throw_compilation_error(exc::Exception, fields::NamedTuple, msg = "the 
     throw(err)
   end
 end
+throw_compilation_error(msg::AbstractString) = throw(CompilationError(msg))
 
 error_field(field) = string(Base.text_colors[:cyan], field, Base.text_colors[:default], ": ")
 
 function Base.showerror(io::IO, err::CompilationError)
+  # TODO: Use Base.StackTraces.
   print(io, "CompilationError")
   print(io, ": ", err.msg, '.')
   (; stacktrace) = err.target.interp.debug
   print(io, "\nStacktrace:")
-  for (i, frame) in enumerate(stacktrace)
-    here = i == lastindex(stacktrace)
+  for (i, frame) in enumerate(reverse(stacktrace))
+    here = i == firstindex(stacktrace)
     println(io)
     here ? printstyled(io, '>'; color = :red, bold = true) : print(io, ' ')
     print(io, " [$i] ")
-    here ? printstyled(io, frame.mi; color = :red, bold = true) : printstyled(io, frame.mi; color = :light_black)
+    str = string(frame.mi, "::", frame.code.rettype)
+    here ? printstyled(io, str; color = :red, bold = true) : print(io, str)
   end
+  frame = last(stacktrace)
+  frame.code.rettype == Union{} && println(io, "\n\n", frame.code)
   if isdefined(err, :jinst)
     print(io, "\n\n", error_field("Julia instruction"), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
   end
@@ -251,8 +256,6 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     jtype = ssavaluetypes[i]
     core_ssaval = Core.SSAValue(i)
     ex = nothing
-    @assert !(jtype <: Core.IntrinsicFunction) "Encountered illegal core intrinsic $jinst."
-    jtype ≠ Union{} || throw(CompilationError("Encountered bottom type $jtype, which may indicate an error in the original code."))
     try
       @switch jinst begin
         @case ::Core.ReturnNode
@@ -279,7 +282,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         ex = @ex OpBranchConditional(cond_id, ResultID(node + 1, tr), dest)
         add_expression!(blk, tr, ex, core_ssaval)
         @case ::GlobalRef
-        jtype <: Type || throw(CompilationError("Unhandled global reference $(repr(jtype))"))
+        jtype <: Type || throw_compilation_error("unhandled global reference $(repr(jtype))")
         insert!(tr.globalrefs, core_ssaval, jinst)
         @case _
         check_isvalid(jtype)
@@ -349,21 +352,21 @@ end
 function check_isvalid(jtype::Type)
   if !in(jtype, spirv_types)
     if isabstracttype(jtype)
-      throw(CompilationError("Found abstract type '$jtype' after type inference. All types must be concrete."))
+      throw_compilation_error("found abstract type '$jtype' after type inference. All types must be concrete")
     elseif !isconcretetype(jtype)
-      throw(CompilationError("Found non-concrete type '$jtype' after type inference. All types must be concrete."))
+      throw_compilation_error("found non-concrete type '$jtype' after type inference. All types must be concrete")
     end
   end
 end
 
 macro compile(features, interp, ex)
   compile_args = map(esc, get_signature(ex))
-  :(compile($(compile_args...), $(esc(features)); interp = $interp))
+  :(compile($(compile_args...), $(esc(features)); interp = $(esc(interp))))
 end
 
 macro compile(interp, ex)
-  esc(:($(@__MODULE__).@compile $(AllSupported()) $(esc(interp)) $ex))
+  esc(:(@compile $(AllSupported()) $interp $ex))
 end
 macro compile(ex)
-  esc(:($(@__MODULE__).@compile $(AllSupported()) $(SPIRVInterpreter()) $ex))
+  esc(:(@compile $(AllSupported()) $(SPIRVInterpreter()) $ex))
 end

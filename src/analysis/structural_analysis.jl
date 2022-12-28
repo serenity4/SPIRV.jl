@@ -43,11 +43,14 @@ REGION_IMPROPER
 @active block_region(args) begin
   @when (g, v) = args begin
     start = v
+    length(outneighbors(g, start)) < 2 || return
+    length(inneighbors(g, start)) < 2 || return
     # Look ahead for a chain.
     vs = [start]
     while length(outneighbors(g, v)) == 1
       v = only(outneighbors(g, v))
       length(inneighbors(g, v)) == 1 || break
+      length(outneighbors(g, v)) < 2 || break
       all(!in(vs), outneighbors(g, v)) || break
       in(v, vs) && break
       push!(vs, v)
@@ -57,6 +60,7 @@ REGION_IMPROPER
     while length(inneighbors(g, v)) == 1
       v = only(inneighbors(g, v))
       length(outneighbors(g, v)) == 1 || break
+      length(inneighbors(g, v)) < 2 || break
       all(!in(vs), inneighbors(g, v)) || break
       in(v, vs) && break
       pushfirst!(vs, v)

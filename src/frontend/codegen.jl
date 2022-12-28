@@ -31,7 +31,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         # Loop constructs use `Base.not_int` seemingly from the C code, so we
         # need to handle it if encountered.
         &Base.not_int => (OpLogicalNot, args)
-        ::Core.IntrinsicFunction => throw(CompilationError("Reached illegal core intrinsic function '$f'."))
+        ::Core.IntrinsicFunction => throw_compilation_error("reached illegal core intrinsic function '$f'")
         &getfield => begin
           composite = args[1]
           field_idx = @match args[2] begin
@@ -40,16 +40,16 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
               sym = (args[2]::QuoteNode).value::Symbol
               T = get_type(composite, target)
               field_idx = findfirst(==(sym), fieldnames(T))
-              !isnothing(field_idx) || throw(CompilationError("Symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))"))
+              !isnothing(field_idx) || throw_compilation_error("symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
               field_idx
             end
             idx::Integer => idx
           end
           (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
         end
-        ::Function => throw(CompilationError("Dynamic dispatch detected for function $f. All call sites must be statically resolved."))
+        ::Function => throw_compilation_error("dynamic dispatch detected for function $f. All call sites must be statically resolved")
       end
-      _ => throw(CompilationError("Call to unknown function $f"))
+      _ => throw_compilation_error("call to unknown function $f")
     end
     Expr(:invoke, mi, f, args...) => begin
       isa(f, Core.SSAValue) && (f = tr.globalrefs[f])
@@ -78,7 +78,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         (OpFunctionCall, (emit_new!(mt, tr, target.interp, mi, fdef, variables), args...))
       end
     end
-    _ => throw(CompilationError("Expected call or invoke expression, got $(repr(jinst))"))
+    _ => throw_compilation_error("expected call or invoke expression, got $(repr(jinst))")
   end
 
   args = collect(args)
@@ -121,7 +121,7 @@ function get_type(arg, target::SPIRVTarget)
   @match arg begin
     ::Core.SSAValue => target.code.ssavaluetypes[arg.id]
     ::Core.Argument => target.mi.specTypes.types[arg.n]
-    _ => throw(CompilationError("Cannot extract type from argument $arg"))
+    _ => throw_compilation_error("cannot extract type from argument $arg")
   end
 end
 

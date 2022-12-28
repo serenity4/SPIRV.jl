@@ -12,6 +12,24 @@ base_extensions = """
 """
 memory_model = "OpMemoryModel(Logical, Vulkan)"
 
+interp = SPIRVInterpreter()
+
+SUPPORTED_FEATURES = SupportedFeatures(
+  [
+    "SPV_KHR_vulkan_memory_model",
+    "SPV_EXT_physical_storage_buffer",
+  ],
+  [
+    SPIRV.CapabilityVulkanMemoryModel,
+    SPIRV.CapabilityShader,
+    SPIRV.CapabilityInt64,
+    SPIRV.CapabilityPhysicalStorageBufferAddresses,
+    SPIRV.CapabilityVariablePointers,
+    SPIRV.CapabilityStorageImageExtendedFormats,
+    SPIRV.CapabilityImageQuery,
+  ],
+)
+
 @testset "SPIR-V code generation" begin
   @test_throws SPIRV.CompilationError @compile (x -> unknown(x))(::Int)
   @test_throws "[1]" @compile (x -> unknown(x))(::Int)
@@ -377,12 +395,16 @@ memory_model = "OpMemoryModel(Logical, Vulkan)"
 
     @testset "Loops" begin
       # Loops are not supported yet.
-      ir = @compile compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
+      ir = @compile SUPPORTED_FEATURES interp compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
       # TODO: We should not have to do this by hand.
       push!(ir.capabilities, SPIRV.CapabilityVariablePointers)
       # Unfortunately, the Khronos validator seems to disallow loops without merge header,
       # even for generic SPIR-V modules that don't require structured control-flow.
       # So we only test for validation rules until that one.
+      @test_throws "can only be formed between a block and a loop header" unwrap(validate(ir))
+
+      ir = @compile SUPPORTED_FEATURES interp compute_blur_2(::GaussianBlur, ::SampledImage{IT}, ::Vec2)
+      push!(ir.capabilities, SPIRV.CapabilityVariablePointers)
       @test_throws "can only be formed between a block and a loop header" unwrap(validate(ir))
     end
   end

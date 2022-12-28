@@ -20,71 +20,18 @@ function add_merge_headers!(fdef::FunctionDefinition)
     @switch ctree begin
       @case GuardBy(is_loop)
       local_back_edges = filter!(in(back_edges), [Edge(u, v) for u in inneighbors(cfg, v)])
-      if length(local_back_edges) > 1
-        throw(CompilationError("There is more than one backedge to a loop."))
-      end
+      length(local_back_edges) > 1 && throw_compilation_error("there is more than one backedge to a loop")
       vcont = src(only(local_back_edges))
-      vmerge = nothing
-      cyclic_nodes = node_index.(Leaves(ctree))
-      cfg_edges = collect(edges(cfg))
-      vmerge_edge_indices = findall(e -> !in(dst(e), cyclic_nodes) && in(src(e), cyclic_nodes), cfg_edges)
-      vmerge_candidates = Set(dst(e) for e in cfg_edges[vmerge_edge_indices])
-      @switch length(vmerge_candidates) begin
-        @case 0
-        throw(CompilationError("No merge candidate found for a loop."))
-        @case 1
-        vmerge = only(vmerge_candidates)
-        @case GuardBy(>(1))
-        throw(CompilationError("More than one merge candidates found for a loop."))
-      end
+
+      vmerge_candidates = merge_candidates(ctree, cfg)
+      length(vmerge_candidates) == 0 && throw_compilation_error("no merge candidate found for a loop")
+      length(vmerge_candidates) > 1 && throw_compilation_error("more than one merge candidates found for a loop")
+      vmerge = vmerge_candidates[1]
       header = @ex OpLoopMerge(fdef[vmerge].id, fdef[vcont].id, LoopControlNone)
       insert!(blk, lastindex(blk), header)
 
       @case GuardBy(is_selection)
-      # We're branching.
-      vmerge = postdominator(cfg, v)
-      if isnothing(vmerge)
-        # All target blocks return or loop back to the current node.
-
-        # If there is a loop back to the current node, the branch
-        # statement is a loop break. In this case, no header is required.
-        is_breaking_node(ctree, cfg) && continue
-
-        @tryswitch region_type(ctree) begin
-          @case &REGION_TERMINATION
-          vmerge = node_index(ctree.children[findfirst(≠(v) ∘ node_index, ctree.children)])
-
-          @case &REGION_BLOCK
-          c = first(ctree.children)
-          if node_index(c) == v && region_type(c) == REGION_TERMINATION
-            # We have a branch to one or more termination nodes.
-            # Simply get the branch that does not terminate.
-            vmerge = node_index(ctree.children[2])
-          end
-        end
-
-        if isnothing(vmerge)
-          # Take any target that is not part of the current structure.
-          local_leaf_nodes = node_index.(Leaves(ctree))
-          outs = outneighbors(cfg, v)
-          vmerge_index = findfirst(!in(local_leaf_nodes), outs)
-          !isnothing(vmerge_index) && (vmerge = outs[vmerge_index])
-          if isnothing(vmerge)
-            # Otherwise, take any target that is a termination node.
-            ctree_parent = parent(ctree)
-            isnothing(ctree_parent) && (ctree_parent = ctree)
-
-            if region_type(ctree_parent) ≠ REGION_BLOCK
-              error("Selection construct expected to have a blk parent; control-flow may be unstructured")
-            end
-
-            vmerge_index = findfirst(==(v) ∘ node_index, ctree_parent.children)::Int + 1
-            vmerge = node_index(ctree_parent.children[vmerge_index])
-          end
-        end
-
-        @debug "No postdominator available on node $v to get a merge candidate, picking one with custom heuristics: $vmerge"
-      end
+      vmerge = merge_candidate(ctree, cfg)
       header = @ex OpSelectionMerge(fdef[vmerge].id, SelectionControlNone)
       insert!(blk, lastindex(blk), header)
     end
@@ -96,6 +43,36 @@ function is_breaking_node(ctree::ControlTree, cfg::AbstractGraph)
   isnothing(parent_loop) && return false
   loop_nodes = node_index.(Leaves(parent_loop))
   any(!in(loop_nodes), outneighbors(cfg, node_index(ctree)))
+end
+
+function merge_candidate(ctree::ControlTree, cfg::AbstractGraph)
+  is_selection(ctree) || error("Cannot determine merge candidate for a node that is not a selection construct.")
+  p = find_parent(p -> is_selection(p) || is_loop(p) || is_block(p) && node_index(p[end]) !== node_index(ctree), ctree)
+  is_selection(p) && return merge_candidate(p, cfg)
+  i = findfirst(c -> !isnothing(find_subtree(==(node_index(ctree)) ∘ node_index, c)), p.children)
+  if i == lastindex(p.children)
+    is_loop(p) || error("A selection construct must not be the last block unless its parent is a loop.")
+    is_breaking_node(ctree, cfg) && return nothing
+    candidates = merge_candidates(p, cfg)
+    length(candidates) == 1 || error("Expected exactly one merge candidate for the parent loop, got ", length(candidates))
+    return candidates[1]
+  end
+  node_index(p[i + 1])
+end
+
+function merge_candidates(ctree::ControlTree, cfg::AbstractGraph{T}) where {T}
+  is_loop(ctree) || error("Cannot determine merge candidates for a node that is not a loop.")
+  scc = node_index.(Leaves(ctree))
+  set = Set(scc)
+  candidates = T[]
+  vhead = node_index(ctree)
+  for v in scc
+    for w in outneighbors(cfg, v)
+      # `vhead` is assumed to be the only node which can have back-edges from nodes inside the loop.
+      !in(w, set) && push!(candidates, w)
+    end
+  end
+  unique!(candidates)
 end
 
 function restructure_merge_blocks!(ir::IR)
@@ -115,16 +92,12 @@ function restructure_merge_blocks!(fdef::FunctionDefinition, idcounter::IDCounte
     for inner in ctree.children
       node_index(inner) == v && continue
       is_selection(inner) || is_loop(inner) || continue
-
-      # We have a selection or loop construct nested directly inside another selection or loop construct.
-      # If we had a properly nested construct, with its merge block strictly contained in the outer construct,
-      # then we would have a block region consisting of the inner construct + the inner merge block.
-      # To restructure this inner construct, we first identify such structured construct on the outside to know
-      # which block we impliticly treated as merge block for our inner construct.
-      p = find_parent(is_block, ctree)
-      isnothing(p) && error("Expected at least one parent that is a block region.")
-      i = findfirst(==(v) ∘ node_index, p.children)::Int
-      w = node_index(p[i + 1])
+      is_selection(inner) && (w = merge_candidate(inner, cfg))
+      if is_loop(inner)
+        ws = merge_candidates(inner, cfg)
+        @assert length(ws) == 1
+        w = ws[1]
+      end
       merge_blk = fdef[w]
 
       # We will in general have only one branching block for selection constructs
@@ -196,7 +169,7 @@ function intercept_phi_instructions!!(idcounter::IDCounter, from::AbstractVector
   exs = phi_expressions(target)
 
   # Mapping from original Phi instructions to Phi instructions in the intercepter.
-  intercepts = Dictionary{Expression,Expression}()
+  intercepts = IdDict{Expression,Expression}()
 
   for blk in from
     for ex in exs
@@ -209,8 +182,9 @@ function intercept_phi_instructions!!(idcounter::IDCounter, from::AbstractVector
           push!(intercepter, intercept)
           intercept
         end
-        push!(new_ex, ex[i + 1], blk.id)
-        ex[i] = new_ex.id
+        push!(new_ex, ex[i - 1], blk.id)
+        ex[i] = intercepter.id
+        ex[i - 1] = new_ex.result::ResultID
       end
     end
   end

@@ -27,10 +27,27 @@ function compute_blur(blur::GaussianBlur, reference, direction, uv)
   res
 end
 
+function compute_blur_2(blur::GaussianBlur, reference, uv)
+  res = zero(Vec3)
+  imsize = size(SPIRV.Image(reference), 0U)
+  pixel_size = 1F ./ imsize # Size of one pixel in UV coordinates.
+  radius = Int32.(ceil.(imsize .* 0.5F .* blur.scale))
+  rx, ry = radius
+  for i in -rx:rx
+    for j in -ry:ry
+      uv_offset = Vec(i, j) .* pixel_size
+      weight = 0.25 .* rx .^ 2 .* ry .^ 2
+      res .+= reference(uv .+ uv_offset).rgb .* weight
+    end
+  end
+  res
+end
+
 IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
 
 @testset "Definitions" begin
   image = SampledImage(IT(zeros(32, 32)))
   blur = GaussianBlur(1.0, 1.0)
   @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec3)
-end
+  @test compute_blur_2(blur, image, zero(Vec2)) == zero(Vec3)
+end;

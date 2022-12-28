@@ -7,6 +7,7 @@ Vec{N,T}(data::NTuple) where {N,T} = Vec{N,T}(data...)
 Vec{N,T}(components...) where {N,T} = Vec{N,T}(convert.(T, components)...)
 Vec(components::Scalar...) = Vec(promote(components...)...)
 Vec(components::T...) where {T<:Scalar} = Vec{length(components),T}(components...)
+Vec(components::Tuple) = Vec(components...)
 Vec{T}(components...) where {T<:Scalar} = Vec{length(components),T}(convert.(T, components)...)
 
 const Vec2 = Vec{2,Float32}
@@ -157,17 +158,17 @@ for (f, op) in zip((:ceil, :exp), (:Ceil, :Exp))
   @eval Base.$f(v::Vec) = $op(v)
 end
 
-@inline Base.broadcasted(f::F, v::T) where {F,T<:Vec} = T(f.(getcomponents(v)))
-@inline Base.broadcasted(f::F, v1::T, v2::T...) where {F,T<:Vec} = T(f.((getcomponents(v) for v in (v1, v2...))...))
+@inline Base.broadcasted(f::F, v::T) where {F,T<:Vec} = Vec(f.(getcomponents(v)))
+@inline Base.broadcasted(f::F, v1::T, v2::T...) where {F,T<:Vec} = Vec(f.((getcomponents(v) for v in (v1, v2...))...))
 @inline Base.broadcasted(f::F, v1::Vec, v2::Vec...) where {F} = Base.broadcasted(f, promote(v1, v2...)...)
 @inline Base.broadcasted(f::F, x::Vec, y::Scalar, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
 @inline Base.broadcasted(f::F, x::Scalar, y::Vec, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
 
 getcomponents(v::Vec{N}) where {N} = ntuple(i -> getindex(v, i), N)
 
-vectorize(op, v1::T, v2::T) where {T<:Vec} = T(op.(v1.data, v2.data))
-vectorize(op, v::T, x::Scalar) where {T<:Vec} = T(op.(v.data, x))
-vectorize(op, v::T) where {T<:Vec} = T(op.(v.data))
+vectorize(op, v1::T, v2::T) where {T<:Vec} = Vec(op.(v1.data, v2.data))
+vectorize(op, v::T, x::Scalar) where {T<:Vec} = Vec(op.(v.data, x))
+vectorize(op, v::T) where {T<:Vec} = Vec(op.(v.data))
 
 Base.copyto!(dst::T1, src::T2) where {T1<:Vec, T2<:Vec} = dst[] = src
 

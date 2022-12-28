@@ -185,8 +185,6 @@ function find_block(amod::AnnotatedModule, af::AnnotatedFunction, id::ResultID)
   end
 end
 
-ResultID(amod::AnnotatedModule, af::AnnotatedFunction, block_index::Integer) = last(block_instruction(amod, af, block_index)).result_id
-
 function add_capabilities!(diff::Diff, amod::AnnotatedModule, capabilities)
   insert!(diff, last(amod.capabilities) + 1, [(@inst OpCapability(cap)) for cap in capabilities])
 end

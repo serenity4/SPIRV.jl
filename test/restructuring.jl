@@ -1,5 +1,5 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: nesting_levels, merge_blocks, conflicted_merge_blocks, restructure_merge_blocks!, add_merge_headers!, id_bound, nexs
+using SPIRV: nesting_levels, merge_blocks, conflicted_merge_blocks, restructure_merge_blocks!, add_merge_headers!, id_bound, nexs, opcode
 
 """
 Generate a minimal SPIR-V IR or module which contains dummy blocks realizing the provided control-flow graph.
@@ -48,7 +48,7 @@ function ir_from_cfg(cfg)
 end
 
 @testset "Restructuring utilities" begin
-  for i in 1:11
+  for i in 1:13
     # Skip a few tricky cases for now.
     in(i, (6, 8)) && continue
     ir = ir_from_cfg(getproperty(@__MODULE__, Symbol(:g, i))())
@@ -95,4 +95,40 @@ end
   ctree = ControlTree(g11())
   nesting = nesting_levels(ctree)
   @test [last(nesting[index]) for index in 1:6] == [1, 2, 3, 3, 1, 2]
+
+  ir = ir_from_cfg(g12())
+  add_merge_headers!(ir)
+  fdef = only(ir.fdefs)
+  (merge_blk, (header_blk,)) = only(pairs(merge_blocks(fdef)))
+  @test opcode(last(fdef[header_blk])) == SPIRV.OpBranchConditional
+
+  ir = @spv_ir begin
+    Bool = TypeBool()
+    no = ConstantFalse()::Bool
+    Float32 = TypeFloat(32)
+    x0f0 = Constant(0f0)::Float32
+    x1f0 = Constant(1f0)::Float32
+    x2f0 = Constant(2f0)::Float32
+    x3f0 = Constant(3f0)::Float32
+    x4f0 = Constant(4f0)::Float32
+    @function f()::Float32 begin
+      b1 = Label()
+      BranchConditional(no, b2, b3)
+      b2 = Label()
+      BranchConditional(no, b4, b5)
+      b3 = Label()
+      Branch(b5)
+      b4 = Label()
+      Branch(b5)
+      b5 = Label()
+      x = Phi(x0f0, b2, x1f0, b3, x2f0, b4)::Float32
+      y = Phi(x2f0, b2, x3f0, b3, x4f0, b4)::Float32
+      ret = FAdd(x, y)::Float32
+      ReturnValue(ret)
+    end
+  end
+  @test unwrap(validate(ir))
+  restructure_merge_blocks!(ir)
+  @test unwrap(validate(ir))
+  @test SPIRV.Module(ir) == SPIRV.Module(restructure_merge_blocks!(deepcopy(ir)))
 end;
