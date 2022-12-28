@@ -1,6 +1,4 @@
 function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
-  type = spir_type(jtype, tr.tmap)
-  isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = PointerType(StorageClassFunction, type))
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => (OpCompositeConstruct, args)
     ::Core.PhiNode => begin
@@ -92,6 +90,8 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
     end
   end
 
+  type = spir_type(jtype, tr.tmap)
+  isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = PointerType(StorageClassFunction, type))
   if isa(type, PointerType) && opcode in (OpAccessChain, OpPtrAccessChain)
     # Propagate storage class to the result.
     ptr = first(args)

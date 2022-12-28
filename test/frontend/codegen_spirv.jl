@@ -13,6 +13,9 @@ base_extensions = """
 memory_model = "OpMemoryModel(Logical, Vulkan)"
 
 @testset "SPIR-V code generation" begin
+  @test_throws SPIRV.CompilationError @compile (x -> unknown(x))(::Int)
+  @test_throws "[1]" @compile (x -> unknown(x))(::Int)
+
   @testset "Composite SPIR-V types" begin
     function unicolor(position)
       Vec(position.x, position.y, 1F, 1F)

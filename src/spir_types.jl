@@ -209,7 +209,7 @@ function spir_type(@nospecialize(t::Union{DataType,Type{Union{}}}), tmap::Option
     GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type.(t.types, tmap))
     GuardBy(isprimitivetype) => primitive_type_to_spirv(t)
     ::Type{Any} => error("Type Any is not a valid SPIR-V type; type inference must have failed.")
-    GuardBy(isabstracttype) => error("Abstract types cannot be mapped to SPIR-V types.")
+    GuardBy(isabstracttype) => error("Abstract types cannot be mapped to SPIR-V types (type: $t).")
     _ => error("Type $t does not have a corresponding SPIR-V type.")
   end
 

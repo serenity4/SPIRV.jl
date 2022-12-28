@@ -78,14 +78,14 @@ end
 
 mutable struct CompilationError <: Exception
   msg::String
-  mi::MethodInstance
+  target::SPIRVTarget
   jinst::Any
   jtype::Type
   ex::Expression
   CompilationError(msg::AbstractString) = (err = new(); err.msg = msg; err)
 end
 
-function throw_compilation_error(exc::Exception, fields::NamedTuple, msg = "Internal compilation error")
+function throw_compilation_error(exc::Exception, fields::NamedTuple, msg = "the following method instance could not be compiled to SPIR-V")
   if isa(exc, CompilationError)
     for (prop, val) in pairs(fields)
       setproperty!(exc, prop, val)
@@ -104,23 +104,36 @@ error_field(field) = string(Base.text_colors[:cyan], field, Base.text_colors[:de
 
 function Base.showerror(io::IO, err::CompilationError)
   print(io, "CompilationError")
-  if isdefined(err, :mi)
-    print(io, " (", err.mi, ")")
+  print(io, ": ", err.msg, '.')
+  (; stacktrace) = err.target.interp.debug
+  print(io, "\nStacktrace:")
+  for (i, frame) in enumerate(stacktrace)
+    here = i == lastindex(stacktrace)
+    println(io)
+    here ? printstyled(io, '>'; color = :red, bold = true) : print(io, ' ')
+    print(io, " [$i] ")
+    here ? printstyled(io, frame.mi; color = :red, bold = true) : printstyled(io, frame.mi; color = :light_black)
   end
-  print(io, ": ", err.msg)
   if isdefined(err, :jinst)
-    print(io, "\n", error_field("Julia instruction"), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
+    print(io, "\n\n", error_field("Julia instruction"), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
   end
   if isdefined(err, :ex)
-    print(io, "\n", error_field("Wrapped SPIR-V expression"))
+    print(io, "\n\n", error_field("Wrapped SPIR-V expression"))
     emit(io, err.ex)
   end
   println(io)
 end
 
 function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables = Dictionary{Int,Variable}())
+  push!(target.interp.debug.stacktrace, DebugFrame(target.mi, target.code))
   # Declare a new function.
-  fdef = define_function!(mt, tr, target, variables)
+  local fdef
+  try
+    # Fill the SPIR-V function with instructions generated from the target's inferred code.
+    fdef = define_function!(mt, tr, target, variables)
+  catch e
+    throw_compilation_error(e, (; target))
+  end
   fid = emit!(mt, tr, fdef)
   set_name!(mt, fid, make_name(target.mi))
   arg_idx = 0
@@ -135,8 +148,9 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables
     # Fill the SPIR-V function with instructions generated from the target's inferred code.
     emit!(fdef, mt, tr, target)
   catch e
-    throw_compilation_error(e, (; target.mi))
+    throw_compilation_error(e, (; target))
   end
+  pop!(target.interp.debug.stacktrace)
   fid
 end
 

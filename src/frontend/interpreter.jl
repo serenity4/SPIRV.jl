@@ -1,3 +1,12 @@
+struct DebugFrame
+  mi::MethodInstance
+  code::CodeInfo
+end
+
+struct InterpDebugInfo
+  stacktrace::Vector{DebugFrame}
+end
+
 mutable struct SPIRVInterpreter <: AbstractInterpreter
   "Global cache used for memoizing the results of type inference."
   global_cache::CodeInstanceCache
@@ -12,6 +21,7 @@ mutable struct SPIRVInterpreter <: AbstractInterpreter
   world::UInt
   inf_params::InferenceParams
   opt_params::OptimizationParams
+  debug::InterpDebugInfo
 end
 
 function cap_world(world, max_world)
@@ -37,6 +47,7 @@ function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = Infere
     cap_world(world, get_world_counter()),
     inf_params,
     opt_params,
+    InterpDebugInfo(DebugFrame[]),
   )
 end
 
