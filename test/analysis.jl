@@ -27,10 +27,12 @@ g9() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 2)
 g10() = DeltaGraph(1 => 2, 1 => 4, 2 => 3, 3 => 2, 3 => 4)
 "CFG with two nested `if-else` constructs pointing to a single common merge block."
 g11() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 1 => 6, 6 => 5)
-"CFG with a conditional which contains nested block regions before actually branching."
+"CFG with a conditional which multiple block regions before the header."
 g12() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 5, 4 => 6, 5 => 7, 6 => 7)
-"CFG with a loop which contains nested block regions before actually branching."
+"CFG with a loop which contains multiple block regions before the header."
 g13() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 5, 5 => 6, 6 => 4, 6 => 7)
+"CFG with a loop with a nested conditional which contains its nodes in non-standard order in the graph."
+g14() = DeltaGraph(1 => 2, 2 => 7, 1 => 5, 5 => 2, 5 => 3, 4 => 2, 5 => 6, 3 => 4, 6 => 4)
 
 test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
 
@@ -502,7 +504,7 @@ end
     test_completeness(tree, cfg)
     @test !cfg.is_reducible
 
-    for i in 8:13
+    for i in 8:14
       f = getproperty(@__MODULE__, Symbol(:g, i))
       cfg = ControlFlowGraph(f())
       tree = DominatorTree(cfg)

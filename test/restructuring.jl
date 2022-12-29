@@ -13,10 +13,12 @@ function ir_from_cfg(cfg)
   global_decls = quote
     Bool = TypeBool()
     Float32 = TypeFloat(32)
+    Int32 = TypeInt(32, 1)
   end
 
   label(v) = Symbol(:b, v)
   constant(v) = Symbol(:c, v, :f0)
+  constant_int(v) = Symbol(:c, v, :i32)
   condition(v) = Symbol(:x, v)
 
   append!(global_decls.args, :($(constant(v)) = Constant($(v * 1f0))::Float32) for v in sinks(cfg))
@@ -33,9 +35,12 @@ function ir_from_cfg(cfg)
     elseif length(out) == 2
       push!(insts, :(BranchConditional($(condition(v)), $(label(out[1])), $(label(out[2])))))
     else
-      for w in outneighbors(cfg, v)
-        push!(insts, Expr(:call, :Switch, condition(v), label(first(out)), Iterators.flatten([Int32(w) => label(w) for w in out])...))
+      inst = Expr(:call, :Switch, condition(v), label(first(out)))
+      for w in out
+        push!(global_decls.args, :($(constant_int(w)) = Constant($(Int32(w)))::Int32))
+        push!(inst.args, constant_int(w), label(w))
       end
+      push!(insts, inst)
     end
   end
 
@@ -48,11 +53,12 @@ function ir_from_cfg(cfg)
 end
 
 @testset "Restructuring utilities" begin
-  for i in 1:13
+  for i in 1:14
     # Skip a few tricky cases for now.
     in(i, (6, 8)) && continue
     ir = ir_from_cfg(getproperty(@__MODULE__, Symbol(:g, i))())
     @test unwrap(validate(ir))
+    @test isa(SPIRV.sprintc_mime(show, ir), String)
   end
 
   # Starting module: two conditionals sharing the same merge block.

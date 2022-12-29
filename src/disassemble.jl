@@ -45,7 +45,7 @@ function emit_argument(io, i, arg, kind, category = kind_to_category[kind])
     end
     "Id" => printstyled(io, arg; color = :yellow)
     "Composite" => begin
-      kinds = map(split(replace(string(kind), r"^Pair" => ""), "IdRef")[1:(end - 1)]) do part
+      kinds = map(split(replace(string(kind), r"^Pair" => ""), "IdRef")) do part
         str = isempty(part) ? "IdRef" : part
         getproperty(@__MODULE__, Symbol(str))
       end
