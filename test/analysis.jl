@@ -31,8 +31,6 @@ g11() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 1 => 6, 6 => 5)
 g12() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 5, 4 => 6, 5 => 7, 6 => 7)
 "CFG with a loop which contains multiple block regions before the header."
 g13() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 5, 5 => 6, 6 => 4, 6 => 7)
-"CFG with a loop with a nested conditional which contains its nodes in non-standard order in the graph."
-g14() = DeltaGraph(1 => 2, 2 => 7, 1 => 5, 5 => 2, 5 => 3, 4 => 2, 5 => 6, 3 => 4, 6 => 4)
 
 test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
 
@@ -342,15 +340,27 @@ end
         g = g8()
         ctree = ControlTree(g)
         test_coverage(g, ctree)
-        @test_broken ctree == ControlTree(1, REGION_IMPROPER, [
+        @test ctree == ControlTree(1, REGION_BLOCK, [
           ControlTree(1, REGION_BLOCK),
-          ControlTree(2, REGION_TERMINATION, [
-            ControlTree(2, REGION_BLOCK),
-            ControlTree(4, REGION_BLOCK),
-          ]),
-          ControlTree(3, REGION_TERMINATION, [
-            ControlTree(3, REGION_BLOCK),
-            ControlTree(5, REGION_BLOCK),
+          ControlTree(2, REGION_NATURAL_LOOP, [
+            ControlTree(2, REGION_IF_THEN, [
+              ControlTree(2, REGION_BLOCK),
+              ControlTree(3, REGION_BLOCK),
+            ]),
+            ControlTree(4, REGION_NATURAL_LOOP, [
+              ControlTree(4, REGION_BLOCK),
+              ControlTree(5, REGION_NATURAL_LOOP, [
+                ControlTree(5, REGION_BLOCK),
+                ControlTree(6, REGION_BLOCK),
+                ControlTree(7, REGION_BLOCK),
+                ControlTree(8, REGION_NATURAL_LOOP, [
+                  ControlTree(8, REGION_BLOCK),
+                  ControlTree(9, REGION_BLOCK),
+                  ControlTree(11, REGION_BLOCK),
+                ]),
+              ]),
+            ]),
+            ControlTree(10, REGION_BLOCK),
           ]),
         ])
 
@@ -504,7 +514,7 @@ end
     test_completeness(tree, cfg)
     @test !cfg.is_reducible
 
-    for i in 8:14
+    for i in 8:13
       f = getproperty(@__MODULE__, Symbol(:g, i))
       cfg = ControlFlowGraph(f())
       tree = DominatorTree(cfg)

@@ -53,7 +53,7 @@ function ir_from_cfg(cfg)
 end
 
 @testset "Restructuring utilities" begin
-  for i in 1:14
+  for i in 1:13
     # Skip a few tricky cases for now.
     in(i, (6, 8)) && continue
     ir = ir_from_cfg(getproperty(@__MODULE__, Symbol(:g, i))())

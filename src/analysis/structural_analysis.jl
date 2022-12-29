@@ -200,7 +200,9 @@ function cyclic_region!(sccs, g, v, ec, doms, domtrees, backedges)
 
   if any(u -> in(Edge(u, v), backedges), inneighbors(g, v))
     # Natural loop.
-    # FIXME: Return vertices in reverse post-order.
+    # XXX: Are vertices returned in reverse post-order? The SSA condition on block labels should ensure
+    # that iterating over `vertices(g)` already yields a topologically sorted graph.
+    # Does it apply to Julia IR?
     all(==(v) ∘ dst, entry_edges) && return (REGION_NATURAL_LOOP, cycle)
   end
 
@@ -219,7 +221,8 @@ function cyclic_region!(sccs, g, v, ec, doms, domtrees, backedges)
     !has_path(g, entry_node, v) && continue
     any(has_path(g, v, ep; exclude_vertices) for ep in mec_entries) && push!(vs, v)
   end
-  # FIXME: Return vertices in reverse post-order (according to one possible post-order traversal).
+  # XXX: Might be that vertices are not topologically sorted.
+  # If so, we may need to come up with one possible post-order traversal.
   (REGION_IMPROPER, vs)
 end
 
