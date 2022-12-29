@@ -9,7 +9,7 @@ ResultID(id::Integer) = ResultID(UInt32(id))
 Base.isless(id1::ResultID, id2::ResultID) = isless(UInt32(id1), UInt32(id2))
 
 Base.convert(::Type{T}, id::ResultID) where {T<:Integer} = convert(T, UInt32(id))
-Base.convert(::Type{Core.SSAValue}, id::ResultID) = Core.SSAValue(UInt32(id))
+Base.convert(::Type{Core.SSAValue}, id::ResultID) = Core.SSAValue(Int(UInt32(id)))
 Base.convert(::Type{ResultID}, val::Core.SSAValue) = ResultID(val.id)
 Base.convert(::Type{ResultID}, id::Integer) = ResultID(id)
 

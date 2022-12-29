@@ -31,6 +31,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         # Loop constructs use `Base.not_int` seemingly from the C code, so we
         # need to handle it if encountered.
         &Base.not_int => (OpLogicalNot, args)
+        &Base.bitcast => (OpBitcast, args[2:2])
         ::Core.IntrinsicFunction => throw_compilation_error("reached illegal core intrinsic function '$f'")
         &getfield => begin
           composite = args[1]
