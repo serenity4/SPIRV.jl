@@ -298,8 +298,28 @@ function getoffsets!(offsets, base, getoffset, T)
   offsets
 end
 
+"""
+Get offset of member `i` of `t`, handling non-isbits types as if they were completely inlined.
+"""
+function getoffset_julia(T::DataType, i::Int)
+  i == 1 && return fieldoffset(T, i)
+  Tprev = fieldtype(T, i - 1)
+  # Account for any padding that might have been inserted between adjacent members.
+  padding = fieldoffset(T, i) - (fieldoffset(T, i - 1) + sizeof(Tprev))
+  computed_offset = getoffset_julia(T, i - 1) + fieldsize_with_padding(Tprev)
+  computed_offset + padding
+end
+
+function fieldsize_with_padding(T::DataType)
+  isbitstype(T) && return sizeof(T)
+  isconcretetype(T) || error("A concrete type is required.")
+  @assert isstructtype(T)
+  total_padding = sum(fieldoffset(T, i) - (fieldoffset(T, i - 1) + sizeof(fieldtype(T, i - 1))) for i in 2:fieldcount(T); init = 0)
+  sum(sizeof, fieldtypes(T); init = 0) + total_padding
+end
+
 getoffsets(getoffset, t::SPIRType) = getoffsets!(UInt32[], 0U, getoffset, t)
-getoffsets(T::DataType) = getoffsets!(UInt32[], 0U, fieldoffset, T)
+getoffsets(T::DataType) = getoffsets!(UInt32[], 0U, getoffset_julia, T)
 getoffsets(tmeta::TypeMetadata, t::SPIRType) = getoffsets((t, i) -> getoffset(tmeta, t, i), t)
 
 function validate_offsets(offsets)

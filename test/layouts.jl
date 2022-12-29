@@ -210,7 +210,9 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     @test getoffsets(Align3) == [0, 8, 12]
     @test getoffsets(Align4) == [0, 8, 16]
     # FIXME: These offsets are wrong, as they assume 8-byte pointers for non-`isbits` elements.
-    @test_broken getoffsets(Align5) == [0, 8, 16, 18, 22]
+    @test SPIRV.fieldsize_with_padding(Align4) == 8 + 8 + 4
+    @test SPIRV.fieldsize_with_padding(Tuple{Align4,Int8}) == SPIRV.fieldsize_with_padding(Align4) + (8 - 4) + 1
+    @test getoffsets(Align5) == [0, 8, 16, 24, 28]
     @test getstride(Vector{WeirdType}) == 4
   end
 
