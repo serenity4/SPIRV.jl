@@ -28,6 +28,8 @@ end
 
 @forward IR.metadata (decorate!, metadata!, has_decoration, decorations, set_name!)
 
+Base.getindex(ir::IR, i::Int) = collect(ir.fdefs)[i]
+
 function IR(; ir_meta::ModuleMetadata = ModuleMetadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
   IR(ir_meta, [], [], BijectiveMapping(), addressing_model, memory_model, ResultDict(), ResultDict(),
     BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), DebugInfo(), IDCounter(0), TypeMap())

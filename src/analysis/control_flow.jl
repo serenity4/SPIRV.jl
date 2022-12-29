@@ -46,6 +46,7 @@ AbstractTrees.ChildIndexing(::Type{<:SimpleTree}) = IndexedChildren()
 
 AbstractTrees.ParentLinks(::Type{<:SimpleTree}) = StoredParents()
 AbstractTrees.parent(tree::SimpleTree) = tree.parent
+Base.parent(tree::SimpleTree) = tree.parent
 
 AbstractTrees.children(tree::SimpleTree) = tree.children
 AbstractTrees.childrentype(::Type{T}) where {T<:SimpleTree} = T

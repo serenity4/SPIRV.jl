@@ -11,13 +11,13 @@ end
 @noinline Fma(x, y, z)                                       = Base.fma_float(x, y, z)
 
 @override_glsl exp(x::SmallFloat)  = Exp(x)
-@noinline Exp(x)                   = Base.Math.exp_impl(x, Val(:ℯ))
+@noinline Exp(x::SmallFloat)                   = Base.Math.exp_impl(x, Val(:ℯ))
 @override_glsl exp2(x::SmallFloat) = Exp2(x)
-@noinline Exp2(x)                  = Base.Math.exp_impl(x, Val(2))
+@noinline Exp2(x::SmallFloat)                  = Base.Math.exp_impl(x, Val(2))
 @override_glsl log(x::SmallFloat)  = Log(x)
-@noinline Log(x)                   = Base.Math._log(x, Val(:ℯ), :log)
+@noinline Log(x::SmallFloat)                   = Base.Math._log(x, Val(:ℯ), :log)
 @override_glsl log2(x::SmallFloat) = Log2(x)
-@noinline Log2(x)                  = Base.Math._log(x, Val(2), :log2)
+@noinline Log2(x::SmallFloat)                  = Base.Math._log(x, Val(2), :log2)
 
 for func in (:sin, :cos, :tan, :asin, :acos, :atan, :cosh, :tanh, :asinh, :acosh, :atanh)
   op = Symbol(uppercasefirst(string(func)))

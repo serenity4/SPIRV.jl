@@ -74,7 +74,11 @@ function invalidate(cache::CodeInstanceCache, mi::MethodInstance, max_world, inv
 
   # Recurse to all backedges to update their valid range.
   if isdefined(mi, :backedges)
-    for mi in filter(!in(invalidated), mi.backedges)
+    # We can have either a MethodInstance or a `Type` object representing an `invoke` signature.
+    # The latter can be safely ignored.
+    for mi in mi.backedges
+      isa(mi, MethodInstance) || continue
+      in(mi, invalidated) && continue
       invalidate(cache, mi, max_world, invalidated)
     end
   end

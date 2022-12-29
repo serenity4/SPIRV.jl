@@ -105,7 +105,7 @@ function infer(mi::MethodInstance, interp::AbstractInterpreter)
   # To avoid the need to re-infer to get the code, store it manually.
   ci = get(global_cache, mi, nothing)
   if ci !== nothing && ci.inferred === nothing
-    ci.inferred = src
+    @atomic ci.inferred = src
   end
   haskey(global_cache, mi) || error("Could not get inferred code from cache.")
   true

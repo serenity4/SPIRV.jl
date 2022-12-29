@@ -87,9 +87,9 @@ end
 ## Conversions.
 
 for to in IEEEFloat_types, from in IEEEFloat_types
-  if to.size ≠ from.size
+  if sizeof(to) ≠ sizeof(from)
     @eval @override $to(x::$from) = FConvert($to, x)
-    if to.size < from.size
+    if sizeof(to) < sizeof(from)
       @eval @noinline (FConvert(::Type{$to}, x::$from) = Base.fptrunc($to, x))
     else
       @eval @noinline (FConvert(::Type{$to}, x::$from) = Base.fpext($to, x))
@@ -122,12 +122,12 @@ for to in BitInteger_types
   @eval @inline @override ($constructor(x::BitInteger) = rem(x, $to))
   for from in BitInteger_types
     convert = to <: Signed ? :SConvert : :UConvert
-    rem_f = to.size == from.size ? :reinterpret : convert
-    if to.size ≠ from.size
+    rem_f = sizeof(to) == sizeof(from) ? :reinterpret : convert
+    if sizeof(to) ≠ sizeof(from)
       @eval @override (rem(x::$from, ::Type{$to}) = $convert($to, x))
-      if to.size < from.size
+      if sizeof(to) < sizeof(from)
         @eval @noinline ($convert(::Type{$to}, x::$from) = Base.trunc_int($to, x))
-      else # to.size > from.size
+      else # sizeof(to) > sizeof(from)
         convert = to <: Signed ? :SConvert : :UConvert
         method = to <: Signed ? :sext_int : :zext_int
         @eval @noinline ($convert(::Type{$to}, x::$from) = Base.$method($to, x))

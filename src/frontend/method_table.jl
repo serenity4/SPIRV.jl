@@ -41,7 +41,11 @@ end
     ambig = false
     for mt in [table.tables; nothing]
       result = Core.Compiler._findall(sig, mt, table.world, limit)
-      result === Core.Compiler.missing && return Core.Compiler.missing
+      @static if VERSION ≥ v"1.10.0-DEV.67"
+        result === Core.Compiler.nothing && return Core.Compiler.nothing
+      else
+        result === Core.Compiler.missing && return Core.Compiler.missing
+      end
       min_world = max(min_world, result.valid_worlds.min_world)
       max_world = min(max_world, result.valid_worlds.max_world)
       ambig |= result.ambig

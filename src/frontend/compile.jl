@@ -254,6 +254,8 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     # Actual `nothing` arguments are passed by symbol directly.
     (isnothing(jinst) || jinst === GlobalRef(Base, :nothing)) && continue
     jtype = ssavaluetypes[i]
+    isa(jtype, Core.PartialStruct) && (jtype = jtype.typ)
+    isa(jtype, Core.Const) && (jtype = typeof(jtype.val))
     core_ssaval = Core.SSAValue(i)
     ex = nothing
     try
@@ -285,7 +287,6 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         jtype <: Type || throw_compilation_error("unhandled global reference $(repr(jtype))")
         insert!(tr.globalrefs, core_ssaval, jinst)
         @case _
-        check_isvalid(jtype)
         if ismutabletype(jtype)
           # OpPhi will reuse existing variables, no need to allocate a new one.
           !isa(jinst, Core.PhiNode) && allocate_variable!(mt, tr, fdef, jtype, core_ssaval)
@@ -347,16 +348,6 @@ function emit_extinst!(mt::ModuleTarget, extinst)
   id = next!(mt.idcounter)
   insert!(mt.extinst_imports, extinst, id)
   id
-end
-
-function check_isvalid(jtype::Type)
-  if !in(jtype, spirv_types)
-    if isabstracttype(jtype)
-      throw_compilation_error("found abstract type '$jtype' after type inference. All types must be concrete")
-    elseif !isconcretetype(jtype)
-      throw_compilation_error("found non-concrete type '$jtype' after type inference. All types must be concrete")
-    end
-  end
 end
 
 macro compile(features, interp, ex)

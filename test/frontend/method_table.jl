@@ -7,4 +7,8 @@ using SPIRV: method_lookup_result
   m = first(result.matches)
   @test m.fully_covers
   @test m.method.module === SPIRV
-end
+  result = method_lookup_result(Core.Compiler.findall(Tuple{typeof(print), UInt32}, interp.method_table))
+  m = first(result.matches)
+  @test m.fully_covers
+  @test m.method.module === Base
+end;

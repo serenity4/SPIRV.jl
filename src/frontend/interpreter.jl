@@ -79,7 +79,11 @@ Core.Compiler.OptimizationParams(si::SPIRVInterpreter) = si.opt_params
 Core.Compiler.get_world_counter(si::SPIRVInterpreter) = si.world
 Core.Compiler.get_inference_cache(si::SPIRVInterpreter) = si.local_cache
 Core.Compiler.code_cache(si::SPIRVInterpreter) = WorldView(si.global_cache, si.world)
-Core.Compiler.method_table(si::SPIRVInterpreter) = si.method_table
+if VERSION >= v"1.9.0-DEV.120"
+  Core.Compiler.method_table(si::SPIRVInterpreter) = si.method_table
+else
+  Core.Compiler.method_table(si::SPIRVInterpreter, sv::InferenceState) = si.method_table
+end
 
 @static if VERSION < v"1.9.0-DEV.1054"
   is_inlineable(src) = ccall(:jl_ir_flag_inlineable, Bool, (Any,), src)

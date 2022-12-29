@@ -427,20 +427,20 @@ end
           ControlTree(7, REGION_BLOCK),
         ])
 
-        # g = g13()
-        # ctree = ControlTree(g)
-        # test_coverage(g, ctree)
-        # @test ctree == ControlTree(1, REGION_BLOCK, [
-        #   ControlTree(1, REGION_BLOCK),
-        #   ControlTree(2, REGION_BLOCK),
-        #   ControlTree(3, REGION_BLOCK),
-        #   ControlTree(4, REGION_NATURAL_LOOP, [
-        #     ControlTree(4, REGION_BLOCK),
-        #     ControlTree(5, REGION_BLOCK),
-        #     ControlTree(6, REGION_BLOCK),
-        #   ]),
-        #   ControlTree(7, REGION_BLOCK),
-        # ])
+        g = g13()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test_broken ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_BLOCK),
+          ControlTree(3, REGION_BLOCK),
+          ControlTree(4, REGION_NATURAL_LOOP, [
+            ControlTree(4, REGION_BLOCK),
+            ControlTree(5, REGION_BLOCK),
+            ControlTree(6, REGION_BLOCK),
+          ]),
+          ControlTree(7, REGION_BLOCK),
+        ])
       end
     end
 

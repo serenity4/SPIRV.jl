@@ -109,6 +109,8 @@ end
       # To replicate, use `f() = exp(2f0)` (or anything that passes a `Core.Const` to `exp`).
       @test begin
         (; code) = SPIRV.@code_typed test_constprop5()
+        # @code_typed (() -> exp(2F))()
+        # SPIRV.@code_typed (() -> exp(2F))()
         code[1] == Core.ReturnNode(8.704899f0)
       end broken = VERSION > v"1.9.0-DEV.718" # version is not exact.
     end
@@ -131,16 +133,12 @@ end
       (; code, ssavaluetypes) = SPIRV.@code_typed store(v1)
       @test operation.(code[1:(end - 1)]) ==
             [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
-      @test ssavaluetypes[1:(end - 1)] ==
-            [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
     end
 
     @testset "Arrays" begin
       (; code, ssavaluetypes) = SPIRV.@code_typed store(::Arr{3, Float64})
       @test operation.(code[1:(end - 1)]) ==
             [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
-      @test ssavaluetypes[1:(end - 1)] ==
-            [repeat([UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32; UInt32; Pointer{Float64}; Nothing]
 
       (; code, ssavaluetypes) = SPIRV.@code_typed store(::Vector{Float64})
       # There may be a `OpUConvert` + `OpISub` to convert the Int64 to a UInt32 at runtime.
@@ -150,9 +148,6 @@ end
       @test operation.(code[1:5]) ==
             [:AccessChain, :Load, :AccessChain, :Load, :FAdd]
       @test operation.(code[end-2:end-1]) == [:AccessChain, :Store]
-      @test ssavaluetypes[1:5] ==
-            [repeat([Pointer{Float64}, Float64], 2); Float64]
-      @test ssavaluetypes[end-2:end-1] == [Pointer{Float64}; Nothing]
     end
 
     @testset "Matrix" begin
@@ -160,9 +155,6 @@ end
       @test operation.(code[1:(end - 1)]) ==
             [:UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :UConvert,
         :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Store]
-      @test ssavaluetypes[1:(end - 1)] ==
-            [repeat([UInt32, UInt32, UInt32, UInt32, Pointer{Float64}, Float64], 2); Float64; UInt32;
-        UInt32; UInt32; UInt32; Pointer{Float64}; Nothing]
     end
 
     @testset "Image" begin
