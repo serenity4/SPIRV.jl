@@ -51,6 +51,10 @@ end
       @test operation(code[1]) == :Exp
       @test ssavaluetypes[1] == Float32
 
+      (; code, ssavaluetypes) = SPIRV.@code_typed atan(::Float32, ::Float32)
+      @test operation(code[1]) == :Atan2
+      @test ssavaluetypes[1] == Float32
+
       (; code, ssavaluetypes) = SPIRV.@code_typed clamp(::Float64, ::Float64, ::Float64)
       @test operation(code[1]) == :FClamp
       @test ssavaluetypes[1] == Float64
@@ -168,5 +172,12 @@ end
       @test operation.(code[1:(end - 1)]) == [:SampledImage, :CompositeConstruct, :ImageSampleImplicitLod]
       @test ssavaluetypes[1:(end - 1)] == [SampledImage{T}, Vec{2,Float32}, Vec{4, Float32}]
     end
+  end
+
+  @testset "Generated functions" begin
+    @generated _fast_sum(f, xs::Vec{N}) where {N} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex(xs))...)
+    (; code) = SPIRV.@code_typed _fast_sum(identity, ::Vec2)
+    @test length(code) < 8
+    @test all(Meta.isexpr(x, :invoke) && x.args[1].def.module === SPIRV for x in code[1:(end - 1)])
   end
 end;

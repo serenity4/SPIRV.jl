@@ -40,6 +40,8 @@ using SPIRV: component_type, texel_type, sampled_type
 
     v[] = v2
     @test all(iszero, v)
+    @test iszero(sum(v))
+    @test sum(x -> x + 1, v) == 4
 
     @test_throws ArgumentError Vec(1.0)
     @test_throws ArgumentError Vec(1.0, 2.0, 3.0, 4.0, 5.0)
@@ -57,6 +59,10 @@ using SPIRV: component_type, texel_type, sampled_type
     @test 1 .* v == 1 * v == v
     @test v .* v .+ v .* 1 == v * v + v * 1 == Vec2(2, 6)
     @test ceil.(v .* 0.3F .+ exp.(v)) == Vec2(4, 8)
+
+    v = Vec3(2.3, 1.7, -1.2)
+    @test foldr(+, v) === foldl(+, v) === sum(v) === sum(collect(v)) === 2.8F
+    @test foldr(*, v) === foldl(*, v) === prod(v) === prod(collect(v))
   end
 
   @testset "Mat" begin
@@ -98,6 +104,9 @@ using SPIRV: component_type, texel_type, sampled_type
 
     arr[] = arr2
     @test all(iszero, arr)
+    @test firstindex(arr) === 0U
+    @test lastindex(arr) === 3U
+    @test eachindex(arr) === 0U:3U
   end
 
   @testset "Images" begin

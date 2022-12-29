@@ -25,6 +25,12 @@ for func in (:sin, :cos, :tan, :asin, :acos, :atan, :cosh, :tanh, :asinh, :acosh
   @eval (@noinline $op(x::T) where {T<:SmallFloat} = T($func(Float64(x))))
 end
 
+@override_glsl atan(y::T, x::T) where {T<:SmallFloat} = Atan2(y, x)
+@override_glsl atan(y::Float32, x::Float32) = Atan2(y, x)
+@noinline Atan2(y::Float32, x::Float32) = Base.invoke(atan, Tuple{T, T} where {T <: Union{Float32,Float64}}, y, x)::Float32
+# XXX: # `@noinline` does not seem to get applied in SPIRV.@code_typed atan(::Float16, ::Float16), we still go through conversions.
+@noinline Atan2(y::Float16, x::Float16) = Float16(Atan2(Float32(y), Float32(x)))
+
 @override_glsl sqrt(x::IEEEFloat) = Sqrt(x)
 @noinline Sqrt(x)                 = Base.sqrt_llvm(x)
 

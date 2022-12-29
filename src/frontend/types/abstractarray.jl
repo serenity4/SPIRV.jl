@@ -27,10 +27,10 @@ Base.setindex!(arr1::AbstractSPIRVArray, arr2::AbstractSPIRVArray) = Store(arr1,
 @override setindex!(v::Vector{T}, value::T, index::UInt32) where {T} = Store(AccessChain(v, index), value)
 
 Base.eltype(::Type{<:AbstractSPIRVArray{T}}) where {T} = T
-Base.firstindex(T::Type{<:AbstractSPIRVArray}, d = 1) = 1
-Base.lastindex(T::Type{<:AbstractSPIRVArray}, d) = size(T)[d]
-Base.lastindex(T::Type{<:AbstractSPIRVArray}) = prod(size(T))
-Base.eachindex(T::Type{<:AbstractSPIRVArray}) = 0U:((lastindex(T) - 1) * U)
+Base.firstindex(T::Type{<:AbstractSPIRVArray}, d = 1) = 0U
+Base.lastindex(T::Type{<:AbstractSPIRVArray}, d) = UInt32(size(T)[d] - 1U)
+Base.lastindex(T::Type{<:AbstractSPIRVArray}) = UInt32(prod(size(T)) - 1)
+Base.eachindex(T::Type{<:AbstractSPIRVArray}) = firstindex(T):lastindex(T)
 
 Base.similar(T::Type{<:AbstractSPIRVArray}, element_type, dims) = zero(T)
 Base.similar(T::Type{<:AbstractSPIRVArray}) = similar(T, eltype(T), size(T))
@@ -44,3 +44,12 @@ end
   ptr = Pointer(Base.unsafe_convert(Ptr{T}, obj_ptr), v)
   Store(ptr, x)
 end
+
+@generated Base.foldl(f, xs::AbstractSPIRVArray) = foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex(xs)[2:end]; init = :(xs[$(firstindex(xs))]))
+@generated Base.foldr(f, xs::AbstractSPIRVArray) = foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex(xs)[1:(end - 1)]; init = :(xs[$(lastindex(xs))]))
+Base.any(f::Function, xs::AbstractSPIRVArray) = foldl((x, y) -> f(x) | f(y), xs)
+Base.all(f::Function, xs::AbstractSPIRVArray) = foldl((x, y) -> f(x) & f(y), xs)
+@generated Base.sum(f, xs::AbstractSPIRVArray) = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex(xs))...)
+@generated Base.prod(f, xs::AbstractSPIRVArray) = Expr(:call, :*, (:(f(xs[$i])) for i in eachindex(xs))...)
+Base.sum(xs::AbstractSPIRVArray) = sum(identity, xs)
+Base.prod(xs::AbstractSPIRVArray) = prod(identity, xs)

@@ -138,17 +138,21 @@ Base.similar(bc::Broadcasted{BroadcastStyleSPIRV{T}}, ::Type) where {T} = zero(T
 @inline Broadcast.instantiate(bc::Broadcasted{BroadcastStyleSPIRV{T}}) where {T<:Vec} = bc
 @inline Base.materialize!(v::T, bc::Broadcasted{BroadcastStyleSPIRV{T}}) where {T<:Vec} = copyto!(v, only(bc.args))
 
-for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, :Mod))
+for (f, op) in zip((:+, :-, :*, :/, :rem, :mod, :atan), (:Add, :Sub, :Mul, :Div, :Rem, :Mod, :Atan2))
   @eval Base.$f(v1::Vec{N}, v2::Vec{N}) where {N} = $f(promote(v1, v2)...)
   @eval Base.$f(v::Vec, x::Scalar) = $f(promote(v, x)...)
   @eval Base.$f(x::Scalar, v::Vec) = $f(v, x)
-  @eval Base.$f(v1::T, v2::T) where {T<:Vec{<:Any,<:IEEEFloat}} = $(Symbol(:F, op))(v1, v2)
-  @eval Base.$f(v1::T, v2::T) where {T<:Vec{<:Any,<:BitInteger}} = $(Symbol(:I, op))(v1, v2)
-
-  # Define FAdd, IMul, etc. for vectors of matching type.
-  # `vectorize` is used as a CPU implementation of vector-wide instructions.
-  @eval @noinline $(Symbol(:F, op))(v1::T, v2::T) where {T<:Vec} = vectorize($f, v1, v2)
-  @eval @noinline $(Symbol(:I, op))(v1::T, v2::T) where {T<:Vec} = vectorize($f, v1, v2)
+  if f != :atan
+    @eval Base.$f(v1::T, v2::T) where {T<:Vec{<:Any,<:IEEEFloat}} = $(Symbol(:F, op))(v1, v2)
+    @eval Base.$f(v1::T, v2::T) where {T<:Vec{<:Any,<:BitInteger}} = $(Symbol(:I, op))(v1, v2)
+    # Define FAdd, IMul, etc. for vectors of matching type.
+    # `vectorize` is used as a CPU implementation of vector-wide instructions.
+    @eval @noinline $(Symbol(:F, op))(v1::T, v2::T) where {T<:Vec} = vectorize($f, v1, v2)
+    @eval @noinline $(Symbol(:I, op))(v1::T, v2::T) where {T<:Vec} = vectorize($f, v1, v2)
+  else
+    @eval Base.$f(v1::T, v2::T) where {T<:Vec{<:Any,<:SmallFloat}} = $op(v1, v2)
+    @eval @noinline $op(v1::T, v2::T) where {T<:Vec} = vectorize($f, v1, v2)
+  end
 end
 
 for (f, op) in zip((:ceil, :exp), (:Ceil, :Exp))

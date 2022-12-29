@@ -55,7 +55,11 @@ function SPIRVTarget(mi::MethodInstance, interp::AbstractInterpreter; inferred =
   end
 end
 
-lowered_code(mi::MethodInstance) = uncompressed_ir(mi.def::Method)
+function lowered_code(mi::MethodInstance)
+  !Base.hasgenerator(mi) && return uncompressed_ir(mi.def::Method)
+  Base.may_invoke_generator(mi) || error("cannot call @generated function `", mi, "` ")
+  (@ccall jl_code_for_staged(mi::Any)::Any)::CodeInfo
+end
 inferred_code(ci::CodeInstance) = isa(ci.inferred, CodeInfo) ? ci.inferred : Core.Compiler._uncompressed_ir(ci, ci.inferred)
 
 SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = SPIRVTarget(mi, inferred_code(ci), interp)
