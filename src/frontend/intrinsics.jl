@@ -21,6 +21,8 @@ using Base:
 
 const IEEEFloat_types = (Float16, Float32, Float64)
 
+const SmallFloat = Union{Float16,Float32}
+
 # Definition of intrinsics and redirection (overrides) of Base methods to use these intrinsics.
 # Intrinsic definitions need not be applicable only to supported types. Any signature
 # incompatible with SPIR-V semantics should not be redirected to any of these intrinsics.

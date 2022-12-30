@@ -1,7 +1,5 @@
 @MethodTable INTRINSICS_GLSL_METHOD_TABLE
 
-const SmallFloat = Union{Float16,Float32}
-
 macro override_glsl(ex)
   esc(:(@overlay SPIRV.INTRINSICS_GLSL_METHOD_TABLE @inline $ex))
 end

@@ -104,6 +104,7 @@ using SPIRV: component_type, texel_type, sampled_type
 
     arr[] = arr2
     @test all(iszero, arr)
+    @test arr == arr2
     @test firstindex(arr) === 0U
     @test lastindex(arr) === 3U
     @test eachindex(arr) === 0U:3U
