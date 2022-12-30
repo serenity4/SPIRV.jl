@@ -25,6 +25,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
               node.value::Symbol
               sym = (args[2]::QuoteNode).value::Symbol
               T = get_type(composite, target)
+              T <: Union{Arr, Vec, Mat} && sym === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden.")
               field_idx = findfirst(==(sym), fieldnames(T))
               !isnothing(field_idx) || throw_compilation_error("symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
               field_idx

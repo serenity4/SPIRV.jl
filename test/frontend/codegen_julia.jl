@@ -19,10 +19,18 @@ function store(mat::Mat)
   mat[1, 2] = mat[1, 1] + mat[3, 3]
 end
 
-function validate_code(code::Core.CodeInfo; maxlength = nothing, minlength = nothing)
+function validate_code(code::Core.CodeInfo; maxlength = nothing, minlength = nothing, spirv_chunk = false)
   @test unwrap(SPIRV.validate(code))
   !isnothing(maxlength) && @test length(code.code) ≤ maxlength
   !isnothing(minlength) && @test length(code.code) ≥ minlength
+  if spirv_chunk
+    sts = code.code[1:(end - 1)]
+    @test all(sts) do st
+      Meta.isexpr(st, :invoke) || return false
+      mi = st.args[1]::Core.MethodInstance
+      mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))
+    end
+  end
   nothing
 end
 
@@ -213,9 +221,15 @@ end
     validate_code(ci; maxlength = 30, minlength = 12) # 4 accesses, 2 additions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float32}}, ::Arr{3,Float32})
-    validate_code(ci; maxlength = 1, minlength = 1)
+    validate_code(ci; maxlength = 1, minlength = 1) # 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float64}}, ::Arr{3,Float32})
     validate_code(ci; maxlength = 30, minlength = 11) # 3 accesses, 3 conversions, 1 construct, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source lerp(::Vec2, ::Vec2, ::Float32)
+    validate_code(ci; maxlength = 7, minlength = 7, spirv_chunk = true) # a bunch of math operations
+
+    ci = SPIRV.@code_typed debuginfo=:source slerp(::Vec2, ::Vec2, ::Float32)
+    validate_code(ci; minlength = 30, spirv_chunk = true) # 3 accesses, 3 conversions, 1 construct, 1 return
   end
 end;
