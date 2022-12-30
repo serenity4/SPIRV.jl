@@ -13,7 +13,8 @@ Base.size(T::Type{<:Arr}) = (length(T),)
 Base.zero(T::Type{<:Arr}) = T(ntuple(Returns(zero(eltype(T))), length(T)))
 Base.one(T::Type{<:Arr}) = T(ntuple(Returns(one(eltype(T))), length(T)))
 Base.promote_rule(::Type{Arr{N,T1}}, ::Type{Arr{N,T2}}) where {N,T1,T2} = Arr{N,promote_type(T1, T2)}
-Base.convert(::Type{Arr{N,T1}}, v::Arr{N,T2}) where {N,T1,T2} = Arr{N,T1}(convert(NTuple{N,T1}, v.data))
+Base.convert(::Type{Arr{N,T1}}, v::Arr{N,T2}) where {N,T1,T2} = Arr{N,T1}(ntuple(i -> convert(T1, @inbounds v[i]), N)...)
+Base.convert(::Type{T}, v::T) where {T<:Arr} = v
 Base.getindex(arr::Arr, index::UInt32, other_index::UInt32, other_indices::UInt32...) = arr[index]
 
 @noinline CompositeExtract(arr::Arr, index::UInt32) = arr.data[index + 1]

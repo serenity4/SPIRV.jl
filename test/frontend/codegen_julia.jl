@@ -211,5 +211,11 @@ end
 
     ci = SPIRV.@code_typed debuginfo=:source ((x, y) -> x .+ y)(::Vec2, ::Vec2)
     validate_code(ci; maxlength = 30, minlength = 12) # 4 accesses, 2 additions, 1 construct, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float32}}, ::Arr{3,Float32})
+    validate_code(ci; maxlength = 1, minlength = 1)
+
+    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float64}}, ::Arr{3,Float32})
+    validate_code(ci; maxlength = 30, minlength = 11) # 3 accesses, 3 conversions, 1 construct, 1 return
   end
 end;

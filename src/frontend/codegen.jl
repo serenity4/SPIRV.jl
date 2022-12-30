@@ -63,7 +63,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
     end
     Expr(:foreigncall, f, _...) => begin
       isa(f, QuoteNode) && (f = f.value)
-      throw_compilation_error("foreign call detected (to function $f). Foreign calls are not supported in SPIR-V")
+      throw_compilation_error("foreign call detected (to function `$f`). Foreign calls are not supported in SPIR-V")
     end
     _ => throw_compilation_error("expected call or invoke expression, got $(repr(jinst))")
   end
