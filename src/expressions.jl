@@ -12,7 +12,7 @@ Semantically, `Expression`s do not express type declarations.
   Expression(op::OpCode, type::Optional{SPIRType}, result::Optional{ResultID}, args...) = Expression(op, type, result, collect(args))
 end
 
-@forward Expression.args (Base.getindex, Base.length, Base.iterate, Base.keys, Base.setindex!, Base.push!, Base.append!, Base.firstindex, Base.lastindex)
+@forward Expression.args (Base.getindex, Base.length, Base.iterate, Base.keys, Base.setindex!, Base.push!, Base.append!, Base.firstindex, Base.lastindex, Base.view)
 
 opcode(ex::Expression) = ex.op
 result_id(ex::Expression) = ex.result

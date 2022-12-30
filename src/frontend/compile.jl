@@ -73,7 +73,7 @@ function IR(mt::ModuleTarget, tr::Translation)
   ir.idcounter = mt.idcounter
   ir.tmap = tr.tmap
   ir.metadata = mt.metadata
-  ir
+  fill_phi_branches!(ir)
 end
 
 mutable struct CompilationError <: Exception
@@ -356,10 +356,10 @@ macro compile(features, interp, ex)
 end
 
 macro compile(interp, ex)
-  esc(:(@compile $(AllSupported()) $interp $ex))
+  esc(:($(@__MODULE__).@compile $(AllSupported()) $interp $ex))
 end
 macro compile(ex)
-  esc(:(@compile $(AllSupported()) $(SPIRVInterpreter()) $ex))
+  esc(:($(@__MODULE__).@compile $(AllSupported()) $(SPIRVInterpreter()) $ex))
 end
 
 function getline(code::CodeInfo, i::Int)

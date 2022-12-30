@@ -9,21 +9,6 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         push!(args, val, from)
       end
 
-      # SPIR-V requires all branching nodes to give a result, while Julia does not if the Phi instructions
-      # will never get used if coming from branches that are not covered.
-      # This is a problem because SPIR-V will want a value, and coming up with a dummy value to put
-      # is not trivial for composite data structures. For literals we can manage with `zero(T)` constants,
-      # but if in the future we have instances of composite types then we will need to think about other ways.
-
-      # Repeat an arbitrary value for unspecified blocks.
-      for from in inneighbors(target.cfg, tr.bbs[blk.id])
-        # Remap `from` to a ResultID, using the implicit mapping from the block's first instruction index to a SSA value.
-        from = tr.bb_results[Core.SSAValue(target.indices[from])]
-        if !in(from, @view args[2:2:end])
-          @assert jtype <: Integer || jtype <: AbstractFloat || "A dummy non-numeric value is required for OpPhi instruction, which at the moment is not clear how to get. Please report an issue."
-          push!(args, zero(jtype), from)
-        end
-      end
       (OpPhi, args)
     end
     :($f($(args...))) => @match f begin

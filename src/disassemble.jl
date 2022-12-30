@@ -45,9 +45,8 @@ function emit_argument(io, i, arg, kind, category = kind_to_category[kind])
     end
     "Id" => printstyled(io, arg; color = :yellow)
     "Composite" => begin
-      kinds = map(split(replace(string(kind), r"^Pair" => ""), "IdRef")) do part
-        str = isempty(part) ? "IdRef" : part
-        getproperty(@__MODULE__, Symbol(str))
+      kinds = map(eachmatch(r"(IdRef|LiteralInteger)", string(kind))) do part
+        getproperty(@__MODULE__, Symbol(part.match))
       end
       @assert length(kinds) == 2
       i % 2 == 0 && print(io, " => ")

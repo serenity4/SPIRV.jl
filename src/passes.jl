@@ -61,3 +61,30 @@ function enforce_calling_convention!(ir::IR, fdef::FunctionDefinition)
 end
 
 argtypes(fdef::FunctionDefinition) = fdef.type.argtypes
+
+"""
+SPIR-V requires all branching nodes to give a result, while Julia does not if the Phi instructions
+will never get used if coming from branches that are not covered.
+We can make use of OpUndef to provide a value, producing it in the incoming nodes
+just before branching to the node which defines an phi instructions.
+"""
+function fill_phi_branches!(ir::IR)
+  for fdef in ir.fdefs
+    cfg = ControlFlowGraph(fdef)
+    for v in traverse(cfg)
+      blk = fdef[v]
+      exs = phi_expressions(blk)
+      for ex in exs
+        length(ex) == 2length(inneighbors(cfg, v)) && continue
+        missing_branches = filter(u -> !in(fdef.block_ids[u], @view ex[2:2:end]), inneighbors(cfg, v))
+        for u in missing_branches
+          blkin = fdef[u]
+          id = next!(ir.idcounter)
+          insert!(blkin, lastindex(blkin), @ex id = OpUndef()::ex.type)
+          push!(ex, id, fdef.block_ids[u])
+        end
+      end
+    end
+  end
+  ir
+end
