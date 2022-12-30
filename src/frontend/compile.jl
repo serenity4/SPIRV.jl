@@ -199,6 +199,15 @@ end
 emit!(mt::ModuleTarget, tr::Translation, @nospecialize(type::SPIRType)) = emit_type!(mt.types, mt.idcounter, mt.constants, tr.tmap, type)
 emit!(mt::ModuleTarget, tr::Translation, c::Constant) = emit_constant!(mt.constants, mt.idcounter, mt.types, tr.tmap, c)
 
+emit_constant!(mt::ModuleTarget, tr::Translation, value) = emit_constant!(mt.constants, mt.idcounter, mt.types, tr.tmap, Constant(value, mt, tr))
+
+function Constant(value::T, mt::ModuleTarget, tr::Translation) where {T}
+  t = spir_type(T, tr.tmap)
+  !isa(t, StructType) && return Constant(value, t)
+  ids = [emit_constant!(mt, tr, getproperty(value, name)) for name in fieldnames(T)]
+  Constant(ids, t)
+end
+
 function emit!(mt::ModuleTarget, tr::Translation, var::Variable)
   haskey(mt.global_vars, var) && return mt.global_vars[var]
   emit!(mt, tr, var.type)

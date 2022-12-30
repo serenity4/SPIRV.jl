@@ -72,10 +72,17 @@ end
 
 struct Constant
   value::Any
+  type::SPIRType
   is_spec_const::Bool
 end
-Constant(value) = Constant(value, false)
-Constant(node::QuoteNode) = Constant(node.value)
+function Constant(value::T) where {T}
+  isprimitivetype(T) && return Constant(value, spir_type(T))
+  isa(value, QuoteNode) && return Constant(value.value)
+  # Disallow composite types, as we don't want to generate new `StructTypes`.
+  error("A type must be provided for the constant $value")
+end
+Constant(value, type) = Constant(value, type, false)
+Constant(node::QuoteNode, type) = Constant(node.value, type)
 
 struct ArrayType <: SPIRType
   eltype::SPIRType

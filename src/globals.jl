@@ -72,22 +72,17 @@ function Instruction(t::FunctionType, id::ResultID, globals::GlobalsInfo)
   inst
 end
 function Expression(c::Constant, id::ResultID)
+  (; type) = c
   @match (c.value, c.is_spec_const) begin
-    ((::Nothing, type), false) => @ex id = OpConstantNull()::type
-    (true, false) => @ex id = OpConstantTrue()::BooleanType()
-    (true, true) => @ex id = OpSpecConstantTrue()::BooleanType()
-    (false, false) => @ex id = OpConstantFalse()::BooleanType()
-    (false, true) => @ex id = OpSpecConstantFalse()::BooleanType()
-    ((ids::Vector{ResultID}, type), false) => @ex id = OpConstantComposite(ids...)::type
-    ((ids::Vector{ResultID}, type), true) => @ex id = OpSpecConstantComposite(ids...)::type
-    (val, false) => begin
-      if isa(val, UInt64) || isa(val, Int64) || isa(val, Float64)
-        # `val` is a 64-bit literal, and so takes two words.
-        @ex id = OpConstant(reinterpret(UInt32, [val])...)::spir_type(typeof(val))
-      else
-        @ex id = OpConstant(reinterpret(UInt32, val))::spir_type(typeof(val))
-      end
-    end
+    (::Nothing, _) => @ex id = OpConstantNull()::type
+    (true, false) => @ex id = OpConstantTrue()::type
+    (true, true) => @ex id = OpSpecConstantTrue()::type
+    (false, false) => @ex id = OpConstantFalse()::type
+    (false, true) => @ex id = OpSpecConstantFalse()::type
+    (ids::Vector{ResultID}, false) => @ex id = OpConstantComposite(ids...)::type
+    (ids::Vector{ResultID}, true) => @ex id = OpSpecConstantComposite(ids...)::type
+    (GuardBy(isprimitivetype ∘ typeof), _) => @ex id = OpConstant(reinterpret(UInt32, [c.value]))::type
+    _ => error("Unexpected value $(c.value) with type $type for constant epression")
   end
 end
 Instruction(c::Constant, id::ResultID, globals::GlobalsInfo) = Instruction(Expression(c, id), globals.types)
@@ -131,7 +126,7 @@ Instruction(var::Variable, id::ResultID, globals::GlobalsInfo) = Instruction(Exp
 
 function emit_constant!(constants, counter::IDCounter, types, tmap::TypeMap, c::Constant)
   haskey(constants, c) && return constants[c]
-  emit_type!(types, counter, constants, tmap, SPIRType(c, tmap))
+  emit_type!(types, counter, constants, tmap, c.type)
   id = next!(counter)
   insert!(constants, c, id)
   id

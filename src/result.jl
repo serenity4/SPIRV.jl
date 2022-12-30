@@ -28,13 +28,16 @@ mutable struct IDCounter
   current_id::ResultID
 end
 
-Dictionaries.set!(counter::IDCounter, id::ResultID) = (counter.current_id = id)
+Base.getindex(counter::IDCounter) = counter.current_id
+Base.setindex!(counter::IDCounter, id) = counter.current_id = id
+
+Dictionaries.set!(counter::IDCounter, id::ResultID) = (counter[] = id)
 
 IDCounter() = IDCounter(zero(ResultID))
 
 Base.convert(::Type{ResultID}, counter::IDCounter) = ResultID(counter)
-ResultID(counter::IDCounter) = counter.current_id
+ResultID(counter::IDCounter) = counter[]
 
 function next!(counter::IDCounter)
-  counter.current_id = ResultID(UInt32(counter.current_id) + 1)
+  counter[] = ResultID(UInt32(counter.current_id) + 1)
 end

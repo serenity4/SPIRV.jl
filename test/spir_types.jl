@@ -1,5 +1,5 @@
 using SPIRV, Test
-using SPIRV: Constant, TypeMap
+using SPIRV: Constant, TypeMap, Translation, ModuleTarget, emit_constant!, ResultID, spir_type
 
 @testset "SPIR-V types" begin
   i32 = IntegerType(32, true)
@@ -25,4 +25,17 @@ end
   ref_t = pt.type
   @test t === only(ref_t.members)
   @test_throws "Bottom type" spir_type(Union{}, tmap)
+end
+
+@testset "Constants" begin
+  mt = ModuleTarget()
+  tr = Translation()
+  value = (6.0, (3U, Int64(1)))
+  id = emit_constant!(mt, tr, value)
+  # 5 types and 5 elements (3 leaves and 2 composites) make up for 10 ids.
+  @test length(mt.types) == length(mt.constants) == 5
+  @test mt.idcounter[] === id === ResultID(10)
+  c = mt.constants[id]
+  @test c.type === spir_type(typeof(value), tr.tmap)
+  @test c.value == ResultID[2, 8]
 end;

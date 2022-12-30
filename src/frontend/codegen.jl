@@ -238,7 +238,8 @@ end
 function literals_to_const!(args, mt::ModuleTarget, tr::Translation, opcode)
   for (i, arg) in enumerate(args)
     if isa(arg, Bool) || (isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, QuoteNode)) && !is_literal(opcode, args, i)
-      args[i] = emit!(mt, tr, Constant(arg))
+      isa(arg, QuoteNode) && (arg = arg.value)
+      args[i] = emit_constant!(mt, tr, arg)
     end
   end
 end

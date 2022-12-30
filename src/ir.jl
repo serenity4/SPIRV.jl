@@ -127,13 +127,13 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
             &Float64 || &UInt64 || &Int64 => only(reinterpret(T, [arguments[1]::Word, arguments[2]::Word]))
             _ => error("Unexpected literal of type $T found in constant instruction with arguments $arguments")
           end
-          Constant(literal, opcode == OpSpecConstant)
+          Constant(literal, t, opcode == OpSpecConstant)
         end
-        &OpConstantFalse || &OpConstantTrue => Constant(opcode == OpConstantTrue)
-        &OpSpecConstantFalse || &OpSpecConstantTrue => Constant(opcode == OpSpecConstantTrue, true)
-        &OpConstantNull => Constant((nothing, types[type_id]))
+        &OpConstantFalse || &OpConstantTrue => Constant(opcode == OpConstantTrue, BooleanType())
+        &OpSpecConstantFalse || &OpSpecConstantTrue => Constant(opcode == OpSpecConstantTrue, BooleanType(), true)
+        &OpConstantNull => Constant(nothing, types[type_id])
         &OpConstantComposite || &OpSpecConstantComposite =>
-          Constant((convert(Vector{ResultID}, arguments), types[type_id]), opcode == OpSpecConstantComposite)
+          Constant(convert(Vector{ResultID}, arguments), types[type_id], opcode == OpSpecConstantComposite)
         _ => error("Unsupported constant instruction $inst")
       end
       insert!(ir.constants, result_id, c)
