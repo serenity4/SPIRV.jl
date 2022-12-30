@@ -361,3 +361,60 @@ end
 macro compile(ex)
   esc(:(@compile $(AllSupported()) $(SPIRVInterpreter()) $ex))
 end
+
+function getline(code::CodeInfo, i::Int)
+  codeloc = code.codelocs[i]
+  iszero(codeloc) && return nothing
+  line = code.linetable[codeloc]
+end
+
+function validate(code::CodeInfo)::Result{Bool,ValidationError}
+  globalrefs = Dictionary{Core.SSAValue, GlobalRef}()
+  validation_error(msg, i, ex, line) = ValidationError(string(msg, " in expression `", ex, "` at code location ", i, " around ", line.file, ":", line.line, '\n'))
+  for (i, ex) in enumerate(code.code)
+    isa(ex, GlobalRef) && insert!(globalrefs, Core.SSAValue(i), ex)
+    line = getline(code, i)
+    !isnothing(line) || error("No code location was found at code location $i for ex $ex; make sure to provide a `CodeInfo` which was generated with debugging info (`debuginfo = :source`).")
+    @trymatch ex begin
+      &Core.ReturnNode() => return validation_error("Unreachable statement detected", i, ex, line)
+      Expr(:foreigncall, _...) => return validation_error("Foreign call detected", i, ex, line)
+      Expr(:call, f, _...) => @match f begin
+        ::GlobalRef => @trymatch getfield(f.mod, f.name) begin
+          &Base.not_int || &Base.bitcast || &Base.getfield => nothing
+          ::Core.IntrinsicFunction => return validation_error("Illegal core intrinsic function `$f` detected", i, ex, line)
+          &Core.tuple => return validation_error("Call to unsupported function `Core.tuple` detected", i, ex, line)
+          ::Function => return validation_error("Dynamic dispatch detected", i, ex, line)
+        end
+        _ => return validation_error("Expected `GlobalRef`", i, ex, line)
+      end
+      Expr(:invoke, mi, f, _...) => begin
+        mi::MethodInstance
+        isa(f, Core.SSAValue) && (f = globalrefs[f])
+        isa(f, GlobalRef) && (f = getfield(f.mod, f.name))
+        f === throw && return validation_error("An exception may be throwned", i, ex, line)
+        in(mi.def.module, (Base, Core)) && return validation_error("Invocation of a `MethodInstance` detected that is defined in Base or Core (they should be inlined)", i, ex, line)
+        if mi.def.module === SPIRV
+          opcode = lookup_opcode(mi.def.name)
+          isnothing(opcode) && return validation_error("Invocation of a `MethodInstance` defined in module SPIRV that does not correspond to an opcode (they should be inlined to ones that correspond to opcodes)", i, ex, line)
+        end
+      end
+    end
+  end
+
+  # Validate types in a second pass so that we can see things such as unreachable statements and exceptions before
+  # raising an error because e.g. a String type is detected when building the error message.
+  for (i, ex) in enumerate(code.code)
+    T = code.ssavaluetypes[i]
+    line = getline(code, i)
+    !isnothing(line) || error("No code location was found at index $i for ex $ex; make sure to provide a `CodeInfo` which was generated with debugging info (`debuginfo = :source`).")
+    isa(ex, Union{Core.ReturnNode, Core.GotoNode, Core.GotoIfNot}) && continue
+    @trymatch T begin
+      ::Type{Union{}} => return validation_error("Bottom type Union{} detected", i, ex, line)
+      ::Type{<:AbstractString} => return validation_error("String type `$T` detected", i, ex, line)
+      ::Type{Any} => return validation_error("Type `Any` detected", i, ex, line)
+      GuardBy(isabstracttype) => return validation_error("Abstract type `$T` detected", i, ex, line)
+    end
+  end
+
+  true
+end

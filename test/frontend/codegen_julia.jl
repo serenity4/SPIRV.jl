@@ -19,6 +19,13 @@ function store(mat::Mat)
   mat[1, 2] = mat[1, 1] + mat[3, 3]
 end
 
+function validate_code(code::Core.CodeInfo; maxlength = nothing, minlength = nothing)
+  @test unwrap(SPIRV.validate(code))
+  !isnothing(maxlength) && @test length(code.code) ≤ maxlength
+  !isnothing(minlength) && @test length(code.code) ≥ minlength
+  nothing
+end
+
 @testset "Codegen - Julia" begin
   @testset "Intrinsics" begin
     @testset "Replacement of core intrinsics with SPIR-V intrinsics" begin
@@ -176,8 +183,33 @@ end
 
   @testset "Generated functions" begin
     @generated _fast_sum(f, xs::Vec{N}) where {N} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex(xs))...)
-    (; code) = SPIRV.@code_typed _fast_sum(identity, ::Vec2)
-    @test length(code) < 8
-    @test all(Meta.isexpr(x, :invoke) && x.args[1].def.module === SPIRV for x in code[1:(end - 1)])
+    ci = SPIRV.@code_typed debuginfo=:source _fast_sum(identity, ::Vec2)
+    validate_code(ci; maxlength = 6, minlength = 6)
+  end
+
+  @testset "Fast paths" begin
+    ci = SPIRV.@code_typed debuginfo=:source deepcopy(::Vec2)
+    validate_code(ci; maxlength = 2, minlength = 2) # 1 intrinsic, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source (v -> setindex!(v, Vec2(1, 2)))(::Vec2)
+    validate_code(ci; maxlength = 3, minlength = 3) # 2 intrinsics (CompositeConstruct + Store), 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source copy(::Vec2)
+    validate_code(ci; maxlength = 3, minlength = 3) # 2 intrinsics (CompositeConstruct + Store), 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source copy(::Pointer{Vec2})
+    validate_code(ci; maxlength = 2, minlength = 2) # 1 intrinsic, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source exp(::Float32)
+    validate_code(ci; maxlength = 2, minlength = 2) # 1 intrinsic, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source sum(::Vec4)
+    validate_code(ci; maxlength = 12, minlength = 12) # 4 accesses (AccessChain + Load per access), 3 additions, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source sum(::Arr{10,Float32})
+    validate_code(ci; maxlength = 30, minlength = 30) # 10 accesses, 9 additions, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source ((x, y) -> x .+ y)(::Vec2, ::Vec2)
+    validate_code(ci; maxlength = 30, minlength = 12) # 4 accesses, 2 additions, 1 construct, 1 return
   end
 end;

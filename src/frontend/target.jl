@@ -89,7 +89,15 @@ function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpr
     rem_vertex!(g, nv(g))
   end
 
-  cfg = ControlFlowGraph(g)
+  # Try to validate the code upon failure to report more helpful errors.
+  local cfg
+  try
+    cfg = ControlFlowGraph(g)
+  catch
+    ret = validate(code)
+    iserror(ret) && throw(unwrap_error(ret))
+    rethrow()
+  end
 
   SPIRVTarget(mi, cfg, insts, indices, code, interp)
 end
@@ -196,4 +204,22 @@ macro code_typed(debuginfo, ex)
 end
 macro code_typed(ex)
   esc(:($(@__MODULE__).@code_typed debuginfo=:none $ex))
+end
+
+macro which(ex, interp)
+  f, argtypes = map(esc, get_signature(ex))
+  quote
+    mis = method_instances($f, $argtypes, $(esc(interp)))
+    for mi in mis
+      print(mi)
+      printstyled(" at ", mi.def.file, ':', mi.def.line, " @ "; color = :light_black)
+      printstyled(mi.def.module, color = :magenta)
+      println()
+    end
+    println()
+    length(mis) == 1 ? mis[1] : mis
+  end
+end
+macro which(ex)
+  esc(:($(@__MODULE__).@which $ex $(SPIRVInterpreter())))
 end

@@ -4,9 +4,11 @@ using SPIRV: component_type, texel_type, sampled_type
 @testset "Array operations" begin
   @testset "Pointers" begin
     ptr = Pointer(Ref(5))
-    @test ptr[] == 5
+    @test ptr[] === 5
+    ptr[] = 3
+    @test ptr[] === 3
     ptr = Pointer(Ref((1, 2, 3)))
-    @test ptr[2] == 2
+    @test ptr[2] === 2
 
     arr = [1, 2]
     GC.@preserve arr begin
@@ -130,5 +132,21 @@ using SPIRV: component_type, texel_type, sampled_type
     @test sampled(1f0) == zero(eltype(img))
     @test sampled(1f0, 1f0) == zero(eltype(img))
     @test sampled(zero(Vec2), 1) == zero(eltype(img))
+  end
+
+  @testset "Copying" begin
+    v = Vec2(2, 3)
+    v2 = copy(v)
+    v2.x = 1
+    @test v.x == 1
+
+    v2 = deepcopy(v)
+    v2.x = 1
+    @test v.x == 1
+
+    ptr = Pointer(Ref(Vec(1, 2)))
+    ptr2 = copy(ptr)
+    ptr[] = Vec(3, 4)
+    @test ptr2[] == Vec(1, 2)
   end
 end;

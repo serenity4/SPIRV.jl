@@ -232,3 +232,19 @@ IDiv(x::T, y::T) where {T<:BitUnsigned} = UDiv(x, y)
 @noinline LogicalEqual(x, y)     = Base.eq_int(x, y)
 @override (!=)(x::Bool, y::Bool) = LogicalNotEqual(x, y)
 @noinline LogicalNotEqual(x, y)  = Base.ne_int(x, y)
+
+# Copying.
+
+## Deep copying and shallow copying should be defined identically here, because of how
+## mutable objects are treated in SPIR-V (as pointers to immutable objects).
+## That would change if we expect to have pointers in object fields and expect
+# their contents to be recursively copied as well.
+
+# Deepcopy has only one implementation and relies on `deepcopy_internal` with consistent semantics.
+@override deepcopy(x) = CopyObject(x)
+# XXX: This overrides all definitions of `copy` for the purpose of method lookup and therefore breaks a few things.
+# @override copy(x) = CopyObject(x)
+@noinline function CopyObject(@nospecialize(x))
+  isbitstype(typeof(x)) && return x
+  return Base.deepcopy_internal(x, IdDict())::typeof(x)
+end

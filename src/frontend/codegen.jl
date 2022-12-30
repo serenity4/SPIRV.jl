@@ -48,6 +48,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
           end
           (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
         end
+        &Core.tuple => throw_compilation_error("the function `Core.tuple` is not supported at the moment")
         ::Function => throw_compilation_error("dynamic dispatch detected for function $f. All call sites must be statically resolved")
       end
       _ => throw_compilation_error("call to unknown function $f")
@@ -56,11 +57,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       isa(f, Core.SSAValue) && (f = tr.globalrefs[f])
       @assert isa(f, GlobalRef)
       if f.mod == @__MODULE__() || !in(f.mod, (Base, Core))
-        opcode = @when let op::OpCode = try_getopcode(f.name)
-          op
-          @when op::OpCodeGLSL = try_getopcode(f.name, :GLSL)
-          op
-        end
+        opcode = lookup_opcode(f.name)
         if !isnothing(opcode)
           !isempty(args) && isa(first(args), DataType) && (args = args[2:end])
           @switch opcode begin
@@ -78,6 +75,10 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         args, variables = peel_global_vars(args, mt, tr, fdef)
         (OpFunctionCall, (emit_new!(mt, tr, target.interp, mi, fdef, variables), args...))
       end
+    end
+    Expr(:foreigncall, f, _...) => begin
+      isa(f, QuoteNode) && (f = f.value)
+      throw_compilation_error("foreign call detected (to function $f). Foreign calls are not supported in SPIR-V")
     end
     _ => throw_compilation_error("expected call or invoke expression, got $(repr(jinst))")
   end
@@ -116,6 +117,14 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
 
   ex = @ex result = opcode(args...)::type
   (ex, type)
+end
+
+function lookup_opcode(fname::Symbol)
+  op = try_getopcode(fname)
+  !isnothing(op) && return op::OpCode
+  op = try_getopcode(fname, :GLSL)
+  !isnothing(op) && return op::OpCodeGLSL
+  nothing
 end
 
 function get_type(arg, target::SPIRVTarget)

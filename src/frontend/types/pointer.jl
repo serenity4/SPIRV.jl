@@ -75,6 +75,9 @@ AccessChain(v::AbstractVector, index::Signed) = AccessChain(v, UInt32(index) - 1
 AccessChain(x, index::Integer, second_index::Integer) = AccessChain(AccessChain(x, index), second_index)
 AccessChain(x, index::Integer, second_index::Integer, other_indices::Integer...) = AccessChain(AccessChain(x, index, second_index), other_indices...)
 
+Base.copy(x::Pointer) = CopyMemory(x)
+@noinline CopyMemory(x) = Pointer(Ref(copy(x[])))
+
 function load_expr(address)
   Meta.isexpr(address, :(::)) || error("Type annotation required for the loaded element in expression $address")
   address, type = address.args
