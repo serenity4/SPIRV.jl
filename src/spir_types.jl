@@ -70,7 +70,7 @@ struct SampledImageType <: SPIRType
   image_type::ImageType
 end
 
-struct Constant
+@auto_hash_equals struct Constant
   value::Any
   type::SPIRType
   is_spec_const::Bool
