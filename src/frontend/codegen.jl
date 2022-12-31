@@ -11,32 +11,31 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
 
       (OpPhi, args)
     end
-    :($f($(args...))) => @match f begin
-      ::GlobalRef => @match getfield(f.mod, f.name) begin
-        # Loop constructs use `Base.not_int` seemingly from the C code, so we
-        # need to handle it if encountered.
-        &Base.not_int => (OpLogicalNot, args)
-        &Base.bitcast => (OpBitcast, args[2:2])
-        ::Core.IntrinsicFunction => throw_compilation_error("reached illegal core intrinsic function '$f'")
-        &getfield => begin
-          composite = args[1]
-          field_idx = @match args[2] begin
-            node::QuoteNode => begin
-              node.value::Symbol
-              sym = (args[2]::QuoteNode).value::Symbol
-              T = get_type(composite, target)
-              T <: Union{Arr, Vec, Mat} && sym === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden.")
-              field_idx = findfirst(==(sym), fieldnames(T))
-              !isnothing(field_idx) || throw_compilation_error("symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
-              field_idx
-            end
-            idx::Integer => idx
+    :($f($(args...))) => @match follow_globalref(f) begin
+      # Loop constructs use `Base.not_int` seemingly from the C code, so we
+      # need to handle it if encountered.
+      &Base.not_int => (OpLogicalNot, args)
+      # There sometimes remain quite a few calls to this intrinsic, so let's avoid having to reimplement a bunch of methods.
+      &Base.bitcast => (OpBitcast, args[2:2])
+      ::Core.IntrinsicFunction => throw_compilation_error("reached illegal core intrinsic function '$f'")
+      &getfield => begin
+        composite = args[1]
+        field_idx = @match args[2] begin
+          node::QuoteNode => begin
+            node.value::Symbol
+            sym = (args[2]::QuoteNode).value::Symbol
+            T = get_type(composite, target)
+            T <: Union{Arr, Vec, Mat} && sym === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden.")
+            field_idx = findfirst(==(sym), fieldnames(T))
+            !isnothing(field_idx) || throw_compilation_error("symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
+            field_idx
           end
-          (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
+          idx::Integer => idx
         end
-        &Core.tuple => throw_compilation_error("the function `Core.tuple` is not supported at the moment")
-        ::Function => throw_compilation_error("dynamic dispatch detected for function $f. All call sites must be statically resolved")
+        (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
       end
+      &Core.tuple => throw_compilation_error("the function `Core.tuple` is not supported at the moment")
+      ::Function => throw_compilation_error("dynamic dispatch detected for function $f. All call sites must be statically resolved")
       _ => throw_compilation_error("call to unknown function $f")
     end
     Expr(:invoke, mi, f, args...) => begin
@@ -231,7 +230,7 @@ end
 "Replace `GlobalRef`s by their actual values."
 function replace_globalrefs!(args)
   for (i, arg) in enumerate(args)
-    isa(arg, GlobalRef) && (args[i] = getproperty(arg.mod, arg.name))
+    isa(arg, GlobalRef) && (args[i] = follow_globalref(arg))
   end
 end
 

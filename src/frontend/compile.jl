@@ -252,6 +252,12 @@ function replace_forwarded_ssa!(fdef::FunctionDefinition, tr::Translation)
   end
 end
 
+follow_globalref(@nospecialize x) = x
+function follow_globalref(x::GlobalRef)
+  isdefined(x.mod, x.name) || error("Undefined global reference `$x`")
+  getproperty(x.mod, x.name)
+end
+
 function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, target::SPIRVTarget, range::UnitRange, node::Integer)
   (; code, ssavaluetypes, slottypes) = target.code
   blk = new_block!(fdef, ResultID(node, tr))
@@ -270,7 +276,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     try
       @switch jinst begin
         @case ::Core.ReturnNode
-        ex = @match jinst.val begin
+        ex = @match follow_globalref(jinst.val) begin
           ::Nothing => @ex OpReturn()
           val => begin
             args = Any[val]
@@ -387,19 +393,17 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
     @trymatch ex begin
       &Core.ReturnNode() => return validation_error("Unreachable statement detected", i, ex, line)
       Expr(:foreigncall, _...) => return validation_error("Foreign call detected", i, ex, line)
-      Expr(:call, f, _...) => @match f begin
-        ::GlobalRef => @trymatch getfield(f.mod, f.name) begin
-          &Base.not_int || &Base.bitcast || &Base.getfield => nothing
-          ::Core.IntrinsicFunction => return validation_error("Illegal core intrinsic function `$f` detected", i, ex, line)
-          &Core.tuple => return validation_error("Call to unsupported function `Core.tuple` detected", i, ex, line)
-          ::Function => return validation_error("Dynamic dispatch detected", i, ex, line)
-        end
+      Expr(:call, f, _...) => @match follow_globalref(f) begin
+        &Base.not_int || &Base.bitcast || &Base.getfield => nothing
+        ::Core.IntrinsicFunction => return validation_error("Illegal core intrinsic function `$f` detected", i, ex, line)
+        &Core.tuple => return validation_error("Call to unsupported function `Core.tuple` detected", i, ex, line)
+        ::Function => return validation_error("Dynamic dispatch detected", i, ex, line)
         _ => return validation_error("Expected `GlobalRef`", i, ex, line)
       end
       Expr(:invoke, mi, f, _...) => begin
         mi::MethodInstance
         isa(f, Core.SSAValue) && (f = globalrefs[f])
-        isa(f, GlobalRef) && (f = getfield(f.mod, f.name))
+        isa(f, GlobalRef) && (f = follow_globalref(f.mod, f.name))
         f === throw && return validation_error("An exception may be throwned", i, ex, line)
         in(mi.def.module, (Base, Core)) && return validation_error("Invocation of a `MethodInstance` detected that is defined in Base or Core (they should be inlined)", i, ex, line)
         if mi.def.module === SPIRV

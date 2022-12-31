@@ -8,7 +8,7 @@ end
 sinks(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Fix1(outneighbors, g), vertices(g))]
 sources(g::AbstractGraph) = vertices(g)[findall(isempty ∘ Fix1(inneighbors, g), vertices(g))]
 
-@auto_hash_equals struct SimpleTree{T}
+mutable struct SimpleTree{T}
   data::T
   parent::Optional{SimpleTree{T}}
   children::Vector{SimpleTree{T}}
@@ -24,6 +24,8 @@ end
 SimpleTree{T}(data::T, children = SimpleTree{T}[]) where {T} = SimpleTree{T}(data, nothing, children)
 SimpleTree(data::T, parent, children) where {T} = SimpleTree{T}(data, parent, children)
 SimpleTree(data::T, children = SimpleTree{T}[]) where {T} = SimpleTree{T}(data, children)
+
+Base.:(==)(x::SimpleTree, y::SimpleTree) = nodetype(x) == nodetype(y) && x.parent == y.parent && length(x.children) == length(y.children) && all(xx == yy for (xx, yy) in zip(x.children, y.children))
 
 """
 Equality is defined for `SimpleTree`s over data and children. The equality of
@@ -323,6 +325,10 @@ DominatorTree(cfg::AbstractGraph) = DominatorTree(dominators(cfg))
 function DominatorTree(domsets::AbstractVector{Set{T}}) where {T}
   root = nothing
   idoms = Dictionary{T, T}()
+
+  # Compute immediate dominators from the dominator sets.
+  # One node's only immediate dominator is going to be its parent
+  # in the tree representation.
   for (v, domset) in pairs(domsets)
     if length(domset) == 1
       isnothing(root) || error("Found multiple root dominators.")
@@ -342,16 +348,16 @@ function DominatorTree(domsets::AbstractVector{Set{T}}) where {T}
     insert!(idoms, v, idom)
   end
 
+  # Attach all the subtrees together and to the root tree.
   root_tree = DominatorTree(DominatorNode(root))
   trees = dictionary([v => DominatorTree(DominatorNode(v)) for v in keys(idoms)])
   for (v, tree) in pairs(trees)
+    # Skip trees which have already been attached.
+    isroot(tree) || continue
     idom = idoms[v]
-    if isroot(tree)
-      p = get(trees, idom, root_tree)
-      tree = @set tree.parent = p
-      trees[v] = tree
-      push!(children(p), tree)
-    end
+    p = get(trees, idom, root_tree)
+    tree.parent = p
+    push!(p.children, tree)
   end
   root_tree
 end
