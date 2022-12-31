@@ -13,8 +13,14 @@ Pointer{T}(x::UInt) where {T} = convert(Pointer{T}, x)
 Base.convert(::Type{Pointer{T}}, x::UInt) where {T} = ConvertUToPtr(T, x)
 @noinline ConvertUToPtr(T::Type, x) = Pointer{T}(Base.reinterpret(Ptr{T}, x), x)
 
-function Pointer(ref::Ref{T}) where {T}
+Pointer(ref::Ref{T}) where {T} = Pointer{T}(ref)
+function Pointer{T}(ref::Ref{T}) where {T}
   Pointer(Base.unsafe_convert(Ptr{T}, ref), ref)
+end
+Pointer(x::T) where {T} = Pointer{T}(x)
+function Pointer{T}(x::T) where {T}
+  !ismutabletype(T) && return Pointer{T}(Ref(x))
+  Pointer(Ptr{T}(pointer_from_objref(x)), x)
 end
 
 Base.setindex!(ptr::Pointer{T}, x::T) where {T} = (Store(ptr, x); x)
@@ -29,10 +35,10 @@ Base.isequal(ptr1::Pointer, ptr2::Pointer) = PtrEqual(ptr1, ptr2)
 Base.:(≠)(ptr1::Pointer, ptr2::Pointer) = PtrNotEqual(ptr1, ptr2)
 @noinline PtrNotEqual(ptr1, ptr2) = ptr1.addr ≠ ptr2.addr
 
-@noinline Load(ptr::Pointer) = GC.@preserve ptr Base.unsafe_load(ptr.addr)
+@noinline Load(ptr::Pointer{T}) where {T} = ismutabletype(T) ? unsafe_pointer_to_objref(Ptr{Nothing}(ptr.addr)) : unsafe_load(ptr.addr)
 
 @noinline function Store(ptr::Pointer{T}, x::T) where {T}
-  GC.@preserve ptr Base.unsafe_store!(ptr.addr, x)
+  GC.@preserve ptr unsafe_store!(ptr.addr, x)
   nothing
 end
 
@@ -59,15 +65,28 @@ Get a [`Pointer`](@ref) to `v` using an indexing scheme that depends on the sign
 """
 function AccessChain end
 
-@noinline function AccessChain(mut, index::UInt32)
+@noinline function AccessChain(mut, offset::UInt32)
   @assert ismutable(mut)
   T = eltype(mut)
-  # Make sure `isbitstype(T)` holds if executing that on the CPU.
-  # @assert isbitstype(T)
-  @boundscheck 0 ≤ index ≤ length(mut) - 1 || throw(BoundsError(mut, index))
-  GC.@preserve mut begin
-    addr = Base.unsafe_convert(Ptr{T}, pointer_from_objref(mut))
-    Pointer(addr + index * sizeof(T), mut)
+  @assert isconcretetype(T)
+  @boundscheck 0 ≤ offset ≤ length(mut) - 1 || throw(BoundsError(mut, offset))
+  # We need to retrieve a memory address directly pointing at the element at `mut.data[1 + offset]`.
+  # Depending on whether elements are mutable objects or not, they may be themselves pointers and
+  # we have to deal with the extra indirection.
+  if !ismutabletype(T)
+    # `T` is not mutable, therefore the contents of elements are stored inline in `mut`.
+    # We can treat `mut` as a contiguous array of these contents.
+    GC.@preserve mut begin
+      addr = Ptr{T}(pointer_from_objref(mut))
+      stride =  Base.elsize(Vector{T})
+      Pointer(addr + offset * stride, mut)
+    end
+  else
+    # `T` is mutable, so the contents of elements of `mut` are 8-byte pointers to other objects (`jl_value_t*`).
+    # In that case, return the address of the individual object.
+    mut_element = mut.data[1 + offset]
+    addr = Ptr{T}(pointer_from_objref(mut_element))
+    Pointer(addr, mut_element)
   end
 end
 
@@ -75,8 +94,8 @@ AccessChain(v::AbstractVector, index::Signed) = AccessChain(v, UInt32(index) - 1
 AccessChain(x, index::Integer, second_index::Integer) = AccessChain(AccessChain(x, index), second_index)
 AccessChain(x, index::Integer, second_index::Integer, other_indices::Integer...) = AccessChain(AccessChain(x, index, second_index), other_indices...)
 
-Base.copy(x::Pointer) = CopyMemory(x)
-@noinline CopyMemory(x) = Pointer(Ref(copy(x[])))
+Base.copy(ptr::Pointer) = CopyMemory(ptr)
+@noinline CopyMemory(ptr::Pointer{T}) where {T} = Pointer{T}(deepcopy(ptr[]))
 
 function load_expr(address)
   Meta.isexpr(address, :(::)) || error("Type annotation required for the loaded element in expression $address")

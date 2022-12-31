@@ -9,6 +9,14 @@ using SPIRV: component_type, texel_type, sampled_type
     @test ptr[] === 3
     ptr = Pointer(Ref((1, 2, 3)))
     @test ptr[2] === 2
+    ptr = Pointer(5)
+    @test ptr[] == 5
+    ptr[] = 3
+    @test ptr[] === 3
+    ptr = Pointer(Vec2(1, 2))
+    @test ptr[] == Vec2(1, 2)
+    ptr[] = Vec2(3, 4)
+    @test ptr[] == Vec2(3, 4)
 
     arr = [1, 2]
     GC.@preserve arr begin
@@ -95,6 +103,7 @@ using SPIRV: component_type, texel_type, sampled_type
 
   @testset "Arr" begin
     arr = Arr(1.0, 3.0, 1.0, 2.0)
+    @test all(arr .== arr.data)
     @test arr[2] === 3.0
     arr[3] = 4
     @test arr[4] == last(arr) === 2.0
@@ -107,9 +116,26 @@ using SPIRV: component_type, texel_type, sampled_type
     arr[] = arr2
     @test all(iszero, arr)
     @test arr == arr2
+    arr[1] = 42.0
+    @test arr[2] ≠ 42.0
     @test firstindex(arr) === 0U
     @test lastindex(arr) === 3U
     @test eachindex(arr) === 0U:3U
+
+    @test all(iszero, zero(Arr{16,Float32}))
+    @test all(isone, one(Arr{16,Float32}))
+
+    # `Arr` with mutable contents.
+    arr = Arr(Vec2(1, 2), Vec2(3, 4))
+    @test all(arr .== arr.data)
+    @test arr[1] == Vec2(1, 2)
+    @test arr[2] == Vec2(3, 4)
+    arr[1] = Vec2(5, 6)
+    @test arr[1] == Vec2(5, 6)
+    @test arr[2] == Vec2(3, 4)
+
+    @test all(iszero, zero(Arr{16,Vec4}))
+    @test all(isone, one(Arr{16,Vec4}))
   end
 
   @testset "Images" begin
@@ -143,6 +169,18 @@ using SPIRV: component_type, texel_type, sampled_type
     v2 = deepcopy(v)
     v2.x = 1
     @test v.x == 1
+
+    ptr = Pointer(2)
+    ptr2 = copy(ptr)
+    ptr[] = 3
+    @test ptr2[] == 2
+
+    ptr = Pointer(Ref((3, Vec2(1, 2))))
+    ptr2 = copy(ptr)
+    ptr[][2].x = 3
+    @test ptr2[][2].x == 1
+    ptr[] = (4, one(Vec2))
+    @test ptr2[] == (3, Vec2(1, 2))
 
     ptr = Pointer(Ref(Vec(1, 2)))
     ptr2 = copy(ptr)
