@@ -12,6 +12,99 @@ end
 
 FunctionDefinition(mt::ModuleTarget, mi::MethodInstance) = FunctionDefinition(mt, make_name(mi))
 
+abstract type ShaderExecutionOptions end
+
+Base.@kwdef struct CommonExecutionOptions <: ShaderExecutionOptions
+  xfb::Bool = false
+  denorm_preserve::Optional{Int} = nothing
+  denorm_flush_to_zero::Optional{Int} = nothing
+  signed_zero_inf_nan_preserve::Optional{Int} = nothing
+  rounding_mode_rte::Optional{Int} = nothing
+  rounding_mode_rtz::Optional{Int} = nothing
+end
+
+Base.@kwdef struct FragmentExecutionOptions <: ShaderExecutionOptions
+  common::CommonExecutionOptions = CommonExecutionOptions()
+  pixel_center_integer::Bool = false
+  origin::Symbol = :upper_left
+  early_fragment_tests::Bool = false
+  depth_replacing::Bool = false
+  depth::Optional{Symbol} = nothing
+end
+
+Base.@kwdef struct ComputeExecutionOptions <: ShaderExecutionOptions
+  common::CommonExecutionOptions = CommonExecutionOptions()
+  local_size::Union{NTuple{3,Int},NTuple{3,ResultID}} = (8, 8, 1)
+end
+
+Base.@kwdef struct GeometryExecutionOptions <: ShaderExecutionOptions
+  common::CommonExecutionOptions = CommonExecutionOptions()
+  invocations::Optional{Int}
+  input::Symbol = :triangles
+  output::Symbol = :triangle_strip
+  max_output_vertices::Optional{Int} = nothing
+end
+
+Base.@kwdef struct TessellationExecutionOptions <: ShaderExecutionOptions
+  common::CommonExecutionOptions = CommonExecutionOptions()
+  spacing_equal::Bool = false
+  spacing_fractional::Symbol = :equal
+  vertex_order::Symbol = :cw
+  point_mode::Bool = false
+  generate::Symbol = :triangles
+  output_patch_size::Optional{Int} = nothing
+end
+
+Base.@kwdef struct MeshExecutionOptions <: ShaderExecutionOptions
+  output::Symbol = :points
+  max_output_vertices::Optional{Int} = nothing
+end
+
+function ShaderExecutionOptions(model::ExecutionModel)
+  model == ExecutionModelFragment && return FragmentExecutionOptions()
+  model == ExecutionModelGeometry && return GeometryExecutionOptions()
+  model == ExecutionModelGLCompute && return ComputeExecutionOptions()
+  model in (ExecutionModelTessellationControl, ExecutionModelTessellationEvaluation) && return TessellationExecutionOptions()
+  model == ExecutionModelMeshNV && return MeshExecutionOptions()
+  CommonExecutionOptions()
+end
+
+struct InvalidExecutionOptions <: Exception
+  msg::String
+  options::ShaderExecutionOptions
+end
+Base.showerror(io::IO, err::InvalidExecutionOptions) = print(io, "InvalidExecutionOptions: ", err.msg)
+
+function check_value(options::ShaderExecutionOptions, field::Symbol, allowed_values)
+  @assert hasproperty(options, field)
+  value = getproperty(options, field)
+  in(value, allowed_values) && return true
+  msg = string("option `$field` does not have a valid value: allowed values are $(join(repr.(allowed_values), ", ")), the provided value was $value")
+  throw(InvalidExecutionOptions(msg, options))
+end
+
+function validate(options::FragmentExecutionOptions)
+  check_value(options, :origin, (:upper_left, :lower_left))
+  check_value(options, :depth, (nothing, :greater, :less, :unchanged))
+end
+
+validate(options::ShaderExecutionOptions) = true
+
+function validate(options::GeometryExecutionOptions)
+  check_value(options, :input, (:points, :lines, :lines_adjancency, :triangles, :triangles_adjacency))
+  check_value(options, :output, (:points, :line_strip, :triangle_strip))
+end
+
+function validate(options::TessellationExecutionOptions)
+  check_value(options, :spacing, (:equal, :fractional_even, :fractional_odd))
+  check_value(options, :vertex_order, (:cw, :ccw))
+  check_value(options, :generate, (:triangles, :quads, :isolines))
+end
+
+function validate(options::MeshExecutionOptions)
+  check_value(options, :output, (:points,))
+end
+
 struct ShaderInterface
   execution_model::ExecutionModel
   storage_classes::Vector{StorageClass}
@@ -19,15 +112,13 @@ struct ShaderInterface
   type_metadata::Dictionary{DataType, Metadata}
   layout::LayoutStrategy
   features::FeatureSupport
-  function ShaderInterface(execution_model::ExecutionModel, storage_classes = [], variable_decorations = Dictionary(),
-    type_metadata = Dictionary(), layout = VulkanLayout(), features = AllSupported())
-    new(execution_model, storage_classes, variable_decorations, type_metadata, layout, features)
-  end
+  options::ShaderExecutionOptions
 end
 
-function ShaderInterface(; execution_model = ExecutionModelVertex, storage_classes = [], variable_decorations = Dictionary(),
-  type_metadata = Dictionary(), layout = VulkanLayout(), features = AllSupported())
-  ShaderInterface(execution_model, storage_classes, variable_decorations, type_metadata, layout, features)
+function ShaderInterface(execution_model::ExecutionModel; storage_classes = [], variable_decorations = Dictionary(),
+  type_metadata = Dictionary(), layout = VulkanLayout(), features = AllSupported(), options = ShaderExecutionOptions(execution_model))
+  @assert validate(options)
+  ShaderInterface(execution_model, storage_classes, variable_decorations, type_metadata, layout, features, options)
 end
 
 """

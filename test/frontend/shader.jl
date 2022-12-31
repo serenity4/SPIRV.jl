@@ -26,7 +26,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   target = @target vert_shader!(::Vec4)
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
-  shader = Shader(target, ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput]))
+  shader = Shader(target, ShaderInterface(SPIRV.ExecutionModelVertex; storage_classes = [SPIRV.StorageClassOutput]))
   mod = SPIRV.Module(shader)
   @test mod == parse(
     SPIRV.Module,
@@ -73,7 +73,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   target = @target vert_shader_2!(::Vec4)
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
-  interface = ShaderInterface(SPIRV.ExecutionModelVertex, [SPIRV.StorageClassOutput], dictionary([1 => Decorations(SPIRV.DecorationLocation, 0)]))
+  interface = ShaderInterface(SPIRV.ExecutionModelVertex; storage_classes = [SPIRV.StorageClassOutput], variable_decorations = dictionary([1 => Decorations(SPIRV.DecorationLocation, 0)]))
   shader = Shader(target, interface)
   @test unwrap(validate(shader))
 
@@ -90,15 +90,15 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   target = @target vert_shader_3!(::Vec4, ::Point)
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
-  interface = ShaderInterface(SPIRV.ExecutionModelVertex,
-    [SPIRV.StorageClassOutput, SPIRV.StorageClassUniform],
-    dictionary([
+  interface = ShaderInterface(SPIRV.ExecutionModelVertex;
+    storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassUniform],
+    variable_decorations = dictionary([
       1 => Decorations(SPIRV.DecorationLocation, 0),
       2 => Decorations(SPIRV.DecorationUniform).
         decorate!(SPIRV.DecorationDescriptorSet, 0).
         decorate!(SPIRV.DecorationBinding, 0),
     ]),
-    dictionary([
+    type_metadata = dictionary([
       Point => Metadata().
         decorate!(SPIRV.DecorationBlock).
         decorate!(1, SPIRV.DecorationOffset, 0).
@@ -123,9 +123,9 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   target = @target vert_shader_4!(::Vec4, ::UInt32, ::Vec4)
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
-  interface = ShaderInterface(SPIRV.ExecutionModelVertex,
-    [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassOutput],
-    dictionary([
+  interface = ShaderInterface(SPIRV.ExecutionModelVertex;
+    storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassOutput],
+    variable_decorations = dictionary([
       1 => Decorations(SPIRV.DecorationLocation, 0),
       2 => Decorations(SPIRV.DecorationBuiltIn, SPIRV.BuiltInVertexIndex),
       3 => Decorations(SPIRV.DecorationBuiltIn, SPIRV.BuiltInPosition),
@@ -164,7 +164,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   # Access to PhysicalStorageBuffer must use Aligned.
   @test iserror(validate(ir))
 
-  interface = ShaderInterface(
+  interface = ShaderInterface(SPIRV.ExecutionModelVertex;
     storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassPushConstant],
     variable_decorations = dictionary([
       1 => Decorations(SPIRV.DecorationLocation, 0),
@@ -184,7 +184,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   shader = Shader(target, interface)
   @test unwrap(validate(shader))
 
-  # WIP
+  # TODO: WIP
   # ir = IR()
   # t = SPIRV.spir_type(Float32, ir; storage_class = SPIRV.StorageClassPushConstant)
   # @test isa(t, SPIRV.StructType)
@@ -194,8 +194,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   end
 
   target = @target frag_shader!(::Vec4, ::Vec4)
-  interface = ShaderInterface(
-    execution_model = SPIRV.ExecutionModelFragment,
+  interface = ShaderInterface(SPIRV.ExecutionModelFragment;
     storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput],
     variable_decorations = dictionary([
       1 => Decorations(SPIRV.DecorationLocation, 0),
@@ -214,9 +213,9 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     target = @target vert_branch!(::Vec4, ::Float32)
     ir = compile(target, AllSupported())
     @test unwrap(validate(ir))
-    interface = ShaderInterface(SPIRV.ExecutionModelVertex,
-      [SPIRV.StorageClassOutput, SPIRV.StorageClassInput],
-      dictionary([
+    interface = ShaderInterface(SPIRV.ExecutionModelVertex;
+      storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput],
+      variable_decorations = dictionary([
         1 => Decorations(SPIRV.DecorationLocation, 0),
         2 => Decorations(SPIRV.DecorationLocation, 0),
       ]),
@@ -230,8 +229,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     end
 
     target = @target compute_blur!(::Vec3, ::GaussianBlur, ::SPIRV.SampledImage{SPIRV.image_type(SPIRV.ImageFormatR16f,SPIRV.Dim2D,0,false,false,1)}, ::UInt32, ::Vec2)
-    interface = ShaderInterface(;
-      execution_model = SPIRV.ExecutionModelFragment,
+    interface = ShaderInterface(SPIRV.ExecutionModelFragment;
       storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassUniformConstant, SPIRV.StorageClassInput, SPIRV.StorageClassInput],
       variable_decorations = dictionary([
         1 => Decorations(SPIRV.DecorationLocation, 0),
@@ -250,8 +248,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     end
 
     target = @target compute_blur_2!(::Vec3, ::GaussianBlur, ::SPIRV.SampledImage{SPIRV.image_type(SPIRV.ImageFormatR16f,SPIRV.Dim2D,0,false,false,1)}, ::Vec2)
-    interface = ShaderInterface(;
-      execution_model = SPIRV.ExecutionModelFragment,
+    interface = ShaderInterface(SPIRV.ExecutionModelFragment;
       storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassUniformConstant, SPIRV.StorageClassInput],
       variable_decorations = dictionary([
         1 => Decorations(SPIRV.DecorationLocation, 0),
