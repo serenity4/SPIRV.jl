@@ -403,7 +403,7 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
       Expr(:invoke, mi, f, _...) => begin
         mi::MethodInstance
         isa(f, Core.SSAValue) && (f = globalrefs[f])
-        isa(f, GlobalRef) && (f = follow_globalref(f.mod, f.name))
+        isa(f, GlobalRef) && (f = follow_globalref(f))
         f === throw && return validation_error("An exception may be throwned", i, ex, line)
         in(mi.def.module, (Base, Core)) && return validation_error("Invocation of a `MethodInstance` detected that is defined in Base or Core (they should be inlined)", i, ex, line)
         if mi.def.module === SPIRV
