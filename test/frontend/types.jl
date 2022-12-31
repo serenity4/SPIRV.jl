@@ -134,7 +134,10 @@ using SPIRV: component_type, texel_type, sampled_type
     @test arr[1] == Vec2(5, 6)
     @test arr[2] == Vec2(3, 4)
 
-    @test all(iszero, zero(Arr{16,Vec4}))
+    arr = zero(Arr{16,Vec4})
+    @test all(iszero, arr)
+    arr[1].x = 3.0
+    @test iszero(arr[2].x)
     @test all(isone, one(Arr{16,Vec4}))
   end
 
