@@ -28,6 +28,8 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       add_options!(ep, opts)
       @test allunique(ep.modes)
     end
+    opts = FragmentExecutionOptions(origin = :upper_right)
+    @test_throws "Invalid value `:upper_right`" validate(opts)
   end
 
   function vert_shader!(out_color)

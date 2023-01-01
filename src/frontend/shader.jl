@@ -85,7 +85,7 @@ function check_value(options::ShaderExecutionOptions, field::Symbol, allowed_val
   @assert hasproperty(options, field)
   value = getproperty(options, field)
   in(value, allowed_values) && return true
-  msg = string("option `$field` does not have a valid value: allowed values are $(join(repr.(allowed_values), ", ")), the provided value was $value")
+  msg = string("Invalid value `$(repr(value))` detected for option `$(typeof(options))::$field`; allowed values are $(join('`' .* repr.(allowed_values) .* '`', ", "))")
   throw(InvalidExecutionOptions(msg, options))
 end
 
