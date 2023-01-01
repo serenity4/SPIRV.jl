@@ -1,4 +1,5 @@
 using SPIRV, Test, Dictionaries, Accessors
+using SPIRV: validate, EntryPoint, add_options!
 
 SUPPORTED_FEATURES = SupportedFeatures(
   [
@@ -19,6 +20,16 @@ SUPPORTED_FEATURES = SupportedFeatures(
 interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE]);
 
 @testset "Shader interface" begin
+  @testset "Shader execution options" begin
+    for execution_model in [SPIRV.ExecutionModelVertex, SPIRV.ExecutionModelFragment, SPIRV.ExecutionModelGLCompute, SPIRV.ExecutionModelGeometry, SPIRV.ExecutionModelTessellationControl, SPIRV.ExecutionModelTessellationEvaluation, SPIRV.ExecutionModelMeshNV, SPIRV.ExecutionModelAnyHitKHR]
+      opts = ShaderExecutionOptions(execution_model)
+      @test validate(opts, execution_model)
+      ep = EntryPoint(:main, ResultID(1), execution_model)
+      add_options!(ep, opts)
+      @test allunique(ep.modes)
+    end
+  end
+
   function vert_shader!(out_color)
     out_color.a = 1F
   end

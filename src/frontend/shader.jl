@@ -16,11 +16,11 @@ abstract type ShaderExecutionOptions end
 
 Base.@kwdef struct CommonExecutionOptions <: ShaderExecutionOptions
   xfb::Bool = false
-  denorm_preserve::Optional{Int} = nothing
-  denorm_flush_to_zero::Optional{Int} = nothing
-  signed_zero_inf_nan_preserve::Optional{Int} = nothing
-  rounding_mode_rte::Optional{Int} = nothing
-  rounding_mode_rtz::Optional{Int} = nothing
+  denorm_preserve::Optional{UInt32} = nothing
+  denorm_flush_to_zero::Optional{UInt32} = nothing
+  signed_zero_inf_nan_preserve::Optional{UInt32} = nothing
+  rounding_mode_rte::Optional{UInt32} = nothing
+  rounding_mode_rtz::Optional{UInt32} = nothing
 end
 
 Base.@kwdef struct FragmentExecutionOptions <: ShaderExecutionOptions
@@ -32,32 +32,38 @@ Base.@kwdef struct FragmentExecutionOptions <: ShaderExecutionOptions
   depth::Optional{Symbol} = nothing
 end
 
-Base.@kwdef struct ComputeExecutionOptions <: ShaderExecutionOptions
-  common::CommonExecutionOptions = CommonExecutionOptions()
-  local_size::Union{NTuple{3,Int},NTuple{3,ResultID}} = (8, 8, 1)
+struct ComputeExecutionOptions <: ShaderExecutionOptions
+  common::CommonExecutionOptions
+  local_size::Union{NTuple{3,UInt32},NTuple{3,ResultID}}
+end
+
+function ComputeExecutionOptions(; common::CommonExecutionOptions = CommonExecutionOptions(),
+                                 local_size::NTuple{3, <:Union{ResultID, Integer}} = (8, 8, 1))
+  eltype(local_size) !== ResultID && (local_size = UInt32.(local_size))
+  ComputeExecutionOptions(common, local_size)
 end
 
 Base.@kwdef struct GeometryExecutionOptions <: ShaderExecutionOptions
   common::CommonExecutionOptions = CommonExecutionOptions()
-  invocations::Optional{Int}
+  invocations::Optional{UInt32} = nothing
   input::Symbol = :triangles
   output::Symbol = :triangle_strip
-  max_output_vertices::Optional{Int} = nothing
+  max_output_vertices::Optional{UInt32} = nothing
 end
 
 Base.@kwdef struct TessellationExecutionOptions <: ShaderExecutionOptions
   common::CommonExecutionOptions = CommonExecutionOptions()
-  spacing_equal::Bool = false
-  spacing_fractional::Symbol = :equal
+  spacing::Symbol = :equal
   vertex_order::Symbol = :cw
   point_mode::Bool = false
   generate::Symbol = :triangles
-  output_patch_size::Optional{Int} = nothing
+  output_patch_size::Optional{UInt32} = nothing
 end
 
 Base.@kwdef struct MeshExecutionOptions <: ShaderExecutionOptions
+  common::CommonExecutionOptions = CommonExecutionOptions()
   output::Symbol = :points
-  max_output_vertices::Optional{Int} = nothing
+  max_output_vertices::Optional{UInt32} = nothing
 end
 
 function ShaderExecutionOptions(model::ExecutionModel)
@@ -83,16 +89,63 @@ function check_value(options::ShaderExecutionOptions, field::Symbol, allowed_val
   throw(InvalidExecutionOptions(msg, options))
 end
 
+validate(options::CommonExecutionOptions) = true
+
+function add_options!(ep::EntryPoint, options::CommonExecutionOptions)
+  options.xfb && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeXfb))
+  !isnothing(options.denorm_preserve) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeDenormPreserve, options.denorm_preserve))
+  !isnothing(options.denorm_flush_to_zero) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeDenormFlushToZero, options.denorm_flush_to_zero))
+  !isnothing(options.signed_zero_inf_nan_preserve) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeSignedZeroInfNanPreserve, options.signed_zero_inf_nan_preserve))
+  !isnothing(options.rounding_mode_rte) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeRoundingModeRTE, options.rounding_mode_rte))
+  !isnothing(options.rounding_mode_rtz) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeRoundingModeRTZ, options.rounding_mode_rtz))
+  ep
+end
+
 function validate(options::FragmentExecutionOptions)
   check_value(options, :origin, (:upper_left, :lower_left))
   check_value(options, :depth, (nothing, :greater, :less, :unchanged))
 end
 
-validate(options::ShaderExecutionOptions) = true
+function add_options!(ep::EntryPoint, options::FragmentExecutionOptions)
+  add_options!(ep, options.common)
+  options.pixel_center_integer && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModePixelCenterInteger))
+  options.origin === :upper_left && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOriginUpperLeft))
+  options.origin === :lower_left && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOriginLowerLeft))
+  options.early_fragment_tests && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeEarlyFragmentTests))
+  options.depth_replacing && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeDepthReplacing))
+  options.depth === :greater && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeDepthGreater))
+  options.depth === :less && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeDepthLess))
+  options.depth === :unchanged && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeDepthUnchanged))
+  ep
+end
+
+validate(options::ComputeExecutionOptions) = true
+
+function add_options!(ep::EntryPoint, options::ComputeExecutionOptions)
+  add_options!(ep, options.common)
+  isa(options.local_size, NTuple{3,UInt32}) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeLocalSize, options.local_size...))
+  isa(options.local_size, NTuple{3,ResultID}) && push!(ep.modes, @inst ExecutionModeId(ep.func, ExecutionModeLocalSizeId, options.local_size...))
+  ep
+end
 
 function validate(options::GeometryExecutionOptions)
   check_value(options, :input, (:points, :lines, :lines_adjancency, :triangles, :triangles_adjacency))
   check_value(options, :output, (:points, :line_strip, :triangle_strip))
+end
+
+function add_options!(ep::EntryPoint, options::GeometryExecutionOptions)
+  add_options!(ep, options.common)
+  !isnothing(options.invocations) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeInvocations, options.invocations))
+  options.input === :points && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeInputPoints))
+  options.input === :lines && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeInputLines))
+  options.input === :lines_adjancency && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeInputLinesAdjacency))
+  options.input === :triangles && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeTriangles))
+  options.input === :triangles_adjacency && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeInputTrianglesAdjacency))
+  options.output === :points && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputPoints))
+  options.output === :line_strip && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputLineStrip))
+  options.output === :triangle_strip && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputTriangleStrip))
+  !isnothing(options.max_output_vertices) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_output_vertices))
+  ep
 end
 
 function validate(options::TessellationExecutionOptions)
@@ -101,8 +154,47 @@ function validate(options::TessellationExecutionOptions)
   check_value(options, :generate, (:triangles, :quads, :isolines))
 end
 
+function add_options!(ep::EntryPoint, options::TessellationExecutionOptions)
+  add_options!(ep, options.common)
+  options.spacing === :equal && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeSpacingEqual))
+  options.spacing === :fractional_even && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeSpacingFractionalEven))
+  options.spacing === :fractional_odd && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeSpacingFractionalOdd))
+  options.vertex_order === :cw && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeVertexOrderCw))
+  options.vertex_order === :ccw && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeVertexOrderCcw))
+  options.point_mode && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModePointMode))
+  options.generate === :triangles && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeTriangles))
+  options.generate === :quads && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeQuads))
+  options.generate === :isolines && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeIsolines))
+  !isnothing(options.output_patch_size) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_output_vertices))
+  ep
+end
+
 function validate(options::MeshExecutionOptions)
   check_value(options, :output, (:points,))
+end
+
+function add_options!(ep::EntryPoint, options::MeshExecutionOptions)
+  add_options!(ep, options.common)
+  options.output === :points && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputPoints))
+  !isnothing(options.max_output_vertices) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_output_vertices))
+  ep
+end
+
+function validate_options_type(options::ShaderExecutionOptions, execution_model::ExecutionModel, T::DataType)
+  isa(options, T) || throw(InvalidExecutionOptions("The type of shader execution options ($(typeof(options))) does not match the requested execution model `$execution_model`. Execution options are expected to be of type `$T`.", options))
+  true
+end
+
+function validate(options::ShaderExecutionOptions, execution_model::ExecutionModel)
+  execution_model == ExecutionModelFragment && return validate_options_type(options, execution_model, FragmentExecutionOptions)
+  execution_model == ExecutionModelGLCompute && return validate_options_type(options, execution_model, ComputeExecutionOptions)
+  execution_model == ExecutionModelGeometry && return validate_options_type(options, execution_model, GeometryExecutionOptions)
+  if execution_model in (ExecutionModelTessellationControl, ExecutionModelTessellationEvaluation)
+    execution_model === ExecutionModelTessellationEvaluation && check_value(options, :output_patch_size, (nothing,))
+    return validate_options_type(options, execution_model, TessellationExecutionOptions)
+  end
+  execution_model == ExecutionModelMeshNV && return validate_options_type(options, execution_model, MeshExecutionOptions)
+  validate_options_type(options, execution_model, CommonExecutionOptions)
 end
 
 struct ShaderInterface
@@ -112,13 +204,13 @@ struct ShaderInterface
   type_metadata::Dictionary{DataType, Metadata}
   layout::LayoutStrategy
   features::FeatureSupport
-  options::ShaderExecutionOptions
+  execution_options::ShaderExecutionOptions
 end
 
 function ShaderInterface(execution_model::ExecutionModel; storage_classes = [], variable_decorations = Dictionary(),
-  type_metadata = Dictionary(), layout = VulkanLayout(), features = AllSupported(), options = ShaderExecutionOptions(execution_model))
-  @assert validate(options)
-  ShaderInterface(execution_model, storage_classes, variable_decorations, type_metadata, layout, features, options)
+  type_metadata = Dictionary(), layout = VulkanLayout(), features = AllSupported(), execution_options = ShaderExecutionOptions(execution_model))
+  @assert validate(execution_options, execution_model)
+  ShaderInterface(execution_model, storage_classes, variable_decorations, type_metadata, layout, features, execution_options)
 end
 
 """
@@ -143,9 +235,9 @@ function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterfa
   ir
 end
 
-function define_entry_point!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, execution_model::ExecutionModel)
+function define_entry_point!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, model::ExecutionModel, options::ShaderExecutionOptions)
   main = FunctionDefinition(FunctionType(VoidType(), []))
-  ep = EntryPoint(:main, emit!(mt, tr, main), execution_model, [], fdef.global_vars)
+  ep = EntryPoint(:main, emit!(mt, tr, main), model, [], fdef.global_vars)
 
   # Fill function body.
   blk = new_block!(main, next!(mt.idcounter))
@@ -155,8 +247,12 @@ function define_entry_point!(mt::ModuleTarget, tr::Translation, fdef::FunctionDe
   push!(blk, @ex next!(mt.idcounter) = OpFunctionCall(fid)::fdef.type.rettype)
   push!(blk, @ex OpReturn())
 
-  execution_model == ExecutionModelFragment && push!(ep.modes, @inst OpExecutionMode(ep.func, ExecutionModeOriginUpperLeft))
-  ep
+  model == ExecutionModelFragment && return add_options!(ep, options::FragmentExecutionOptions)
+  model == ExecutionModelGeometry && return add_options!(ep, options::GeometryExecutionOptions)
+  model in (ExecutionModelTessellationControl, ExecutionModelTessellationEvaluation) && return add_options!(ep, options::TessellationExecutionOptions)
+  model == ExecutionModelGLCompute && return add_options!(ep, options::ComputeExecutionOptions)
+  model == ExecutionModelMeshNV && return add_options!(ep, options::MeshExecutionOptions)
+  add_options!(ep, options::CommonExecutionOptions)
 end
 
 function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)
@@ -212,7 +308,7 @@ function IR(target::SPIRVTarget, interface::ShaderInterface)
   end
   compile!(mt, tr, target, variables)
   fdef = FunctionDefinition(mt, target.mi)
-  ep = define_entry_point!(mt, tr, fdef, interface.execution_model)
+  ep = define_entry_point!(mt, tr, fdef, interface.execution_model, interface.execution_options)
   ir = IR(mt, tr)
   ir.addressing_model = AddressingModelPhysicalStorageBuffer64
   insert!(ir.entry_points, ep.func, ep)
