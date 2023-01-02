@@ -1,4 +1,4 @@
-struct ShaderInterface
+@auto_hash_equals struct ShaderInterface
   execution_model::ExecutionModel
   storage_classes::Vector{StorageClass}
   variable_decorations::Dictionary{Int,Decorations}
@@ -79,8 +79,7 @@ struct Shader
   memory_resources::ResultDict{MemoryResource}
 end
 
-Module(shader::Shader) = Module(shader.ir)
-assemble(shader::Shader) = assemble(shader.ir)
+@forward Shader.ir (Module, assemble, TypeInfo)
 
 validate(shader::Shader) = validate_shader(shader.ir)
 

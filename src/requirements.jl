@@ -8,7 +8,7 @@ abstract type FeatureSupport end
 """
 Extensions and capabilities supported by a client API.
 """
-struct SupportedFeatures <: FeatureSupport
+@auto_hash_equals struct SupportedFeatures <: FeatureSupport
   extensions::Vector{String}
   capabilities::Vector{Capability}
 end

@@ -391,7 +391,7 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
     line = getline(code, i)
     !isnothing(line) || error("No code location was found at code location $i for ex $ex; make sure to provide a `CodeInfo` which was generated with debugging info (`debuginfo = :source`).")
     @trymatch ex begin
-      &Core.ReturnNode() => return validation_error("Unreachable statement detected", i, ex, line)
+      &Core.ReturnNode() => return validation_error("Unreachable statement detected (previous instruction: $(code.code[i - 1]))", i, ex, line)
       Expr(:foreigncall, _...) => return validation_error("Foreign call detected", i, ex, line)
       Expr(:call, f, _...) => @match follow_globalref(f) begin
         &Base.not_int || &Base.bitcast || &Base.getfield => nothing
@@ -406,10 +406,6 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
         isa(f, GlobalRef) && (f = follow_globalref(f))
         f === throw && return validation_error("An exception may be throwned", i, ex, line)
         in(mi.def.module, (Base, Core)) && return validation_error("Invocation of a `MethodInstance` detected that is defined in Base or Core (they should be inlined)", i, ex, line)
-        if mi.def.module === SPIRV
-          opcode = lookup_opcode(mi.def.name)
-          isnothing(opcode) && return validation_error("Invocation of a `MethodInstance` defined in module SPIRV that does not correspond to an opcode (they should be inlined to ones that correspond to opcodes)", i, ex, line)
-        end
       end
     end
   end
@@ -417,15 +413,25 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
   # Validate types in a second pass so that we can see things such as unreachable statements and exceptions before
   # raising an error because e.g. a String type is detected when building the error message.
   for (i, ex) in enumerate(code.code)
+    isa(ex, Union{Core.ReturnNode, Core.GotoNode, Core.GotoIfNot}) && continue
     T = code.ssavaluetypes[i]
     line = getline(code, i)
-    !isnothing(line) || error("No code location was found at index $i for ex $ex; make sure to provide a `CodeInfo` which was generated with debugging info (`debuginfo = :source`).")
-    isa(ex, Union{Core.ReturnNode, Core.GotoNode, Core.GotoIfNot}) && continue
     @trymatch T begin
       ::Type{Union{}} => return validation_error("Bottom type Union{} detected", i, ex, line)
       ::Type{<:AbstractString} => return validation_error("String type `$T` detected", i, ex, line)
       ::Type{Any} => return validation_error("Type `Any` detected", i, ex, line)
       GuardBy(isabstracttype) => return validation_error("Abstract type `$T` detected", i, ex, line)
+    end
+  end
+
+  for (i, ex) in enumerate(code.code)
+    !Meta.isexpr(ex, :invoke) && continue
+    T = code.ssavaluetypes[i]
+    line = getline(code, i)
+    mi = ex.args[1]
+    if mi.def.module === SPIRV
+      opcode = lookup_opcode(mi.def.name)
+      isnothing(opcode) && return validation_error("Invocation of a `MethodInstance` defined in module SPIRV that does not correspond to an opcode (they should be inlined to ones that correspond to opcodes)", i, ex, line)
     end
   end
 

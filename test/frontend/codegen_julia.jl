@@ -202,6 +202,12 @@ end
     ci = SPIRV.@code_typed debuginfo=:source (v -> setindex!(v, Vec2(1, 2)))(::Vec2)
     validate_code(ci; maxlength = 3, minlength = 3) # 2 intrinsics (CompositeConstruct + Store), 1 return
 
+    ci = SPIRV.@code_typed debuginfo=:source (x -> @load x::Int32)(::UInt64)
+    validate_code(ci; maxlength = 3, minlength = 3, spirv_chunk = true) # 1 conversion, 1 load, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source (x -> @load x[2]::Int32)(::UInt64)
+    validate_code(ci; maxlength = 4, minlength = 4, spirv_chunk = true) # 1 conversion, 1 access, 1 return
+
     ci = SPIRV.@code_typed debuginfo=:source copy(::Vec2)
     validate_code(ci; maxlength = 3, minlength = 3) # 2 intrinsics (CompositeConstruct + Store), 1 return
 

@@ -61,7 +61,6 @@ Core.Compiler.setindex!(wvc::WorldView{CodeInstanceCache}, args...) = setindex!(
 Core.Compiler.getindex(wvc::WorldView{CodeInstanceCache}, args...) = getindex(wvc, args...)
 
 const DEFAULT_CI_CACHE = CodeInstanceCache()
-const VULKAN_CI_CACHE = CodeInstanceCache()
 
 function invalidate(cache::CodeInstanceCache, mi::MethodInstance, max_world, invalidated = Set{MethodInstance}())
   push!(invalidated, mi)

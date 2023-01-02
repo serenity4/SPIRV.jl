@@ -52,6 +52,5 @@
     assemble(ir)
 
     empty!(DEFAULT_CI_CACHE.dict)
-    empty!(VULKAN_CI_CACHE.dict)
   end
 end

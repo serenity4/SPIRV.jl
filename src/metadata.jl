@@ -28,6 +28,14 @@ mutable struct Decorations
   Decorations() = new(Set{Decoration}())
 end
 
+function Base.hash(decs::Decorations, h::UInt)
+  for field in propertynames(Decorations)
+    isdefined(decs, field) && (h += hash(getproperty(decs, field)))
+  end
+  h
+end
+Base.:(==)(x::Decorations, y::Decorations) = hash(x) == hash(y)
+
 Decorations(dec::Decoration, args...) = Decorations().decorate!(dec, args...)
 
 Base.getproperty(decs::Decorations, symbol::Symbol) = symbol === :decorate! ? decorate!(decs) : getfield(decs, symbol)

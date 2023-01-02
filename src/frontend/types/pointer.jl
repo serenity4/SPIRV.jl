@@ -35,7 +35,7 @@ Base.isequal(ptr1::Pointer, ptr2::Pointer) = PtrEqual(ptr1, ptr2)
 Base.:(≠)(ptr1::Pointer, ptr2::Pointer) = PtrNotEqual(ptr1, ptr2)
 @noinline PtrNotEqual(ptr1, ptr2) = ptr1.addr ≠ ptr2.addr
 
-@noinline Load(ptr::Pointer{T}) where {T} = ismutabletype(T) ? unsafe_pointer_to_objref(Ptr{Nothing}(ptr.addr)) : unsafe_load(ptr.addr)
+@noinline Load(ptr::Pointer{T}) where {T} = (ismutabletype(T) ? unsafe_pointer_to_objref(Ptr{Nothing}(ptr.addr)) : unsafe_load(ptr.addr))::T
 
 @noinline function Store(ptr::Pointer{T}, x::T) where {T}
   GC.@preserve ptr unsafe_store!(ptr.addr, x)

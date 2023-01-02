@@ -83,7 +83,6 @@ include("frontend/types/array.jl")
 include("frontend/types/image.jl")
 include("layouts.jl")
 include("frontend/intrinsics_glsl.jl")
-include("frontend/vulkan.jl")
 include("frontend/interpreter.jl")
 include("frontend/target.jl")
 include("frontend/compile.jl")
@@ -179,8 +178,8 @@ export
   SPIRVInterpreter,
   invalidate_all!,
   @compile,
-  VULKAN_METHOD_TABLE, INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE,
-  DEFAULT_CI_CACHE, VULKAN_CI_CACHE,
+  INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE,
+  DEFAULT_CI_CACHE,
 
   # Shader.
   ShaderInterface, Shader,

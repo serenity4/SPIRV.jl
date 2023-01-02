@@ -24,6 +24,9 @@ mutable struct SPIRVInterpreter <: AbstractInterpreter
   debug::InterpDebugInfo
 end
 
+# Avoid copying the interpreter in deep copies.
+Base.deepcopy_internal(interp::SPIRVInterpreter, ::IdDict) = interp
+
 function cap_world(world, max_world)
   if world == typemax(UInt)
     # Sometimes the caller is lazy and passes typemax(UInt).
@@ -38,8 +41,8 @@ end
 # Constructor adapted from Julia's `NativeInterpreter`.
 function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = InferenceParams(),
   opt_params = OptimizationParams(inline_cost_threshold = 1000),
-  method_tables = [VULKAN_METHOD_TABLE, INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE],
-  global_cache = VULKAN_METHOD_TABLE in method_tables ? VULKAN_CI_CACHE : DEFAULT_CI_CACHE)
+  method_tables = [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE],
+  global_cache = DEFAULT_CI_CACHE)
   SPIRVInterpreter(
     global_cache,
     NOverlayMethodTable(world, method_tables),
@@ -54,7 +57,7 @@ end
 SPIRVInterpreter(method_tables::Vector{Core.MethodTable}; world::UInt = get_world_counter(), kwargs...) =
   SPIRVInterpreter(world; method_tables, kwargs...)
 
-function invalidate_all!(interp::SPIRVInterpreter)
+function invalidate_all!(interp::SPIRVInterpreter = SPIRVInterpreter())
   invalidate_all(interp.global_cache, interp.world)
   nothing
 end
