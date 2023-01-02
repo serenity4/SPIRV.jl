@@ -160,8 +160,9 @@ end
 
 ## Logical operators.
 
-@override (==)(x::BitInteger, y::BitInteger)           = IEqual(x, y)
-@noinline IEqual(x::BitInteger, y::BitInteger)         = Base.eq_int(x, y)
+@override (==)(x::T, y::T) where {T<:BitInteger}       = IEqual(x, y)
+@override (==)(x::BitInteger, y::BitInteger)           = ==(promote(x, y)...)
+@noinline IEqual(x::T, y::T) where {T<:BitInteger}     = Base.eq_int(x, y)
 @override (!=)(x::BitInteger, y::BitInteger)           = INotEqual(x, y)
 @noinline INotEqual(x::BitInteger, y::BitInteger)      = Base.ne_int(x, y)
 @override (~)(x::BitInteger)                           = Not(x)

@@ -19,7 +19,7 @@ function store(mat::Mat)
   mat[1, 2] = mat[1, 1] + mat[3, 3]
 end
 
-function validate_code(code::Core.CodeInfo; maxlength = nothing, minlength = nothing, spirv_chunk = false)
+function validate_code(code::Core.CodeInfo; maxlength = nothing, minlength = nothing, spirv_chunk = true)
   @test unwrap(SPIRV.validate(code))
   !isnothing(maxlength) && @test length(code.code) ≤ maxlength
   !isnothing(minlength) && @test length(code.code) ≥ minlength
@@ -122,16 +122,8 @@ end
         log(z) + y
       end
 
-      # FIXME: `Base.Math.exp_impl` is called with `x::Core.Const(2.0f0)` with
-      # the SPIR-V interpreter, which is invalid; the native interpreter seems
-      # to remove the `Core.Const` annotation and feeds in `x::Float32`.
-      # To replicate, use `f() = exp(2f0)` (or anything that passes a `Core.Const` to `exp`).
-      @test begin
-        (; code) = SPIRV.@code_typed test_constprop5()
-        # @code_typed (() -> exp(2F))()
-        # SPIRV.@code_typed (() -> exp(2F))()
-        code[1] == Core.ReturnNode(8.704899f0)
-      end broken = VERSION > v"1.9.0-DEV.718" # version is not exact.
+      (; code) = SPIRV.@code_typed test_constprop5()
+      @test code[1] == Core.ReturnNode(8.704899f0)
     end
   end
 
@@ -196,6 +188,9 @@ end
   end
 
   @testset "Fast paths" begin
+    ci = SPIRV.@code_typed debuginfo=:source (x -> x == 4)(::UInt32)
+    validate_code(ci; maxlength = 3, minlength = 3) # 1 conversion, 1 intrinsic, 1 return
+
     ci = SPIRV.@code_typed debuginfo=:source deepcopy(::Vec2)
     validate_code(ci; maxlength = 2, minlength = 2) # 1 intrinsic, 1 return
 
@@ -203,10 +198,10 @@ end
     validate_code(ci; maxlength = 3, minlength = 3) # 2 intrinsics (CompositeConstruct + Store), 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @load x::Int32)(::UInt64)
-    validate_code(ci; maxlength = 3, minlength = 3, spirv_chunk = true) # 1 conversion, 1 load, 1 return
+    validate_code(ci; maxlength = 3, minlength = 3) # 1 conversion, 1 load, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @load x[2]::Int32)(::UInt64)
-    validate_code(ci; maxlength = 4, minlength = 4, spirv_chunk = true) # 1 conversion, 1 access, 1 return
+    validate_code(ci; maxlength = 4, minlength = 4) # 1 conversion, 1 access, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source copy(::Vec2)
     validate_code(ci; maxlength = 3, minlength = 3) # 2 intrinsics (CompositeConstruct + Store), 1 return
@@ -233,9 +228,9 @@ end
     validate_code(ci; maxlength = 30, minlength = 11) # 3 accesses, 3 conversions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source lerp(::Vec2, ::Vec2, ::Float32)
-    validate_code(ci; maxlength = 7, minlength = 7, spirv_chunk = true) # a bunch of math operations
+    validate_code(ci; maxlength = 7, minlength = 7) # a bunch of math operations
 
     ci = SPIRV.@code_typed debuginfo=:source slerp(::Vec2, ::Vec2, ::Float32)
-    validate_code(ci; minlength = 30, spirv_chunk = true) # 3 accesses, 3 conversions, 1 construct, 1 return
+    validate_code(ci; minlength = 30) # 3 accesses, 3 conversions, 1 construct, 1 return
   end
 end;
