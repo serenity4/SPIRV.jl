@@ -32,7 +32,8 @@ end
 block_index(fdef::FunctionDefinition, blk::Block) = findfirst(==(blk.id), fdef.block_ids)::Int
 
 function body(fdef::FunctionDefinition)
-  foldl(append!, map(x -> x.exs, values(fdef.blocks)); init = Expression[])
+  block_order = traverse(control_flow_graph(fdef))
+  foldl(append!, [fdef[v] for v in block_order]; init = Expression[])
 end
 
 function new_block!(fdef::FunctionDefinition, id::ResultID)

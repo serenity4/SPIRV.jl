@@ -88,6 +88,7 @@ include("frontend/interpreter.jl")
 include("frontend/target.jl")
 include("frontend/compile.jl")
 include("frontend/codegen.jl")
+include("frontend/shader_options.jl")
 include("frontend/shader.jl")
 
 include("passes.jl")

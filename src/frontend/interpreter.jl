@@ -91,6 +91,7 @@ else
   using Core.Compiler: is_inlineable
 end
 
+# XXX: Can we remove this?
 function Core.Compiler.inlining_policy(si::SPIRVInterpreter, @nospecialize(src), stmt_flag::UInt8,
   mi::MethodInstance, argtypes::Vector{Any})
   if isa(src, CodeInfo) || isa(src, Vector{UInt8})

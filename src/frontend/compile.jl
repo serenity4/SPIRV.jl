@@ -431,3 +431,14 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
 
   true
 end
+
+function FunctionDefinition(mt::ModuleTarget, name::Symbol)
+  for (id, val) in pairs(mt.debug.names)
+    if val == name && haskey(mt.fdefs, id)
+      return mt.fdefs[id]
+    end
+  end
+  error("No function named '$name' could be found.")
+end
+
+FunctionDefinition(mt::ModuleTarget, mi::MethodInstance) = FunctionDefinition(mt, make_name(mi))

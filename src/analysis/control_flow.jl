@@ -261,6 +261,7 @@ function remove_backedges(cfg::ControlFlowGraph)
 end
 
 traverse(cfg::ControlFlowGraph) = reverse(post_ordering(cfg.dfst))
+traverse(cfg::AbstractGraph) = reverse(post_ordering(SpanningTreeDFS(cfg)))
 
 """
 Iterate through the graph `g` applying `f` until its application on the graph vertices

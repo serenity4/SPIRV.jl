@@ -19,7 +19,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
 
 interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE]);
 
-@testset "Shader interface" begin
+@testset "Shaders" begin
   @testset "Shader execution options" begin
     for execution_model in [SPIRV.ExecutionModelVertex, SPIRV.ExecutionModelFragment, SPIRV.ExecutionModelGLCompute, SPIRV.ExecutionModelGeometry, SPIRV.ExecutionModelTessellationControl, SPIRV.ExecutionModelTessellationEvaluation, SPIRV.ExecutionModelMeshNV, SPIRV.ExecutionModelAnyHitKHR]
       opts = ShaderExecutionOptions(execution_model)
@@ -49,35 +49,35 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       OpExtension("SPV_EXT_physical_storage_buffer")
       OpExtension("SPV_KHR_vulkan_memory_model")
       OpMemoryModel(PhysicalStorageBuffer64, Vulkan)
-      OpEntryPoint(Vertex, %15, "main", %4)
-      OpName(%12, "vert_shader!_Tuple{Vec4}")
+      OpEntryPoint(Vertex, %14, "main", %4)
+      OpName(%6, "vert_shader!_Tuple{Vec4}")
       OpName(%4, "out_color")
  %1 = OpTypeFloat(0x00000020)
  %2 = OpTypeVector(%1, 0x00000004)
  %3 = OpTypePointer(Output, %2)
  %4 = OpVariable(Output)::%3
  %5 = OpTypeFunction(%1)
- %6 = OpTypeInt(0x00000020, 0x00000000)
- %7 = OpConstant(0x00000003)::%6
- %8 = OpConstant(0x3f800000)::%1
- %9 = OpTypeVoid()
-%10 = OpTypeFunction(%9)
-%11 = OpTypePointer(Output, %1)
-%12 = OpFunction(None, %5)::%1
-%13 = OpLabel()
-%14 = OpAccessChain(%4, %7)::%11
-      OpStore(%14, %8)
-      OpReturnValue(%8)
+ %8 = OpTypeInt(0x00000020, 0x00000000)
+ %9 = OpConstant(0x00000003)::%8
+%11 = OpConstant(0x3f800000)::%1
+%12 = OpTypeVoid()
+%13 = OpTypeFunction(%12)
+%17 = OpTypePointer(Output, %1)
+ %6 = OpFunction(None, %5)::%1
+ %7 = OpLabel()
+%10 = OpAccessChain(%4, %9)::%17
+      OpStore(%10, %11)
+      OpReturnValue(%11)
       OpFunctionEnd()
-%15 = OpFunction(None, %10)::%9
-%16 = OpLabel()
-%17 = OpFunctionCall(%12)::%1
+%14 = OpFunction(None, %13)::%12
+%15 = OpLabel()
+%16 = OpFunctionCall(%6)::%1
       OpReturn()
       OpFunctionEnd()
 """,
   )
   # Make sure the absence of Location decoration raises an error.
-  @test iserror(validate(shader))
+  @test_throws "must be decorated with a location" unwrap(validate(shader))
 
   function vert_shader_2!(out_color)
     out_color[] = Vec(0.1F, 0.1F, 0.1F, 1F)
@@ -169,13 +169,13 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   target = @target interp_novulkan vert_shader_5!(::Vec4, ::Vec4, ::UInt32, ::DrawData)
   ir = compile(target, AllSupported())
   # Access to PhysicalStorageBuffer must use Aligned.
-  @test iserror(validate(ir))
+  @test_throws "must use Aligned" unwrap(validate(ir))
 
   # Default Vulkan interpreter
   target = @target vert_shader_5!(::Vec4, ::Vec4, ::UInt32, ::DrawData)
   ir = compile(target, AllSupported())
   # Access to PhysicalStorageBuffer must use Aligned.
-  @test iserror(validate(ir))
+  @test_throws "must use Aligned"  unwrap(validate(ir))
 
   interface = ShaderInterface(SPIRV.ExecutionModelVertex;
     storage_classes = [SPIRV.StorageClassOutput, SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassPushConstant],
@@ -235,7 +235,6 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     )
     shader = Shader(target, interface)
     @test unwrap(validate(shader))
-
 
     function compute_blur!(res::Vec3, blur::GaussianBlur, reference, direction, uv)
       res[] = compute_blur(blur, reference, direction, uv)

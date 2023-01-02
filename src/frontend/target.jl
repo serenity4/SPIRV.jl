@@ -16,9 +16,7 @@ struct SPIRVTarget
   interp::SPIRVInterpreter
 end
 
-function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false, interp::SPIRVInterpreter = SPIRVInterpreter())
-  reset_world!(interp)
-
+function method_instance(@nospecialize(f), argtypes::Type = Tuple{}, interp::SPIRVInterpreter = SPIRVInterpreter())
   mis = method_instances(f, argtypes, interp)
   if length(mis) > 1
     error("""
@@ -30,10 +28,15 @@ function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; inferred = fals
   elseif iszero(length(mis))
     error("No method matching the signature ($f, $argtypes).")
   end
-  SPIRVTarget(only(mis), interp; inferred)
+  mis[1]
 end
 
-function method_instances(@nospecialize(f), @nospecialize(t), interp::AbstractInterpreter)
+function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false, interp::SPIRVInterpreter = SPIRVInterpreter())
+  reset_world!(interp)
+  SPIRVTarget(method_instance(f, argtypes, interp), interp; inferred)
+end
+
+function method_instances(@nospecialize(f), @nospecialize(t), interp::SPIRVInterpreter)
   sig = Base.signature_type(f, t)
   ret = Core.Compiler.findall(sig, interp.method_table, limit = -1)
   (; matches) = method_lookup_result(ret)
