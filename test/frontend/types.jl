@@ -7,8 +7,6 @@ using SPIRV: component_type, texel_type, sampled_type
     @test ptr[] === 5
     ptr[] = 3
     @test ptr[] === 3
-    ptr = Pointer(Ref((1, 2, 3)))
-    @test ptr[2] === 2
     ptr = Pointer(5)
     @test ptr[] == 5
     ptr[] = 3
@@ -18,16 +16,42 @@ using SPIRV: component_type, texel_type, sampled_type
     ptr[] = Vec2(3, 4)
     @test ptr[] == Vec2(3, 4)
 
-    arr = [1, 2]
-    GC.@preserve arr begin
-      p = pointer(arr)
-      address = convert(UInt64, p)
-      ptr = Pointer{Vector{Int64}}(address)
-      @test eltype(ptr) == Vector{Int64}
-      @test ptr[1] == 1
-      @test ptr[2] == 2
-      @test (@load address::Int64) == 1
-      @test (@load address[2]::Int64) == 2
+    @testset "Array pointers" begin
+      # Immutable elements.
+      arr = [1, 2]
+      GC.@preserve arr begin
+        p = pointer(arr)
+        address = convert(UInt64, p)
+        ptr = Pointer{Vector{Int64}}(address)
+        @test eltype(ptr) == Vector{Int64}
+        @test ptr[1] == 1
+        @test ptr[2] == 2
+        @test (@load address::Int64) == 1
+        @test (@load address[1]::Int64) == 1
+        @test (@load address[2]::Int64) == 2
+        @store address[2]::Int64 = 4
+        @test (@load address[2]::Int64) == 4
+        @store 5 address[2]::Int64
+        @test (@load address[2]::Int64) == 5
+      end
+
+      # Mutable elements.
+      (a, b, c, d) = (Vec2(3, 4), Vec2(5, 6), Vec2(7, 8), Vec2(8, 9))
+      arr = [a, b]
+      GC.@preserve arr begin
+        p = pointer(arr)
+        address = convert(UInt64, p)
+        ptr = Pointer{Vector{Vec2}}(address)
+        @test eltype(ptr) == Vector{Vec2}
+        @test ptr[1] == a
+        @test ptr[2] == b
+        @test (@load address[1]::Vec2) == a
+        @test (@load address[2]::Vec2) == b
+        @store address[2]::Vec2 = c
+        @test (@load address[2]::Vec2) == c
+        @store d address[2]::Vec2
+        @test (@load address[2]::Vec2) == d
+      end
     end
   end
 

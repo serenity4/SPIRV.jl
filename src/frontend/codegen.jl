@@ -77,7 +77,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
     end
   end
 
-  type = spir_type(jtype, tr.tmap)
+  type = opcode == OpStore ? nothing : spir_type(jtype, tr.tmap)
   isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = PointerType(StorageClassFunction, type))
   if isa(type, PointerType) && opcode in (OpAccessChain, OpPtrAccessChain)
     # Propagate storage class to the result.
@@ -93,12 +93,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
   load_variables!(args, blk, mt, tr, fdef, opcode)
   remap_args!(args, mt, tr, opcode)
 
-  if opcode == OpStore
-    result = nothing
-    type = nothing
-  else
-    result = next!(mt.idcounter)
-  end
+  result = opcode == OpStore ? nothing : next!(mt.idcounter)
 
   ex = @ex result = opcode(args...)::type
   (ex, type)

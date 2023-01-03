@@ -203,6 +203,12 @@ end
     ci = SPIRV.@code_typed debuginfo=:source (x -> @load x[2]::Int32)(::UInt64)
     validate_code(ci; maxlength = 4, minlength = 4) # 1 conversion, 1 access, 1 return
 
+    ci = SPIRV.@code_typed debuginfo=:source (x -> @store x::Int32 = Int32(0))(::UInt64)
+    validate_code(ci; maxlength = 3, minlength = 3) # 1 conversion, 1 store, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source (x -> @store x[2]::Int32 = Int32(0))(::UInt64)
+    validate_code(ci; maxlength = 4, minlength = 4) # 1 conversion, 1 access/store, 1 return
+
     ci = SPIRV.@code_typed debuginfo=:source copy(::Vec2)
     validate_code(ci; maxlength = 3, minlength = 3) # 2 intrinsics (CompositeConstruct + Store), 1 return
 

@@ -118,7 +118,7 @@ function Base.showerror(io::IO, err::CompilationError)
     here ? printstyled(io, str; color = :red, bold = true) : print(io, str)
   end
   frame = last(stacktrace)
-  frame.code.rettype == Union{} && println(io, "\n\n", frame.code)
+  frame.code.rettype == Union{} && length(frame.code.code) < 100 && println(io, "\n\n", frame.code)
   if isdefined(err, :jinst)
     print(io, "\n\n", error_field("Julia instruction"), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
   end
@@ -415,6 +415,7 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
   for (i, ex) in enumerate(code.code)
     isa(ex, Union{Core.ReturnNode, Core.GotoNode, Core.GotoIfNot}) && continue
     T = code.ssavaluetypes[i]
+    Meta.isexpr(ex, :invoke) && ex.args[2] == GlobalRef(@__MODULE__, :Store) && continue
     line = getline(code, i)
     @trymatch T begin
       ::Type{Union{}} => return validation_error("Bottom type Union{} detected", i, ex, line)

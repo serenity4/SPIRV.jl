@@ -200,7 +200,7 @@ export
   Vec, Vec2, Vec3, Vec4,
   Mat, Mat2, Mat3, Mat4, @mat,
   Arr,
-  Pointer, @load,
+  Pointer, @load, @store,
   Image, image_type, Sampler,
   SampledImage,
   combine

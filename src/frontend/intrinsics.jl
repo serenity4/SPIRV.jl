@@ -163,8 +163,9 @@ end
 @override (==)(x::T, y::T) where {T<:BitInteger}       = IEqual(x, y)
 @override (==)(x::BitInteger, y::BitInteger)           = ==(promote(x, y)...)
 @noinline IEqual(x::T, y::T) where {T<:BitInteger}     = Base.eq_int(x, y)
-@override (!=)(x::BitInteger, y::BitInteger)           = INotEqual(x, y)
-@noinline INotEqual(x::BitInteger, y::BitInteger)      = Base.ne_int(x, y)
+@override (!=)(x::T, y::T) where {T<:BitInteger}       = INotEqual(x, y)
+@override (!=)(x::BitInteger, y::BitInteger)           = !=(promote(x, y)...)
+@noinline INotEqual(x::T, y::T) where {T<:BitInteger}  = Base.ne_int(x, y)
 @override (~)(x::BitInteger)                           = Not(x)
 @noinline Not(x::BitInteger)                           = Base.not_int(x)
 @override (&)(x::T, y::T) where {T<:BitInteger}        = BitwiseAnd(x, y)
@@ -177,7 +178,7 @@ end
 ## Integer shifts.
 
 @override (>>)(x::BitSigned, y::BitUnsigned) = ShiftRightArithmetic(x, y)
-@noinline ShiftRightArithmetic(x::T, y::BitUnsigned) where {T<:BitSigned} = Base.ashr_int(x, y)
+@noinline ShiftRightArithmetic(x::BitSigned, y::BitUnsigned) = Base.ashr_int(x, y)
 
 @override (>>)(x::BitUnsigned, y::BitUnsigned) = ShiftRightLogical(x, y)
 @override (>>>)(x::BitInteger, y::BitUnsigned) = ShiftRightLogical(x, y)
