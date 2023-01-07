@@ -1,4 +1,64 @@
 """
+Layout strategy used to compute alignments, offsets and strides.
+"""
+abstract type LayoutStrategy end
+
+struct NoPadding <: LayoutStrategy end
+
+"""
+Vulkan-compatible layout strategy.
+"""
+Base.@kwdef struct VulkanLayout <: LayoutStrategy
+  scalar_block_layout::Bool = false
+  uniform_buffer_standard_layout::Bool = false
+end
+
+function alignment(layout::VulkanLayout, t::SPIRType, storage_classes, is_interface::Bool)
+  @match t begin
+    ::VectorType => scalar_alignment(t)
+    if layout.scalar_block_layout &&
+       !isempty(
+      intersect(storage_classes, [StorageClassUniform, StorageClassStorageBuffer,
+        StorageClassPhysicalStorageBuffer, StorageClassPushConstant]),
+    )
+    end => scalar_alignment(t)
+    if !layout.uniform_buffer_standard_layout && StorageClassUniform in storage_classes && is_interface
+    end => @match t begin
+      ::MatrixType => extended_alignment(t)
+      _ => extended_alignment(t)
+    end
+    ::MatrixType => base_alignment(t)
+    _ => base_alignment(t)
+  end
+end
+
+scalar_alignment(::BooleanType) = 0
+scalar_alignment(t::Union{IntegerType,FloatType}) = t.width ÷ 8
+scalar_alignment(t::Union{VectorType,MatrixType,ArrayType}) = scalar_alignment(t.eltype)
+scalar_alignment(t::StructType) = maximum(scalar_alignment, t.members)
+
+base_alignment(t::ScalarType) = scalar_alignment(t)
+base_alignment(t::VectorType) = (t.n == 2 ? 2 : 4) * scalar_alignment(t.eltype)
+base_alignment(t::ArrayType) = base_alignment(t.eltype)
+function base_alignment(t::StructType)
+  if isempty(t.members)
+    # Requires knowing the smallest scalar type permitted
+    # by the storage class & module capabilities.
+    error("Not implemented.")
+  else
+    maximum(base_alignment, t.members)
+  end
+end
+base_alignment(t::MatrixType) = t.is_column_major ? base_alignment(t.eltype) : base_alignment(VectorType(t.eltype.eltype, t.n))
+
+extended_alignment(t::SPIRType) = base_alignment(t)
+extended_alignment(t::Union{ArrayType,StructType}) = 16 * cld(base_alignment(t), 16)
+extended_alignment(t::MatrixType) = t.is_column_major ? extended_alignment(t.eltype) : extended_alignment(VectorType(t.eltype.eltype, t.n))
+
+"Julia layout."
+struct NativeLayout <: LayoutStrategy end
+
+"""
 Type metadata meant to be analyzed and modified to generate appropriate decorations.
 """
 struct TypeMetadata
@@ -29,29 +89,6 @@ function Base.merge!(ir::IR, tmeta::TypeMetadata)
   end
 end
 
-scalar_alignment(::BooleanType) = 0
-scalar_alignment(t::Union{IntegerType,FloatType}) = t.width ÷ 8
-scalar_alignment(t::Union{VectorType,MatrixType,ArrayType}) = scalar_alignment(t.eltype)
-scalar_alignment(t::StructType) = maximum(scalar_alignment, t.members)
-
-base_alignment(t::ScalarType) = scalar_alignment(t)
-base_alignment(t::VectorType) = (t.n == 2 ? 2 : 4) * scalar_alignment(t.eltype)
-base_alignment(t::ArrayType) = base_alignment(t.eltype)
-function base_alignment(t::StructType)
-  if isempty(t.members)
-    # Requires knowing the smallest scalar type permitted
-    # by the storage class & module capabilities.
-    error("Not implemented.")
-  else
-    maximum(base_alignment, t.members)
-  end
-end
-base_alignment(t::MatrixType) = t.is_column_major ? base_alignment(t.eltype) : base_alignment(VectorType(t.eltype.eltype, t.n))
-
-extended_alignment(t::SPIRType) = base_alignment(t)
-extended_alignment(t::Union{ArrayType,StructType}) = 16 * cld(base_alignment(t), 16)
-extended_alignment(t::MatrixType) = t.is_column_major ? extended_alignment(t.eltype) : extended_alignment(VectorType(t.eltype.eltype, t.n))
-
 function extract_size(t::ArrayType)
   (; size) = t
   !isnothing(size) || throw(ArgumentError("Array types must be sized to extract their size."))
@@ -68,38 +105,6 @@ payload_size(t::StructType) = sum(payload_size, t.members)
 payload_size(T::DataType) = is_composite_type(T) ? sum(payload_sizes(T)) : sizeof(T)
 payload_size(x::AbstractVector) = payload_size(eltype(x)) * length(x)
 payload_size(x) = payload_size(typeof(x))
-
-"""
-Layout strategy used to compute alignments, offsets and strides.
-"""
-abstract type LayoutStrategy end
-
-"""
-Vulkan-compatible layout strategy.
-"""
-Base.@kwdef struct VulkanLayout <: LayoutStrategy
-  scalar_block_layout::Bool = false
-  uniform_buffer_standard_layout::Bool = false
-end
-
-function alignment(layout::VulkanLayout, t::SPIRType, storage_classes, is_interface::Bool)
-  @match t begin
-    ::VectorType => scalar_alignment(t)
-    if layout.scalar_block_layout &&
-       !isempty(
-      intersect(storage_classes, [StorageClassUniform, StorageClassStorageBuffer,
-        StorageClassPhysicalStorageBuffer, StorageClassPushConstant]),
-    )
-    end => scalar_alignment(t)
-    if !layout.uniform_buffer_standard_layout && StorageClassUniform in storage_classes && is_interface
-    end => @match t begin
-      ::MatrixType => extended_alignment(t)
-      _ => extended_alignment(t)
-    end
-    ::MatrixType => base_alignment(t)
-    _ => base_alignment(t)
-  end
-end
 
 function storage_classes(types, t::SPIRType)
   Set{StorageClass}(type.storage_class for type in types if isa(type, PointerType) && type.type == t)
@@ -238,22 +243,17 @@ function payload_sizes!(sizes, T)
 end
 payload_sizes(T) = payload_sizes!(Int[], T)
 
-"""
-Extract bytes from a Julia value, with strictly no alignment.
-"""
-function extract_bytes(data::T) where {T}
-  isstructtype(T) || return collect(reinterpret(UInt8, [data]))
+function serialize(data::T, layout::NoPadding) where {T}
+  isprimitivetype(T) && return collect(reinterpret(UInt8, [data]))
   bytes = UInt8[]
   for field in fieldnames(T)
-    append!(bytes, extract_bytes(getproperty(data, field)))
+    append!(bytes, serialize(getproperty(data, field), layout))
   end
   bytes
 end
-
-extract_bytes(data::Vector{UInt8}) = data
-extract_bytes(data::AbstractVector) = reduce(vcat, extract_bytes.(data); init = UInt8[])
-extract_bytes(data::AbstractSPIRVArray) = Base.@invoke extract_bytes(data::T where T)
-extract_bytes(data1, data2, data...) = reduce(vcat, vcat(extract_bytes(data2), extract_bytes.(data)...); init = extract_bytes(data1))
+serialize(data::Vector{UInt8}, ::NoPadding) = data
+serialize(data::AbstractVector, layout::NoPadding) = foldl((x, y) -> append!(x, serialize(y, layout)), data; init = UInt8[])
+serialize(data::AbstractSPIRVArray, layout::NoPadding) = Base.@invoke serialize(data::T where T, layout::NoPadding)
 
 function getoffset(tmeta::TypeMetadata, t, i)
   decs = decorations(tmeta, t, i)
@@ -263,7 +263,7 @@ function getoffset(tmeta::TypeMetadata, t, i)
 end
 
 is_composite_type(t::SPIRType) = isa(t, StructType)
-is_composite_type(T::DataType) = isstructtype(T) && !(T <: Vector) && !(T <: Vec) && !(T <: Mat) 
+is_composite_type(T::DataType) = isstructtype(T) && !(T <: Vector) && !(T <: Vec) && !(T <: Mat)
 member_types(t::StructType) = t.members
 member_types(T::DataType) = fieldtypes(T)
 

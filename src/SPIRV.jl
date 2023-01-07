@@ -14,6 +14,7 @@ using SwapStreams: SwapStream
 using BitMasks
 using UUIDs: UUID, uuid1
 using SnoopPrecompile
+import Serialization: serialize, deserialize
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
 using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, MethodInstance, InferenceResult, typeinf, InferenceState,
@@ -192,8 +193,8 @@ export
   MeshExecutionOptions,
 
   # Layouts.
-  LayoutStrategy, VulkanLayout, alignment,
-  extract_bytes, align, compute_minimal_size, compute_stride, payload_size, getoffsets,
+  LayoutStrategy, VulkanLayout, NoPadding, alignment,
+  serialize, deserialize, align, compute_minimal_size, compute_stride, payload_size, getoffsets,
   TypeInfo,
 
   # SPIR-V array/vector/pointer/image types.

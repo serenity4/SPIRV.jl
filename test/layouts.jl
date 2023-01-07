@@ -119,7 +119,7 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
   end
 
   @testset "Byte extraction and alignment" begin
-    bytes = extract_bytes(Align1(1, 2))
+    bytes = serialize(Align1(1, 2), NoPadding())
     @test bytes == reinterpret(UInt8, [1, 2])
     tmeta = type_metadata(Align1)
     add_type_layouts!(tmeta, layout)
@@ -129,7 +129,7 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     @test align(bytes, t, tmeta) == bytes
     @test bytes == align(bytes, [8, 8], [0, 8]) == align(bytes, t, [0, 8]) == align(bytes, Align1, tmeta)
 
-    bytes = extract_bytes(Align2(1, 2))
+    bytes = serialize(Align2(1, 2), NoPadding())
     @test bytes == reinterpret(UInt8, [1U, 2U, 0U])
     tmeta = type_metadata(Align2)
     add_type_layouts!(tmeta, layout)
@@ -138,7 +138,7 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     @test payload_sizes(t) == [4, 8]
     @test align(bytes, t, tmeta) == reinterpret(UInt8, [1, 2])
 
-    bytes = extract_bytes(Align3(1, 2, 3))
+    bytes = serialize(Align3(1, 2, 3), NoPadding())
     @test bytes == reinterpret(UInt8, [1U, 0U, 2U, 3U])
     tmeta = type_metadata(Align3)
     add_type_layouts!(tmeta, layout)
@@ -147,7 +147,7 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     @test payload_sizes(t) == [8, 4, 4]
     @test align(bytes, t, tmeta) == bytes
 
-    bytes = extract_bytes(Align4(1, 2, Vec(3, 4)))
+    bytes = serialize(Align4(1, 2, Vec(3, 4)), NoPadding())
     @test bytes == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x00, 0x04, 0x00]
     tmeta = type_metadata(Align4)
     add_type_layouts!(tmeta, layout)
@@ -156,7 +156,7 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     @test payload_sizes(t) == [8, 1, 4]
     @test align(bytes, t, tmeta) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00]
 
-    bytes = extract_bytes(Align5(1, Align4(2, 3, Vec(4, 5)), 6))
+    bytes = serialize(Align5(1, Align4(2, 3, Vec(4, 5)), 6), NoPadding())
     @test bytes == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x00, 0x05, 0x00, 0x06]
     tmeta = type_metadata(Align5)
     add_type_layouts!(tmeta, layout)
@@ -165,7 +165,7 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     @test payload_sizes(t) == [8, 8, 1, 4, 1]
     @test align(bytes, t, tmeta) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06]
 
-    bytes = extract_bytes(Align6(Align5(1, Align4(2, 3, Vec(4, 5)), 6), Align5(2, Align4(2, 3, Vec(4, 5)), 6)))
+    bytes = serialize(Align6(Align5(1, Align4(2, 3, Vec(4, 5)), 6), Align5(2, Align4(2, 3, Vec(4, 5)), 6)), NoPadding())
     @test bytes == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x00, 0x05, 0x00, 0x06, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x00, 0x05, 0x00, 0x06]
     tmeta = type_metadata(Align6)
     add_type_layouts!(tmeta, layout)
@@ -173,12 +173,12 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
     @test getstride(tmeta, t) == 24
     @test align(bytes, t, tmeta) == [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06]
 
-    bytes = extract_bytes(Align7(1, @mat Float32[
+    bytes = serialize(Align7(1, @mat Float32[
       1 2 3 4
       5 6 7 8
       9 10 11 12
       13 14 15 16
-    ]))
+    ]), NoPadding())
     @test length(bytes) == payload_size(Align7) == 1 + 4 * 4 * 4
     tmeta = type_metadata(Align7)
     add_type_layouts!(tmeta, layout)
@@ -218,7 +218,7 @@ WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
 
   @testset "Serializing and deserializing Julia values" begin
     function test_reinterpret_noalign(x)
-      bytes = extract_bytes(x)
+      bytes = serialize(x, NoPadding())
       @test length(bytes) == payload_size(x)
       @test reinterpret_spirv(typeof(x), bytes) == x
     end
