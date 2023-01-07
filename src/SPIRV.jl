@@ -193,7 +193,7 @@ export
   MeshExecutionOptions,
 
   # Layouts.
-  LayoutStrategy, VulkanLayout, NoPadding, alignment,
+  LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanLayout, alignment,
   serialize, deserialize, align, compute_minimal_size, compute_stride, payload_size, getoffsets,
   TypeInfo,
 

@@ -1,5 +1,6 @@
 using SPIRV, Test, Dictionaries
 using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, payload_sizes, getstride, reinterpret_spirv, TypeInfo, TypeMetadata, metadata!, validate_offsets
+using SPIRV: datasize, alignment, stride, dataoffset
 
 function test_has_offset(tmeta, T, field, offset)
   decs = decorations(tmeta, tmeta.tmap[T], field)
@@ -56,7 +57,21 @@ end
 primitive type WeirdType 24 end
 WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
 
+alltypes = [Align1, Align2, Align3, Align4, Align5, Align6, Align7, WeirdType]
+
 @testset "Structure layouts" begin
+  @testset "Layout types" begin
+    for layout in [NoPadding(), NativeLayout(), ExplicitLayout(NativeLayout(), alltypes)]
+      for T in alltypes
+        @test alignment(layout, T) ≥ 0
+        @test datasize(layout, T) ≥ 0
+        @test stride(layout, T) ≥ 0
+        if isstructtype(T)
+          @test all(dataoffset(layout, T, i) ≥ 0 for i in 1:fieldcount(T))
+        end
+      end
+    end
+  end
   @testset "Alignments" begin
     tmeta = type_metadata(Align1)
     add_type_layouts!(tmeta, layout)

@@ -1,9 +1,57 @@
 """
 Layout strategy used to compute alignments, offsets and strides.
 """
-abstract type LayoutStrategy end
+@refbroadcast abstract type LayoutStrategy end
 
 struct NoPadding <: LayoutStrategy end
+
+stride(layout::NoPadding, T::Type) = datasize(layout, T)
+datasize(::NoPadding, T::Type) = sizeof(T)
+dataoffset(layout::NoPadding, T::Type, i::Integer) = sum(datasize(layout, xT) for xT in fieldtypes(T)[1:(i - 1)]; init = 0)
+alignment(::NoPadding, ::Type) = 0
+
+"Julia layout."
+struct NativeLayout <: LayoutStrategy end
+
+stride(::NativeLayout, T::Type) = Base.elsize(Vector{T})
+datasize(::NativeLayout, T::Type) = sizeof(T)
+dataoffset(::NativeLayout, T::Type, i::Integer) = fieldoffset(T, i)
+alignment(::NativeLayout, T::Type) = Base.datatype_alignment(T)
+
+struct LayoutInfo
+  stride::Int
+  datasize::Int
+  alignment::Int
+  dataoffsets::Optional{Vector{Int}}
+end
+
+LayoutInfo(layout::LayoutStrategy, T::Type) = LayoutInfo(stride(layout, T), datasize(layout, T), alignment(layout, T), isstructtype(T) ? dataoffset.(layout, T, 1:fieldcount(T)) : nothing)
+
+struct ExplicitLayout <: LayoutStrategy
+  d::IdDict{DataType,LayoutInfo}
+end
+
+stride(layout::ExplicitLayout, T::Type) = layout.d[T].stride
+datasize(layout::ExplicitLayout, T::Type) = layout.d[T].datasize
+dataoffset(layout::ExplicitLayout, T::Type, i::Integer) = (layout.d[T].dataoffsets::Vector{Int})[i]
+alignment(layout::ExplicitLayout, T::Type) = layout.d[T].alignment
+
+function extract_layouts!(d::IdDict{DataType,LayoutInfo}, layout::LayoutStrategy, T::DataType)
+  haskey(d, T) && return
+  d[T] = LayoutInfo(layout, T)
+  isstructtype(T) || return
+  for subT in fieldtypes(T)
+    extract_layouts!(d, layout, subT)
+  end
+end
+
+function ExplicitLayout(layout::LayoutStrategy, types)
+  d = IdDict{DataType,LayoutInfo}()
+  for T in types
+    extract_layouts!(d, layout, T)
+  end
+  ExplicitLayout(d)
+end
 
 """
 Vulkan-compatible layout strategy.
@@ -54,9 +102,6 @@ base_alignment(t::MatrixType) = t.is_column_major ? base_alignment(t.eltype) : b
 extended_alignment(t::SPIRType) = base_alignment(t)
 extended_alignment(t::Union{ArrayType,StructType}) = 16 * cld(base_alignment(t), 16)
 extended_alignment(t::MatrixType) = t.is_column_major ? extended_alignment(t.eltype) : extended_alignment(VectorType(t.eltype.eltype, t.n))
-
-"Julia layout."
-struct NativeLayout <: LayoutStrategy end
 
 """
 Type metadata meant to be analyzed and modified to generate appropriate decorations.
