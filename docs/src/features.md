@@ -25,7 +25,7 @@ This compiler supports:
 - Automatic declaration of SPIR-V capabilities and extensions based on a user-provided [`FeatureSupport`](@ref) (see [`SupportedFeatures`](@ref) to manually specify features).
 
 Current outstanding limitations are:
-- No support for any kind of loops.
+- Loops are supported, but still considered experimental.
 - Only supports a subset of all possible SPIR-V instructions.
 - No real-world testing yet.
 
