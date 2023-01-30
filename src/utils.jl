@@ -131,3 +131,7 @@ function source_version(language::SourceLanguage, version::VersionNumber)::UInt3
     end
   end
 end
+
+macro force_construct(T, ex)
+  esc(Expr(:new, T, ex))
+end

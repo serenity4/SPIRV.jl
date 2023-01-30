@@ -3,20 +3,42 @@ Layout strategy used to compute alignments, offsets and strides.
 """
 @refbroadcast abstract type LayoutStrategy end
 
+""""
+Julia layout, with a special handling of mutable fields for composite types.
+
+Mutable fields are stored as 8-byte pointers in Julia, but in SPIR-V there is no such concept of pointer.
+Therefore, we treat mutable fields as if they were fully inlined - that imposes a few restrictions on the
+behavior of such mutable objects, but is necessary to keep some form of compatibility with GPU representations.
+The alternative would be to completely disallow structs which contain mutable fields.
+"""
+struct NativeLayout <: LayoutStrategy end
+
+stride(layout::NativeLayout, T::Type) = ismutabletype(T) ? datasize(layout, T) : Base.elsize(Vector{T})
+function datasize(layout::NativeLayout, T::DataType)
+  isbitstype(T) && return sizeof(T)
+  isconcretetype(T) || error("A concrete type is required.")
+  @assert isstructtype(T)
+  total_padding = sum(fieldoffset(T, i) - (fieldoffset(T, i - 1) + field_sizeof(fieldtype(T, i - 1))) for i in 2:fieldcount(T); init = 0)
+  sum(sizeof, fieldtypes(T); init = 0) + total_padding
+end
+datasize(layout::NativeLayout, V::Type{Vector{T}}) where {T} = length(V) * stride(layout, T) - (stride(layout, T) - datasize(layout, T))
+function dataoffset(layout::NativeLayout, T::DataType, i::Int)
+  i == 1 && return fieldoffset(T, 1)
+  Tprev = fieldtype(T, i - 1)
+  # Account for any padding that might have been inserted between the current and previous members.
+  padding = fieldoffset(T, i) - (fieldoffset(T, i - 1) + field_sizeof(Tprev))
+  computed_offset = dataoffset(layout, T, i - 1) + datasize(layout, Tprev)
+  padding + computed_offset
+end
+field_sizeof(T::Type) = ismutabletype(T) ? 8 : sizeof(T)
+alignment(::NativeLayout, T::Type) = Base.datatype_alignment(T)
+
 struct NoPadding <: LayoutStrategy end
 
 stride(layout::NoPadding, T::Type) = datasize(layout, T)
-datasize(::NoPadding, T::Type) = sizeof(T)
+datasize(layout::NoPadding, T::Type) = isprimitivetype(T) ? sizeof(T) : sum(ntuple(i -> datasize(layout, fieldtype(T, i)), fieldcount(T)); init = 0)
 dataoffset(layout::NoPadding, T::Type, i::Integer) = sum(datasize(layout, xT) for xT in fieldtypes(T)[1:(i - 1)]; init = 0)
 alignment(::NoPadding, ::Type) = 0
-
-"Julia layout."
-struct NativeLayout <: LayoutStrategy end
-
-stride(::NativeLayout, T::Type) = Base.elsize(Vector{T})
-datasize(::NativeLayout, T::Type) = sizeof(T)
-dataoffset(::NativeLayout, T::Type, i::Integer) = fieldoffset(T, i)
-alignment(::NativeLayout, T::Type) = Base.datatype_alignment(T)
 
 struct LayoutInfo
   stride::Int
@@ -53,29 +75,22 @@ function ExplicitLayout(layout::LayoutStrategy, types)
   ExplicitLayout(d)
 end
 
-"""
-Vulkan-compatible layout strategy.
-"""
-Base.@kwdef struct VulkanLayout <: LayoutStrategy
+Base.@kwdef struct VulkanAlignment
   scalar_block_layout::Bool = false
   uniform_buffer_standard_layout::Bool = false
 end
 
-function alignment(layout::VulkanLayout, t::SPIRType, storage_classes, is_interface::Bool)
+function alignment(vulkan::VulkanAlignment, t::SPIRType, storage_classes, is_interface::Bool)
   @match t begin
     ::VectorType => scalar_alignment(t)
-    if layout.scalar_block_layout &&
+    if vulkan.scalar_block_layout &&
        !isempty(
       intersect(storage_classes, [StorageClassUniform, StorageClassStorageBuffer,
         StorageClassPhysicalStorageBuffer, StorageClassPushConstant]),
     )
     end => scalar_alignment(t)
-    if !layout.uniform_buffer_standard_layout && StorageClassUniform in storage_classes && is_interface
-    end => @match t begin
-      ::MatrixType => extended_alignment(t)
-      _ => extended_alignment(t)
-    end
-    ::MatrixType => base_alignment(t)
+    if !vulkan.uniform_buffer_standard_layout && StorageClassUniform in storage_classes && is_interface
+    end => extended_alignment(t)
     _ => base_alignment(t)
   end
 end
@@ -104,6 +119,54 @@ extended_alignment(t::Union{ArrayType,StructType}) = 16 * cld(base_alignment(t),
 extended_alignment(t::MatrixType) = t.is_column_major ? extended_alignment(t.eltype) : extended_alignment(VectorType(t.eltype.eltype, t.n))
 
 """
+Vulkan-compatible layout strategy.
+"""
+struct VulkanLayout <: LayoutStrategy
+  alignment::VulkanAlignment
+  tmap::TypeMap
+  storage_classes::Dict{SPIRType,Set{StorageClass}}
+  interfaces::Set{SPIRType}
+end
+
+storage_classes(layout::VulkanLayout, t::SPIRType) = get!(Set{StorageClass}, layout.storage_classes, t)
+isinterface(layout::VulkanLayout, t::SPIRType) = in(t, layout.interfaces)
+
+stride(layout::VulkanLayout, T::Type) = stride(layout, layout.tmap[T])
+datasize(layout::VulkanLayout, T::Type) = datasize(layout, layout.tmap[T])
+dataoffset(layout::VulkanLayout, T::Type, i::Integer) = dataoffset(layout, layout.tmap[T], i)
+alignment(layout::VulkanLayout, T::Type) = alignment(layout, layout.tmap[T])
+
+stride(::VulkanLayout, t::ScalarType) = scalar_alignment(t)
+stride(layout::VulkanLayout, t::Union{VectorType, MatrixType}) = t.n * stride(layout, t.eltype)
+stride(layout::VulkanLayout, t::ArrayType) = extract_size(t) * stride(layout, t.eltype)
+function stride(layout::VulkanLayout, t::StructType)
+  req_alignment = alignment(layout, t)
+  req_alignment * cld(datasize(layout, t), req_alignment)
+end
+datasize(layout::LayoutStrategy, t::ScalarType) = scalar_alignment(t)
+datasize(layout::LayoutStrategy, t::Union{VectorType,MatrixType}) = t.n * datasize(layout, t.eltype)
+datasize(layout::LayoutStrategy, t::ArrayType) = extract_size(t) * stride(layout, t.eltype)
+datasize(layout::LayoutStrategy, t::StructType) = dataoffset(layout, t, length(t.members)) + datasize(layout, t.members[end])
+dataoffset(layout::VulkanLayout, t::SPIRType, i::Integer) = 0
+function dataoffset(layout::VulkanLayout, t::StructType, i::Integer)
+  i == 1 && return 0
+  subt = t.members[i]
+  req_alignment = alignment(layout, subt)
+  prevloc = dataoffset(layout, t, i - 1) + datasize(layout, t.members[i - 1])
+  req_alignment * cld(prevloc, req_alignment)
+end
+alignment(layout::VulkanLayout, t::SPIRType) = alignment(layout.alignment, t, storage_classes(layout, t), isinterface(layout, t))
+
+function extract_size(t::ArrayType)
+  (; size) = t
+  !isnothing(size) || throw(ArgumentError("Array types must be sized to extract their size."))
+  !size.is_spec_const || error("Arrays with a size provided by a specialization constants are not supported for size calculations yet.")
+  isa(size.value, Integer) || error("Expected an integer array size, got ", size.value)
+  size.value
+end
+
+
+"""
 Type metadata meant to be analyzed and modified to generate appropriate decorations.
 """
 struct TypeMetadata
@@ -112,6 +175,8 @@ struct TypeMetadata
 end
 
 TypeMetadata(tmap = TypeMap()) = TypeMetadata(tmap, Dictionary())
+
+@forward TypeMetadata.d (metadata!, has_decoration, decorate!, decorations)
 
 function TypeMetadata(ir::IR)
   tmeta = TypeMetadata(ir.tmap)
@@ -125,7 +190,34 @@ function TypeMetadata(ir::IR)
   tmeta
 end
 
-@forward TypeMetadata.d (metadata!, has_decoration, decorate!, decorations)
+function storage_classes(types, t::SPIRType)
+  Set{StorageClass}(type.storage_class for type in types if isa(type, PointerType) && type.type == t)
+end
+storage_classes(tmeta::TypeMetadata, t::SPIRType) = storage_classes(keys(tmeta.d), t)
+
+isinterface(tmeta::TypeMetadata, t::SPIRType) = has_decoration(tmeta, t, DecorationBlock)
+isinterface(tmeta::TypeMetadata) = t -> isinterface(tmeta, t)
+
+function VulkanLayout(tmeta::TypeMetadata, alignment::VulkanAlignment)
+  (; tmap) = tmeta
+  VulkanLayout(alignment, tmap, Dict(t => storage_classes(tmeta, t) for t in tmap), Set(filter!(t -> isinterface(tmeta, t), collect(tmap))))
+end
+
+VulkanLayout(ir::IR, alignment::VulkanAlignment) = VulkanLayout(TypeMetadata(ir), alignment)
+
+"""
+Shader-compatible layout strategy, where layout information is strictly read from shader decorations.
+"""
+struct ShaderLayout <: LayoutStrategy
+  tmeta::TypeMetadata
+end
+
+stride(layout::ShaderLayout, T::Type) = stride(layout, layout.tmeta.tmap[T])
+datasize(layout::ShaderLayout, T::Type) = datasize(layout, layout.tmeta.tmap[T])
+dataoffset(layout::ShaderLayout, T::Type, i::Integer) = dataoffset(layout, layout.tmeta.tmap[T], i)
+alignment(layout::ShaderLayout, T::Type) = alignment(layout, layout.tmeta.tmap[T])
+
+dataoffset(layout::ShaderLayout, t::StructType, i::Integer) = getoffset(layout.tmeta, t, i)
 
 function Base.merge!(ir::IR, tmeta::TypeMetadata)
   for (t, meta) in pairs(tmeta.d)
@@ -133,28 +225,6 @@ function Base.merge!(ir::IR, tmeta::TypeMetadata)
     merge_metadata!(ir, tid, meta)
   end
 end
-
-function extract_size(t::ArrayType)
-  (; size) = t
-  !isnothing(size) || throw(ArgumentError("Array types must be sized to extract their size."))
-  !size.is_spec_const || error("Arrays with a size provided by a specialization constants are not supported for size calculations yet.")
-  isa(size.value, Integer) || error("Expected an integer array size, got ", size.value)
-  size.value
-end
-
-payload_size(t::ScalarType) = scalar_alignment(t)
-payload_size(t::Union{VectorType,MatrixType}) = t.n * payload_size(t.eltype)
-payload_size(t::ArrayType) = extract_size(t) * payload_size(t.eltype)
-payload_size(t::StructType) = sum(payload_size, t.members)
-
-payload_size(T::DataType) = is_composite_type(T) ? sum(payload_sizes(T)) : sizeof(T)
-payload_size(x::AbstractVector) = payload_size(eltype(x)) * length(x)
-payload_size(x) = payload_size(typeof(x))
-
-function storage_classes(types, t::SPIRType)
-  Set{StorageClass}(type.storage_class for type in types if isa(type, PointerType) && type.type == t)
-end
-storage_classes(tmeta::TypeMetadata, t::SPIRType) = storage_classes(keys(tmeta.d), t)
 
 function add_type_layouts!(ir::IR, layout::LayoutStrategy)
   tmeta = TypeMetadata(ir.tmap, Dictionary())
@@ -180,9 +250,8 @@ end
 function add_array_stride!(tmeta::TypeMetadata, t::ArrayType, layout::LayoutStrategy)
   # Array of shader resources. Must not be decorated.
   isa(t.eltype, StructType) && has_decoration(tmeta, t.eltype, DecorationBlock) && return
-  stride = compute_stride(t.eltype, tmeta, layout)
-  isa(t, ArrayType) ? decorate!(tmeta, t, DecorationArrayStride, stride) : decorate!(tmeta, t, DecorationMatrixStride, stride)
-  decorate!(tmeta, t, DecorationArrayStride, stride)
+  s = stride(layout, t.eltype)
+  decorate!(tmeta, t, DecorationArrayStride, s)
 end
 
 function add_matrix_layouts!(tmeta::TypeMetadata, t::StructType, layout::LayoutStrategy)
@@ -195,25 +264,16 @@ function add_matrix_layouts!(tmeta::TypeMetadata, t::StructType, layout::LayoutS
 end
 
 function add_matrix_stride!(tmeta::TypeMetadata, t::StructType, i, subt::MatrixType, layout::LayoutStrategy)
-  stride = compute_stride(subt.eltype.eltype, tmeta, layout)
-  decorate!(tmeta, t, i, DecorationMatrixStride, stride)
+  s = stride(layout, subt.eltype.eltype)
+  decorate!(tmeta, t, i, DecorationMatrixStride, s)
 end
 
 "Follow Julia's column major layout by default, consistently with the `Mat` frontend type."
 add_matrix_layout!(tmeta::TypeMetadata, t::StructType, i, subt::MatrixType) = decorate!(tmeta, t, i, subt.is_column_major ? DecorationColMajor : DecorationRowMajor)
 
-add_offsets!(tmeta::TypeMetadata, T::DataType, layout::LayoutStrategy) = add_offsets!(tmeta, tmeta.tmap[T], layout)
-isinterface(tmeta::TypeMetadata, t::SPIRType) = has_decoration(tmeta, t, DecorationBlock)
-isinterface(tmeta::TypeMetadata) = t -> isinterface(tmeta, t)
-function add_offsets!(tmeta::TypeMetadata, t::StructType, layout::LayoutStrategy)
-  scs = storage_classes(tmeta, t)
-  current_offset = 0
-  n = length(t.members)
+function add_offsets!(tmeta::TypeMetadata, t::StructType, layout::VulkanLayout)
   for (i, subt) in enumerate(t.members)
-    alignmt = alignment(layout, subt, scs, isinterface(tmeta, t))
-    current_offset = alignmt * cld(current_offset, alignmt)
-    decorate!(tmeta, t, i, DecorationOffset, current_offset)
-    i ≠ n && (current_offset += compute_minimal_size(subt, tmeta, layout))
+    decorate!(tmeta, t, i, DecorationOffset, dataoffset(layout, t, i))
   end
 end
 
@@ -230,54 +290,12 @@ function member_offsets(isinterface, t::StructType, layout::LayoutStrategy, stor
   offsets
 end
 
-"""
-    compute_minimal_size(T, storage_classes::Callable, is_interface::Callable, layout::LayoutStrategy)
-
-Compute the minimal size that a type `T` should have, using the alignments computed by the provided layout strategy.
-"""
-function compute_minimal_size end
-
-compute_minimal_size(T::DataType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_minimal_size(tmeta.tmap[T], tmeta, layout)
-compute_minimal_size(t::SPIRType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_minimal_size(t, Base.Fix1(storage_classes, tmeta), isinterface(tmeta), layout)
-compute_minimal_size(t::ScalarType, storage_classes, is_interface, layout::LayoutStrategy) = scalar_alignment(t)
-compute_minimal_size(t::Union{VectorType, MatrixType}, storage_classes, is_interface, layout::LayoutStrategy) = t.n * compute_minimal_size(t.eltype, storage_classes, is_interface, layout)
-compute_minimal_size(t::ArrayType, storage_classes, is_interface, layout::LayoutStrategy) = extract_size(t) * compute_minimal_size(t.eltype, storage_classes, is_interface, layout)
-
-function compute_minimal_size(t::StructType, storage_classes, is_interface, layout::LayoutStrategy)
-  res = 0
-  scs = storage_classes(t)
-  for (i, subt) in enumerate(t.members)
-    if i ≠ 1
-      alignmt = alignment(layout, subt, scs, is_interface(t))
-      res = alignmt * cld(res, alignmt)
-    end
-    res += compute_minimal_size(subt, storage_classes, is_interface, layout)
-  end
-  res
+function getoffset(tmeta::TypeMetadata, t, i)
+  decs = decorations(tmeta, t, i)
+  isnothing(decs) && error("Missing decorations on member ", i, " of the aggregate type ", t)
+  has_decoration(decs, DecorationOffset) || error("Missing offset declaration for member ", i, " on ", t)
+  decs.offset
 end
-
-"""
-    compute_stride(T, tmap::TypeMap, layout::LayoutStrategy)
-
-Compute the stride that an array containing `T` should have, using module member offset declarations and with an extra padding at the end corresponding to the alignment of `T`.
-"""
-function compute_stride end
-
-compute_stride(T::DataType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_stride(tmeta.tmap[T], tmeta, layout)
-compute_stride(t::SPIRType, tmeta::TypeMetadata, layout::LayoutStrategy) = compute_stride(t, Base.Fix1(storage_classes, tmeta), isinterface(tmeta), Base.Fix1(getoffsets, tmeta), layout)
-compute_stride(t::ScalarType, storage_classes, is_interface, getoffsets, layout::LayoutStrategy) = scalar_alignment(t)
-compute_stride(t::Union{VectorType, MatrixType}, storage_classes, is_interface, getoffsets, layout::LayoutStrategy) = t.n * compute_stride(t.eltype, storage_classes, is_interface, getoffsets, layout)
-compute_stride(t::ArrayType, storage_classes, is_interface, getoffsets, layout::LayoutStrategy) = extract_size(t) * compute_stride(t.eltype, storage_classes, is_interface, getoffsets, layout)
-
-function compute_stride(t::StructType, storage_classes, is_interface, getoffsets, layout::LayoutStrategy)
-  offsets = getoffsets(t)
-  size = last(offsets) + payload_size(last_member(t))
-  alignmt = alignment(layout, t, storage_classes(t), is_interface(t))
-  alignmt * cld(size, alignmt)
-end
-
-last_member(t::SPIRType) = t
-last_member(t::StructType) = last_member(last(t.members))
 
 function payload_sizes!(sizes, T)
   !is_composite_type(T) && return push!(sizes, payload_size(T))
@@ -288,51 +306,10 @@ function payload_sizes!(sizes, T)
 end
 payload_sizes(T) = payload_sizes!(Int[], T)
 
-function serialize(data::T, layout::NoPadding) where {T}
-  isprimitivetype(T) && return collect(reinterpret(UInt8, [data]))
-  bytes = UInt8[]
-  for field in fieldnames(T)
-    append!(bytes, serialize(getproperty(data, field), layout))
-  end
-  bytes
-end
-serialize(data::Vector{UInt8}, ::NoPadding) = data
-serialize(data::AbstractVector, layout::NoPadding) = foldl((x, y) -> append!(x, serialize(y, layout)), data; init = UInt8[])
-serialize(data::AbstractSPIRVArray, layout::NoPadding) = Base.@invoke serialize(data::T where T, layout::NoPadding)
-
-function getoffset(tmeta::TypeMetadata, t, i)
-  decs = decorations(tmeta, t, i)
-  isnothing(decs) && error("Missing decorations on member ", i, " of the aggregate type ", t)
-  has_decoration(decs, DecorationOffset) || error("Missing offset declaration for member ", i, " on ", t)
-  decs.offset
-end
-
 is_composite_type(t::SPIRType) = isa(t, StructType)
 is_composite_type(T::DataType) = isstructtype(T) && !(T <: Vector) && !(T <: Vec) && !(T <: Mat)
 member_types(t::StructType) = t.members
 member_types(T::DataType) = fieldtypes(T)
-
-reinterpret_type(T::Type) = T
-reinterpret_type(::Type{Vec{N,T}}) where {N,T} = NTuple{N,T}
-reinterpret_type(::Type{Arr{N,T}}) where {N,T} = NTuple{N,reinterpret_type(T)}
-reinterpret_type(::Type{Mat{N,M,T}}) where {N,M,T} = NTuple{M,NTuple{N,T}}
-
-reinterpreted(::Type{Vec{N,T}}, arr) where {N,T} = Vec{N,T}(Tuple(arr))
-reinterpreted(::Type{Arr{N,T}}, arr) where {N,T} = Arr{N,T}(reinterpreted.(T, arr))
-reinterpreted(::Type{Mat{N,M,T}}, arr) where {N,M,T} = error("Not supported yet.")
-reinterpreted(T::Type, arr) = arr
-
-function reinterpret_spirv(T::Type, x::AbstractArray{UInt8})
-  RT = reinterpret_type(T)
-  T === RT && return only(reinterpret(T, x))
-  reinterpreted(T, only(reinterpret(RT, x)))
-end
-
-function reinterpret_spirv(V::Type{Vector{T}}, x::AbstractArray{UInt8}) where {T}
-  RT = reinterpret_type(T)
-  T === RT && return collect(reinterpret(T, x))
-  [reinterpreted(T, el) for el in reinterpret(RT, x)]
-end
 
 function getoffsets!(offsets, base, getoffset, T)
   !is_composite_type(T) && return offsets
@@ -341,26 +318,6 @@ function getoffsets!(offsets, base, getoffset, T)
     is_composite_type(subT) ? getoffsets!(offsets, new_offset, getoffset, subT) : push!(offsets, new_offset)
   end
   offsets
-end
-
-"""
-Get offset of member `i` of `t`, handling non-isbits types as if they were completely inlined.
-"""
-function getoffset_julia(T::DataType, i::Int)
-  i == 1 && return fieldoffset(T, i)
-  Tprev = fieldtype(T, i - 1)
-  # Account for any padding that might have been inserted between adjacent members.
-  padding = fieldoffset(T, i) - (fieldoffset(T, i - 1) + sizeof(Tprev))
-  computed_offset = getoffset_julia(T, i - 1) + fieldsize_with_padding(Tprev)
-  computed_offset + padding
-end
-
-function fieldsize_with_padding(T::DataType)
-  isbitstype(T) && return sizeof(T)
-  isconcretetype(T) || error("A concrete type is required.")
-  @assert isstructtype(T)
-  total_padding = sum(fieldoffset(T, i) - (fieldoffset(T, i - 1) + sizeof(fieldtype(T, i - 1))) for i in 2:fieldcount(T); init = 0)
-  sum(sizeof, fieldtypes(T); init = 0) + total_padding
 end
 
 getoffsets(getoffset, t::SPIRType) = getoffsets!(UInt32[], 0U, getoffset, t)

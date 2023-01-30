@@ -83,6 +83,7 @@ include("frontend/types/matrix.jl")
 include("frontend/types/array.jl")
 include("frontend/types/image.jl")
 include("layouts.jl")
+include("serialization.jl")
 include("frontend/intrinsics_glsl.jl")
 include("frontend/interpreter.jl")
 include("frontend/target.jl")
@@ -193,7 +194,7 @@ export
   MeshExecutionOptions,
 
   # Layouts.
-  LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanLayout, alignment,
+  LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanAlignment, VulkanLayout, ShaderLayout, alignment,
   serialize, deserialize, align, compute_minimal_size, compute_stride, payload_size, getoffsets,
   TypeInfo,
 

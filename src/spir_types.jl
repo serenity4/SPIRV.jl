@@ -38,6 +38,9 @@ struct MatrixType <: SPIRType
 end
 MatrixType(eltype::VectorType, n::Integer) = MatrixType(eltype, n, true)
 
+"Return either a column `VectorType` or a row `VectorType` for column-major and row-major layouts respectively."
+eltype_major(mat::MatrixType) = mat.is_column_major ? mat.eltype : VectorType(mat.eltype.eltype, mat.n)
+
 function MatrixType(inst::Instruction, eltype::VectorType)
   MatrixType(eltype, last(inst.arguments))
 end

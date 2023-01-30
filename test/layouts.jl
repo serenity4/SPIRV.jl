@@ -1,6 +1,6 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, payload_sizes, getstride, reinterpret_spirv, TypeInfo, TypeMetadata, metadata!, validate_offsets
-using SPIRV: datasize, alignment, stride, dataoffset
+using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClass, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, payload_sizes, getstride, reinterpret_spirv, TypeInfo, TypeMetadata, metadata!, validate_offsets
+using SPIRV: datasize, alignment, stride, dataoffset, isinterface
 
 function test_has_offset(tmeta, T, field, offset)
   decs = decorations(tmeta, tmeta.tmap[T], field)
@@ -17,7 +17,32 @@ function type_metadata(T; storage_classes = [])
   tmeta
 end
 
-layout = VulkanLayout()
+function type_metadata(layout::VulkanLayout)
+  tmeta = TypeMetadata(layout.tmap)
+  for (t, scs) in layout.storage_classes
+    for sc in scs
+      metadata!(tmeta, PointerType(sc, t))
+    end
+  end
+  for t in layout.interfaces
+    decorate!(tmeta, t::StructType, DecorationBlock)
+  end
+  tmeta
+end
+
+function type_metadata(Ts::AbstractVector; storage_classes = Dict(), interfaces = [])
+  tmeta = TypeMetadata()
+  for T in Ts
+    type = spir_type(T, tmeta.tmap)
+    for sc in get(Vector{StorageClass}, storage_classes, T)
+      metadata!(tmeta, PointerType(sc, type))
+    end
+    in(T, interfaces) && decorate!(tmeta, type::StructType, DecorationBlock)
+  end
+  tmeta
+end
+
+vulkan_layout(Ts; alignment = VulkanAlignment(), storage_classes = Dict(), interfaces = []) = VulkanLayout(type_metadata(Ts; storage_classes, interfaces), alignment)
 
 struct Align1
   x::Int64
@@ -57,12 +82,14 @@ end
 primitive type WeirdType 24 end
 WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
 
-alltypes = [Align1, Align2, Align3, Align4, Align5, Align6, Align7, WeirdType]
+align_types = [Align1, Align2, Align3, Align4, Align5, Align6, Align7]
+alltypes = [align_types; WeirdType]
+layout = vulkan_layout(align_types)
 
 @testset "Structure layouts" begin
   @testset "Layout types" begin
-    for layout in [NoPadding(), NativeLayout(), ExplicitLayout(NativeLayout(), alltypes)]
-      for T in alltypes
+    for layout in [NoPadding(), NativeLayout(), ExplicitLayout(NativeLayout(), alltypes), layout]
+      for T in align_types
         @test alignment(layout, T) ≥ 0
         @test datasize(layout, T) ≥ 0
         @test stride(layout, T) ≥ 0
@@ -94,22 +121,27 @@ alltypes = [Align1, Align2, Align3, Align4, Align5, Align6, Align7, WeirdType]
     test_has_offset(tmeta, Align4, 1, 0)
     test_has_offset(tmeta, Align4, 2, 8)
     test_has_offset(tmeta, Align4, 3, 10)
-    @test compute_minimal_size(Align4, tmeta, layout) == 14
+    @test datasize(layout, Align4) == 14
+    @test datasize(ShaderLayout(tmeta), Align4) == 14
 
     tmeta = type_metadata(Align5)
     add_type_layouts!(tmeta, layout)
     test_has_offset(tmeta, Align5, 1, 0)
     test_has_offset(tmeta, Align5, 2, 8)
     test_has_offset(tmeta, Align5, 3, 22)
-    @test compute_minimal_size(Align5, tmeta, layout) == 23
+    @test datasize(layout, Align5) == 23
+    @test datasize(ShaderLayout(tmeta), Align5) == 23
 
-    tmeta = type_metadata(Align5; storage_classes = [StorageClassUniform])
-    decorate!(tmeta, tmeta.tmap[Align5], DecorationBlock)
-    add_type_layouts!(tmeta, layout)
+    layout_with_storage_classes = vulkan_layout(align_types; storage_classes = Dict(Align4 => [StorageClassUniform]), interfaces = [Align4])
+    tmeta = type_metadata(layout_with_storage_classes)
+    @assert layout_with_storage_classes.tmap[Align4] === tmeta.tmap[Align4]
+    @test isinterface(layout_with_storage_classes, tmeta.tmap[Align4])
+    add_type_layouts!(tmeta, layout_with_storage_classes)
     test_has_offset(tmeta, Align5, 1, 0)
     test_has_offset(tmeta, Align5, 2, 16)
     test_has_offset(tmeta, Align5, 3, 30)
-    @test compute_minimal_size(Align5, tmeta, layout) == 31
+    @test datasize(layout_with_storage_classes, Align5) == 31
+    @test datasize(ShaderLayout(tmeta), Align5) == 31
 
     tmeta = type_metadata(Align7)
     add_type_layouts!(tmeta, layout)
