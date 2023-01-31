@@ -173,6 +173,10 @@ TypeMap() = TypeMap(Dictionary())
 
 @forward TypeMap.d (Base.getindex, Base.haskey, Base.get, Base.get!, Base.iterate, Base.keys, Base.length, Base.insert!)
 Base.setindex!(tmap::TypeMap, type::SPIRType, T::DataType) = set!(tmap.d, T, type)
+function Base.merge!(x::TypeMap, y::TypeMap)
+  merge!(x.d, y.d)
+  x
+end
 
 """
 Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is provided.

@@ -1,9 +1,9 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClass, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, TypeInfo, TypeMetadata, metadata!
+using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClass, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, TypeMetadata, metadata!
 using SPIRV: datasize, alignment, stride, dataoffset, isinterface
 
 function test_has_offset(tmeta, T, field, offset)
-  decs = decorations(tmeta, tmeta.tmap[T], field)
+  decs = decorations(tmeta, tmeta[T], field)
   @test has_decoration(decs, SPIRV.DecorationOffset)
   @test decs.offset == offset
 end
@@ -98,8 +98,8 @@ layout = VulkanLayout(align_types)
 
     layout_with_storage_classes = VulkanLayout(align_types; storage_classes = Dict(Align4 => [StorageClassUniform]), interfaces = [Align4])
     tmeta = TypeMetadata(layout_with_storage_classes)
-    @assert layout_with_storage_classes.tmap[Align4] === tmeta.tmap[Align4]
-    @test isinterface(layout_with_storage_classes, tmeta.tmap[Align4])
+    @assert layout_with_storage_classes[Align4] === tmeta[Align4]
+    @test isinterface(layout_with_storage_classes, tmeta[Align4])
     add_type_layouts!(tmeta, layout_with_storage_classes)
     test_has_offset(tmeta, Align5, 1, 0)
     test_has_offset(tmeta, Align5, 2, 16)
@@ -117,15 +117,24 @@ layout = VulkanLayout(align_types)
     T = Arr{4, Tuple{Float64, Float64}}
     tmeta = TypeMetadata([T])
     add_type_layouts!(tmeta, layout)
-    decs = decorations(tmeta, tmeta.tmap[T])
+    decs = decorations(tmeta, tmeta[T])
     @test has_decoration(decs, SPIRV.DecorationArrayStride)
     @test decs.array_stride == 16
 
     T = Align7
     tmeta = TypeMetadata([T])
     add_type_layouts!(tmeta, layout)
-    decs = decorations(tmeta, tmeta.tmap[T], 2)
+    decs = decorations(tmeta, tmeta[T], 2)
     @test has_decoration(decs, SPIRV.DecorationMatrixStride)
     @test decs.matrix_stride == 16
+  end
+
+  @testset "Merging Vulkan layouts" begin
+    x = VulkanLayout([Int64])
+    y = VulkanLayout([Align1, Align3]; interfaces = [Align1])
+    z = merge!(x, y)
+    @test z[Int64] == x[Int64]
+    @test z[Align1] == y[Align1]
+    @test z.interfaces == Set([z[Align1]])
   end
 end;

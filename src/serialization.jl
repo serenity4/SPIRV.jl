@@ -51,7 +51,7 @@ function serialize!(bytes, data::Vector{T}, layout::LayoutStrategy) where {T}
   end
 end
 function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Mat}
-  t = layout.tmap[T]::MatrixType
+  t = layout[T]::MatrixType
   vectype = eltype_major(t)
   payload = data.cols
   if !t.is_column_major
@@ -66,7 +66,7 @@ function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Mat}
 end
 serialize!(bytes, data::Vec, layout::VulkanLayout) = serialize!(bytes, data.data, NoPadding())
 function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Arr}
-  t = layout.tmap[T]::ArrayType
+  t = layout[T]::ArrayType
   s = stride(layout, t.eltype)
   padding = s - datasize(layout, t.eltype)
   for el in data
@@ -112,13 +112,13 @@ end
 
 deserialize(::Type{T}, bytes, from::VulkanLayout) where {T<:Vec} = deserialize(T, bytes, NoPadding())
 function deserialize(T::Type{Arr{N,AT}}, bytes, from::VulkanLayout) where {N,AT}
-  t = from.tmap[T]::ArrayType
+  t = from[T]::ArrayType
   s = stride(from, t.eltype)
   size = datasize(from, AT)
   T(ntuple(i -> deserialize(AT, @view(bytes[(1 + (i - 1) * s):((i - 1) * s + size)]), from), N))
 end
 function deserialize(T::Type{Mat{N,M,MT}}, bytes, from::VulkanLayout) where {N,M,MT}
-  t = from.tmap[T]::MatrixType
+  t = from[T]::MatrixType
   vectype = eltype_major(t)
   s = stride(from, vectype)
   size = datasize(from, vectype)

@@ -125,16 +125,19 @@ struct VulkanLayout <: LayoutStrategy
   alignment::VulkanAlignment
   tmap::TypeMap
   storage_classes::Dict{SPIRType,Set{StorageClass}}
-  interfaces::Set{SPIRType}
+  interfaces::Set{StructType}
 end
 
-storage_classes(layout::VulkanLayout, t::SPIRType) = get!(Set{StorageClass}, layout.storage_classes, t)
-isinterface(layout::VulkanLayout, t::SPIRType) = in(t, layout.interfaces)
+Base.getindex(layout::VulkanLayout, T::DataType) = getindex(layout.tmap, T)
 
-stride(layout::VulkanLayout, T::Type) = stride(layout, layout.tmap[T])
-datasize(layout::VulkanLayout, T::Type) = datasize(layout, layout.tmap[T])
-dataoffset(layout::VulkanLayout, T::Type, i::Integer) = dataoffset(layout, layout.tmap[T], i)
-alignment(layout::VulkanLayout, T::Type) = alignment(layout, layout.tmap[T])
+storage_classes(layout::VulkanLayout, t::SPIRType) = get!(Set{StorageClass}, layout.storage_classes, t)
+isinterface(layout::VulkanLayout, t::StructType) = in(t, layout.interfaces)
+isinterface(layout::VulkanLayout, ::SPIRType) = false
+
+stride(layout::VulkanLayout, T::Type) = stride(layout, layout[T])
+datasize(layout::VulkanLayout, T::Type) = datasize(layout, layout[T])
+dataoffset(layout::VulkanLayout, T::Type, i::Integer) = dataoffset(layout, layout[T], i)
+alignment(layout::VulkanLayout, T::Type) = alignment(layout, layout[T])
 
 stride(::VulkanLayout, t::ScalarType) = scalar_alignment(t)
 stride(layout::VulkanLayout, t::Union{VectorType, MatrixType}) = t.n * stride(layout, t.eltype)
@@ -165,6 +168,13 @@ function extract_size(t::ArrayType)
   size.value
 end
 
+function Base.merge!(x::VulkanLayout, y::VulkanLayout)
+  x.alignment == y.alignment || error("Cannot merge `VulkanLayout`s with different alignment specifications.")
+  merge!(x.tmap, y.tmap)
+  merge!(x.storage_classes, y.storage_classes)
+  union!(x.interfaces, y.interfaces)
+  x
+end
 
 """
 Type metadata meant to be analyzed and modified to generate appropriate decorations.
@@ -177,6 +187,7 @@ end
 TypeMetadata(tmap::TypeMap = TypeMap()) = TypeMetadata(tmap, Dictionary())
 
 @forward TypeMetadata.d (metadata!, has_decoration, decorate!, decorations)
+Base.getindex(tmeta::TypeMetadata, T::DataType) = getindex(tmeta.tmap, T)
 
 function TypeMetadata(ir::IR)
   tmeta = TypeMetadata(ir.tmap)
@@ -207,12 +218,14 @@ function storage_classes(types, t::SPIRType)
 end
 storage_classes(tmeta::TypeMetadata, t::SPIRType) = storage_classes(keys(tmeta.d), t)
 
-isinterface(tmeta::TypeMetadata, t::SPIRType) = has_decoration(tmeta, t, DecorationBlock)
-isinterface(tmeta::TypeMetadata) = t -> isinterface(tmeta, t)
+isinterface(tmeta::TypeMetadata, t::StructType) = has_decoration(tmeta, t, DecorationBlock)
+isinterface(tmeta::TypeMetadata, ::SPIRType) = false
+
+VulkanLayout(alignment::VulkanAlignment) = VulkanLayout(alignment, Dict{SPIRType, Set{StorageClass}}(), Set{StructType}())
 
 function VulkanLayout(tmeta::TypeMetadata, alignment::VulkanAlignment)
   (; tmap) = tmeta
-  VulkanLayout(alignment, tmap, Dict(t => storage_classes(tmeta, t) for t in tmap), Set(filter!(t -> isinterface(tmeta, t), collect(tmap))))
+  VulkanLayout(alignment, tmap, Dict(t => storage_classes(tmeta, t) for t in tmap), Set(StructType[t for t in tmap if isa(t, StructType) && isinterface(tmeta, t)]))
 end
 
 VulkanLayout(ir::IR, alignment::VulkanAlignment) = VulkanLayout(TypeMetadata(ir), alignment)
@@ -239,10 +252,12 @@ struct ShaderLayout <: LayoutStrategy
   tmeta::TypeMetadata
 end
 
-stride(layout::ShaderLayout, T::Type) = stride(layout, layout.tmeta.tmap[T])
-datasize(layout::ShaderLayout, T::Type) = datasize(layout, layout.tmeta.tmap[T])
-dataoffset(layout::ShaderLayout, T::Type, i::Integer) = dataoffset(layout, layout.tmeta.tmap[T], i)
-alignment(layout::ShaderLayout, T::Type) = alignment(layout, layout.tmeta.tmap[T])
+Base.getindex(layout::ShaderLayout, T::DataType) = getindex(layout.tmeta, T)
+
+stride(layout::ShaderLayout, T::Type) = stride(layout, layout[T])
+datasize(layout::ShaderLayout, T::Type) = datasize(layout, layout[T])
+dataoffset(layout::ShaderLayout, T::Type, i::Integer) = dataoffset(layout, layout[T], i)
+alignment(layout::ShaderLayout, T::Type) = alignment(layout, layout[T])
 
 dataoffset(layout::ShaderLayout, t::StructType, i::Integer) = dataoffset(layout.tmeta, t, i)
 
