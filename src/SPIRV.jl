@@ -126,6 +126,7 @@ export
   assemble,
 
   # SPIR-V types.
+  TypeMap,
   SPIRType,
   VoidType,
   ScalarType, BooleanType, IntegerType, FloatType,
@@ -194,9 +195,8 @@ export
   MeshExecutionOptions,
 
   # Layouts.
-  LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanAlignment, VulkanLayout, ShaderLayout, alignment,
-  serialize, deserialize, align, compute_minimal_size, compute_stride, payload_size, getoffsets,
-  TypeInfo,
+  LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanAlignment, VulkanLayout, ShaderLayout, TypeMetadata, alignment,
+  serialize, deserialize,
 
   # SPIR-V array/vector/pointer/image types.
   Vec, Vec2, Vec3, Vec4,

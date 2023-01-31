@@ -3,15 +3,14 @@
   storage_classes::Vector{StorageClass}
   variable_decorations::Dictionary{Int,Decorations}
   type_metadata::Dictionary{DataType, Metadata}
-  layout::LayoutStrategy
   features::FeatureSupport
   execution_options::ShaderExecutionOptions
 end
 
 function ShaderInterface(execution_model::ExecutionModel; storage_classes = [], variable_decorations = Dictionary(),
-  type_metadata = Dictionary(), layout = VulkanLayout(), features = AllSupported(), execution_options = ShaderExecutionOptions(execution_model))
+  type_metadata = Dictionary(), features = AllSupported(), execution_options = ShaderExecutionOptions(execution_model))
   @assert validate(execution_options, execution_model)
-  ShaderInterface(execution_model, storage_classes, variable_decorations, type_metadata, layout, features, execution_options)
+  ShaderInterface(execution_model, storage_classes, variable_decorations, type_metadata, features, execution_options)
 end
 
 """
@@ -25,14 +24,11 @@ It is assumed that the function arguments are typed to use the same storage clas
 function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterface, variables)
   add_variable_decorations!(ir, variables, interface)
   emit_types!(ir)
-  add_type_layouts!(ir, interface.layout)
   add_type_metadata!(ir, interface)
-  add_align_operands!(ir, fdef, interface.layout)
 
   restructure_merge_blocks!(ir)
   add_merge_headers!(ir)
 
-  satisfy_requirements!(ir, interface.features)
   ir
 end
 
@@ -76,6 +72,7 @@ end
 struct Shader
   ir::IR
   entry_point::ResultID
+  layout::LayoutStrategy
   memory_resources::ResultDict{MemoryResource}
 end
 
@@ -83,12 +80,18 @@ end
 
 validate(shader::Shader) = validate_shader(shader.ir)
 
-function Shader(target::SPIRVTarget, interface::ShaderInterface)
+function Shader(target::SPIRVTarget, interface::ShaderInterface, layout::Union{VulkanAlignment, LayoutStrategy})
   ir = IR(target, interface)
   ep = entry_point(ir, :main).func
-  Shader(ir, ep, memory_resources(ir, ep))
+  isa(layout, VulkanAlignment) && (layout = VulkanLayout(ir, layout))
+  satisfy_requirements!(ir, interface.features)
+
+  add_type_layouts!(ir, layout)
+  add_align_operands!(ir, ir.fdefs[ep], layout)
+
+  Shader(ir, ep, layout, memory_resources(ir, ep))
 end
-Shader(mi::MethodInstance, interface::ShaderInterface, interp::SPIRVInterpreter) = Shader(SPIRVTarget(mi, interp; inferred = true), interface)
+Shader(mi::MethodInstance, interface::ShaderInterface, interp::SPIRVInterpreter, layout::Union{VulkanAlignment, LayoutStrategy}) = Shader(SPIRVTarget(mi, interp; inferred = true), interface, layout)
 
 function IR(target::SPIRVTarget, interface::ShaderInterface)
   mt = ModuleTarget()

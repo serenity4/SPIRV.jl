@@ -127,25 +127,3 @@ function deserialize(T::Type{Mat{N,M,MT}}, bytes, from::VulkanLayout) where {N,M
   tuple = ntuple(i -> deserialize(NTuple{M,MT}, @view(bytes[1 + (i - 1) * s:(i - 1) * s + size]), NoPadding()), N)
   @force_construct T reinterpret(NTuple{M, NTuple{N, MT}}, [tuple])[]
 end
-
-reinterpret_type(T::Type) = T
-reinterpret_type(::Type{Vec{N,T}}) where {N,T} = NTuple{N,T}
-reinterpret_type(::Type{Arr{N,T}}) where {N,T} = NTuple{N,reinterpret_type(T)}
-reinterpret_type(::Type{Mat{N,M,T}}) where {N,M,T} = NTuple{M,NTuple{N,T}}
-
-reinterpreted(::Type{Vec{N,T}}, arr) where {N,T} = Vec{N,T}(Tuple(arr))
-reinterpreted(::Type{Arr{N,T}}, arr) where {N,T} = Arr{N,T}(reinterpreted.(T, arr))
-reinterpreted(::Type{Mat{N,M,T}}, arr) where {N,M,T} = error("Not supported yet.")
-reinterpreted(T::Type, arr) = arr
-
-function reinterpret_spirv(T::Type, x::AbstractArray{UInt8})
-  RT = reinterpret_type(T)
-  T === RT && return only(reinterpret(T, x))
-  reinterpreted(T, only(reinterpret(RT, x)))
-end
-
-function reinterpret_spirv(V::Type{Vector{T}}, x::AbstractArray{UInt8}) where {T}
-  RT = reinterpret_type(T)
-  T === RT && return collect(reinterpret(T, x))
-  [reinterpreted(T, el) for el in reinterpret(RT, x)]
-end

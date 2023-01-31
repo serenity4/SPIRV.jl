@@ -174,7 +174,7 @@ struct TypeMetadata
   d::Dictionary{SPIRType, Metadata}
 end
 
-TypeMetadata(tmap = TypeMap()) = TypeMetadata(tmap, Dictionary())
+TypeMetadata(tmap::TypeMap = TypeMap()) = TypeMetadata(tmap, Dictionary())
 
 @forward TypeMetadata.d (metadata!, has_decoration, decorate!, decorations)
 
@@ -186,6 +186,18 @@ function TypeMetadata(ir::IR)
     meta = get(ir.metadata, tid, nothing)
     isnothing(meta) && continue
     insert!(tmeta.d, t, meta)
+  end
+  tmeta
+end
+
+function TypeMetadata(Ts; storage_classes = Dict(), interfaces = [])
+  tmeta = TypeMetadata()
+  for T in Ts
+    type = spir_type(T, tmeta.tmap)
+    for sc in get(Vector{StorageClass}, storage_classes, T)
+      metadata!(tmeta, PointerType(sc, type))
+    end
+    in(T, interfaces) && decorate!(tmeta, type::StructType, DecorationBlock)
   end
   tmeta
 end
@@ -205,6 +217,21 @@ end
 
 VulkanLayout(ir::IR, alignment::VulkanAlignment) = VulkanLayout(TypeMetadata(ir), alignment)
 
+function TypeMetadata(layout::VulkanLayout)
+  tmeta = TypeMetadata(layout.tmap)
+  for (t, scs) in layout.storage_classes
+    for sc in scs
+      metadata!(tmeta, PointerType(sc, t))
+    end
+  end
+  for t in layout.interfaces
+    decorate!(tmeta, t::StructType, DecorationBlock)
+  end
+  tmeta
+end
+
+VulkanLayout(Ts; alignment = VulkanAlignment(), storage_classes = Dict(), interfaces = []) = VulkanLayout(TypeMetadata(Ts; storage_classes, interfaces), alignment)
+
 """
 Shader-compatible layout strategy, where layout information is strictly read from shader decorations.
 """
@@ -217,7 +244,7 @@ datasize(layout::ShaderLayout, T::Type) = datasize(layout, layout.tmeta.tmap[T])
 dataoffset(layout::ShaderLayout, T::Type, i::Integer) = dataoffset(layout, layout.tmeta.tmap[T], i)
 alignment(layout::ShaderLayout, T::Type) = alignment(layout, layout.tmeta.tmap[T])
 
-dataoffset(layout::ShaderLayout, t::StructType, i::Integer) = getoffset(layout.tmeta, t, i)
+dataoffset(layout::ShaderLayout, t::StructType, i::Integer) = dataoffset(layout.tmeta, t, i)
 
 function Base.merge!(ir::IR, tmeta::TypeMetadata)
   for (t, meta) in pairs(tmeta.d)
@@ -264,7 +291,7 @@ function add_matrix_layouts!(tmeta::TypeMetadata, t::StructType, layout::LayoutS
 end
 
 function add_matrix_stride!(tmeta::TypeMetadata, t::StructType, i, subt::MatrixType, layout::LayoutStrategy)
-  s = stride(layout, subt.eltype.eltype)
+  s = stride(layout, eltype_major(subt))
   decorate!(tmeta, t, i, DecorationMatrixStride, s)
 end
 
@@ -277,189 +304,9 @@ function add_offsets!(tmeta::TypeMetadata, t::StructType, layout::VulkanLayout)
   end
 end
 
-function member_offsets(isinterface, t::StructType, layout::LayoutStrategy, storage_classes::Dictionary{SPIRType, Set{StorageClass}})
-  offsets = UInt32[]
-  base = 0U
-  for (i, subt) in enumerate(t.members)
-    alignmt = alignment(layout, subt, get(Set{StorageClass}, storage_classes, subt), isinterface(subt))
-    base = alignmt * cld(base, alignmt)
-    push!(offsets, base)
-    isa(subt, ArrayType) && isnothing(subt.size) && i == lastindex(t.members) && break
-    base += compute_minimal_size(subt, t -> get(Set{StorageClass}, storage_classes, t), isinterface, layout)
-  end
-  offsets
-end
-
-function getoffset(tmeta::TypeMetadata, t, i)
+function dataoffset(tmeta::TypeMetadata, t, i)
   decs = decorations(tmeta, t, i)
   isnothing(decs) && error("Missing decorations on member ", i, " of the aggregate type ", t)
   has_decoration(decs, DecorationOffset) || error("Missing offset declaration for member ", i, " on ", t)
   decs.offset
 end
-
-function payload_sizes!(sizes, T)
-  !is_composite_type(T) && return push!(sizes, payload_size(T))
-  for subT in member_types(T)
-    payload_sizes!(sizes, subT)
-  end
-  sizes
-end
-payload_sizes(T) = payload_sizes!(Int[], T)
-
-is_composite_type(t::SPIRType) = isa(t, StructType)
-is_composite_type(T::DataType) = isstructtype(T) && !(T <: Vector) && !(T <: Vec) && !(T <: Mat)
-member_types(t::StructType) = t.members
-member_types(T::DataType) = fieldtypes(T)
-
-function getoffsets!(offsets, base, getoffset, T)
-  !is_composite_type(T) && return offsets
-  for (i, subT) in enumerate(member_types(T))
-    new_offset = base + getoffset(T, i)
-    is_composite_type(subT) ? getoffsets!(offsets, new_offset, getoffset, subT) : push!(offsets, new_offset)
-  end
-  offsets
-end
-
-getoffsets(getoffset, t::SPIRType) = getoffsets!(UInt32[], 0U, getoffset, t)
-getoffsets(T::DataType) = getoffsets!(UInt32[], 0U, getoffset_julia, T)
-getoffsets(tmeta::TypeMetadata, t::SPIRType) = getoffsets((t, i) -> getoffset(tmeta, t, i), t)
-
-function validate_offsets(offsets)
-  allunique(offsets) || error("Non-unique offsets detected. They must be unique, or otherwise data will be overwritten.")
-  sortperm(offsets) == eachindex(offsets) || error("Non-monotonous offsets detected.")
-  true
-end
-
-"""
-Return a vector of bytes where every logical piece of data (delimited via the provided `sizes`)
-has been aligned according to the provided offsets.
-"""
-function align(data::AbstractVector{UInt8}, sizes::AbstractVector{<:Integer}, offsets::AbstractVector{<:Integer}; callback = nothing)
-  isempty(offsets) && return data
-  aligned_size = last(offsets) + last(sizes)
-  aligned = zeros(UInt8, aligned_size)
-  total = sum(sizes)
-  total == length(data) || error("Size mismatch between the provided data (", length(data), " bytes) and the corresponding SPIR-V type (", total, " bytes)")
-  data_byte = 1
-  @assert length(sizes) == length(offsets) "Size mismatch between the list of sizes and the list of offsets"
-  @assert validate_offsets(offsets)
-  for (offset, size) in zip(offsets, sizes)
-    from = data_byte:(data_byte + size - 1)
-    to = (offset + 1):(offset + size)
-    aligned[to] .= data[from]
-    !isnothing(callback) && callback(from, to)
-    data_byte += size
-  end
-  aligned
-end
-
-align(data::AbstractVector{UInt8}, t::StructType, offsets::AbstractVector{<:Integer}; callback = nothing) = align(data, payload_sizes(t), offsets; callback)
-
-"""
-Type information used for associating Julia-level data types with SPIR-V types and
-for applying offsets to pad payload bytes extracted from Julia values.
-
-Meant to be used in a read-only fashion only.
-"""
-@auto_hash_equals struct TypeInfo
-  tmap::TypeMap
-  offsets::Dictionary{StructType,Vector{UInt32}}
-  strides::Dictionary{ArrayType,UInt32}
-end
-
-TypeInfo(tmap::TypeMap = TypeMap()) = TypeInfo(tmap, Dictionary(), Dictionary())
-
-"""
-Extract a [`TypeInfo`](@ref) from the existing type mapping.
-
-!!! warn
-    The type mapping is not copied for performance reasons.
-    It must not be modified or correctness issues may appear.
-"""
-function TypeInfo(tmeta::TypeMetadata, layout::LayoutStrategy)
-  (; tmap) = tmeta
-  info = TypeInfo(tmap)
-  scs = dictionary([t => storage_classes(tmeta, t) for t in tmap])
-  for t in tmap
-    isa(t, StructType) && insert!(info.offsets, t, member_offsets(isinterface(tmeta), t, layout, scs))
-    if isa(t, ArrayType)
-      decs = decorations(tmeta, t)
-      !isnothing(decs) && has_decoration(decs, DecorationArrayStride) && insert!(info.strides, t, decs.array_stride)
-    end
-  end
-  info
-end
-
-"""
-Construct a `TypeInfo` from the provided Julia types, generating the corresponding
-SPIR-V types and appropriate offset and stride information using the provided layout strategy.
-
-This is primarily intended for testing purposes.
-"""
-function TypeInfo(Ts::AbstractVector{DataType}, layout::LayoutStrategy)
-  info = TypeInfo()
-  storage_classes = Dictionary{SPIRType,Set{StorageClass}}()
-  isinterface = Returns(false)
-  worklist = SPIRType[]
-  for T in Ts
-    t = spir_type(T)
-    insert!(info.tmap, T, t)
-    push!(worklist, t)
-  end
-
-  array_types = ArrayType[]
-  while !isempty(worklist)
-    t = pop!(worklist)
-    if isa(t, Union{ArrayType,MatrixType})
-      push!(array_types, t)
-      push!(worklist, t.eltype)
-    end
-    isa(t, StructType) || continue
-    insert!(info.offsets, t, member_offsets(isinterface, t, layout, storage_classes))
-    for subt in t.members
-      isa(subt, StructType) || continue
-      insert!(info.offsets, subt, member_offsets(isinterface, subt, layout, storage_classes))
-    end
-  end
-
-  for t in array_types
-    stride = compute_stride(t.eltype, t -> get(Set{StorageClass}, storage_classes, t), isinterface, Base.Fix1(getoffsets, info), layout)
-    insert!(info.strides, t, stride)
-  end
-
-  info
-end
-
-TypeInfo(ir::IR, layout::LayoutStrategy) = TypeInfo(TypeMetadata(ir), layout)
-
-getoffsets(tinfo::TypeInfo, t::SPIRType) = getoffsets((t, i) -> tinfo.offsets[t][i], t)
-getoffsets(tdata::Union{TypeMetadata,TypeInfo}, T::DataType) = getoffsets(tdata, tdata.tmap[T])
-
-align(data::AbstractVector{UInt8}, t::StructType, tdata::Union{TypeMetadata,TypeInfo}; callback = nothing) = align(data, t, getoffsets(tdata, t); callback)
-align(data::AbstractVector{UInt8}, t::ArrayType, tdata::Union{TypeMetadata,TypeInfo}; callback = nothing) = align(data, t, getstride(tdata, t), getoffsets(tdata, t.eltype); callback)
-align(data::AbstractVector{UInt8}, t::SPIRType, tdata::Union{TypeMetadata,TypeInfo}; callback = nothing) = t
-align(data::AbstractVector{UInt8}, T::DataType, tdata::Union{TypeMetadata,TypeInfo}) = align(data, tdata.tmap[T], tdata)
-
-getstride(tinfo::TypeInfo, t::ArrayType) = tinfo.strides[t]
-getstride(tmeta::TypeMetadata, t::ArrayType) = decorations(tmeta, t).array_stride
-
-"""
-Return a new vector of bytes which correspond to the `data` array payload after each element being
-aligned and spaced with `stride`. The array stride must not be lesser than the aligned element size.
-"""
-function align(data::AbstractVector{UInt8}, t::ArrayType, stride::Integer, eloffsets::AbstractVector{<:Integer}; callback = nothing)
-  elsizes = payload_sizes(t.eltype)
-  elsize = sum(elsizes)
-  aligned_elsize = (isempty(eloffsets) ? 0 : last(eloffsets)) + last(elsizes)
-  aligned_elsize ≤ stride || error("Array stride $stride is lower than the actual array element size $aligned_elsize after alignment.")
-  effective_length = Int(length(data) / elsize)
-  !isnothing(t.size) && !t.size.is_spec_const && isa(t.size.value, Integer) && effective_length ≠ t.size.value && error("Array size mismatch between the provided payload ($effective_length elements) and its constant declared value ($(t.size.value))")
-  aligned = zeros(UInt8, stride * (effective_length - 1) + aligned_elsize)
-  for i in 1:effective_length
-    start_aligned = 1 + (i - 1) * stride
-    aligned[start_aligned:start_aligned + aligned_elsize - 1] .= align(@view(data[1 + (i - 1) * elsize:i * elsize]), elsizes, eloffsets; callback)
-  end
-  aligned
-end
-
-getstride(T::DataType) = Base.elsize(T)

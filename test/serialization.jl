@@ -28,7 +28,7 @@ end
   layouts = [
     NativeLayout(),
     NoPadding(),
-    make_row_major(vulkan_layout(typeof.(dataset)), Mat{2,5,Float32}),
+    make_row_major(VulkanLayout(typeof.(dataset)), Mat{2,5,Float32}),
   ]
   for layout in layouts
     for data in dataset

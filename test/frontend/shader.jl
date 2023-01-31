@@ -39,7 +39,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   target = @target vert_shader!(::Vec4)
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
-  shader = Shader(target, ShaderInterface(SPIRV.ExecutionModelVertex; storage_classes = [SPIRV.StorageClassOutput]))
+  shader = Shader(target, ShaderInterface(SPIRV.ExecutionModelVertex; storage_classes = [SPIRV.StorageClassOutput]), VulkanAlignment())
   mod = SPIRV.Module(shader)
   @test mod == parse(
     SPIRV.Module,
@@ -87,7 +87,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
   ir = compile(target, AllSupported())
   @test unwrap(validate(ir))
   interface = ShaderInterface(SPIRV.ExecutionModelVertex; storage_classes = [SPIRV.StorageClassOutput], variable_decorations = dictionary([1 => Decorations(SPIRV.DecorationLocation, 0)]))
-  shader = Shader(target, interface)
+  shader = Shader(target, interface, VulkanAlignment())
   @test unwrap(validate(shader))
 
   struct Point
@@ -119,12 +119,12 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     ]),
   )
 
-  shader = Shader(target, interface)
+  shader = Shader(target, interface, VulkanAlignment())
   @test unwrap(validate(shader))
 
   # Let SPIRV figure out member offsets automatically.
   interface = @set interface.type_metadata = dictionary([Point => Metadata().decorate!(SPIRV.DecorationBlock)])
-  shader = Shader(target, interface)
+  shader = Shader(target, interface, VulkanAlignment())
   @test unwrap(validate(shader))
 
   # Test built-in logic.
@@ -144,7 +144,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       3 => Decorations(SPIRV.DecorationBuiltIn, SPIRV.BuiltInPosition),
     ]),
   )
-  shader = Shader(target, interface)
+  shader = Shader(target, interface, VulkanAlignment())
   @test unwrap(validate(shader))
 
   struct DrawData
@@ -189,12 +189,12 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     ]),
     features = SUPPORTED_FEATURES,
   )
-  shader = Shader(target, interface)
+  shader = Shader(target, interface, VulkanAlignment())
   @test unwrap(validate(shader))
 
   # Test that `Block` decorations are inserted properly for the push constant.
   interface = @set interface.type_metadata = Dictionary()
-  shader = Shader(target, interface)
+  shader = Shader(target, interface, VulkanAlignment())
   @test unwrap(validate(shader))
 
   # TODO: WIP
@@ -214,7 +214,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       2 => Decorations(SPIRV.DecorationLocation, 0),
     ]),
   )
-  shader = Shader(target, interface)
+  shader = Shader(target, interface, VulkanAlignment())
   @test unwrap(validate(shader))
 
   @testset "Structured control-flow" begin
@@ -233,7 +233,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
         2 => Decorations(SPIRV.DecorationLocation, 0),
       ]),
     )
-    shader = Shader(target, interface)
+    shader = Shader(target, interface, VulkanAlignment())
     @test unwrap(validate(shader))
 
     function compute_blur!(res::Vec3, blur::GaussianBlur, reference, direction, uv)
@@ -252,7 +252,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       ]),
       features = SUPPORTED_FEATURES,
     )
-    shader = Shader(target, interface)
+    shader = Shader(target, interface, VulkanAlignment())
     @test unwrap(validate(shader))
 
     function compute_blur_2!(res::Vec3, blur::GaussianBlur, reference, uv)
@@ -270,7 +270,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       ]),
       features = SUPPORTED_FEATURES,
     )
-    shader = Shader(target, interface)
+    shader = Shader(target, interface, VulkanAlignment())
     @test unwrap(validate(shader))
   end
 end;

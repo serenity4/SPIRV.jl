@@ -1,5 +1,11 @@
 # Changelog for SPIRV.jl
 
+## Version `v0.4`
+
+![Feature][badge-feature] Shader execution options (such as local workgroup sizes for compute shaders, origin for fragment shaders) may now be specified with `ShaderExecutionOptions` as a new field of `ShaderInterface`.
+![BREAKING][badge-breaking] `LayoutStrategy` has been moved from `ShaderInterface` to `Shader`, because `LayoutStrategy` may now require an IR to be created if using a `VulkanLayout`.
+![BREAKING][badge-breaking] ![Enchancement][badge-enhancement] `VulkanLayout` now stores information regarding storage classes and interface blocks, so that it no longer implicitly depends on an external `TypeMetadata` for providing it while computing strides and alignments. `VulkanAlignment` should be used to specify layout requirements in a decoration-agnostic way.
+
 ## Version `v0.3`
 
 ![BREAKING][badge-breaking] `CFG` has been renamed to `SPIRVTarget`, as the semantics of the structure evolved and control-flow has been streamlined a bit more internally.
