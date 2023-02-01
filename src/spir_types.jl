@@ -169,13 +169,27 @@ end
   d::Dictionary{DataType,SPIRType}
 end
 
+struct UnknownType <: Exception
+  msg::String
+  T::DataType
+end
+
+Base.showerror(io::IO, exc::UnknownType) = print(io, "UnknownType: ", exc.msg)
+
 TypeMap() = TypeMap(Dictionary())
 
-@forward TypeMap.d (Base.getindex, Base.haskey, Base.get, Base.get!, Base.iterate, Base.keys, Base.length, Base.insert!)
+@forward TypeMap.d (Base.haskey, Base.get, Base.get!, Base.iterate, Base.keys, Base.length, Base.insert!)
 Base.setindex!(tmap::TypeMap, type::SPIRType, T::DataType) = set!(tmap.d, T, type)
 function Base.merge!(x::TypeMap, y::TypeMap)
   merge!(x.d, y.d)
   x
+end
+
+function Base.getindex(tmap::TypeMap, T::DataType)
+  t = get(tmap.d, T, nothing)
+  !isnothing(t) && return t
+  isstructtype(T) && !(T <: Vec || T <: Arr || T <: Mat || T <: Vector) && return throw(UnknownType("Type $T has no known mapping to SPIR-V within this `TypeMap`", T))
+  spir_type(T, tmap; fill_tmap = false)
 end
 
 """
@@ -183,7 +197,7 @@ Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is p
 
 If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
 """
-function spir_type(@nospecialize(t::Union{DataType,Type{Union{}}}), tmap::Optional{TypeMap} = nothing; wrap_mutable = false, storage_class = nothing)
+function spir_type(@nospecialize(t::Union{DataType,Type{Union{}}}), tmap::Optional{TypeMap} = nothing; wrap_mutable = false, storage_class = nothing, fill_tmap = true)
   t === Union{} && error("Bottom type Union{} reached. This suggests that an error was encoutered in the Julia function during its compilation.")
   wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, spir_type(t, tmap))
   !isnothing(tmap) && isnothing(storage_class) && haskey(tmap, t) && return tmap[t]
@@ -233,7 +247,7 @@ function spir_type(@nospecialize(t::Union{DataType,Type{Union{}}}), tmap::Option
     error("The provided type must be a struct or an array of structs. The automation of this requirement is a work in progress.")
   end
 
-  if type == promoted_type && !isnothing(tmap)
+  if type == promoted_type && !isnothing(tmap) && fill_tmap
     tmap[t] = type
   end
 

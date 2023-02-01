@@ -221,7 +221,7 @@ storage_classes(tmeta::TypeMetadata, t::SPIRType) = storage_classes(keys(tmeta.d
 isinterface(tmeta::TypeMetadata, t::StructType) = has_decoration(tmeta, t, DecorationBlock)
 isinterface(tmeta::TypeMetadata, ::SPIRType) = false
 
-VulkanLayout(alignment::VulkanAlignment) = VulkanLayout(alignment, Dict{SPIRType, Set{StorageClass}}(), Set{StructType}())
+VulkanLayout(alignment::VulkanAlignment) = VulkanLayout(alignment, TypeMap(), Dict{SPIRType, Set{StorageClass}}(), Set{StructType}())
 
 function VulkanLayout(tmeta::TypeMetadata, alignment::VulkanAlignment)
   (; tmap) = tmeta

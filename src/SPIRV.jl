@@ -195,7 +195,8 @@ export
   MeshExecutionOptions,
 
   # Layouts.
-  LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanAlignment, VulkanLayout, ShaderLayout, TypeMetadata, alignment,
+  LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanAlignment, VulkanLayout, ShaderLayout, TypeMetadata,
+  alignment, dataoffset, datasize, stride,
   serialize, deserialize,
 
   # SPIR-V array/vector/pointer/image types.
