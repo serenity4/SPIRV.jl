@@ -11,6 +11,17 @@ function serialize(data, layout::LayoutStrategy)
   bytes
 end
 
+function serialize(data::Union{T,Vector{T}}, layout::NativeLayout) where {T}
+  if isbitstype(T)
+    arr = isa(data, T) ? [data] : data
+    GC.@preserve arr begin
+      ptr = pointer(arr)
+      return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), sizeof(T))
+    end
+  end
+  @invoke serialize(data, layout::LayoutStrategy)
+end
+
 function serialize!(bytes, data::T, layout::LayoutStrategy) where {T}
   isprimitivetype(T) && return serialize_primitive!(bytes, data)
   for i in 1:fieldcount(T)
@@ -34,7 +45,7 @@ end
 function databytes(data::T) where {T}
   s = sizeof(T)
   s == 0 && return
-  s == 1 ? reinterpret(UInt8, data) : s == 2 ? reinterpret(UInt16, data) : s == 4 ? reinterpret(UInt32, data) : s == 8 ? reinterpret(UInt64, data) : error("Expected size of 8, 16, 32 or 64")
+  s == 1 ? reinterpret(UInt8, data) : s == 2 ? reinterpret(UInt16, data) : s == 4 ? reinterpret(UInt32, data) : s == 8 ? reinterpret(UInt64, data) : s == 16 ? reinterpret(UInt128, data) : error("Expected size of 8, 16, 32 or 64")
 end
 
 serialize_primitive!(bytes, data) = fast_append!(bytes, databytes(data))
