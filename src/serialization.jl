@@ -1,39 +1,45 @@
 # Serialization always implicitly uses a `NativeLayout` as source.
 # Deserialization always implicitly uses a `NativeLayout` as target.
 
+concrete_datasize(layout, data) = datasize(layout, typeof(data))
+concrete_datasize(layout, data::Vector{T}) where {T} = length(data) * stride(layout, T) - (stride(layout, T) - datasize(layout, T))
+
 function serialize(data, layout::LayoutStrategy)
   bytes = UInt8[]
+  sizehint!(bytes, concrete_datasize(layout, data))
   serialize!(bytes, data, layout)
   bytes
 end
 
 function serialize!(bytes, data::T, layout::LayoutStrategy) where {T}
-  isprimitivetype(T) && return append!(bytes, reinterpret(UInt8, [data]))
-  current_offset = 0
-  for (i, subt) in enumerate(fieldtypes(T))
+  isprimitivetype(T) && return serialize_primitive!(bytes, data)
+  for i in 1:fieldcount(T)
     # Add padding, if necessary.
-    offset = dataoffset(layout, T, i)
-    if offset != current_offset
-      @assert current_offset < offset
-      Δoffset = offset - current_offset
-      pad!(bytes, Δoffset)
-      current_offset += Δoffset
-    end
+    pad!(bytes, padding(layout, T, i))
     # Recursively serialize fields.
     serialize!(bytes, getfield(data, i), layout)
-    current_offset += datasize(layout, subt)
   end
 end
 
-# function serialize!(bytes, data::T, layout::NoPadding) where {T}
-#   isprimitivetype(T) && return append!(bytes, reinterpret(UInt8, [data]))
-#   for field in fieldnames(T)
-#     serialize!(bytes, getproperty(data, field), layout)
-#   end
-# end
+fast_append!(bytes, x::UInt8) = push!(bytes, x)
+fast_append!(bytes, x::UInt16) = push!(bytes, x % UInt8, x >> 8 % UInt8)
+function fast_append!(bytes, x::UInt32)
+  fast_append!(bytes, x % UInt16)
+  fast_append!(bytes, x >> 16 % UInt16)
+end
+function fast_append!(bytes, x::UInt64)
+  fast_append!(bytes, x % UInt32)
+  fast_append!(bytes, x >> 32 % UInt32)
+end
+function databytes(data::T) where {T}
+  s = sizeof(T)
+  s == 0 && return
+  s == 1 ? reinterpret(UInt8, data) : s == 2 ? reinterpret(UInt16, data) : s == 4 ? reinterpret(UInt32, data) : s == 8 ? reinterpret(UInt64, data) : error("Expected size of 8, 16, 32 or 64")
+end
+
+serialize_primitive!(bytes, data) = fast_append!(bytes, databytes(data))
 
 function pad!(bytes, amount)
-  @assert amount ≥ 0
   for _ in 1:amount
     push!(bytes, 0x00)
   end
@@ -42,14 +48,17 @@ end
 
 serialize!(bytes, data::Vector{UInt8}, ::LayoutStrategy) = append!(bytes, data)
 function serialize!(bytes, data::Vector{T}, layout::LayoutStrategy) where {T}
-  @assert isconcretetype(T)
-  s = stride(layout, T)
-  padding = s - datasize(layout, T)
+  pad = padding(layout, typeof(data))
+  iszero(pad) && isprimitivetype(data) && return append!(bytes, reinterpret(UInt8, data))
   for x in data
     serialize!(bytes, x, layout)
-    pad!(bytes, padding)
+    pad!(bytes, pad)
   end
 end
+
+# VulkanLayout-specific serialization rules.
+# This is mostly to work around the fact that array/vector/matrix types
+# are composite types and we do not support looking into their (only) tuple component.
 function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Mat}
   t = layout[T]::MatrixType
   vectype = eltype_major(t)

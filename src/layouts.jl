@@ -3,6 +3,18 @@ Layout strategy used to compute alignments, offsets and strides.
 """
 @refbroadcast abstract type LayoutStrategy end
 
+function padding(layout, T, i)
+  i == 1 && return 0
+  offset = dataoffset(layout, T, i)
+  last = dataoffset(layout, T, i - 1) + datasize(layout, fieldtype(T, i - 1))
+  offset - last
+end
+
+function padding(layout, ::Type{Vector{T}}) where {T}
+  s = stride(layout, T)
+  s - datasize(layout, T)
+end
+
 """"
 Julia layout, with a special handling of mutable fields for composite types.
 
@@ -21,7 +33,6 @@ function datasize(layout::NativeLayout, T::DataType)
   total_padding = sum(fieldoffset(T, i) - (fieldoffset(T, i - 1) + field_sizeof(fieldtype(T, i - 1))) for i in 2:fieldcount(T); init = 0)
   sum(sizeof, fieldtypes(T); init = 0) + total_padding
 end
-datasize(layout::NativeLayout, V::Type{Vector{T}}) where {T} = length(V) * stride(layout, T) - (stride(layout, T) - datasize(layout, T))
 function dataoffset(layout::NativeLayout, T::DataType, i::Int)
   i == 1 && return fieldoffset(T, 1)
   Tprev = fieldtype(T, i - 1)
@@ -33,12 +44,21 @@ end
 field_sizeof(T::Type) = ismutabletype(T) ? 8 : sizeof(T)
 alignment(::NativeLayout, T::Type) = Base.datatype_alignment(T)
 
+"""
+Layout strategy which assumes no padding is required at all.
+This might be useful for maximally packing data when serialized, reducing size;
+or to improve performance by avoiding padding when not needed, e.g. if you already
+pad your structures manually upfront (only do that if you know what you're doing).
+"""
 struct NoPadding <: LayoutStrategy end
 
-stride(layout::NoPadding, T::Type) = datasize(layout, T)
-datasize(layout::NoPadding, T::Type) = isprimitivetype(T) ? sizeof(T) : sum(ntuple(i -> datasize(layout, fieldtype(T, i)), fieldcount(T)); init = 0)
-dataoffset(layout::NoPadding, T::Type, i::Integer) = sum(datasize(layout, xT) for xT in fieldtypes(T)[1:(i - 1)]; init = 0)
+stride(layout::NoPadding, ::Type{T}) where {T} = datasize(layout, T)
+datasize(layout::NoPadding, ::Type{T}) where {T} = isprimitivetype(T) ? sizeof(T) : sum(ntuple(i -> datasize(layout, fieldtype(T, i)), fieldcount(T)); init = 0)::Int64
+dataoffset(layout::NoPadding, ::Type{T}, i::Integer) where {T} = sum(ntuple(i -> datasize(layout, fieldtype(T, i)), i - 1); init = 0)::Int64
 alignment(::NoPadding, ::Type) = 0
+
+padding(::NoPadding, T, i) = 0
+padding(::NoPadding, ::Type{Vector{T}}) where {T} = 0
 
 struct LayoutInfo
   stride::Int
