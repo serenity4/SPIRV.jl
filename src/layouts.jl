@@ -25,7 +25,7 @@ The alternative would be to completely disallow structs which contain mutable fi
 """
 struct NativeLayout <: LayoutStrategy end
 
-stride(layout::NativeLayout, T::Type) = ismutabletype(T) ? datasize(layout, T) : Base.elsize(Vector{T})
+Base.stride(layout::NativeLayout, T::Type) = ismutabletype(T) ? datasize(layout, T) : Base.elsize(Vector{T})
 function datasize(layout::NativeLayout, T::DataType)
   isbitstype(T) && return sizeof(T)
   isconcretetype(T) || error("A concrete type is required.")
@@ -52,7 +52,7 @@ pad your structures manually upfront (only do that if you know what you're doing
 """
 struct NoPadding <: LayoutStrategy end
 
-stride(layout::NoPadding, ::Type{T}) where {T} = datasize(layout, T)
+Base.stride(layout::NoPadding, ::Type{T}) where {T} = datasize(layout, T)
 datasize(layout::NoPadding, ::Type{T}) where {T} = isprimitivetype(T) ? sizeof(T) : sum(ntuple(i -> datasize(layout, fieldtype(T, i)), fieldcount(T)); init = 0)::Int64
 dataoffset(layout::NoPadding, ::Type{T}, i::Integer) where {T} = sum(ntuple(i -> datasize(layout, fieldtype(T, i)), i - 1); init = 0)::Int64
 alignment(::NoPadding, ::Type) = 0
@@ -73,7 +73,7 @@ struct ExplicitLayout <: LayoutStrategy
   d::IdDict{DataType,LayoutInfo}
 end
 
-stride(layout::ExplicitLayout, T::Type) = layout.d[T].stride
+Base.stride(layout::ExplicitLayout, T::Type) = layout.d[T].stride
 datasize(layout::ExplicitLayout, T::Type) = layout.d[T].datasize
 dataoffset(layout::ExplicitLayout, T::Type, i::Integer) = (layout.d[T].dataoffsets::Vector{Int})[i]
 alignment(layout::ExplicitLayout, T::Type) = layout.d[T].alignment
@@ -154,15 +154,15 @@ storage_classes(layout::VulkanLayout, t::SPIRType) = get!(Set{StorageClass}, lay
 isinterface(layout::VulkanLayout, t::StructType) = in(t, layout.interfaces)
 isinterface(layout::VulkanLayout, ::SPIRType) = false
 
-stride(layout::VulkanLayout, T::Type) = stride(layout, layout[T])
+Base.stride(layout::VulkanLayout, T::Type) = stride(layout, layout[T])
 datasize(layout::VulkanLayout, T::Type) = datasize(layout, layout[T])
 dataoffset(layout::VulkanLayout, T::Type, i::Integer) = dataoffset(layout, layout[T], i)
 alignment(layout::VulkanLayout, T::Type) = alignment(layout, layout[T])
 
-stride(::VulkanLayout, t::ScalarType) = scalar_alignment(t)
-stride(layout::VulkanLayout, t::Union{VectorType, MatrixType}) = t.n * stride(layout, t.eltype)
-stride(layout::VulkanLayout, t::ArrayType) = extract_size(t) * stride(layout, t.eltype)
-function stride(layout::VulkanLayout, t::StructType)
+Base.stride(::VulkanLayout, t::ScalarType) = scalar_alignment(t)
+Base.stride(layout::VulkanLayout, t::Union{VectorType, MatrixType}) = t.n * stride(layout, t.eltype)
+Base.stride(layout::VulkanLayout, t::ArrayType) = extract_size(t) * stride(layout, t.eltype)
+function Base.stride(layout::VulkanLayout, t::StructType)
   req_alignment = alignment(layout, t)
   req_alignment * cld(datasize(layout, t), req_alignment)
 end
@@ -274,7 +274,7 @@ end
 
 Base.getindex(layout::ShaderLayout, T::DataType) = getindex(layout.tmeta, T)
 
-stride(layout::ShaderLayout, T::Type) = stride(layout, layout[T])
+Base.stride(layout::ShaderLayout, T::Type) = stride(layout, layout[T])
 datasize(layout::ShaderLayout, T::Type) = datasize(layout, layout[T])
 dataoffset(layout::ShaderLayout, T::Type, i::Integer) = dataoffset(layout, layout[T], i)
 alignment(layout::ShaderLayout, T::Type) = alignment(layout, layout[T])

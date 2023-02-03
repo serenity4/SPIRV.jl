@@ -16,7 +16,7 @@ function serialize(data::Union{T,Vector{T}}, layout::NativeLayout) where {T}
     arr = isa(data, T) ? [data] : data
     GC.@preserve arr begin
       ptr = pointer(arr)
-      return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), sizeof(T))
+      return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), Base.elsize(Vector{T}) * length(arr))
     end
   end
   @invoke serialize(data, layout::LayoutStrategy)

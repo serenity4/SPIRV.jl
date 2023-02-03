@@ -2,6 +2,7 @@ using SPIRV, Test
 using SPIRV: serialize, deserialize
 
 recursive_equals(x::T, y::T) where {T} = isprimitivetype(T) ? x == y : all(recursive_equals(getproperty(x, name), getproperty(y, name)) for name in fieldnames(T))
+recursive_equals(x::T, y::T) where {T<:Vector} = x == y
 
 function make_row_major(layout::VulkanLayout, T::Type{<:Mat})
   T = Mat{2,5,Float32}
