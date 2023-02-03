@@ -11,7 +11,7 @@ end
 "Reconstruct a pointer from a memory address."
 Pointer{T}(x::UInt) where {T} = convert(Pointer{T}, x)
 Base.convert(::Type{Pointer{T}}, x::UInt) where {T} = ConvertUToPtr(T, x)
-@noinline ConvertUToPtr(T::Type, x) = Pointer{T}(Base.reinterpret(Ptr{T}, x), x)
+@noinline ConvertUToPtr(T::Type, x) = Pointer{T}(Ptr{T}(x), x)
 
 Pointer(ref::Ref{T}) where {T} = Pointer{T}(ref)
 function Pointer{T}(ref::Ref{T}) where {T}

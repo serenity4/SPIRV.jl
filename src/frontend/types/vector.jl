@@ -1,4 +1,11 @@
-mutable struct Vec{N,T<:Scalar} <: AbstractSPIRVArray{T,1}
+abstract type GPUVector{N,T<:Scalar} <: AbstractSPIRVArray{T,1} end
+
+# struct SVec{N,T} <: GPUVector{N,T}
+#   data::NTuple{N,T}
+#   SVec{N,T}(components::T...) where {N,T} = new{N,T}(components...)
+# end
+
+mutable struct Vec{N,T} <: GPUVector{N,T}
   data::NTuple{N,T}
   Vec{N,T}(components::T...) where {N,T} = CompositeConstruct(Vec{N,T}, components...)
 end

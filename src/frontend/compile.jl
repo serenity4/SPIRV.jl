@@ -299,7 +299,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         ex = @ex OpBranchConditional(cond_id, ResultID(node + 1, tr), dest)
         add_expression!(blk, tr, ex, core_ssaval)
         @case ::GlobalRef
-        jtype <: Type || throw_compilation_error("unhandled global reference $(repr(jtype))")
+        jtype <: Type || throw_compilation_error("unhandled global reference of type $(repr(jtype))")
         insert!(tr.globalrefs, core_ssaval, jinst)
         @case _
         if ismutabletype(jtype)
