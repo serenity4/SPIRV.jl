@@ -25,7 +25,7 @@ function serialize(data::Union{T,Array{T}}, layout::NativeLayout) where {T}
       return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), Base.elsize(Array{T}) * n)
     end
   end
-  @invoke serialize(data, layout::LayoutStrategy)
+  Base.@invoke serialize(data, layout::LayoutStrategy)
 end
 
 function serialize!(bytes, data::T, layout::LayoutStrategy) where {T}
