@@ -10,7 +10,7 @@ function padding(layout, T, i)
   offset - last
 end
 
-function padding(layout, ::Type{Vector{T}}) where {T}
+function padding(layout, ::Type{<:Array{T}}) where {T}
   s = stride(layout, T)
   s - datasize(layout, T)
 end

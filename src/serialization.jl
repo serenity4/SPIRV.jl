@@ -2,7 +2,7 @@
 # Deserialization always implicitly uses a `NativeLayout` as target.
 
 concrete_datasize(layout, data) = datasize(layout, typeof(data))
-concrete_datasize(layout, data::Vector{T}) where {T} = length(data) * stride(layout, T) - (stride(layout, T) - datasize(layout, T))
+concrete_datasize(layout, data::Array{T}) where {T} = prod(size(data); init = 1) * stride(layout, T) - (stride(layout, T) - datasize(layout, T))
 
 function serialize(data, layout::LayoutStrategy)
   bytes = UInt8[]
@@ -11,12 +11,18 @@ function serialize(data, layout::LayoutStrategy)
   bytes
 end
 
-function serialize(data::Union{T,Vector{T}}, layout::NativeLayout) where {T}
+function serialize(data::Union{T,Array{T}}, layout::NativeLayout) where {T}
   if isbitstype(T)
-    arr = isa(data, T) ? [data] : data
+    if isa(data, T)
+      arr = [data]
+      n = 1
+    else
+      arr = data
+      n = prod(size(arr); init = 1)
+    end
     GC.@preserve arr begin
       ptr = pointer(arr)
-      return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), Base.elsize(Vector{T}) * length(arr))
+      return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), Base.elsize(Array{T}) * n)
     end
   end
   @invoke serialize(data, layout::LayoutStrategy)
@@ -58,7 +64,7 @@ function pad!(bytes, amount)
 end
 
 serialize!(bytes, data::Vector{UInt8}, ::LayoutStrategy) = append!(bytes, data)
-function serialize!(bytes, data::Vector{T}, layout::LayoutStrategy) where {T}
+function serialize!(bytes, data::Array, layout::LayoutStrategy)
   pad = padding(layout, typeof(data))
   iszero(pad) && isprimitivetype(data) && return append!(bytes, reinterpret(UInt8, data))
   for x in data
@@ -101,15 +107,33 @@ function deserialize(::Type{T}, bytes, from::LayoutStrategy) where {T}
   isstructtype(T) && return deserialize_immutable(T, bytes, from)
   error("Expected one of primitive, mutable or composite type, got $T")
 end
-function deserialize(::Type{Vector{T}}, bytes, from::LayoutStrategy) where {T}
-  res = T[]
+function deserialize(::Type{Vector{T}}, bytes, from::LayoutStrategy, dims = nothing) where {T}
   i = 0
   s = stride(from, T)
   size = datasize(from, T)
-  while i * s + size ≤ length(bytes)
-    elbytes = @view bytes[(1 + i * s):(i * s + size)]
-    push!(res, deserialize(T, elbytes, from))
-    i += 1
+  n = length(bytes) ÷ s
+  !isnothing(dims) && (dims == n || error("The provided vector dimensions differ from the inferred vector size: $dims ≠ $n"))
+  @assert iszero(length(bytes) % s) "Inferred vector size is not an integer"
+  res = Vector{T}(undef, n)
+  for i in 1:n
+    offset = (i - 1) * s
+    elbytes = @view bytes[1 + offset:offset + size]
+    res[i] = deserialize(T, elbytes, from)
+  end
+  res
+end
+deserialize(::Type{<:Matrix}, bytes, from::LayoutStrategy) = error("Matrix dimensions `(nrows, ncols)` must be provided as an extra argument.")
+function deserialize(::Type{Matrix{T}}, bytes, from::LayoutStrategy, (n, m)) where {T}
+  i = 0
+  s = stride(from, T)
+  size = datasize(from, T)
+  res = Matrix{T}(undef, n, m)
+  for j in 1:m
+    for i in 1:n
+      offset = (j - 1) * s * n + (i - 1) * s
+      elbytes = @view bytes[1 + offset:offset + size]
+      res[i, j] = deserialize(T, elbytes, from)
+    end
   end
   res
 end

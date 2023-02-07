@@ -2,7 +2,7 @@ using SPIRV, Test
 using SPIRV: serialize, deserialize
 
 recursive_equals(x::T, y::T) where {T} = isprimitivetype(T) ? x == y : all(recursive_equals(getproperty(x, name), getproperty(y, name)) for name in fieldnames(T))
-recursive_equals(x::T, y::T) where {T<:Vector} = x == y
+recursive_equals(x::T, y::T) where {T<:Array} = x == y
 
 function make_row_major(layout::VulkanLayout, T::Type{<:Mat})
   T = Mat{2,5,Float32}
@@ -27,6 +27,7 @@ end
     Align7(1, Mat4(Vec4(1, 2, 3, 4), Vec4(5, 6, 7, 8), Vec4(9, 10, 11, 12), Vec4(13, 14, 15, 16))),
     Mat{2,3,Float32}(Vec2(1, 2), Vec2(3, 4), Vec2(5, 6)),
     Mat{2,5,Float32}(Vec2(1, 2), Vec2(3, 4), Vec2(5, 6), Vec2(7, 8), Vec2(9, 10)),
+    [1 2; 3 4; 5 6],
   ]
   layouts = [
     NativeLayout(),
@@ -35,9 +36,10 @@ end
   ]
   for layout in layouts
     for data in dataset
+      dims = isa(data, Matrix) ? size(data) : nothing
       bytes = serialize(data, layout)
       @test isa(bytes, Vector{UInt8}) && !isempty(bytes)
-      object = deserialize(typeof(data), bytes, layout)
+      object = isnothing(dims) ? deserialize(typeof(data), bytes, layout) : deserialize(typeof(data), bytes, layout, dims)
       @test recursive_equals(object, data)
     end
   end
