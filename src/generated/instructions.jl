@@ -349,12 +349,25 @@
   OpSubgroupAllKHR                                                        = 4428
   OpSubgroupAnyKHR                                                        = 4429
   OpSubgroupAllEqualKHR                                                   = 4430
+  OpGroupNonUniformRotateKHR                                              = 4431
   OpSubgroupReadInvocationKHR                                             = 4432
   OpTraceRayKHR                                                           = 4445
   OpExecuteCallableKHR                                                    = 4446
   OpConvertUToAccelerationStructureKHR                                    = 4447
   OpIgnoreIntersectionKHR                                                 = 4448
   OpTerminateRayKHR                                                       = 4449
+  OpSDot                                                                  = 4450
+  OpSDotKHR                                                               = 4450
+  OpUDot                                                                  = 4451
+  OpUDotKHR                                                               = 4451
+  OpSUDot                                                                 = 4452
+  OpSUDotKHR                                                              = 4452
+  OpSDotAccSat                                                            = 4453
+  OpSDotAccSatKHR                                                         = 4453
+  OpUDotAccSat                                                            = 4454
+  OpUDotAccSatKHR                                                         = 4454
+  OpSUDotAccSat                                                           = 4455
+  OpSUDotAccSatKHR                                                        = 4455
   OpTypeRayQueryKHR                                                       = 4472
   OpRayQueryInitializeKHR                                                 = 4473
   OpRayQueryTerminateKHR                                                  = 4474
@@ -373,7 +386,42 @@
   OpFragmentMaskFetchAMD                                                  = 5011
   OpFragmentFetchAMD                                                      = 5012
   OpReadClockKHR                                                          = 5056
+  OpHitObjectRecordHitMotionNV                                            = 5249
+  OpHitObjectRecordHitWithIndexMotionNV                                   = 5250
+  OpHitObjectRecordMissMotionNV                                           = 5251
+  OpHitObjectGetWorldToObjectNV                                           = 5252
+  OpHitObjectGetObjectToWorldNV                                           = 5253
+  OpHitObjectGetObjectRayDirectionNV                                      = 5254
+  OpHitObjectGetObjectRayOriginNV                                         = 5255
+  OpHitObjectTraceRayMotionNV                                             = 5256
+  OpHitObjectGetShaderRecordBufferHandleNV                                = 5257
+  OpHitObjectGetShaderBindingTableRecordIndexNV                           = 5258
+  OpHitObjectRecordEmptyNV                                                = 5259
+  OpHitObjectTraceRayNV                                                   = 5260
+  OpHitObjectRecordHitNV                                                  = 5261
+  OpHitObjectRecordHitWithIndexNV                                         = 5262
+  OpHitObjectRecordMissNV                                                 = 5263
+  OpHitObjectExecuteShaderNV                                              = 5264
+  OpHitObjectGetCurrentTimeNV                                             = 5265
+  OpHitObjectGetAttributesNV                                              = 5266
+  OpHitObjectGetHitKindNV                                                 = 5267
+  OpHitObjectGetPrimitiveIndexNV                                          = 5268
+  OpHitObjectGetGeometryIndexNV                                           = 5269
+  OpHitObjectGetInstanceIdNV                                              = 5270
+  OpHitObjectGetInstanceCustomIndexNV                                     = 5271
+  OpHitObjectGetWorldRayDirectionNV                                       = 5272
+  OpHitObjectGetWorldRayOriginNV                                          = 5273
+  OpHitObjectGetRayTMaxNV                                                 = 5274
+  OpHitObjectGetRayTMinNV                                                 = 5275
+  OpHitObjectIsEmptyNV                                                    = 5276
+  OpHitObjectIsHitNV                                                      = 5277
+  OpHitObjectIsMissNV                                                     = 5278
+  OpReorderThreadWithHitObjectNV                                          = 5279
+  OpReorderThreadWithHintNV                                               = 5280
+  OpTypeHitObjectNV                                                       = 5281
   OpImageSampleFootprintNV                                                = 5283
+  OpEmitMeshTasksEXT                                                      = 5294
+  OpSetMeshOutputsEXT                                                     = 5295
   OpGroupNonUniformPartitionNV                                            = 5296
   OpWritePackedPrimitiveIndices4x8NV                                      = 5299
   OpReportIntersectionNV                                                  = 5334
@@ -381,6 +429,8 @@
   OpIgnoreIntersectionNV                                                  = 5335
   OpTerminateRayNV                                                        = 5336
   OpTraceNV                                                               = 5337
+  OpTraceMotionNV                                                         = 5338
+  OpTraceRayMotionNV                                                      = 5339
   OpTypeAccelerationStructureNV                                           = 5341
   OpTypeAccelerationStructureKHR                                          = 5341
   OpExecuteCallableNV                                                     = 5344
@@ -391,8 +441,16 @@
   OpCooperativeMatrixLengthNV                                             = 5362
   OpBeginInvocationInterlockEXT                                           = 5364
   OpEndInvocationInterlockEXT                                             = 5365
+  OpDemoteToHelperInvocation                                              = 5380
   OpDemoteToHelperInvocationEXT                                           = 5380
   OpIsHelperInvocationEXT                                                 = 5381
+  OpConvertUToImageNV                                                     = 5391
+  OpConvertUToSamplerNV                                                   = 5392
+  OpConvertImageToUNV                                                     = 5393
+  OpConvertSamplerToUNV                                                   = 5394
+  OpConvertUToSampledImageNV                                              = 5395
+  OpConvertSampledImageToUNV                                              = 5396
+  OpSamplerImageAddressingModeNV                                          = 5397
   OpSubgroupShuffleINTEL                                                  = 5571
   OpSubgroupShuffleDownINTEL                                              = 5572
   OpSubgroupShuffleUpINTEL                                                = 5573
@@ -417,8 +475,15 @@
   OpUSubSatINTEL                                                          = 5596
   OpIMul32x16INTEL                                                        = 5597
   OpUMul32x16INTEL                                                        = 5598
-  OpFunctionPointerINTEL                                                  = 5600
+  OpConstantFunctionPointerINTEL                                          = 5600
   OpFunctionPointerCallINTEL                                              = 5601
+  OpAsmTargetINTEL                                                        = 5609
+  OpAsmINTEL                                                              = 5610
+  OpAsmCallINTEL                                                          = 5611
+  OpAtomicFMinEXT                                                         = 5614
+  OpAtomicFMaxEXT                                                         = 5615
+  OpAssumeTrueKHR                                                         = 5630
+  OpExpectKHR                                                             = 5631
   OpDecorateString                                                        = 5632
   OpDecorateStringGOOGLE                                                  = 5632
   OpMemberDecorateString                                                  = 5633
@@ -541,7 +606,67 @@
   OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL                     = 5814
   OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL                       = 5815
   OpSubgroupAvcSicGetInterRawSadsINTEL                                    = 5816
+  OpVariableLengthArrayINTEL                                              = 5818
+  OpSaveMemoryINTEL                                                       = 5819
+  OpRestoreMemoryINTEL                                                    = 5820
+  OpArbitraryFloatSinCosPiINTEL                                           = 5840
+  OpArbitraryFloatCastINTEL                                               = 5841
+  OpArbitraryFloatCastFromIntINTEL                                        = 5842
+  OpArbitraryFloatCastToIntINTEL                                          = 5843
+  OpArbitraryFloatAddINTEL                                                = 5846
+  OpArbitraryFloatSubINTEL                                                = 5847
+  OpArbitraryFloatMulINTEL                                                = 5848
+  OpArbitraryFloatDivINTEL                                                = 5849
+  OpArbitraryFloatGTINTEL                                                 = 5850
+  OpArbitraryFloatGEINTEL                                                 = 5851
+  OpArbitraryFloatLTINTEL                                                 = 5852
+  OpArbitraryFloatLEINTEL                                                 = 5853
+  OpArbitraryFloatEQINTEL                                                 = 5854
+  OpArbitraryFloatRecipINTEL                                              = 5855
+  OpArbitraryFloatRSqrtINTEL                                              = 5856
+  OpArbitraryFloatCbrtINTEL                                               = 5857
+  OpArbitraryFloatHypotINTEL                                              = 5858
+  OpArbitraryFloatSqrtINTEL                                               = 5859
+  OpArbitraryFloatLogINTEL                                                = 5860
+  OpArbitraryFloatLog2INTEL                                               = 5861
+  OpArbitraryFloatLog10INTEL                                              = 5862
+  OpArbitraryFloatLog1pINTEL                                              = 5863
+  OpArbitraryFloatExpINTEL                                                = 5864
+  OpArbitraryFloatExp2INTEL                                               = 5865
+  OpArbitraryFloatExp10INTEL                                              = 5866
+  OpArbitraryFloatExpm1INTEL                                              = 5867
+  OpArbitraryFloatSinINTEL                                                = 5868
+  OpArbitraryFloatCosINTEL                                                = 5869
+  OpArbitraryFloatSinCosINTEL                                             = 5870
+  OpArbitraryFloatSinPiINTEL                                              = 5871
+  OpArbitraryFloatCosPiINTEL                                              = 5872
+  OpArbitraryFloatASinINTEL                                               = 5873
+  OpArbitraryFloatASinPiINTEL                                             = 5874
+  OpArbitraryFloatACosINTEL                                               = 5875
+  OpArbitraryFloatACosPiINTEL                                             = 5876
+  OpArbitraryFloatATanINTEL                                               = 5877
+  OpArbitraryFloatATanPiINTEL                                             = 5878
+  OpArbitraryFloatATan2INTEL                                              = 5879
+  OpArbitraryFloatPowINTEL                                                = 5880
+  OpArbitraryFloatPowRINTEL                                               = 5881
+  OpArbitraryFloatPowNINTEL                                               = 5882
   OpLoopControlINTEL                                                      = 5887
+  OpAliasDomainDeclINTEL                                                  = 5911
+  OpAliasScopeDeclINTEL                                                   = 5912
+  OpAliasScopeListDeclINTEL                                               = 5913
+  OpFixedSqrtINTEL                                                        = 5923
+  OpFixedRecipINTEL                                                       = 5924
+  OpFixedRsqrtINTEL                                                       = 5925
+  OpFixedSinINTEL                                                         = 5926
+  OpFixedCosINTEL                                                         = 5927
+  OpFixedSinCosINTEL                                                      = 5928
+  OpFixedSinPiINTEL                                                       = 5929
+  OpFixedCosPiINTEL                                                       = 5930
+  OpFixedSinCosPiINTEL                                                    = 5931
+  OpFixedLogINTEL                                                         = 5932
+  OpFixedExpINTEL                                                         = 5933
+  OpPtrCastToCrossWorkgroupINTEL                                          = 5934
+  OpCrossWorkgroupCastToPtrINTEL                                          = 5938
   OpReadPipeBlockingINTEL                                                 = 5946
   OpWritePipeBlockingINTEL                                                = 5947
   OpFPGARegINTEL                                                          = 5949
@@ -563,20 +688,35 @@
   OpRayQueryGetIntersectionObjectToWorldKHR                               = 6031
   OpRayQueryGetIntersectionWorldToObjectKHR                               = 6032
   OpAtomicFAddEXT                                                         = 6035
+  OpTypeBufferSurfaceINTEL                                                = 6086
+  OpTypeStructContinuedINTEL                                              = 6090
+  OpConstantCompositeContinuedINTEL                                       = 6091
+  OpSpecConstantCompositeContinuedINTEL                                   = 6092
+  OpControlBarrierArriveINTEL                                             = 6142
+  OpControlBarrierWaitINTEL                                               = 6143
+  OpGroupIMulKHR                                                          = 6401
+  OpGroupFMulKHR                                                          = 6402
+  OpGroupBitwiseAndKHR                                                    = 6403
+  OpGroupBitwiseOrKHR                                                     = 6404
+  OpGroupBitwiseXorKHR                                                    = 6405
+  OpGroupLogicalAndKHR                                                    = 6406
+  OpGroupLogicalOrKHR                                                     = 6407
+  OpGroupLogicalXorKHR                                                    = 6408
 end
 
 const instruction_infos = Dict{OpCode,InstructionInfo}(
   OpNop => InstructionInfo("Miscellaneous", [], [], [], v"0.0.0"),
-  OpUndef => InstructionInfo(
-    "Miscellaneous",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpUndef =>
+    InstructionInfo(
+      "Miscellaneous",
+      [
+        OperandInfo(IdResultType, nothing, nothing),
+        OperandInfo(IdResult, nothing, nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpSourceContinued => InstructionInfo(
     "Debug",
     [OperandInfo(LiteralString, "'Continued Source'", nothing)],
@@ -624,16 +764,17 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpString => InstructionInfo(
-    "Debug",
-    [
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(LiteralString, "'String'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpString =>
+    InstructionInfo(
+      "Debug",
+      [
+        OperandInfo(IdResult, nothing, nothing),
+        OperandInfo(LiteralString, "'String'", nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpLine => InstructionInfo(
     "Debug",
     [
@@ -652,16 +793,17 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpExtInstImport => InstructionInfo(
-    "Extension",
-    [
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(LiteralString, "'Name'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpExtInstImport =>
+    InstructionInfo(
+      "Extension",
+      [
+        OperandInfo(IdResult, nothing, nothing),
+        OperandInfo(LiteralString, "'Name'", nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpExtInst => InstructionInfo(
     "Extension",
     [
@@ -675,16 +817,17 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpMemoryModel => InstructionInfo(
-    "Mode-Setting",
-    [
-      OperandInfo(AddressingModel, nothing, nothing),
-      OperandInfo(MemoryModel, nothing, nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpMemoryModel =>
+    InstructionInfo(
+      "Mode-Setting",
+      [
+        OperandInfo(AddressingModel, nothing, nothing),
+        OperandInfo(MemoryModel, nothing, nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpEntryPoint => InstructionInfo(
     "Mode-Setting",
     [
@@ -795,16 +938,17 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpTypeSampledImage => InstructionInfo(
-    "Type-Declaration",
-    [
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdRef, "'Image Type'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpTypeSampledImage =>
+    InstructionInfo(
+      "Type-Declaration",
+      [
+        OperandInfo(IdResult, nothing, nothing),
+        OperandInfo(IdRef, "'Image Type'", nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpTypeArray => InstructionInfo(
     "Type-Declaration",
     [
@@ -916,26 +1060,28 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpConstantTrue => InstructionInfo(
-    "Constant-Creation",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
-  OpConstantFalse => InstructionInfo(
-    "Constant-Creation",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpConstantTrue =>
+    InstructionInfo(
+      "Constant-Creation",
+      [
+        OperandInfo(IdResultType, nothing, nothing),
+        OperandInfo(IdResult, nothing, nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
+  OpConstantFalse =>
+    InstructionInfo(
+      "Constant-Creation",
+      [
+        OperandInfo(IdResultType, nothing, nothing),
+        OperandInfo(IdResult, nothing, nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpConstant => InstructionInfo(
     "Constant-Creation",
     [
@@ -971,36 +1117,39 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpConstantNull => InstructionInfo(
-    "Constant-Creation",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
-  OpSpecConstantTrue => InstructionInfo(
-    "Constant-Creation",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
-  OpSpecConstantFalse => InstructionInfo(
-    "Constant-Creation",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpConstantNull =>
+    InstructionInfo(
+      "Constant-Creation",
+      [
+        OperandInfo(IdResultType, nothing, nothing),
+        OperandInfo(IdResult, nothing, nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
+  OpSpecConstantTrue =>
+    InstructionInfo(
+      "Constant-Creation",
+      [
+        OperandInfo(IdResultType, nothing, nothing),
+        OperandInfo(IdResult, nothing, nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
+  OpSpecConstantFalse =>
+    InstructionInfo(
+      "Constant-Creation",
+      [
+        OperandInfo(IdResultType, nothing, nothing),
+        OperandInfo(IdResult, nothing, nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpSpecConstant => InstructionInfo(
     "Constant-Creation",
     [
@@ -1046,16 +1195,17 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpFunctionParameter => InstructionInfo(
-    "Function",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpFunctionParameter =>
+    InstructionInfo(
+      "Function",
+      [
+        OperandInfo(IdResultType, nothing, nothing),
+        OperandInfo(IdResult, nothing, nothing),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpFunctionEnd => InstructionInfo("Function", [], [], [], v"0.0.0"),
   OpFunctionCall => InstructionInfo(
     "Function",
@@ -1220,16 +1370,14 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpDecorate => InstructionInfo(
-    "Annotation",
-    [
-      OperandInfo(IdRef, "'Target'", nothing),
-      OperandInfo(Decoration, nothing, nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpDecorate =>
+    InstructionInfo(
+      "Annotation",
+      [OperandInfo(IdRef, "'Target'", nothing), OperandInfo(Decoration, nothing, nothing)],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpMemberDecorate => InstructionInfo(
     "Annotation",
     [
@@ -1248,16 +1396,17 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpGroupDecorate => InstructionInfo(
-    "Annotation",
-    [
-      OperandInfo(IdRef, "'Decoration Group'", nothing),
-      OperandInfo(IdRef, "'Targets'", "*"),
-    ],
-    [],
-    [],
-    v"0.0.0",
-  ),
+  OpGroupDecorate =>
+    InstructionInfo(
+      "Annotation",
+      [
+        OperandInfo(IdRef, "'Decoration Group'", nothing),
+        OperandInfo(IdRef, "'Targets'", "*"),
+      ],
+      [],
+      [],
+      v"0.0.0",
+    ),
   OpGroupMemberDecorate => InstructionInfo(
     "Annotation",
     [
@@ -2681,7 +2830,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Offset'", nothing),
       OperandInfo(IdRef, "'Count'", nothing),
     ],
-    [CapabilityShader],
+    [CapabilityShader, CapabilityBitInstructions],
     [],
     v"0.0.0",
   ),
@@ -2694,7 +2843,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Offset'", nothing),
       OperandInfo(IdRef, "'Count'", nothing),
     ],
-    [CapabilityShader],
+    [CapabilityShader, CapabilityBitInstructions],
     [],
     v"0.0.0",
   ),
@@ -2707,7 +2856,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Offset'", nothing),
       OperandInfo(IdRef, "'Count'", nothing),
     ],
-    [CapabilityShader],
+    [CapabilityShader, CapabilityBitInstructions],
     [],
     v"0.0.0",
   ),
@@ -2718,7 +2867,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdResult, nothing, nothing),
       OperandInfo(IdRef, "'Base'", nothing),
     ],
-    [CapabilityShader],
+    [CapabilityShader, CapabilityBitInstructions],
     [],
     v"0.0.0",
   ),
@@ -2832,10 +2981,8 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpEmitVertex =>
-    InstructionInfo("Primitive", [], [CapabilityGeometry], [], v"0.0.0"),
-  OpEndPrimitive =>
-    InstructionInfo("Primitive", [], [CapabilityGeometry], [], v"0.0.0"),
+  OpEmitVertex => InstructionInfo("Primitive", [], [CapabilityGeometry], [], v"0.0.0"),
+  OpEndPrimitive => InstructionInfo("Primitive", [], [CapabilityGeometry], [], v"0.0.0"),
   OpEmitStreamVertex => InstructionInfo(
     "Primitive",
     [OperandInfo(IdRef, "'Stream'", nothing)],
@@ -3675,10 +3822,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
   ),
   OpCreateUserEvent => InstructionInfo(
     "Device-Side_Enqueue",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
+    [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
     [CapabilityDeviceEnqueue],
     [],
     v"0.0.0",
@@ -3714,10 +3858,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
   ),
   OpGetDefaultQueue => InstructionInfo(
     "Device-Side_Enqueue",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
+    [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
     [CapabilityDeviceEnqueue],
     [],
     v"0.0.0",
@@ -4052,10 +4193,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
   ),
   OpDecorateId => InstructionInfo(
     "Annotation",
-    [
-      OperandInfo(IdRef, "'Target'", nothing),
-      OperandInfo(Decoration, nothing, nothing),
-    ],
+    [OperandInfo(IdRef, "'Target'", nothing), OperandInfo(Decoration, nothing, nothing)],
     [],
     ["SPV_GOOGLE_hlsl_functionality1"],
     v"1.2.0",
@@ -4628,7 +4766,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     [CapabilityShader],
     ["SPV_KHR_terminate_invocation"],
-    v"0.0.0",
+    v"1.6.0",
   ),
   OpSubgroupBallotKHR => InstructionInfo(
     "Group",
@@ -4683,6 +4821,20 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     ],
     [CapabilitySubgroupVoteKHR],
     ["SPV_KHR_subgroup_vote"],
+    v"0.0.0",
+  ),
+  OpGroupNonUniformRotateKHR => InstructionInfo(
+    "Group",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(IdRef, "'Value'", nothing),
+      OperandInfo(IdRef, "'Delta'", nothing),
+      OperandInfo(IdRef, "'ClusterSize'", "?"),
+    ],
+    [CapabilityGroupNonUniformRotateKHR],
+    [],
     v"0.0.0",
   ),
   OpSubgroupReadInvocationKHR => InstructionInfo(
@@ -4751,13 +4903,176 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     ["SPV_KHR_ray_tracing"],
     v"0.0.0",
   ),
-  OpTypeRayQueryKHR => InstructionInfo(
-    "Reserved",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilityRayQueryKHR],
-    ["SPV_KHR_ray_query"],
-    v"0.0.0",
+  OpSDot => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProduct],
+    [],
+    v"1.6.0",
   ),
+  OpSDotKHR => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProductKHR],
+    ["SPV_KHR_integer_dot_product"],
+    v"1.6.0",
+  ),
+  OpUDot => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProduct],
+    [],
+    v"1.6.0",
+  ),
+  OpUDotKHR => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProductKHR],
+    ["SPV_KHR_integer_dot_product"],
+    v"1.6.0",
+  ),
+  OpSUDot => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProduct],
+    [],
+    v"1.6.0",
+  ),
+  OpSUDotKHR => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProductKHR],
+    ["SPV_KHR_integer_dot_product"],
+    v"1.6.0",
+  ),
+  OpSDotAccSat => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(IdRef, "'Accumulator'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProduct],
+    [],
+    v"1.6.0",
+  ),
+  OpSDotAccSatKHR => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(IdRef, "'Accumulator'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProductKHR],
+    ["SPV_KHR_integer_dot_product"],
+    v"1.6.0",
+  ),
+  OpUDotAccSat => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(IdRef, "'Accumulator'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProduct],
+    [],
+    v"1.6.0",
+  ),
+  OpUDotAccSatKHR => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(IdRef, "'Accumulator'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProductKHR],
+    ["SPV_KHR_integer_dot_product"],
+    v"1.6.0",
+  ),
+  OpSUDotAccSat => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(IdRef, "'Accumulator'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProduct],
+    [],
+    v"1.6.0",
+  ),
+  OpSUDotAccSatKHR => InstructionInfo(
+    "Arithmetic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Vector 1'", nothing),
+      OperandInfo(IdRef, "'Vector 2'", nothing),
+      OperandInfo(IdRef, "'Accumulator'", nothing),
+      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+    ],
+    [CapabilityDotProductKHR],
+    ["SPV_KHR_integer_dot_product"],
+    v"1.6.0",
+  ),
+  OpTypeRayQueryKHR =>
+    InstructionInfo(
+      "Reserved",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilityRayQueryKHR],
+      ["SPV_KHR_ray_query"],
+      v"0.0.0",
+    ),
   OpRayQueryInitializeKHR => InstructionInfo(
     "Reserved",
     [
@@ -4774,13 +5089,14 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     ["SPV_KHR_ray_query"],
     v"0.0.0",
   ),
-  OpRayQueryTerminateKHR => InstructionInfo(
-    "Reserved",
-    [OperandInfo(IdRef, "'RayQuery'", nothing)],
-    [CapabilityRayQueryKHR],
-    ["SPV_KHR_ray_query"],
-    v"0.0.0",
-  ),
+  OpRayQueryTerminateKHR =>
+    InstructionInfo(
+      "Reserved",
+      [OperandInfo(IdRef, "'RayQuery'", nothing)],
+      [CapabilityRayQueryKHR],
+      ["SPV_KHR_ray_query"],
+      v"0.0.0",
+    ),
   OpRayQueryGenerateIntersectionKHR => InstructionInfo(
     "Reserved",
     [OperandInfo(IdRef, "'RayQuery'", nothing), OperandInfo(IdRef, "'HitT'", nothing)],
@@ -4788,13 +5104,14 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     ["SPV_KHR_ray_query"],
     v"0.0.0",
   ),
-  OpRayQueryConfirmIntersectionKHR => InstructionInfo(
-    "Reserved",
-    [OperandInfo(IdRef, "'RayQuery'", nothing)],
-    [CapabilityRayQueryKHR],
-    ["SPV_KHR_ray_query"],
-    v"0.0.0",
-  ),
+  OpRayQueryConfirmIntersectionKHR =>
+    InstructionInfo(
+      "Reserved",
+      [OperandInfo(IdRef, "'RayQuery'", nothing)],
+      [CapabilityRayQueryKHR],
+      ["SPV_KHR_ray_query"],
+      v"0.0.0",
+    ),
   OpRayQueryProceedKHR => InstructionInfo(
     "Reserved",
     [
@@ -4952,10 +5269,423 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [
       OperandInfo(IdResultType, nothing, nothing),
       OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(IdScope, "'Scope'", nothing),
     ],
     [CapabilityShaderClockKHR],
-    ["SPV_KHR_shader_clock"],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectRecordHitMotionNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'Acceleration Structure'", nothing),
+      OperandInfo(IdRef, "'InstanceId'", nothing),
+      OperandInfo(IdRef, "'PrimitiveId'", nothing),
+      OperandInfo(IdRef, "'GeometryIndex'", nothing),
+      OperandInfo(IdRef, "'Hit Kind'", nothing),
+      OperandInfo(IdRef, "'SBT Record Offset'", nothing),
+      OperandInfo(IdRef, "'SBT Record Stride'", nothing),
+      OperandInfo(IdRef, "'Origin'", nothing),
+      OperandInfo(IdRef, "'TMin'", nothing),
+      OperandInfo(IdRef, "'Direction'", nothing),
+      OperandInfo(IdRef, "'TMax'", nothing),
+      OperandInfo(IdRef, "'Current Time'", nothing),
+      OperandInfo(IdRef, "'HitObject Attributes'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV, CapabilityRayTracingMotionBlurNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectRecordHitWithIndexMotionNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'Acceleration Structure'", nothing),
+      OperandInfo(IdRef, "'InstanceId'", nothing),
+      OperandInfo(IdRef, "'PrimitiveId'", nothing),
+      OperandInfo(IdRef, "'GeometryIndex'", nothing),
+      OperandInfo(IdRef, "'Hit Kind'", nothing),
+      OperandInfo(IdRef, "'SBT Record Index'", nothing),
+      OperandInfo(IdRef, "'Origin'", nothing),
+      OperandInfo(IdRef, "'TMin'", nothing),
+      OperandInfo(IdRef, "'Direction'", nothing),
+      OperandInfo(IdRef, "'TMax'", nothing),
+      OperandInfo(IdRef, "'Current Time'", nothing),
+      OperandInfo(IdRef, "'HitObject Attributes'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV, CapabilityRayTracingMotionBlurNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectRecordMissMotionNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'SBT Index'", nothing),
+      OperandInfo(IdRef, "'Origin'", nothing),
+      OperandInfo(IdRef, "'TMin'", nothing),
+      OperandInfo(IdRef, "'Direction'", nothing),
+      OperandInfo(IdRef, "'TMax'", nothing),
+      OperandInfo(IdRef, "'Current Time'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV, CapabilityRayTracingMotionBlurNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetWorldToObjectNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetObjectToWorldNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetObjectRayDirectionNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetObjectRayOriginNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectTraceRayMotionNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'Acceleration Structure'", nothing),
+      OperandInfo(IdRef, "'RayFlags'", nothing),
+      OperandInfo(IdRef, "'Cullmask'", nothing),
+      OperandInfo(IdRef, "'SBT Record Offset'", nothing),
+      OperandInfo(IdRef, "'SBT Record Stride'", nothing),
+      OperandInfo(IdRef, "'Miss Index'", nothing),
+      OperandInfo(IdRef, "'Origin'", nothing),
+      OperandInfo(IdRef, "'TMin'", nothing),
+      OperandInfo(IdRef, "'Direction'", nothing),
+      OperandInfo(IdRef, "'TMax'", nothing),
+      OperandInfo(IdRef, "'Time'", nothing),
+      OperandInfo(IdRef, "'Payload'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV, CapabilityRayTracingMotionBlurNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetShaderRecordBufferHandleNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetShaderBindingTableRecordIndexNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectRecordEmptyNV =>
+    InstructionInfo(
+      "Reserved",
+      [OperandInfo(IdRef, "'Hit Object'", nothing)],
+      [CapabilityShaderInvocationReorderNV],
+      [],
+      v"0.0.0",
+    ),
+  OpHitObjectTraceRayNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'Acceleration Structure'", nothing),
+      OperandInfo(IdRef, "'RayFlags'", nothing),
+      OperandInfo(IdRef, "'Cullmask'", nothing),
+      OperandInfo(IdRef, "'SBT Record Offset'", nothing),
+      OperandInfo(IdRef, "'SBT Record Stride'", nothing),
+      OperandInfo(IdRef, "'Miss Index'", nothing),
+      OperandInfo(IdRef, "'Origin'", nothing),
+      OperandInfo(IdRef, "'TMin'", nothing),
+      OperandInfo(IdRef, "'Direction'", nothing),
+      OperandInfo(IdRef, "'TMax'", nothing),
+      OperandInfo(IdRef, "'Payload'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectRecordHitNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'Acceleration Structure'", nothing),
+      OperandInfo(IdRef, "'InstanceId'", nothing),
+      OperandInfo(IdRef, "'PrimitiveId'", nothing),
+      OperandInfo(IdRef, "'GeometryIndex'", nothing),
+      OperandInfo(IdRef, "'Hit Kind'", nothing),
+      OperandInfo(IdRef, "'SBT Record Offset'", nothing),
+      OperandInfo(IdRef, "'SBT Record Stride'", nothing),
+      OperandInfo(IdRef, "'Origin'", nothing),
+      OperandInfo(IdRef, "'TMin'", nothing),
+      OperandInfo(IdRef, "'Direction'", nothing),
+      OperandInfo(IdRef, "'TMax'", nothing),
+      OperandInfo(IdRef, "'HitObject Attributes'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectRecordHitWithIndexNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'Acceleration Structure'", nothing),
+      OperandInfo(IdRef, "'InstanceId'", nothing),
+      OperandInfo(IdRef, "'PrimitiveId'", nothing),
+      OperandInfo(IdRef, "'GeometryIndex'", nothing),
+      OperandInfo(IdRef, "'Hit Kind'", nothing),
+      OperandInfo(IdRef, "'SBT Record Index'", nothing),
+      OperandInfo(IdRef, "'Origin'", nothing),
+      OperandInfo(IdRef, "'TMin'", nothing),
+      OperandInfo(IdRef, "'Direction'", nothing),
+      OperandInfo(IdRef, "'TMax'", nothing),
+      OperandInfo(IdRef, "'HitObject Attributes'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectRecordMissNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'SBT Index'", nothing),
+      OperandInfo(IdRef, "'Origin'", nothing),
+      OperandInfo(IdRef, "'TMin'", nothing),
+      OperandInfo(IdRef, "'Direction'", nothing),
+      OperandInfo(IdRef, "'TMax'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectExecuteShaderNV => InstructionInfo(
+    "Reserved",
+    [OperandInfo(IdRef, "'Hit Object'", nothing), OperandInfo(IdRef, "'Payload'", nothing)],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetCurrentTimeNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetAttributesNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'Hit Object Attribute'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetHitKindNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetPrimitiveIndexNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetGeometryIndexNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetInstanceIdNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetInstanceCustomIndexNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetWorldRayDirectionNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetWorldRayOriginNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetRayTMaxNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectGetRayTMinNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectIsEmptyNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectIsHitNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpHitObjectIsMissNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpReorderThreadWithHitObjectNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Hit Object'", nothing),
+      OperandInfo(IdRef, "'Hint'", "?"),
+      OperandInfo(IdRef, "'Bits'", "?"),
+    ],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpReorderThreadWithHintNV => InstructionInfo(
+    "Reserved",
+    [OperandInfo(IdRef, "'Hint'", nothing), OperandInfo(IdRef, "'Bits'", nothing)],
+    [CapabilityShaderInvocationReorderNV],
+    [],
+    v"0.0.0",
+  ),
+  OpTypeHitObjectNV => InstructionInfo(
+    "Reserved",
+    [OperandInfo(IdResult, nothing, nothing)],
+    [CapabilityShaderInvocationReorderNV],
+    [],
     v"0.0.0",
   ),
   OpImageSampleFootprintNV => InstructionInfo(
@@ -4971,6 +5701,28 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     ],
     [CapabilityImageFootprintNV],
     ["SPV_NV_shader_image_footprint"],
+    v"0.0.0",
+  ),
+  OpEmitMeshTasksEXT => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Group Count X'", nothing),
+      OperandInfo(IdRef, "'Group Count Y'", nothing),
+      OperandInfo(IdRef, "'Group Count Z'", nothing),
+      OperandInfo(IdRef, "'Payload'", "?"),
+    ],
+    [CapabilityMeshShadingEXT],
+    [],
+    v"0.0.0",
+  ),
+  OpSetMeshOutputsEXT => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Vertex Count'", nothing),
+      OperandInfo(IdRef, "'Primitive Count'", nothing),
+    ],
+    [CapabilityMeshShadingEXT],
+    [],
     v"0.0.0",
   ),
   OpGroupNonUniformPartitionNV => InstructionInfo(
@@ -5049,6 +5801,46 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     ],
     [CapabilityRayTracingNV],
     ["SPV_NV_ray_tracing"],
+    v"0.0.0",
+  ),
+  OpTraceMotionNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Accel'", nothing),
+      OperandInfo(IdRef, "'Ray Flags'", nothing),
+      OperandInfo(IdRef, "'Cull Mask'", nothing),
+      OperandInfo(IdRef, "'SBT Offset'", nothing),
+      OperandInfo(IdRef, "'SBT Stride'", nothing),
+      OperandInfo(IdRef, "'Miss Index'", nothing),
+      OperandInfo(IdRef, "'Ray Origin'", nothing),
+      OperandInfo(IdRef, "'Ray Tmin'", nothing),
+      OperandInfo(IdRef, "'Ray Direction'", nothing),
+      OperandInfo(IdRef, "'Ray Tmax'", nothing),
+      OperandInfo(IdRef, "'Time'", nothing),
+      OperandInfo(IdRef, "'PayloadId'", nothing),
+    ],
+    [CapabilityRayTracingMotionBlurNV],
+    ["SPV_NV_ray_tracing_motion_blur"],
+    v"0.0.0",
+  ),
+  OpTraceRayMotionNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdRef, "'Accel'", nothing),
+      OperandInfo(IdRef, "'Ray Flags'", nothing),
+      OperandInfo(IdRef, "'Cull Mask'", nothing),
+      OperandInfo(IdRef, "'SBT Offset'", nothing),
+      OperandInfo(IdRef, "'SBT Stride'", nothing),
+      OperandInfo(IdRef, "'Miss Index'", nothing),
+      OperandInfo(IdRef, "'Ray Origin'", nothing),
+      OperandInfo(IdRef, "'Ray Tmin'", nothing),
+      OperandInfo(IdRef, "'Ray Direction'", nothing),
+      OperandInfo(IdRef, "'Ray Tmax'", nothing),
+      OperandInfo(IdRef, "'Time'", nothing),
+      OperandInfo(IdRef, "'Payload'", nothing),
+    ],
+    [CapabilityRayTracingMotionBlurNV],
+    ["SPV_NV_ray_tracing_motion_blur"],
     v"0.0.0",
   ),
   OpTypeAccelerationStructureNV => InstructionInfo(
@@ -5161,23 +5953,101 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     ["SPV_EXT_fragment_shader_interlock"],
     v"0.0.0",
   ),
-  OpDemoteToHelperInvocationEXT => InstructionInfo(
-    "Reserved",
+  OpDemoteToHelperInvocation => InstructionInfo(
+    "Control-Flow",
     [],
+    [CapabilityDemoteToHelperInvocation],
+    [],
+    v"1.6.0",
+  ),
+  OpDemoteToHelperInvocationEXT => InstructionInfo(
+    "Control-Flow",
+    [],
+    [CapabilityDemoteToHelperInvocationEXT],
+    [],
+    v"1.6.0",
+  ),
+  OpIsHelperInvocationEXT => InstructionInfo(
+    "Reserved",
+    [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
     [CapabilityDemoteToHelperInvocationEXT],
     ["SPV_EXT_demote_to_helper_invocation"],
     v"0.0.0",
   ),
-  OpIsHelperInvocationEXT => InstructionInfo(
+  OpConvertUToImageNV => InstructionInfo(
     "Reserved",
     [
       OperandInfo(IdResultType, nothing, nothing),
       OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Operand'", nothing),
     ],
-    [CapabilityDemoteToHelperInvocationEXT],
-    ["SPV_EXT_demote_to_helper_invocation"],
+    [CapabilityBindlessTextureNV],
+    [],
     v"0.0.0",
   ),
+  OpConvertUToSamplerNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Operand'", nothing),
+    ],
+    [CapabilityBindlessTextureNV],
+    [],
+    v"0.0.0",
+  ),
+  OpConvertImageToUNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Operand'", nothing),
+    ],
+    [CapabilityBindlessTextureNV],
+    [],
+    v"0.0.0",
+  ),
+  OpConvertSamplerToUNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Operand'", nothing),
+    ],
+    [CapabilityBindlessTextureNV],
+    [],
+    v"0.0.0",
+  ),
+  OpConvertUToSampledImageNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Operand'", nothing),
+    ],
+    [CapabilityBindlessTextureNV],
+    [],
+    v"0.0.0",
+  ),
+  OpConvertSampledImageToUNV => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Operand'", nothing),
+    ],
+    [CapabilityBindlessTextureNV],
+    [],
+    v"0.0.0",
+  ),
+  OpSamplerImageAddressingModeNV =>
+    InstructionInfo(
+      "Reserved",
+      [OperandInfo(LiteralInteger, "'Bit Width'", nothing)],
+      [CapabilityBindlessTextureNV],
+      [],
+      v"0.0.0",
+    ),
   OpSubgroupShuffleINTEL => InstructionInfo(
     "Group",
     [
@@ -5462,7 +6332,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
-  OpFunctionPointerINTEL => InstructionInfo(
+  OpConstantFunctionPointerINTEL => InstructionInfo(
     "@exclude",
     [
       OperandInfo(IdResultType, nothing, nothing),
@@ -5484,22 +6354,108 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     ["SPV_INTEL_function_pointers"],
     v"0.0.0",
   ),
+  OpAsmTargetINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(LiteralString, "'Asm target'", nothing),
+    ],
+    [CapabilityAsmINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpAsmINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Asm type'", nothing),
+      OperandInfo(IdRef, "'Target'", nothing),
+      OperandInfo(LiteralString, "'Asm instructions'", nothing),
+      OperandInfo(LiteralString, "'Constraints'", nothing),
+    ],
+    [CapabilityAsmINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpAsmCallINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Asm'", nothing),
+      OperandInfo(IdRef, "'Argument 0'", "*"),
+    ],
+    [CapabilityAsmINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpAtomicFMinEXT => InstructionInfo(
+    "Atomic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Pointer'", nothing),
+      OperandInfo(IdScope, "'Memory'", nothing),
+      OperandInfo(IdMemorySemantics, "'Semantics'", nothing),
+      OperandInfo(IdRef, "'Value'", nothing),
+    ],
+    [
+      CapabilityAtomicFloat16MinMaxEXT,
+      CapabilityAtomicFloat32MinMaxEXT,
+      CapabilityAtomicFloat64MinMaxEXT,
+    ],
+    [],
+    v"0.0.0",
+  ),
+  OpAtomicFMaxEXT => InstructionInfo(
+    "Atomic",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Pointer'", nothing),
+      OperandInfo(IdScope, "'Memory'", nothing),
+      OperandInfo(IdMemorySemantics, "'Semantics'", nothing),
+      OperandInfo(IdRef, "'Value'", nothing),
+    ],
+    [
+      CapabilityAtomicFloat16MinMaxEXT,
+      CapabilityAtomicFloat32MinMaxEXT,
+      CapabilityAtomicFloat64MinMaxEXT,
+    ],
+    [],
+    v"0.0.0",
+  ),
+  OpAssumeTrueKHR => InstructionInfo(
+    "Miscellaneous",
+    [OperandInfo(IdRef, "'Condition'", nothing)],
+    [CapabilityExpectAssumeKHR],
+    ["SPV_KHR_expect_assume"],
+    v"0.0.0",
+  ),
+  OpExpectKHR => InstructionInfo(
+    "Miscellaneous",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Value'", nothing),
+      OperandInfo(IdRef, "'ExpectedValue'", nothing),
+    ],
+    [CapabilityExpectAssumeKHR],
+    ["SPV_KHR_expect_assume"],
+    v"0.0.0",
+  ),
   OpDecorateString => InstructionInfo(
     "Annotation",
-    [
-      OperandInfo(IdRef, "'Target'", nothing),
-      OperandInfo(Decoration, nothing, nothing),
-    ],
+    [OperandInfo(IdRef, "'Target'", nothing), OperandInfo(Decoration, nothing, nothing)],
     [],
     ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"],
     v"1.4.0",
   ),
   OpDecorateStringGOOGLE => InstructionInfo(
     "Annotation",
-    [
-      OperandInfo(IdRef, "'Target'", nothing),
-      OperandInfo(Decoration, nothing, nothing),
-    ],
+    [OperandInfo(IdRef, "'Target'", nothing), OperandInfo(Decoration, nothing, nothing)],
     [],
     ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"],
     v"1.4.0",
@@ -5540,98 +6496,107 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
   ),
   OpTypeVmeImageINTEL => InstructionInfo(
     "@exclude",
-    [
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdRef, "'Image Type'", nothing),
-    ],
+    [OperandInfo(IdResult, nothing, nothing), OperandInfo(IdRef, "'Image Type'", nothing)],
     [CapabilitySubgroupAvcMotionEstimationINTEL],
     [],
     v"0.0.0",
   ),
-  OpTypeAvcImePayloadINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcRefPayloadINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcSicPayloadINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcMcePayloadINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcMceResultINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcImeResultINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcImeResultSingleReferenceStreamoutINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcImeResultDualReferenceStreamoutINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcImeSingleReferenceStreaminINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcImeDualReferenceStreaminINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcRefResultINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
-  OpTypeAvcSicResultINTEL => InstructionInfo(
-    "@exclude",
-    [OperandInfo(IdResult, nothing, nothing)],
-    [CapabilitySubgroupAvcMotionEstimationINTEL],
-    [],
-    v"0.0.0",
-  ),
+  OpTypeAvcImePayloadINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcRefPayloadINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcSicPayloadINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcMcePayloadINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcMceResultINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcImeResultINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcImeResultSingleReferenceStreamoutINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcImeResultDualReferenceStreamoutINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcImeSingleReferenceStreaminINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcImeDualReferenceStreaminINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcRefResultINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpTypeAvcSicResultINTEL =>
+    InstructionInfo(
+      "@exclude",
+      [OperandInfo(IdResult, nothing, nothing)],
+      [CapabilitySubgroupAvcMotionEstimationINTEL],
+      [],
+      v"0.0.0",
+    ),
   OpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL => InstructionInfo(
     "@exclude",
     [
@@ -5733,30 +6698,21 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
   ),
   OpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL => InstructionInfo(
     "@exclude",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
+    [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
     [CapabilitySubgroupAvcMotionEstimationINTEL],
     [],
     v"0.0.0",
   ),
   OpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL => InstructionInfo(
     "@exclude",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
+    [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
     [CapabilitySubgroupAvcMotionEstimationINTEL],
     [],
     v"0.0.0",
   ),
   OpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL => InstructionInfo(
     "@exclude",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
+    [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
     [CapabilitySubgroupAvcMotionEstimationINTEL],
     [],
     v"0.0.0",
@@ -5792,10 +6748,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
   ),
   OpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL => InstructionInfo(
     "@exclude",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
+    [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
     [
       CapabilitySubgroupAvcMotionEstimationINTEL,
       CapabilitySubgroupAvcMotionEstimationIntraINTEL,
@@ -5805,10 +6758,7 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
   ),
   OpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL => InstructionInfo(
     "@exclude",
-    [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-    ],
+    [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
     [
       CapabilitySubgroupAvcMotionEstimationINTEL,
       CapabilitySubgroupAvcMotionEstimationChromaINTEL,
@@ -6375,20 +7325,19 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       [],
       v"0.0.0",
     ),
-  OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL =>
-    InstructionInfo(
-      "@exclude",
-      [
-        OperandInfo(IdResultType, nothing, nothing),
-        OperandInfo(IdResult, nothing, nothing),
-        OperandInfo(IdRef, "'Payload'", nothing),
-        OperandInfo(IdRef, "'Major Shape'", nothing),
-        OperandInfo(IdRef, "'Direction'", nothing),
-      ],
-      [CapabilitySubgroupAvcMotionEstimationINTEL],
-      [],
-      v"0.0.0",
-    ),
+  OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Payload'", nothing),
+      OperandInfo(IdRef, "'Major Shape'", nothing),
+      OperandInfo(IdRef, "'Direction'", nothing),
+    ],
+    [CapabilitySubgroupAvcMotionEstimationINTEL],
+    [],
+    v"0.0.0",
+  ),
   OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL =>
     InstructionInfo(
       "@exclude",
@@ -6952,11 +7901,936 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     [],
     v"0.0.0",
   ),
+  OpVariableLengthArrayINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Lenght'", nothing),
+    ],
+    [CapabilityVariableLengthArrayINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpSaveMemoryINTEL => InstructionInfo(
+    "@exclude",
+    [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
+    [CapabilityVariableLengthArrayINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpRestoreMemoryINTEL => InstructionInfo(
+    "@exclude",
+    [OperandInfo(IdRef, "'Ptr'", nothing)],
+    [CapabilityVariableLengthArrayINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatSinCosPiINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'FromSign'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatCastINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatCastFromIntINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'FromSign'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatCastToIntINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatAddINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatSubINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatMulINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatDivINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatGTINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatGEINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatLTINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatLEINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatEQINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatRecipINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatRSqrtINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatCbrtINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatHypotINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatSqrtINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatLogINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatLog2INTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatLog10INTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatLog1pINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatExpINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatExp2INTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatExp10INTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatExpm1INTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatSinINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatCosINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatSinCosINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatSinPiINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatCosPiINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatASinINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatASinPiINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatACosINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatACosPiINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatATanINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatATanPiINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatATan2INTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatPowINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatPowRINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'M2'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpArbitraryFloatPowNINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'A'", nothing),
+      OperandInfo(LiteralInteger, "'M1'", nothing),
+      OperandInfo(IdRef, "'B'", nothing),
+      OperandInfo(LiteralInteger, "'Mout'", nothing),
+      OperandInfo(LiteralInteger, "'EnableSubnormals'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingMode'", nothing),
+      OperandInfo(LiteralInteger, "'RoundingAccuracy'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFloatingPointINTEL],
+    [],
+    v"0.0.0",
+  ),
   OpLoopControlINTEL => InstructionInfo(
     "Reserved",
     [OperandInfo(LiteralInteger, "'Loop Control Parameters'", "*")],
     [CapabilityUnstructuredLoopControlsINTEL],
     ["SPV_INTEL_unstructured_loop_controls"],
+    v"0.0.0",
+  ),
+  OpAliasDomainDeclINTEL => InstructionInfo(
+    "@exclude",
+    [OperandInfo(IdResult, nothing, nothing), OperandInfo(IdRef, "'Name'", "?")],
+    [CapabilityMemoryAccessAliasingINTEL],
+    ["SPV_INTEL_memory_access_aliasing"],
+    v"0.0.0",
+  ),
+  OpAliasScopeDeclINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Alias Domain'", nothing),
+      OperandInfo(IdRef, "'Name'", "?"),
+    ],
+    [CapabilityMemoryAccessAliasingINTEL],
+    ["SPV_INTEL_memory_access_aliasing"],
+    v"0.0.0",
+  ),
+  OpAliasScopeListDeclINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'AliasScope1, AliasScope2, ...'", "*"),
+    ],
+    [CapabilityMemoryAccessAliasingINTEL],
+    ["SPV_INTEL_memory_access_aliasing"],
+    v"0.0.0",
+  ),
+  OpFixedSqrtINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedRecipINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedRsqrtINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedSinINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedCosINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedSinCosINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedSinPiINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedCosPiINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedSinCosPiINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedLogINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpFixedExpINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Input Type'", nothing),
+      OperandInfo(IdRef, "'Input'", nothing),
+      OperandInfo(LiteralInteger, "'S'", nothing),
+      OperandInfo(LiteralInteger, "'I'", nothing),
+      OperandInfo(LiteralInteger, "'rI'", nothing),
+      OperandInfo(LiteralInteger, "'Q'", nothing),
+      OperandInfo(LiteralInteger, "'O'", nothing),
+    ],
+    [CapabilityArbitraryPrecisionFixedPointINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpPtrCastToCrossWorkgroupINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Pointer'", nothing),
+    ],
+    [CapabilityUSMStorageClassesINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpCrossWorkgroupCastToPtrINTEL => InstructionInfo(
+    "@exclude",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Pointer'", nothing),
+    ],
+    [CapabilityUSMStorageClassesINTEL],
+    [],
     v"0.0.0",
   ),
   OpReadPipeBlockingINTEL => InstructionInfo(
@@ -7053,19 +8927,18 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
     ["SPV_KHR_ray_query"],
     v"0.0.0",
   ),
-  OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR =>
-    InstructionInfo(
-      "Reserved",
-      [
-        OperandInfo(IdResultType, nothing, nothing),
-        OperandInfo(IdResult, nothing, nothing),
-        OperandInfo(IdRef, "'RayQuery'", nothing),
-        OperandInfo(IdRef, "'Intersection'", nothing),
-      ],
-      [CapabilityRayQueryKHR],
-      ["SPV_KHR_ray_query"],
-      v"0.0.0",
-    ),
+  OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR => InstructionInfo(
+    "Reserved",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'RayQuery'", nothing),
+      OperandInfo(IdRef, "'Intersection'", nothing),
+    ],
+    [CapabilityRayQueryKHR],
+    ["SPV_KHR_ray_query"],
+    v"0.0.0",
+  ),
   OpRayQueryGetIntersectionGeometryIndexKHR => InstructionInfo(
     "Reserved",
     [
@@ -7205,8 +9078,171 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdMemorySemantics, "'Semantics'", nothing),
       OperandInfo(IdRef, "'Value'", nothing),
     ],
-    [CapabilityAtomicFloat32AddEXT, CapabilityAtomicFloat64AddEXT],
+    [
+      CapabilityAtomicFloat16AddEXT,
+      CapabilityAtomicFloat32AddEXT,
+      CapabilityAtomicFloat64AddEXT,
+    ],
     ["SPV_EXT_shader_atomic_float_add"],
+    v"0.0.0",
+  ),
+  OpTypeBufferSurfaceINTEL => InstructionInfo(
+    "Type-Declaration",
+    [
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(AccessQualifier, "'AccessQualifier'", nothing),
+    ],
+    [CapabilityVectorComputeINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpTypeStructContinuedINTEL => InstructionInfo(
+    "Type-Declaration",
+    [OperandInfo(IdRef, "'Member 0 type', +\n'member 1 type', +\n...", "*")],
+    [CapabilityLongConstantCompositeINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpConstantCompositeContinuedINTEL =>
+    InstructionInfo(
+      "Constant-Creation",
+      [OperandInfo(IdRef, "'Constituents'", "*")],
+      [CapabilityLongConstantCompositeINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpSpecConstantCompositeContinuedINTEL =>
+    InstructionInfo(
+      "Constant-Creation",
+      [OperandInfo(IdRef, "'Constituents'", "*")],
+      [CapabilityLongConstantCompositeINTEL],
+      [],
+      v"0.0.0",
+    ),
+  OpControlBarrierArriveINTEL => InstructionInfo(
+    "Barrier",
+    [
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(IdScope, "'Memory'", nothing),
+      OperandInfo(IdMemorySemantics, "'Semantics'", nothing),
+    ],
+    [CapabilitySplitBarrierINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpControlBarrierWaitINTEL => InstructionInfo(
+    "Barrier",
+    [
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(IdScope, "'Memory'", nothing),
+      OperandInfo(IdMemorySemantics, "'Semantics'", nothing),
+    ],
+    [CapabilitySplitBarrierINTEL],
+    [],
+    v"0.0.0",
+  ),
+  OpGroupIMulKHR => InstructionInfo(
+    "Group",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(GroupOperation, "'Operation'", nothing),
+      OperandInfo(IdRef, "'X'", nothing),
+    ],
+    [CapabilityGroupUniformArithmeticKHR],
+    [],
+    v"0.0.0",
+  ),
+  OpGroupFMulKHR => InstructionInfo(
+    "Group",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(GroupOperation, "'Operation'", nothing),
+      OperandInfo(IdRef, "'X'", nothing),
+    ],
+    [CapabilityGroupUniformArithmeticKHR],
+    [],
+    v"0.0.0",
+  ),
+  OpGroupBitwiseAndKHR => InstructionInfo(
+    "Group",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(GroupOperation, "'Operation'", nothing),
+      OperandInfo(IdRef, "'X'", nothing),
+    ],
+    [CapabilityGroupUniformArithmeticKHR],
+    [],
+    v"0.0.0",
+  ),
+  OpGroupBitwiseOrKHR => InstructionInfo(
+    "Group",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(GroupOperation, "'Operation'", nothing),
+      OperandInfo(IdRef, "'X'", nothing),
+    ],
+    [CapabilityGroupUniformArithmeticKHR],
+    [],
+    v"0.0.0",
+  ),
+  OpGroupBitwiseXorKHR => InstructionInfo(
+    "Group",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(GroupOperation, "'Operation'", nothing),
+      OperandInfo(IdRef, "'X'", nothing),
+    ],
+    [CapabilityGroupUniformArithmeticKHR],
+    [],
+    v"0.0.0",
+  ),
+  OpGroupLogicalAndKHR => InstructionInfo(
+    "Group",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(GroupOperation, "'Operation'", nothing),
+      OperandInfo(IdRef, "'X'", nothing),
+    ],
+    [CapabilityGroupUniformArithmeticKHR],
+    [],
+    v"0.0.0",
+  ),
+  OpGroupLogicalOrKHR => InstructionInfo(
+    "Group",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(GroupOperation, "'Operation'", nothing),
+      OperandInfo(IdRef, "'X'", nothing),
+    ],
+    [CapabilityGroupUniformArithmeticKHR],
+    [],
+    v"0.0.0",
+  ),
+  OpGroupLogicalXorKHR => InstructionInfo(
+    "Group",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdScope, "'Execution'", nothing),
+      OperandInfo(GroupOperation, "'Operation'", nothing),
+      OperandInfo(IdRef, "'X'", nothing),
+    ],
+    [CapabilityGroupUniformArithmeticKHR],
+    [],
     v"0.0.0",
   ),
 )
@@ -7264,6 +9300,10 @@ const kind_to_category = Dict(
   ImageChannelOrder                 => "ValueEnum",
   ImageChannelDataType              => "ValueEnum",
   FPRoundingMode                    => "ValueEnum",
+  FPDenormMode                      => "ValueEnum",
+  QuantizationModes                 => "ValueEnum",
+  FPOperationMode                   => "ValueEnum",
+  OverflowModes                     => "ValueEnum",
   LinkageType                       => "ValueEnum",
   AccessQualifier                   => "ValueEnum",
   FunctionParameterAttribute        => "ValueEnum",
@@ -7276,6 +9316,7 @@ const kind_to_category = Dict(
   RayQueryIntersection              => "ValueEnum",
   RayQueryCommittedIntersectionType => "ValueEnum",
   RayQueryCandidateIntersectionType => "ValueEnum",
+  PackedVectorFormat                => "ValueEnum",
   IdResultType                      => "Id",
   IdResult                          => "Id",
   IdMemorySemantics                 => "Id",

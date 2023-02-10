@@ -39,6 +39,7 @@ function align_block(file; delim = r"=", block_begin = r"@c?enum", block_end = r
     print(io, (join(final_lines, '\n')))
   end
 
+  # Note: some of these options are overwritten by the SPIRV/.JuliaFormatter
   format_file(file, margin = 92, align_pair_arrow = true, align_assignment = true, align_struct_field = true, align_conditional = true)
 end
 

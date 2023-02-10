@@ -1,136 +1,149 @@
 @bitmask ImageOperands::UInt32 begin
-  ImageOperandsNone                  = 0x00000000
-  ImageOperandsBias                  = 0x00000001
-  ImageOperandsLod                   = 0x00000002
-  ImageOperandsGrad                  = 0x00000004
-  ImageOperandsConstOffset           = 0x00000008
-  ImageOperandsOffset                = 0x00000010
-  ImageOperandsConstOffsets          = 0x00000020
-  ImageOperandsSample                = 0x00000040
-  ImageOperandsMinLod                = 0x00000080
-  ImageOperandsMakeTexelAvailable    = 0x00000100
+  ImageOperandsNone = 0x00000000
+  ImageOperandsBias = 0x00000001
+  ImageOperandsLod = 0x00000002
+  ImageOperandsGrad = 0x00000004
+  ImageOperandsConstOffset = 0x00000008
+  ImageOperandsOffset = 0x00000010
+  ImageOperandsConstOffsets = 0x00000020
+  ImageOperandsSample = 0x00000040
+  ImageOperandsMinLod = 0x00000080
+  ImageOperandsMakeTexelAvailable = 0x00000100
   ImageOperandsMakeTexelAvailableKHR = 0x00000100
-  ImageOperandsMakeTexelVisible      = 0x00000200
-  ImageOperandsMakeTexelVisibleKHR   = 0x00000200
-  ImageOperandsNonPrivateTexel       = 0x00000400
-  ImageOperandsNonPrivateTexelKHR    = 0x00000400
-  ImageOperandsVolatileTexel         = 0x00000800
-  ImageOperandsVolatileTexelKHR      = 0x00000800
-  ImageOperandsSignExtend            = 0x00001000
-  ImageOperandsZeroExtend            = 0x00002000
+  ImageOperandsMakeTexelVisible = 0x00000200
+  ImageOperandsMakeTexelVisibleKHR = 0x00000200
+  ImageOperandsNonPrivateTexel = 0x00000400
+  ImageOperandsNonPrivateTexelKHR = 0x00000400
+  ImageOperandsVolatileTexel = 0x00000800
+  ImageOperandsVolatileTexelKHR = 0x00000800
+  ImageOperandsSignExtend = 0x00001000
+  ImageOperandsZeroExtend = 0x00002000
+  ImageOperandsNontemporal = 0x00004000
+  ImageOperandsOffsets = 0x00010000
 end
 
 @bitmask FPFastMathMode::UInt32 begin
-  FPFastMathModeNone       = 0x00000000
-  FPFastMathModeNotNaN     = 0x00000001
-  FPFastMathModeNotInf     = 0x00000002
-  FPFastMathModeNSZ        = 0x00000004
+  FPFastMathModeNone = 0x00000000
+  FPFastMathModeNotNaN = 0x00000001
+  FPFastMathModeNotInf = 0x00000002
+  FPFastMathModeNSZ = 0x00000004
   FPFastMathModeAllowRecip = 0x00000008
-  FPFastMathModeFast       = 0x00000010
+  FPFastMathModeFast = 0x00000010
+  FPFastMathModeAllowContractFastINTEL = 0x00010000
+  FPFastMathModeAllowReassocINTEL = 0x00020000
 end
 
 @bitmask SelectionControl::UInt32 begin
-  SelectionControlNone        = 0x00000000
-  SelectionControlFlatten     = 0x00000001
+  SelectionControlNone = 0x00000000
+  SelectionControlFlatten = 0x00000001
   SelectionControlDontFlatten = 0x00000002
 end
 
 @bitmask LoopControl::UInt32 begin
-  LoopControlNone                      = 0x00000000
-  LoopControlUnroll                    = 0x00000001
-  LoopControlDontUnroll                = 0x00000002
-  LoopControlDependencyInfinite        = 0x00000004
-  LoopControlDependencyLength          = 0x00000008
-  LoopControlMinIterations             = 0x00000010
-  LoopControlMaxIterations             = 0x00000020
-  LoopControlIterationMultiple         = 0x00000040
-  LoopControlPeelCount                 = 0x00000080
-  LoopControlPartialCount              = 0x00000100
-  LoopControlInitiationIntervalINTEL   = 0x00010000
-  LoopControlMaxConcurrencyINTEL       = 0x00020000
-  LoopControlDependencyArrayINTEL      = 0x00040000
-  LoopControlPipelineEnableINTEL       = 0x00080000
-  LoopControlLoopCoalesceINTEL         = 0x00100000
-  LoopControlMaxInterleavingINTEL      = 0x00200000
+  LoopControlNone = 0x00000000
+  LoopControlUnroll = 0x00000001
+  LoopControlDontUnroll = 0x00000002
+  LoopControlDependencyInfinite = 0x00000004
+  LoopControlDependencyLength = 0x00000008
+  LoopControlMinIterations = 0x00000010
+  LoopControlMaxIterations = 0x00000020
+  LoopControlIterationMultiple = 0x00000040
+  LoopControlPeelCount = 0x00000080
+  LoopControlPartialCount = 0x00000100
+  LoopControlInitiationIntervalINTEL = 0x00010000
+  LoopControlMaxConcurrencyINTEL = 0x00020000
+  LoopControlDependencyArrayINTEL = 0x00040000
+  LoopControlPipelineEnableINTEL = 0x00080000
+  LoopControlLoopCoalesceINTEL = 0x00100000
+  LoopControlMaxInterleavingINTEL = 0x00200000
   LoopControlSpeculatedIterationsINTEL = 0x00400000
+  LoopControlNoFusionINTEL = 0x00800000
+  LoopControlLoopCountINTEL = 0x01000000
+  LoopControlMaxReinvocationDelayINTEL = 0x02000000
 end
 
 @bitmask FunctionControl::UInt32 begin
-  FunctionControlNone       = 0x00000000
-  FunctionControlInline     = 0x00000001
+  FunctionControlNone = 0x00000000
+  FunctionControlInline = 0x00000001
   FunctionControlDontInline = 0x00000002
-  FunctionControlPure       = 0x00000004
-  FunctionControlConst      = 0x00000008
+  FunctionControlPure = 0x00000004
+  FunctionControlConst = 0x00000008
+  FunctionControlOptNoneINTEL = 0x00010000
 end
 
 @bitmask MemorySemantics::UInt32 begin
-  MemorySemanticsRelaxed                = 0x00000000
-  MemorySemanticsNone                   = 0x00000000
-  MemorySemanticsAcquire                = 0x00000002
-  MemorySemanticsRelease                = 0x00000004
-  MemorySemanticsAcquireRelease         = 0x00000008
+  MemorySemanticsRelaxed = 0x00000000
+  MemorySemanticsNone = 0x00000000
+  MemorySemanticsAcquire = 0x00000002
+  MemorySemanticsRelease = 0x00000004
+  MemorySemanticsAcquireRelease = 0x00000008
   MemorySemanticsSequentiallyConsistent = 0x00000010
-  MemorySemanticsUniformMemory          = 0x00000040
-  MemorySemanticsSubgroupMemory         = 0x00000080
-  MemorySemanticsWorkgroupMemory        = 0x00000100
-  MemorySemanticsCrossWorkgroupMemory   = 0x00000200
-  MemorySemanticsAtomicCounterMemory    = 0x00000400
-  MemorySemanticsImageMemory            = 0x00000800
-  MemorySemanticsOutputMemory           = 0x00001000
-  MemorySemanticsOutputMemoryKHR        = 0x00001000
-  MemorySemanticsMakeAvailable          = 0x00002000
-  MemorySemanticsMakeAvailableKHR       = 0x00002000
-  MemorySemanticsMakeVisible            = 0x00004000
-  MemorySemanticsMakeVisibleKHR         = 0x00004000
-  MemorySemanticsVolatile               = 0x00008000
+  MemorySemanticsUniformMemory = 0x00000040
+  MemorySemanticsSubgroupMemory = 0x00000080
+  MemorySemanticsWorkgroupMemory = 0x00000100
+  MemorySemanticsCrossWorkgroupMemory = 0x00000200
+  MemorySemanticsAtomicCounterMemory = 0x00000400
+  MemorySemanticsImageMemory = 0x00000800
+  MemorySemanticsOutputMemory = 0x00001000
+  MemorySemanticsOutputMemoryKHR = 0x00001000
+  MemorySemanticsMakeAvailable = 0x00002000
+  MemorySemanticsMakeAvailableKHR = 0x00002000
+  MemorySemanticsMakeVisible = 0x00004000
+  MemorySemanticsMakeVisibleKHR = 0x00004000
+  MemorySemanticsVolatile = 0x00008000
 end
 
 @bitmask MemoryAccess::UInt32 begin
-  MemoryAccessNone                    = 0x00000000
-  MemoryAccessVolatile                = 0x00000001
-  MemoryAccessAligned                 = 0x00000002
-  MemoryAccessNontemporal             = 0x00000004
-  MemoryAccessMakePointerAvailable    = 0x00000008
+  MemoryAccessNone = 0x00000000
+  MemoryAccessVolatile = 0x00000001
+  MemoryAccessAligned = 0x00000002
+  MemoryAccessNontemporal = 0x00000004
+  MemoryAccessMakePointerAvailable = 0x00000008
   MemoryAccessMakePointerAvailableKHR = 0x00000008
-  MemoryAccessMakePointerVisible      = 0x00000010
-  MemoryAccessMakePointerVisibleKHR   = 0x00000010
-  MemoryAccessNonPrivatePointer       = 0x00000020
-  MemoryAccessNonPrivatePointerKHR    = 0x00000020
+  MemoryAccessMakePointerVisible = 0x00000010
+  MemoryAccessMakePointerVisibleKHR = 0x00000010
+  MemoryAccessNonPrivatePointer = 0x00000020
+  MemoryAccessNonPrivatePointerKHR = 0x00000020
+  MemoryAccessAliasScopeINTELMask = 0x00010000
+  MemoryAccessNoAliasINTELMask = 0x00020000
 end
 
-@cenum KernelProfilingInfo::UInt32 begin
-  KernelProfilingInfoNone        = 0x00000000
+@bitmask KernelProfilingInfo::UInt32 begin
+  KernelProfilingInfoNone = 0x00000000
   KernelProfilingInfoCmdExecTime = 0x00000001
 end
 
 @bitmask RayFlags::UInt32 begin
-  RayFlagsNoneKHR                     = 0x00000000
-  RayFlagsOpaqueKHR                   = 0x00000001
-  RayFlagsNoOpaqueKHR                 = 0x00000002
-  RayFlagsTerminateOnFirstHitKHR      = 0x00000004
-  RayFlagsSkipClosestHitShaderKHR     = 0x00000008
-  RayFlagsCullBackFacingTrianglesKHR  = 0x00000010
+  RayFlagsNoneKHR = 0x00000000
+  RayFlagsOpaqueKHR = 0x00000001
+  RayFlagsNoOpaqueKHR = 0x00000002
+  RayFlagsTerminateOnFirstHitKHR = 0x00000004
+  RayFlagsSkipClosestHitShaderKHR = 0x00000008
+  RayFlagsCullBackFacingTrianglesKHR = 0x00000010
   RayFlagsCullFrontFacingTrianglesKHR = 0x00000020
-  RayFlagsCullOpaqueKHR               = 0x00000040
-  RayFlagsCullNoOpaqueKHR             = 0x00000080
-  RayFlagsSkipTrianglesKHR            = 0x00000100
-  RayFlagsSkipAABBsKHR                = 0x00000200
+  RayFlagsCullOpaqueKHR = 0x00000040
+  RayFlagsCullNoOpaqueKHR = 0x00000080
+  RayFlagsSkipTrianglesKHR = 0x00000100
+  RayFlagsSkipAABBsKHR = 0x00000200
+  RayFlagsForceOpacityMicromap2StateEXT = 0x00000400
 end
 
 @bitmask FragmentShadingRate::UInt32 begin
-  FragmentShadingRateVertical2Pixels   = 0x00000001
-  FragmentShadingRateVertical4Pixels   = 0x00000002
+  FragmentShadingRateVertical2Pixels = 0x00000001
+  FragmentShadingRateVertical4Pixels = 0x00000002
   FragmentShadingRateHorizontal2Pixels = 0x00000004
   FragmentShadingRateHorizontal4Pixels = 0x00000008
 end
 
 @cenum SourceLanguage::UInt32 begin
-  SourceLanguageUnknown    = 0
-  SourceLanguageESSL       = 1
-  SourceLanguageGLSL       = 2
-  SourceLanguageOpenCL_C   = 3
-  SourceLanguageOpenCL_CPP = 4
-  SourceLanguageHLSL       = 5
+  SourceLanguageUnknown        = 0
+  SourceLanguageESSL           = 1
+  SourceLanguageGLSL           = 2
+  SourceLanguageOpenCL_C       = 3
+  SourceLanguageOpenCL_CPP     = 4
+  SourceLanguageHLSL           = 5
+  SourceLanguageCPP_for_OpenCL = 6
+  SourceLanguageSYCL           = 7
 end
 
 @cenum ExecutionModel::UInt32 begin
@@ -155,6 +168,8 @@ end
   ExecutionModelMissKHR                = 5317
   ExecutionModelCallableNV             = 5318
   ExecutionModelCallableKHR            = 5318
+  ExecutionModelTaskEXT                = 5364
+  ExecutionModelMeshEXT                = 5365
 end
 
 @cenum AddressingModel::UInt32 begin
@@ -212,28 +227,47 @@ end
   ExecutionModeSubgroupsPerWorkgroupId          = 37
   ExecutionModeLocalSizeId                      = 38
   ExecutionModeLocalSizeHintId                  = 39
+  ExecutionModeSubgroupUniformControlFlowKHR    = 4421
   ExecutionModePostDepthCoverage                = 4446
   ExecutionModeDenormPreserve                   = 4459
   ExecutionModeDenormFlushToZero                = 4460
   ExecutionModeSignedZeroInfNanPreserve         = 4461
   ExecutionModeRoundingModeRTE                  = 4462
   ExecutionModeRoundingModeRTZ                  = 4463
+  ExecutionModeEarlyAndLateFragmentTestsAMD     = 5017
   ExecutionModeStencilRefReplacingEXT           = 5027
+  ExecutionModeStencilRefUnchangedFrontAMD      = 5079
+  ExecutionModeStencilRefGreaterFrontAMD        = 5080
+  ExecutionModeStencilRefLessFrontAMD           = 5081
+  ExecutionModeStencilRefUnchangedBackAMD       = 5082
+  ExecutionModeStencilRefGreaterBackAMD         = 5083
+  ExecutionModeStencilRefLessBackAMD            = 5084
   ExecutionModeOutputLinesNV                    = 5269
+  ExecutionModeOutputLinesEXT                   = 5269
   ExecutionModeOutputPrimitivesNV               = 5270
+  ExecutionModeOutputPrimitivesEXT              = 5270
   ExecutionModeDerivativeGroupQuadsNV           = 5289
   ExecutionModeDerivativeGroupLinearNV          = 5290
   ExecutionModeOutputTrianglesNV                = 5298
+  ExecutionModeOutputTrianglesEXT               = 5298
   ExecutionModePixelInterlockOrderedEXT         = 5366
   ExecutionModePixelInterlockUnorderedEXT       = 5367
   ExecutionModeSampleInterlockOrderedEXT        = 5368
   ExecutionModeSampleInterlockUnorderedEXT      = 5369
   ExecutionModeShadingRateInterlockOrderedEXT   = 5370
   ExecutionModeShadingRateInterlockUnorderedEXT = 5371
+  ExecutionModeSharedLocalMemorySizeINTEL       = 5618
+  ExecutionModeRoundingModeRTPINTEL             = 5620
+  ExecutionModeRoundingModeRTNINTEL             = 5621
+  ExecutionModeFloatingPointModeALTINTEL        = 5622
+  ExecutionModeFloatingPointModeIEEEINTEL       = 5623
   ExecutionModeMaxWorkgroupSizeINTEL            = 5893
   ExecutionModeMaxWorkDimINTEL                  = 5894
   ExecutionModeNoGlobalOffsetINTEL              = 5895
   ExecutionModeNumSIMDWorkitemsINTEL            = 5896
+  ExecutionModeSchedulerTargetFmaxMhzINTEL      = 5903
+  ExecutionModeStreamingInterfaceINTEL          = 6154
+  ExecutionModeNamedBarrierCountINTEL           = 6417
 end
 
 @cenum StorageClass::UInt32 begin
@@ -264,7 +298,11 @@ end
   StorageClassShaderRecordBufferKHR    = 5343
   StorageClassPhysicalStorageBuffer    = 5349
   StorageClassPhysicalStorageBufferEXT = 5349
+  StorageClassHitObjectAttributeNV     = 5385
+  StorageClassTaskPayloadWorkgroupEXT  = 5402
   StorageClassCodeSectionINTEL         = 5605
+  StorageClassDeviceOnlyINTEL          = 5936
+  StorageClassHostOnlyINTEL            = 5937
 end
 
 @cenum Dim::UInt32 begin
@@ -385,9 +423,38 @@ end
   FPRoundingModeRTN = 3
 end
 
+@cenum FPDenormMode::UInt32 begin
+  FPDenormModePreserve    = 0
+  FPDenormModeFlushToZero = 1
+end
+
+@cenum QuantizationModes::UInt32 begin
+  QuantizationModesTRN          = 0
+  QuantizationModesTRN_ZERO     = 1
+  QuantizationModesRND          = 2
+  QuantizationModesRND_ZERO     = 3
+  QuantizationModesRND_INF      = 4
+  QuantizationModesRND_MIN_INF  = 5
+  QuantizationModesRND_CONV     = 6
+  QuantizationModesRND_CONV_ODD = 7
+end
+
+@cenum FPOperationMode::UInt32 begin
+  FPOperationModeIEEE = 0
+  FPOperationModeALT  = 1
+end
+
+@cenum OverflowModes::UInt32 begin
+  OverflowModesWRAP     = 0
+  OverflowModesSAT      = 1
+  OverflowModesSAT_ZERO = 2
+  OverflowModesSAT_SYM  = 3
+end
+
 @cenum LinkageType::UInt32 begin
-  LinkageTypeExport = 0
-  LinkageTypeImport = 1
+  LinkageTypeExport      = 0
+  LinkageTypeImport      = 1
+  LinkageTypeLinkOnceODR = 2
 end
 
 @cenum AccessQualifier::UInt32 begin
@@ -397,99 +464,144 @@ end
 end
 
 @cenum FunctionParameterAttribute::UInt32 begin
-  FunctionParameterAttributeZext        = 0
-  FunctionParameterAttributeSext        = 1
-  FunctionParameterAttributeByVal       = 2
-  FunctionParameterAttributeSret        = 3
-  FunctionParameterAttributeNoAlias     = 4
-  FunctionParameterAttributeNoCapture   = 5
-  FunctionParameterAttributeNoWrite     = 6
-  FunctionParameterAttributeNoReadWrite = 7
+  FunctionParameterAttributeZext                = 0
+  FunctionParameterAttributeSext                = 1
+  FunctionParameterAttributeByVal               = 2
+  FunctionParameterAttributeSret                = 3
+  FunctionParameterAttributeNoAlias             = 4
+  FunctionParameterAttributeNoCapture           = 5
+  FunctionParameterAttributeNoWrite             = 6
+  FunctionParameterAttributeNoReadWrite         = 7
+  FunctionParameterAttributeRuntimeAlignedINTEL = 5940
 end
 
 @cenum Decoration::UInt32 begin
-  DecorationRelaxedPrecision            = 0
-  DecorationSpecId                      = 1
-  DecorationBlock                       = 2
-  DecorationBufferBlock                 = 3
-  DecorationRowMajor                    = 4
-  DecorationColMajor                    = 5
-  DecorationArrayStride                 = 6
-  DecorationMatrixStride                = 7
-  DecorationGLSLShared                  = 8
-  DecorationGLSLPacked                  = 9
-  DecorationCPacked                     = 10
-  DecorationBuiltIn                     = 11
-  DecorationNoPerspective               = 13
-  DecorationFlat                        = 14
-  DecorationPatch                       = 15
-  DecorationCentroid                    = 16
-  DecorationSample                      = 17
-  DecorationInvariant                   = 18
-  DecorationRestrict                    = 19
-  DecorationAliased                     = 20
-  DecorationVolatile                    = 21
-  DecorationConstant                    = 22
-  DecorationCoherent                    = 23
-  DecorationNonWritable                 = 24
-  DecorationNonReadable                 = 25
-  DecorationUniform                     = 26
-  DecorationUniformId                   = 27
-  DecorationSaturatedConversion         = 28
-  DecorationStream                      = 29
-  DecorationLocation                    = 30
-  DecorationComponent                   = 31
-  DecorationIndex                       = 32
-  DecorationBinding                     = 33
-  DecorationDescriptorSet               = 34
-  DecorationOffset                      = 35
-  DecorationXfbBuffer                   = 36
-  DecorationXfbStride                   = 37
-  DecorationFuncParamAttr               = 38
-  DecorationFPRoundingMode              = 39
-  DecorationFPFastMathMode              = 40
-  DecorationLinkageAttributes           = 41
-  DecorationNoContraction               = 42
-  DecorationInputAttachmentIndex        = 43
-  DecorationAlignment                   = 44
-  DecorationMaxByteOffset               = 45
-  DecorationAlignmentId                 = 46
-  DecorationMaxByteOffsetId             = 47
-  DecorationNoSignedWrap                = 4469
-  DecorationNoUnsignedWrap              = 4470
-  DecorationExplicitInterpAMD           = 4999
-  DecorationOverrideCoverageNV          = 5248
-  DecorationPassthroughNV               = 5250
-  DecorationViewportRelativeNV          = 5252
-  DecorationSecondaryViewportRelativeNV = 5256
-  DecorationPerPrimitiveNV              = 5271
-  DecorationPerViewNV                   = 5272
-  DecorationPerTaskNV                   = 5273
-  DecorationPerVertexNV                 = 5285
-  DecorationNonUniform                  = 5300
-  DecorationNonUniformEXT               = 5300
-  DecorationRestrictPointer             = 5355
-  DecorationRestrictPointerEXT          = 5355
-  DecorationAliasedPointer              = 5356
-  DecorationAliasedPointerEXT           = 5356
-  DecorationReferencedIndirectlyINTEL   = 5602
-  DecorationCounterBuffer               = 5634
-  DecorationHlslCounterBufferGOOGLE     = 5634
-  DecorationUserSemantic                = 5635
-  DecorationHlslSemanticGOOGLE          = 5635
-  DecorationUserTypeGOOGLE              = 5636
-  DecorationRegisterINTEL               = 5825
-  DecorationMemoryINTEL                 = 5826
-  DecorationNumbanksINTEL               = 5827
-  DecorationBankwidthINTEL              = 5828
-  DecorationMaxPrivateCopiesINTEL       = 5829
-  DecorationSinglepumpINTEL             = 5830
-  DecorationDoublepumpINTEL             = 5831
-  DecorationMaxReplicatesINTEL          = 5832
-  DecorationSimpleDualPortINTEL         = 5833
-  DecorationMergeINTEL                  = 5834
-  DecorationBankBitsINTEL               = 5835
-  DecorationForcePow2DepthINTEL         = 5836
+  DecorationRelaxedPrecision                   = 0
+  DecorationSpecId                             = 1
+  DecorationBlock                              = 2
+  DecorationBufferBlock                        = 3
+  DecorationRowMajor                           = 4
+  DecorationColMajor                           = 5
+  DecorationArrayStride                        = 6
+  DecorationMatrixStride                       = 7
+  DecorationGLSLShared                         = 8
+  DecorationGLSLPacked                         = 9
+  DecorationCPacked                            = 10
+  DecorationBuiltIn                            = 11
+  DecorationNoPerspective                      = 13
+  DecorationFlat                               = 14
+  DecorationPatch                              = 15
+  DecorationCentroid                           = 16
+  DecorationSample                             = 17
+  DecorationInvariant                          = 18
+  DecorationRestrict                           = 19
+  DecorationAliased                            = 20
+  DecorationVolatile                           = 21
+  DecorationConstant                           = 22
+  DecorationCoherent                           = 23
+  DecorationNonWritable                        = 24
+  DecorationNonReadable                        = 25
+  DecorationUniform                            = 26
+  DecorationUniformId                          = 27
+  DecorationSaturatedConversion                = 28
+  DecorationStream                             = 29
+  DecorationLocation                           = 30
+  DecorationComponent                          = 31
+  DecorationIndex                              = 32
+  DecorationBinding                            = 33
+  DecorationDescriptorSet                      = 34
+  DecorationOffset                             = 35
+  DecorationXfbBuffer                          = 36
+  DecorationXfbStride                          = 37
+  DecorationFuncParamAttr                      = 38
+  DecorationFPRoundingMode                     = 39
+  DecorationFPFastMathMode                     = 40
+  DecorationLinkageAttributes                  = 41
+  DecorationNoContraction                      = 42
+  DecorationInputAttachmentIndex               = 43
+  DecorationAlignment                          = 44
+  DecorationMaxByteOffset                      = 45
+  DecorationAlignmentId                        = 46
+  DecorationMaxByteOffsetId                    = 47
+  DecorationNoSignedWrap                       = 4469
+  DecorationNoUnsignedWrap                     = 4470
+  DecorationExplicitInterpAMD                  = 4999
+  DecorationOverrideCoverageNV                 = 5248
+  DecorationPassthroughNV                      = 5250
+  DecorationViewportRelativeNV                 = 5252
+  DecorationSecondaryViewportRelativeNV        = 5256
+  DecorationPerPrimitiveNV                     = 5271
+  DecorationPerPrimitiveEXT                    = 5271
+  DecorationPerViewNV                          = 5272
+  DecorationPerTaskNV                          = 5273
+  DecorationPerVertexKHR                       = 5285
+  DecorationPerVertexNV                        = 5285
+  DecorationNonUniform                         = 5300
+  DecorationNonUniformEXT                      = 5300
+  DecorationRestrictPointer                    = 5355
+  DecorationRestrictPointerEXT                 = 5355
+  DecorationAliasedPointer                     = 5356
+  DecorationAliasedPointerEXT                  = 5356
+  DecorationHitObjectShaderRecordBufferNV      = 5386
+  DecorationBindlessSamplerNV                  = 5398
+  DecorationBindlessImageNV                    = 5399
+  DecorationBoundSamplerNV                     = 5400
+  DecorationBoundImageNV                       = 5401
+  DecorationSIMTCallINTEL                      = 5599
+  DecorationReferencedIndirectlyINTEL          = 5602
+  DecorationClobberINTEL                       = 5607
+  DecorationSideEffectsINTEL                   = 5608
+  DecorationVectorComputeVariableINTEL         = 5624
+  DecorationFuncParamIOKindINTEL               = 5625
+  DecorationVectorComputeFunctionINTEL         = 5626
+  DecorationStackCallINTEL                     = 5627
+  DecorationGlobalVariableOffsetINTEL          = 5628
+  DecorationCounterBuffer                      = 5634
+  DecorationHlslCounterBufferGOOGLE            = 5634
+  DecorationUserSemantic                       = 5635
+  DecorationHlslSemanticGOOGLE                 = 5635
+  DecorationUserTypeGOOGLE                     = 5636
+  DecorationFunctionRoundingModeINTEL          = 5822
+  DecorationFunctionDenormModeINTEL            = 5823
+  DecorationRegisterINTEL                      = 5825
+  DecorationMemoryINTEL                        = 5826
+  DecorationNumbanksINTEL                      = 5827
+  DecorationBankwidthINTEL                     = 5828
+  DecorationMaxPrivateCopiesINTEL              = 5829
+  DecorationSinglepumpINTEL                    = 5830
+  DecorationDoublepumpINTEL                    = 5831
+  DecorationMaxReplicatesINTEL                 = 5832
+  DecorationSimpleDualPortINTEL                = 5833
+  DecorationMergeINTEL                         = 5834
+  DecorationBankBitsINTEL                      = 5835
+  DecorationForcePow2DepthINTEL                = 5836
+  DecorationBurstCoalesceINTEL                 = 5899
+  DecorationCacheSizeINTEL                     = 5900
+  DecorationDontStaticallyCoalesceINTEL        = 5901
+  DecorationPrefetchINTEL                      = 5902
+  DecorationStallEnableINTEL                   = 5905
+  DecorationFuseLoopsInFunctionINTEL           = 5907
+  DecorationMathOpDSPModeINTEL                 = 5909
+  DecorationAliasScopeINTEL                    = 5914
+  DecorationNoAliasINTEL                       = 5915
+  DecorationInitiationIntervalINTEL            = 5917
+  DecorationMaxConcurrencyINTEL                = 5918
+  DecorationPipelineEnableINTEL                = 5919
+  DecorationBufferLocationINTEL                = 5921
+  DecorationIOPipeStorageINTEL                 = 5944
+  DecorationFunctionFloatingPointModeINTEL     = 6080
+  DecorationSingleElementVectorINTEL           = 6085
+  DecorationVectorComputeCallableFunctionINTEL = 6087
+  DecorationMediaBlockIOINTEL                  = 6140
+  DecorationConduitKernelArgumentINTEL         = 6175
+  DecorationRegisterMapKernelArgumentINTEL     = 6176
+  DecorationMMHostInterfaceAddressWidthINTEL   = 6177
+  DecorationMMHostInterfaceDataWidthINTEL      = 6178
+  DecorationMMHostInterfaceLatencyINTEL        = 6179
+  DecorationMMHostInterfaceReadWriteModeINTEL  = 6180
+  DecorationMMHostInterfaceMaxBurstINTEL       = 6181
+  DecorationMMHostInterfaceWaitRequestINTEL    = 6182
+  DecorationStableKernelArgumentINTEL          = 6183
 end
 
 @cenum BuiltIn::UInt32 begin
@@ -534,15 +646,20 @@ end
   BuiltInSubgroupLocalInvocationId   = 41
   BuiltInVertexIndex                 = 42
   BuiltInInstanceIndex               = 43
+  BuiltInCoreIDARM                   = 4160
+  BuiltInCoreCountARM                = 4161
+  BuiltInCoreMaxIDARM                = 4162
+  BuiltInWarpIDARM                   = 4163
+  BuiltInWarpMaxIDARM                = 4164
   BuiltInSubgroupEqMask              = 4416
-  BuiltInSubgroupGeMask              = 4417
-  BuiltInSubgroupGtMask              = 4418
-  BuiltInSubgroupLeMask              = 4419
-  BuiltInSubgroupLtMask              = 4420
   BuiltInSubgroupEqMaskKHR           = 4416
+  BuiltInSubgroupGeMask              = 4417
   BuiltInSubgroupGeMaskKHR           = 4417
+  BuiltInSubgroupGtMask              = 4418
   BuiltInSubgroupGtMaskKHR           = 4418
+  BuiltInSubgroupLeMask              = 4419
   BuiltInSubgroupLeMaskKHR           = 4419
+  BuiltInSubgroupLtMask              = 4420
   BuiltInSubgroupLtMaskKHR           = 4420
   BuiltInBaseVertex                  = 4424
   BuiltInBaseInstance                = 4425
@@ -573,12 +690,18 @@ end
   BuiltInLayerPerViewNV              = 5279
   BuiltInMeshViewCountNV             = 5280
   BuiltInMeshViewIndicesNV           = 5281
+  BuiltInBaryCoordKHR                = 5286
   BuiltInBaryCoordNV                 = 5286
+  BuiltInBaryCoordNoPerspKHR         = 5287
   BuiltInBaryCoordNoPerspNV          = 5287
   BuiltInFragSizeEXT                 = 5292
   BuiltInFragmentSizeNV              = 5292
   BuiltInFragInvocationCountEXT      = 5293
   BuiltInInvocationsPerPixelNV       = 5293
+  BuiltInPrimitivePointIndicesEXT    = 5294
+  BuiltInPrimitiveLineIndicesEXT     = 5295
+  BuiltInPrimitiveTriangleIndicesEXT = 5296
+  BuiltInCullPrimitiveEXT            = 5299
   BuiltInLaunchIdNV                  = 5319
   BuiltInLaunchIdKHR                 = 5319
   BuiltInLaunchSizeNV                = 5320
@@ -604,6 +727,7 @@ end
   BuiltInHitTNV                      = 5332
   BuiltInHitKindNV                   = 5333
   BuiltInHitKindKHR                  = 5333
+  BuiltInCurrentRayTimeNV            = 5334
   BuiltInIncomingRayFlagsNV          = 5351
   BuiltInIncomingRayFlagsKHR         = 5351
   BuiltInRayGeometryIndexKHR         = 5352
@@ -611,6 +735,7 @@ end
   BuiltInSMCountNV                   = 5375
   BuiltInWarpIDNV                    = 5376
   BuiltInSMIDNV                      = 5377
+  BuiltInCullMaskKHR                 = 6021
 end
 
 @cenum Scope::UInt32 begin
@@ -710,9 +835,14 @@ end
   CapabilityGroupNonUniformQuad                          = 68
   CapabilityShaderLayer                                  = 69
   CapabilityShaderViewportIndex                          = 70
+  CapabilityUniformDecoration                            = 71
+  CapabilityCoreBuiltinsARM                              = 4165
   CapabilityFragmentShadingRateKHR                       = 4422
   CapabilitySubgroupBallotKHR                            = 4423
   CapabilityDrawParameters                               = 4427
+  CapabilityWorkgroupMemoryExplicitLayoutKHR             = 4428
+  CapabilityWorkgroupMemoryExplicitLayout8BitAccessKHR   = 4429
+  CapabilityWorkgroupMemoryExplicitLayout16BitAccessKHR  = 4430
   CapabilitySubgroupVoteKHR                              = 4431
   CapabilityStorageBuffer16BitAccess                     = 4433
   CapabilityStorageUniformBufferBlock16                  = 4433
@@ -755,6 +885,8 @@ end
   CapabilityFragmentFullyCoveredEXT                      = 5265
   CapabilityMeshShadingNV                                = 5266
   CapabilityImageFootprintNV                             = 5282
+  CapabilityMeshShadingEXT                               = 5283
+  CapabilityFragmentBarycentricKHR                       = 5284
   CapabilityFragmentBarycentricNV                        = 5284
   CapabilityComputeDerivativeGroupQuadsNV                = 5288
   CapabilityFragmentDensityEXT                           = 5291
@@ -785,6 +917,7 @@ end
   CapabilityStorageTexelBufferArrayNonUniformIndexing    = 5312
   CapabilityStorageTexelBufferArrayNonUniformIndexingEXT = 5312
   CapabilityRayTracingNV                                 = 5340
+  CapabilityRayTracingMotionBlurNV                       = 5341
   CapabilityVulkanMemoryModel                            = 5345
   CapabilityVulkanMemoryModelKHR                         = 5345
   CapabilityVulkanMemoryModelDeviceScope                 = 5346
@@ -798,26 +931,73 @@ end
   CapabilityFragmentShaderShadingRateInterlockEXT        = 5372
   CapabilityShaderSMBuiltinsNV                           = 5373
   CapabilityFragmentShaderPixelInterlockEXT              = 5378
+  CapabilityDemoteToHelperInvocation                     = 5379
   CapabilityDemoteToHelperInvocationEXT                  = 5379
+  CapabilityRayTracingOpacityMicromapEXT                 = 5381
+  CapabilityShaderInvocationReorderNV                    = 5383
+  CapabilityBindlessTextureNV                            = 5390
   CapabilitySubgroupShuffleINTEL                         = 5568
   CapabilitySubgroupBufferBlockIOINTEL                   = 5569
   CapabilitySubgroupImageBlockIOINTEL                    = 5570
   CapabilitySubgroupImageMediaBlockIOINTEL               = 5579
+  CapabilityRoundToInfinityINTEL                         = 5582
+  CapabilityFloatingPointModeINTEL                       = 5583
   CapabilityIntegerFunctions2INTEL                       = 5584
   CapabilityFunctionPointersINTEL                        = 5603
   CapabilityIndirectReferencesINTEL                      = 5604
+  CapabilityAsmINTEL                                     = 5606
+  CapabilityAtomicFloat32MinMaxEXT                       = 5612
+  CapabilityAtomicFloat64MinMaxEXT                       = 5613
+  CapabilityAtomicFloat16MinMaxEXT                       = 5616
+  CapabilityVectorComputeINTEL                           = 5617
+  CapabilityVectorAnyINTEL                               = 5619
+  CapabilityExpectAssumeKHR                              = 5629
   CapabilitySubgroupAvcMotionEstimationINTEL             = 5696
   CapabilitySubgroupAvcMotionEstimationIntraINTEL        = 5697
   CapabilitySubgroupAvcMotionEstimationChromaINTEL       = 5698
+  CapabilityVariableLengthArrayINTEL                     = 5817
+  CapabilityFunctionFloatControlINTEL                    = 5821
   CapabilityFPGAMemoryAttributesINTEL                    = 5824
+  CapabilityFPFastMathModeINTEL                          = 5837
+  CapabilityArbitraryPrecisionIntegersINTEL              = 5844
+  CapabilityArbitraryPrecisionFloatingPointINTEL         = 5845
   CapabilityUnstructuredLoopControlsINTEL                = 5886
   CapabilityFPGALoopControlsINTEL                        = 5888
   CapabilityKernelAttributesINTEL                        = 5892
   CapabilityFPGAKernelAttributesINTEL                    = 5897
+  CapabilityFPGAMemoryAccessesINTEL                      = 5898
+  CapabilityFPGAClusterAttributesINTEL                   = 5904
+  CapabilityLoopFuseINTEL                                = 5906
+  CapabilityFPGADSPControlINTEL                          = 5908
+  CapabilityMemoryAccessAliasingINTEL                    = 5910
+  CapabilityFPGAInvocationPipeliningAttributesINTEL      = 5916
+  CapabilityFPGABufferLocationINTEL                      = 5920
+  CapabilityArbitraryPrecisionFixedPointINTEL            = 5922
+  CapabilityUSMStorageClassesINTEL                       = 5935
+  CapabilityRuntimeAlignedAttributeINTEL                 = 5939
+  CapabilityIOPipesINTEL                                 = 5943
   CapabilityBlockingPipesINTEL                           = 5945
   CapabilityFPGARegINTEL                                 = 5948
+  CapabilityDotProductInputAll                           = 6016
+  CapabilityDotProductInputAllKHR                        = 6016
+  CapabilityDotProductInput4x8Bit                        = 6017
+  CapabilityDotProductInput4x8BitKHR                     = 6017
+  CapabilityDotProductInput4x8BitPacked                  = 6018
+  CapabilityDotProductInput4x8BitPackedKHR               = 6018
+  CapabilityDotProduct                                   = 6019
+  CapabilityDotProductKHR                                = 6019
+  CapabilityRayCullMaskKHR                               = 6020
+  CapabilityBitInstructions                              = 6025
+  CapabilityGroupNonUniformRotateKHR                     = 6026
   CapabilityAtomicFloat32AddEXT                          = 6033
   CapabilityAtomicFloat64AddEXT                          = 6034
+  CapabilityLongConstantCompositeINTEL                   = 6089
+  CapabilityOptNoneINTEL                                 = 6094
+  CapabilityAtomicFloat16AddEXT                          = 6095
+  CapabilityDebugInfoModuleINTEL                         = 6114
+  CapabilitySplitBarrierINTEL                            = 6141
+  CapabilityFPGAArgumentInterfacesINTEL                  = 6174
+  CapabilityGroupUniformArithmeticKHR                    = 6400
 end
 
 @cenum RayQueryIntersection::UInt32 begin
@@ -834,6 +1014,11 @@ end
 @cenum RayQueryCandidateIntersectionType::UInt32 begin
   RayQueryCandidateIntersectionTypeRayQueryCandidateIntersectionTriangleKHR = 0
   RayQueryCandidateIntersectionTypeRayQueryCandidateIntersectionAABBKHR     = 1
+end
+
+@cenum PackedVectorFormat::UInt32 begin
+  PackedVectorFormatPackedVectorFormat4x8Bit    = 0
+  PackedVectorFormatPackedVectorFormat4x8BitKHR = 0
 end
 
 @enum Id::Int begin
