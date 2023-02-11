@@ -101,8 +101,13 @@ function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Arr}
   end
 end
 
+# It is assumed that types are `isbits` in this context.
+same_layout(::NativeLayout, ::NativeLayout, ::DataType) = true
+same_layout(l1::NoPadding, l2::NativeLayout, T::DataType) = datasize(l1, T) == datasize(l2, T)
+same_layout(::LayoutStrategy, ::NativeLayout, ::DataType) = false # do not make assumptions for now
+
 function deserialize(::Type{T}, bytes, from::LayoutStrategy) where {T}
-  isprimitivetype(T) && return reinterpret(T, bytes)[]
+  (isprimitivetype(T) || isbitstype(T) && same_layout(from, NativeLayout(), T)) && return reinterpret(T, bytes)[]
   ismutabletype(T) && return deserialize_mutable(T, bytes, from)
   isstructtype(T) && return deserialize_immutable(T, bytes, from)
   error("Expected one of primitive, mutable or composite type, got $T")
