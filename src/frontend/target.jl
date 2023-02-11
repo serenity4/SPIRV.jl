@@ -162,7 +162,7 @@ function get_signature(ex::Expr)
     :($f($(args...))) => begin
       atypes = map(args) do arg
         @match arg begin
-          :(::$T) => T
+          :(::$T) || :($_::$T) => T
           _ => :($argtype($arg))
         end
       end
