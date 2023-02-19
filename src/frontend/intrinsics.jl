@@ -250,3 +250,7 @@ IDiv(x::T, y::T) where {T<:BitUnsigned} = UDiv(x, y)
   isbitstype(typeof(x)) && return x
   return Base.deepcopy_internal(x, IdDict())::typeof(x)
 end
+
+# Miscellaneous Base methods which use intrinsics that don't map well to SPIR-V.
+
+@override copysign(x::T, y::T) where {T <: Union{Float32, Float64}} = ifelse(y < 0, -x, x)
