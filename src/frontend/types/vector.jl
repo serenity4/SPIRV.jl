@@ -36,7 +36,8 @@ Base.promote_rule(S::Type{<:Scalar}, ::Type{Vec{N,T}}) where {N,T} = Vec{N,promo
 Base.convert(::Type{Vec{N,T1}}, v::Vec{N,T2}) where {N,T1,T2} = Vec{N,T1}(ntuple_uint32(i -> convert(T1, @inbounds v[i]), N)...)
 Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T} = v
 Base.convert(T::Type{<:Vec}, x::Scalar) = T(ntuple(Returns(x), length(T)))
-Base.getindex(v::Vec, index::UInt32, other_index::UInt32, other_indices::UInt32...) = v[index]
+# For some reason, the default display on `AbstractArray` really wants to treat one-dimensional vectors as two-dimensional...
+Base.getindex(v::Vec, index::Int64, other_index::Int64) = v[index]
 
 @noinline CompositeExtract(v::Vec, index::UInt32) = v.data[index + 1]
 

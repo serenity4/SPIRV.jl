@@ -15,6 +15,9 @@ using SPIRV: component_type, texel_type, sampled_type, column
     @test ptr[] == Vec2(1, 2)
     ptr[] = Vec2(3, 4)
     @test ptr[] == Vec2(3, 4)
+    ptr = Pointer(Arr(Vec2(1, 2), Vec2(3, 4)))
+    @test ptr[0U, 1U] == 2
+    @test ptr[1U, 0U] == 3
 
     @testset "Array pointers" begin
       # Immutable elements.
@@ -97,6 +100,9 @@ using SPIRV: component_type, texel_type, sampled_type, column
     v = Vec3(2.3, 1.7, -1.2)
     @test foldr(+, v) === foldl(+, v) === sum(v) === sum(collect(v)) === 2.8F
     @test foldr(*, v) === foldl(*, v) === prod(v) === prod(collect(v))
+
+    @test isa(repr(v), String)
+    @test isa(repr(MIME"text/plain"(), v), String)
   end
 
   @testset "Mat" begin
@@ -125,6 +131,9 @@ using SPIRV: component_type, texel_type, sampled_type, column
     ]
     @test m[2, 2] === 6f0
     @test m[3, 2] === 10f0
+
+    @test isa(repr(m), String)
+    @test isa(repr(MIME"text/plain"(), m), String)
   end
 
   @testset "Arr" begin
@@ -165,6 +174,9 @@ using SPIRV: component_type, texel_type, sampled_type, column
     arr[1].x = 3.0
     @test iszero(arr[2].x)
     @test all(isone, one(Arr{16,Vec4}))
+
+    @test isa(repr(arr), String)
+    @test isa(repr(MIME"text/plain"(), arr), String)
   end
 
   @testset "Images" begin

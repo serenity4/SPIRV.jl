@@ -53,8 +53,8 @@ Get a [`Pointer`](@ref) to the array element of `v` located at `index` using an 
 """
 function AccessChain end
 
-@inline AccessChain(v, i::Unsigned) = AccessChain(v, convert(UInt32, i))
-@inline AccessChain(v, i::Signed, indices::Signed...) = AccessChain(v, UInt32(i - 1), UInt32.(indices .- 1)...)
+@inline AccessChain(v, i::Integer, indices::Integer...) = AccessChain(v, unsigned_index(i), unsigned_index.(indices)...)
+@noinline AccessChain(v, i::UInt32, indices::UInt32...) = foldl((x, y) -> AccessChain(x, y), (i, indices...); init = v)
 
 @noinline function AccessChain(ptr::Pointer{V}, offset::UInt32) where {T,V<:Vector{T}}
   (; parent) = ptr
@@ -70,6 +70,10 @@ function AccessChain end
   Pointer{T}(new_addr, new_addr)
 end
 
+# `ptr` must point to a mutable object.
+@noinline AccessChain(ptr::Pointer, offset::UInt32) = AccessChain(ptr[], offset)
+
+# Here, a mutable object `mut` is implicitly treated as a `Pointer` itself, although it is not one.
 @noinline function AccessChain(mut, offset::UInt32)
   @assert ismutable(mut)
   T = eltype(mut)
@@ -94,10 +98,6 @@ end
     Pointer(addr, mut_element)
   end
 end
-
-AccessChain(v::AbstractVector, index::Signed) = AccessChain(v, UInt32(index) - 1U)
-AccessChain(x, index::Integer, second_index::Integer) = AccessChain(AccessChain(x, index), second_index)
-AccessChain(x, index::Integer, second_index::Integer, other_indices::Integer...) = AccessChain(AccessChain(x, index, second_index), other_indices...)
 
 Base.copy(ptr::Pointer) = CopyMemory(ptr)
 @noinline CopyMemory(ptr::Pointer{T}) where {T} = Pointer{T}(deepcopy(ptr[]))
