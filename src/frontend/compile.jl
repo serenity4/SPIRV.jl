@@ -203,8 +203,12 @@ emit_constant!(mt::ModuleTarget, tr::Translation, value) = emit_constant!(mt.con
 
 function Constant(value::T, mt::ModuleTarget, tr::Translation) where {T}
   t = spir_type(T, tr.tmap)
-  !isa(t, StructType) && return Constant(value, t)
-  ids = [emit_constant!(mt, tr, getproperty(value, name)) for name in fieldnames(T)]
+  !iscomposite(t) && return Constant(value, t)
+  ids = @match value begin
+    ::Union{Vec,Arr} => [emit_constant!(mt, tr, value[i]) for i in eachindex(value)]
+    ::Mat => [emit_constant!(mt, tr, col) for col in columns(mat)]
+    _ => [emit_constant!(mt, tr, getproperty(value, name)) for name in fieldnames(T)]
+  end 
   Constant(ids, t)
 end
 
@@ -298,16 +302,17 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         cond_id = isa(cond, Bool) ? emit!(mt, tr, Constant(cond)) : ResultID(cond, tr)
         ex = @ex OpBranchConditional(cond_id, ResultID(node + 1, tr), dest)
         add_expression!(blk, tr, ex, core_ssaval)
-        @case ::GlobalRef
-        jtype === Any && throw_compilation_error("got a `GlobalRef` inferred as `Any`; the global might not have been declared as `const`")
-        value = follow_globalref(jinst)
-        if isa(value, UnionAll) || isa(value, DataType)
-          insert!(tr.globalrefs, core_ssaval, jinst)
-        else
-          c = emit_constant!(mt, tr, value)
-          insert!(tr.results, core_ssaval, c)
-        end
         @case _
+        if isa(jtype, GlobalRef)
+          value = follow_globalref(jinst)
+          if isa(value, UnionAll) || isa(value, DataType)
+            # Just keep references to types for later.
+            insert!(tr.globalrefs, core_ssaval, jinst)
+            continue
+          else
+            jtype === Any && throw_compilation_error("got a `GlobalRef` inferred as `Any`; the global might not have been declared as `const`")
+          end
+        end
         if ismutabletype(jtype)
           # OpPhi will reuse existing variables, no need to allocate a new one.
           !isa(jinst, Core.PhiNode) && allocate_variable!(mt, tr, fdef, jtype, core_ssaval)
@@ -329,7 +334,8 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
           # The value is a SPIR-V global (possibly a constant),
           # so no need to push a new expression.
           # Just map the current SSA value to the global.
-          insert!(tr.results, core_ssaval, ret)
+          # If the instruction was a `GlobalRef` then we'll already have inserted the result.
+          !isa(jinst, GlobalRef) && insert!(tr.results, core_ssaval, ret)
         end
       end
     catch e

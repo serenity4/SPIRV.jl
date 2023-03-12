@@ -33,7 +33,7 @@ Base.zero(T::Type{<:Vec}) = T(ntuple(Returns(zero(eltype(T))), length(T)))
 Base.one(T::Type{<:Vec}) = T(ntuple(Returns(one(eltype(T))), length(T)))
 Base.promote_rule(::Type{Vec{N,T1}}, ::Type{Vec{N,T2}}) where {N,T1,T2} = Vec{N,promote_type(T1, T2)}
 Base.promote_rule(S::Type{<:Scalar}, ::Type{Vec{N,T}}) where {N,T} = Vec{N,promote_type(T, S)}
-Base.convert(::Type{Vec{N,T1}}, v::Vec{N,T2}) where {N,T1,T2} = Vec{N,T1}(ntuple(i -> convert(T1, @inbounds v[i]), N)...)
+Base.convert(::Type{Vec{N,T1}}, v::Vec{N,T2}) where {N,T1,T2} = Vec{N,T1}(ntuple_uint32(i -> convert(T1, @inbounds v[i]), N)...)
 Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T} = v
 Base.convert(T::Type{<:Vec}, x::Scalar) = T(ntuple(Returns(x), length(T)))
 Base.getindex(v::Vec, index::UInt32, other_index::UInt32, other_indices::UInt32...) = v[index]
@@ -169,13 +169,22 @@ for (f, op) in zip((:ceil, :exp), (:Ceil, :Exp))
   @eval Base.$f(v::Vec) = $op(v)
 end
 
+Base.:(==)(x::T, y::T) where {T<:Vec} = all(x .== y)
+Base.:(==)(x::Vec{N}, y::Vec{N}) where {N} = (==)(promote(x, y)...)
+Base.:(==)(x::Vec, y::Vec) = false
+
+Base.any(x::Vec{<:Any,Bool}) = Any(x)
+@noinline Any(x::Vec{<:Any,Bool}) = any(x.data)
+Base.all(x::Vec{<:Any,Bool}) = All(x)
+@noinline All(x::Vec{<:Any,Bool}) = all(x.data)
+
 @inline Base.broadcasted(f::F, v::T) where {F,T<:Vec} = Vec(f.(getcomponents(v)))
 @inline Base.broadcasted(f::F, v1::T, v2::T...) where {F,T<:Vec} = Vec(f.((getcomponents(v) for v in (v1, v2...))...))
 @inline Base.broadcasted(f::F, v1::Vec, v2::Vec...) where {F} = Base.broadcasted(f, promote(v1, v2...)...)
 @inline Base.broadcasted(f::F, x::Vec, y::Scalar, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
 @inline Base.broadcasted(f::F, x::Scalar, y::Vec, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
 
-getcomponents(v::Vec{N}) where {N} = ntuple(i -> getindex(v, i), N)
+getcomponents(v::Vec{N}) where {N} = ntuple_uint32(i -> v[i], N)
 
 vectorize(op, v1::T, v2::T) where {T<:Vec} = Vec(op.(v1.data, v2.data))
 vectorize(op, v::T, x::Scalar) where {T<:Vec} = Vec(op.(v.data, x))

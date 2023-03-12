@@ -94,7 +94,7 @@ include("frontend/shader.jl")
 
 include("passes.jl")
 include("spirv_dsl.jl")
-include("precompile.jl")
+# include("precompile.jl")
 
 export
   # Conversion character literals.

@@ -50,11 +50,14 @@ macro test_code(code, args...)
     !isnothing(minlength) && $(test(:(length(code.code) ≥ minlength)))
     if spirv_chunk
       sts = code.code[1:(end - 1)]
-      $(test(:(all(sts) do st
-        Meta.isexpr(st, :invoke) || return false
+      is_spirv_chunk = all(sts) do st
+        Meta.isexpr(st, :call) && st.args[1] == GlobalRef(Base, :getfield) && return true
+        isa(st, GlobalRef) && return true
+        Meta.isexpr(st, :invoke) || (@error "Expected `invoke` expression, got `$st`"; return false)
         mi = st.args[1]::Core.MethodInstance
-        mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))
-      end)))
+        (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || (@error "Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`")
+      end
+      $(test(:is_spirv_chunk))
     end
     nothing
   end
@@ -215,57 +218,72 @@ end
   @testset "Generated functions" begin
     @generated _fast_sum(f, xs::Vec{N}) where {N} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex(xs))...)
     ci = SPIRV.@code_typed debuginfo=:source _fast_sum(identity, ::Vec2)
-    @test_code ci maxlength = 6 minlength = 6
+    @test_code ci minlength = 6 maxlength = 6
   end
 
   @testset "Fast paths" begin
     ci = SPIRV.@code_typed debuginfo=:source (x -> x == 4)(::UInt32)
-    @test_code ci maxlength = 3 minlength = 3 # 1 conversion, 1 intrinsic, 1 return
+    @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source deepcopy(::Vec2)
-    @test_code ci maxlength = 2 minlength = 2 # 1 intrinsic, 1 return
+    @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source all(::Vec{2,Bool})
+    @test_code ci minlength = 2 maxlength = 2 # 2 accesses, 1 logical operation, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec2, ::Vec2)
+    @test_code ci minlength = 13 maxlength = 13 # 4 accesses, 2 logical operators, 1 vector construction, 1 logical operator, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec{2,Int32}, ::Vec{2,Float32})
+    @test_code ci minlength = 20 maxlength = 20 # A bunch of promotion/conversion operations.
+
+    ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec2, ::Vec3)
+    @test_code ci minlength = 1 maxlength = 1 # 1 return (false)
+
+    ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec{2,Int32}, ::Vec{3,Float32})
+    @test_code ci minlength = 1 maxlength = 1 # 1 return (false)
 
     ci = SPIRV.@code_typed debuginfo=:source (v -> setindex!(v, Vec2(1, 2)))(::Vec2)
-    @test_code ci maxlength = 3 minlength = 3 # 2 intrinsics (CompositeConstruct + Store), 1 return
+    @test_code ci minlength = 3 maxlength = 3 # 2 intrinsics (CompositeConstruct + Store), 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @load x::Int32)(::UInt64)
-    @test_code ci maxlength = 3 minlength = 3 # 1 conversion, 1 load, 1 return
+    @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 load, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @load x[2]::Int32)(::UInt64)
-    @test_code ci maxlength = 4 minlength = 4 # 1 conversion, 1 access, 1 return
+    @test_code ci minlength = 4 maxlength = 4 # 1 conversion, 1 access, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @store x::Int32 = Int32(0))(::UInt64)
-    @test_code ci maxlength = 3 minlength = 3 # 1 conversion, 1 store, 1 return
+    @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 store, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @store x[2]::Int32 = Int32(0))(::UInt64)
-    @test_code ci maxlength = 6 minlength = 4 # 1 conversion, 1 access/store, 1 return, can be 2 more instructions if index is turned into 0-based index at runtime. 
+    @test_code ci minlength = 4 maxlength = 6 # 1 conversion, 1 access/store, 1 return, can be 2 more instructions if index is turned into 0-based index at runtime. 
 
     ci = SPIRV.@code_typed debuginfo=:source copy(::Vec2)
-    @test_code ci maxlength = 3 minlength = 3 # 2 intrinsics (CompositeConstruct + Store), 1 return
+    @test_code ci minlength = 3 maxlength = 3 # 2 intrinsics (CompositeConstruct + Store), 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source copy(::Pointer{Vec2})
-    @test_code ci maxlength = 2 minlength = 2 # 1 intrinsic, 1 return
+    @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source exp(::Float32)
-    @test_code ci maxlength = 2 minlength = 2 # 1 intrinsic, 1 return
+    @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source sum(::Vec4)
-    @test_code ci maxlength = 12 minlength = 12 # 4 accesses (AccessChain + Load per access), 3 additions, 1 return
+    @test_code ci minlength = 12 maxlength = 12 # 4 accesses (AccessChain + Load per access), 3 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source sum(::Arr{10,Float32})
-    @test_code ci maxlength = 30 minlength = 30 # 10 accesses, 9 additions, 1 return
+    @test_code ci minlength = 30 maxlength = 30 # 10 accesses, 9 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source ((x, y) -> x .+ y)(::Vec2, ::Vec2)
-    @test_code ci maxlength = 30 minlength = 12 # 4 accesses, 2 additions, 1 construct, 1 return
+    @test_code ci minlength = 12 maxlength = 30 # 4 accesses, 2 additions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float32}}, ::Arr{3,Float32})
-    @test_code ci maxlength = 1 minlength = 1 # 1 return
+    @test_code ci minlength = 1 maxlength = 1 # 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float64}}, ::Arr{3,Float32})
-    @test_code ci maxlength = 30 minlength = 11 # 3 accesses, 3 conversions, 1 construct, 1 return
+    @test_code ci minlength = 11 maxlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source lerp(::Vec2, ::Vec2, ::Float32)
-    @test_code ci maxlength = 7 minlength = 7 # a bunch of math operations
+    @test_code ci minlength = 7 maxlength = 7 # a bunch of math operations
 
     ci = SPIRV.@code_typed debuginfo=:source slerp(::Vec2, ::Vec2, ::Float32)
     @test_code ci minlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
@@ -277,6 +295,6 @@ end
     @test_code ci minlength = 100 maxlength = 400 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source step_euler(::BoidAgent, ::Vec2, ::Float32)
-    @test_code ci minlength = 50 maxlength = 150 spirv_chunk = false
+    @test_code ci minlength = 60 maxlength = 70 spirv_chunk = false # Assumes that `wrap_around` is inlined, otherwise should be fewer lines.
   end
 end;

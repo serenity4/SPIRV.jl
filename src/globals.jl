@@ -82,7 +82,7 @@ function Expression(c::Constant, id::ResultID)
     (ids::Vector{ResultID}, false) => @ex id = OpConstantComposite(ids...)::type
     (ids::Vector{ResultID}, true) => @ex id = OpSpecConstantComposite(ids...)::type
     (GuardBy(isprimitivetype ∘ typeof), _) => @ex id = OpConstant(reinterpret(UInt32, [c.value]))::type
-    _ => error("Unexpected value $(c.value) with type $type for constant epression")
+    _ => error("Unexpected value $(c.value) with type $type for constant expression")
   end
 end
 Instruction(c::Constant, id::ResultID, globals::GlobalsInfo) = Instruction(Expression(c, id), globals.types)

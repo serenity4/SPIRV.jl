@@ -165,6 +165,8 @@ function julia_type(@nospecialize(t::SPIRType))
   end
 end
 
+iscomposite(@nospecialize(t::SPIRType)) =  isa(t, StructType) || isa(t, VectorType) || isa(t, MatrixType) || isa(t, ArrayType)
+
 @refbroadcast @auto_hash_equals struct TypeMap
   d::Dictionary{DataType,SPIRType}
 end

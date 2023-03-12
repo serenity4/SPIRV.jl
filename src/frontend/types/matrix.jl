@@ -34,9 +34,13 @@ nrows(::Type{<:Mat{N}}) where {N} = N
 ncols(::Type{<:Mat{N,M}}) where {N,M} = M
 coltype(::Type{Mat{N,M,T}}) where {N,M,T} = Vec{N,T}
 
-for f in (:nrows, :ncols)
+for f in (:nrows, :ncols, :coltype)
   @eval $f(m::Mat) = $f(typeof(m))
 end
+
+column(mat::Mat, i::Integer) = CompositeExtract(mat, unsigned_index(i))
+@noinline CompositeExtract(mat::Mat, i::UInt32) = coltype(mat)(mat.cols[i + 1]...)
+columns(mat::Mat) = ntuple_uint32(i -> column(mat, i), ncols(mat))
 
 Base.length(::Type{<:Mat{N,M}}) where {N,M} = N * M
 Base.size(T::Type{<:Mat{N,M}}) where {N,M} = (N, M)

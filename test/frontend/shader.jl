@@ -272,5 +272,18 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     )
     shader = Shader(target, interface, VulkanAlignment())
     @test unwrap(validate(shader))
+
+    target = @target step_euler(::BoidAgent, ::Vec2, ::Float32)
+    interface = ShaderInterface(SPIRV.ExecutionModelGLCompute;
+      storage_classes = [SPIRV.StorageClassInput, SPIRV.StorageClassInput, SPIRV.StorageClassInput],
+      variable_decorations = dictionary([
+        1 => Decorations(SPIRV.DecorationLocation, 0),
+        2 => Decorations(SPIRV.DecorationLocation, 2),
+        3 => Decorations(SPIRV.DecorationLocation, 3),
+      ]),
+      features = SUPPORTED_FEATURES,
+    )
+    shader = Shader(target, interface, VulkanAlignment())
+    @test unwrap(validate(shader))
   end
 end;

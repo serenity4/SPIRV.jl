@@ -1,4 +1,5 @@
 function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, fdef::FunctionDefinition, jinst, jtype::Type, blk::Block)
+  isa(jinst, GlobalRef) && return (emit_constant!(mt, tr, follow_globalref(jinst)), spir_type(jtype, tr.tmap))
   (opcode, args) = @match jinst begin
     Expr(:new, T, args...) => (OpCompositeConstruct, args)
     ::Core.PhiNode => begin

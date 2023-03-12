@@ -48,6 +48,8 @@ end
 function merge_candidate(ctree::ControlTree, cfg::AbstractGraph)
   is_selection(ctree) || error("Cannot determine merge candidate for a node that is not a selection construct.")
   p = find_parent(p -> is_selection(p) || is_loop(p) || is_block(p) && node_index(p[end]) !== node_index(ctree), ctree)
+  # If the selection is a top-level construct, we can choose an arbitrary children, but we still need to provide a merge header.
+  isnothing(p) && return node_index(last(ctree))
   is_selection(p) && return merge_candidate(p, cfg)
   i = findfirst(c -> !isnothing(find_subtree(==(node_index(ctree)) ∘ node_index, c)), p.children)
   if i == lastindex(p.children)

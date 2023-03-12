@@ -1,5 +1,5 @@
 using SPIRV, Test
-using SPIRV: component_type, texel_type, sampled_type
+using SPIRV: component_type, texel_type, sampled_type, column
 
 @testset "Array operations" begin
   @testset "Pointers" begin
@@ -103,6 +103,8 @@ using SPIRV: component_type, texel_type, sampled_type
     m = Mat(Vec(1.0, 1.0), Vec(3.0, 2.0))
     @test m[1, 1] === 1.0
     @test m[1, 2] === 3.0
+    @test column(m, 1) == Vec(1.0, 1.0)
+    @test column(m, 2) == Vec(3.0, 2.0)
     m2 = @mat [1.0 3.0
                1.0 2.0]
     @test m == m2
