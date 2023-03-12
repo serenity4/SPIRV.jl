@@ -254,7 +254,7 @@ end
 
 follow_globalref(@nospecialize x) = x
 function follow_globalref(x::GlobalRef)
-  isdefined(x.mod, x.name) || error("Undefined global reference `$x`")
+  isdefined(x.mod, x.name) || throw_compilation_error("undefined global reference `$x`")
   getproperty(x.mod, x.name)
 end
 
@@ -299,8 +299,14 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         ex = @ex OpBranchConditional(cond_id, ResultID(node + 1, tr), dest)
         add_expression!(blk, tr, ex, core_ssaval)
         @case ::GlobalRef
-        jtype <: Type || throw_compilation_error("unhandled global reference of type $(repr(jtype))")
-        insert!(tr.globalrefs, core_ssaval, jinst)
+        jtype === Any && throw_compilation_error("got a `GlobalRef` inferred as `Any`; the global might not have been declared as `const`")
+        value = follow_globalref(jinst)
+        if isa(value, UnionAll) || isa(value, DataType)
+          insert!(tr.globalrefs, core_ssaval, jinst)
+        else
+          c = emit_constant!(mt, tr, value)
+          insert!(tr.results, core_ssaval, c)
+        end
         @case _
         if ismutabletype(jtype)
           # OpPhi will reuse existing variables, no need to allocate a new one.

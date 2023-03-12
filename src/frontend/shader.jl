@@ -13,6 +13,11 @@ function ShaderInterface(execution_model::ExecutionModel; storage_classes = [], 
   ShaderInterface(execution_model, storage_classes, variable_decorations, type_metadata, features, execution_options)
 end
 
+function Base.show(io::IO, interface::ShaderInterface)
+  print(io, ShaderInterface, '(', interface.execution_model, ", ", interface.execution_options)
+  print(io, ')')
+end
+
 """
 Wrap a given function definition for use in a shader.
 

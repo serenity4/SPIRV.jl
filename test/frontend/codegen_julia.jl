@@ -19,19 +19,47 @@ function store(mat::Mat)
   mat[1, 2] = mat[1, 1] + mat[3, 3]
 end
 
-function validate_code(code::Core.CodeInfo; maxlength = nothing, minlength = nothing, spirv_chunk = true)
-  @test unwrap(SPIRV.validate(code))
-  !isnothing(maxlength) && @test length(code.code) ≤ maxlength
-  !isnothing(minlength) && @test length(code.code) ≥ minlength
-  if spirv_chunk
-    sts = code.code[1:(end - 1)]
-    @test all(sts) do st
-      Meta.isexpr(st, :invoke) || return false
-      mi = st.args[1]::Core.MethodInstance
-      mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))
+macro test_code(code, args...)
+  maxlength = nothing; minlength = nothing; spirv_chunk = true
+  for arg in args
+    Meta.isexpr(arg, :(=)) || isa(arg, Symbol) || throw(ArgumentError("Expected parameter expression, got $arg"))
+    name, value = isa(arg, Symbol) ? (arg, arg) : arg.args
+    if name == :maxlength
+      maxlength = esc(value)
+    elseif name == :minlength
+      minlength = esc(value)
+    elseif name == :spirv_chunk
+      spirv_chunk = esc(value)
+    else
+      throw(ArgumentError("Parameter name expected to be one of :maxlength, :minlength, :spirv_chunk; got :$name"))
     end
   end
-  nothing
+  code = esc(code)
+  test(ex) = begin
+    ex = :(@test $ex)
+    ex.args[2] = __source__
+    ex
+  end
+  ex = quote
+    code = $code
+    maxlength = $maxlength
+    minlength = $minlength
+    spirv_chunk = $spirv_chunk
+    $(test(:(unwrap(SPIRV.validate(code)))))
+    !isnothing(maxlength) && $(test(:(length(code.code) ≤ maxlength)))
+    !isnothing(minlength) && $(test(:(length(code.code) ≥ minlength)))
+    if spirv_chunk
+      sts = code.code[1:(end - 1)]
+      $(test(:(all(sts) do st
+        Meta.isexpr(st, :invoke) || return false
+        mi = st.args[1]::Core.MethodInstance
+        mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))
+      end)))
+    end
+    nothing
+  end
+  pushfirst!(ex.args, __source__)
+  ex
 end
 
 @testset "Codegen - Julia" begin
@@ -187,59 +215,59 @@ end
   @testset "Generated functions" begin
     @generated _fast_sum(f, xs::Vec{N}) where {N} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex(xs))...)
     ci = SPIRV.@code_typed debuginfo=:source _fast_sum(identity, ::Vec2)
-    validate_code(ci; maxlength = 6, minlength = 6)
+    @test_code ci maxlength = 6 minlength = 6
   end
 
   @testset "Fast paths" begin
     ci = SPIRV.@code_typed debuginfo=:source (x -> x == 4)(::UInt32)
-    validate_code(ci; maxlength = 3, minlength = 3) # 1 conversion, 1 intrinsic, 1 return
+    @test_code ci maxlength = 3 minlength = 3 # 1 conversion, 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source deepcopy(::Vec2)
-    validate_code(ci; maxlength = 2, minlength = 2) # 1 intrinsic, 1 return
+    @test_code ci maxlength = 2 minlength = 2 # 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (v -> setindex!(v, Vec2(1, 2)))(::Vec2)
-    validate_code(ci; maxlength = 3, minlength = 3) # 2 intrinsics (CompositeConstruct + Store), 1 return
+    @test_code ci maxlength = 3 minlength = 3 # 2 intrinsics (CompositeConstruct + Store), 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @load x::Int32)(::UInt64)
-    validate_code(ci; maxlength = 3, minlength = 3) # 1 conversion, 1 load, 1 return
+    @test_code ci maxlength = 3 minlength = 3 # 1 conversion, 1 load, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @load x[2]::Int32)(::UInt64)
-    validate_code(ci; maxlength = 4, minlength = 4) # 1 conversion, 1 access, 1 return
+    @test_code ci maxlength = 4 minlength = 4 # 1 conversion, 1 access, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @store x::Int32 = Int32(0))(::UInt64)
-    validate_code(ci; maxlength = 3, minlength = 3) # 1 conversion, 1 store, 1 return
+    @test_code ci maxlength = 3 minlength = 3 # 1 conversion, 1 store, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (x -> @store x[2]::Int32 = Int32(0))(::UInt64)
-    validate_code(ci; maxlength = 4, minlength = 4) # 1 conversion, 1 access/store, 1 return
+    @test_code ci maxlength = 6 minlength = 4 # 1 conversion, 1 access/store, 1 return, can be 2 more instructions if index is turned into 0-based index at runtime. 
 
     ci = SPIRV.@code_typed debuginfo=:source copy(::Vec2)
-    validate_code(ci; maxlength = 3, minlength = 3) # 2 intrinsics (CompositeConstruct + Store), 1 return
+    @test_code ci maxlength = 3 minlength = 3 # 2 intrinsics (CompositeConstruct + Store), 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source copy(::Pointer{Vec2})
-    validate_code(ci; maxlength = 2, minlength = 2) # 1 intrinsic, 1 return
+    @test_code ci maxlength = 2 minlength = 2 # 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source exp(::Float32)
-    validate_code(ci; maxlength = 2, minlength = 2) # 1 intrinsic, 1 return
+    @test_code ci maxlength = 2 minlength = 2 # 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source sum(::Vec4)
-    validate_code(ci; maxlength = 12, minlength = 12) # 4 accesses (AccessChain + Load per access), 3 additions, 1 return
+    @test_code ci maxlength = 12 minlength = 12 # 4 accesses (AccessChain + Load per access), 3 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source sum(::Arr{10,Float32})
-    validate_code(ci; maxlength = 30, minlength = 30) # 10 accesses, 9 additions, 1 return
+    @test_code ci maxlength = 30 minlength = 30 # 10 accesses, 9 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source ((x, y) -> x .+ y)(::Vec2, ::Vec2)
-    validate_code(ci; maxlength = 30, minlength = 12) # 4 accesses, 2 additions, 1 construct, 1 return
+    @test_code ci maxlength = 30 minlength = 12 # 4 accesses, 2 additions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float32}}, ::Arr{3,Float32})
-    validate_code(ci; maxlength = 1, minlength = 1) # 1 return
+    @test_code ci maxlength = 1 minlength = 1 # 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float64}}, ::Arr{3,Float32})
-    validate_code(ci; maxlength = 30, minlength = 11) # 3 accesses, 3 conversions, 1 construct, 1 return
+    @test_code ci maxlength = 30 minlength = 11 # 3 accesses, 3 conversions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source lerp(::Vec2, ::Vec2, ::Float32)
-    validate_code(ci; maxlength = 7, minlength = 7) # a bunch of math operations
+    @test_code ci maxlength = 7 minlength = 7 # a bunch of math operations
 
     ci = SPIRV.@code_typed debuginfo=:source slerp(::Vec2, ::Vec2, ::Float32)
-    validate_code(ci; minlength = 30) # 3 accesses, 3 conversions, 1 construct, 1 return
+    @test_code ci minlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
   end
 end;
