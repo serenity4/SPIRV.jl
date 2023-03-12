@@ -35,7 +35,7 @@ const spirv_types = Set([
 
 validate_khronos(mod::Module; kwargs...) = validate_khronos(PhysicalModule(mod); kwargs...)
 
-validate(pmod::PhysicalModule) = validate_khronos(pmod; flags = ["--target-env", "spv1.5"])
+validate(pmod::PhysicalModule) = validate_khronos(pmod; flags = ["--target-env", "spv1.6"])
 
 """
 Validate a SPIR-V module using [Khronos' reference validator](https://github.com/KhronosGroup/SPIRV-Tools#validator).
@@ -72,5 +72,5 @@ function validate_shader(ir::IR)
   mod = Module(ir)
   ret = validate_types(mod)
   iserror(ret) && return ret
-  validate_khronos(mod; flags = ["--target-env", "vulkan1.2"])
+  validate_khronos(mod; flags = ["--target-env", "vulkan1.3"])
 end

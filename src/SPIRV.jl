@@ -34,8 +34,9 @@ Base.:(*)(x::Number, ::Type{LiteralType{T}}) where {T} = T(x)
 const U = LiteralType{UInt32}
 const F = LiteralType{Float32}
 
-const magic_number = 0x07230203
-const generator_magic_number = 0x12349876
+const MAGIC_NUMBER = 0x07230203
+const GENERATOR_MAGIC_NUMBER = 0x12349876
+const SPIRV_VERSION = v"1.6"
 
 # generated SPIR-V wrapper
 include("generated/enums.jl")

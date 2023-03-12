@@ -75,7 +75,7 @@ Return an IO that will always read in the right endianness.
 """
 function correct_endianess(io::IO)
   magic = peek(io, UInt32)
-  swap = magic == magic_number ? false : magic == 0x30203270 ? true : invalid_format("Invalid SPIR-V magic number: expected ", repr(magic_number), " or 0x30203270, got ", repr(magic))
+  swap = magic == MAGIC_NUMBER ? false : magic == 0x30203270 ? true : invalid_format("Invalid SPIR-V magic number: expected ", repr(MAGIC_NUMBER), " or 0x30203270, got ", repr(magic))
   SwapStream(swap, io)
 end
 
@@ -83,7 +83,7 @@ read_word(io::IO) = read(io, Word)
 
 function Base.read(io::SwapStream, ::Type{PhysicalModule})
   insts = PhysicalInstruction[]
-  _magic_number = read_word(io)
+  magic_number = read_word(io)
   version = read_word(io)
   generator_magic_number = read_word(io)
   bound = read_word(io)
@@ -93,7 +93,7 @@ function Base.read(io::SwapStream, ::Type{PhysicalModule})
     push!(insts, next_instruction(io, read_word))
   end
 
-  PhysicalModule(_magic_number, generator_magic_number, version, bound, schema, insts)
+  PhysicalModule(magic_number, generator_magic_number, version, bound, schema, insts)
 end
 
 function next_id(io::IO, read_word, op_kinds, id_type)
@@ -233,7 +233,7 @@ struct ModuleMetadata
   schema::Int
 end
 
-ModuleMetadata() = ModuleMetadata(magic_number, generator_magic_number, v"1.5", 0)
+ModuleMetadata() = ModuleMetadata(MAGIC_NUMBER, GENERATOR_MAGIC_NUMBER, SPIRV_VERSION, 0)
 
 @auto_hash_equals struct Module
   meta::ModuleMetadata
