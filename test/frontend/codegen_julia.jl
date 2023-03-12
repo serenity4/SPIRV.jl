@@ -269,5 +269,14 @@ end
 
     ci = SPIRV.@code_typed debuginfo=:source slerp(::Vec2, ::Vec2, ::Float32)
     @test_code ci minlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
+    @test_code ci minlength = 100 maxlength = 400 spirv_chunk = false
+
+    ci = SPIRV.@code_typed debuginfo=:source compute_blur_2(::GaussianBlur, ::SampledImage{IT}, ::Vec2)
+    @test_code ci minlength = 100 maxlength = 400 spirv_chunk = false
+
+    ci = SPIRV.@code_typed debuginfo=:source step_euler(::BoidAgent, ::Vec2, ::Float32)
+    @test_code ci minlength = 50 maxlength = 150 spirv_chunk = false
   end
 end;

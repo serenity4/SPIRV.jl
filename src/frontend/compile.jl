@@ -393,6 +393,7 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
   globalrefs = Dictionary{Core.SSAValue, GlobalRef}()
   validation_error(msg, i, ex, line) = ValidationError(string(msg, " in expression `", ex, "` at code location ", i, " around ", line.file, ":", line.line, '\n'))
   for (i, ex) in enumerate(code.code)
+    ex === nothing && continue
     isa(ex, GlobalRef) && insert!(globalrefs, Core.SSAValue(i), ex)
     line = getline(code, i)
     !isnothing(line) || error("No code location was found at code location $i for ex $ex; make sure to provide a `CodeInfo` which was generated with debugging info (`debuginfo = :source`).")
@@ -419,15 +420,20 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
   # Validate types in a second pass so that we can see things such as unreachable statements and exceptions before
   # raising an error because e.g. a String type is detected when building the error message.
   for (i, ex) in enumerate(code.code)
-    isa(ex, Union{Core.ReturnNode, Core.GotoNode, Core.GotoIfNot}) && continue
+    isa(ex, Union{Core.ReturnNode, Core.GotoNode, Core.GotoIfNot, Nothing}) && continue
     T = code.ssavaluetypes[i]
+    isa(ex, GlobalRef) && isa(T, Type) && continue
     Meta.isexpr(ex, :invoke) && ex.args[2] == GlobalRef(@__MODULE__, :Store) && continue
     line = getline(code, i)
     @trymatch T begin
       ::Type{Union{}} => return validation_error("Bottom type Union{} detected", i, ex, line)
       ::Type{<:AbstractString} => return validation_error("String type `$T` detected", i, ex, line)
       ::Type{Any} => return validation_error("Type `Any` detected", i, ex, line)
-      GuardBy(isabstracttype) => return validation_error("Abstract type `$T` detected", i, ex, line)
+      ::Type{<:UnionAll} => return validation_error("`UnionAll` detected", i, ex, line)
+      ::Type{T} => @trymatch T begin
+        GuardBy(isabstracttype) => return validation_error("Abstract type `$T` detected", i, ex, line)
+        GuardBy(!isconcretetype) => return validation_error("Non-concrete type `$T` detected", i, ex, line)
+      end
     end
   end
 

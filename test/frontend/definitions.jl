@@ -63,6 +63,31 @@ lerp(x, y, t) = x * t + (1 - t)y
 
 IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
 
+# from Lava.jl
+
+!@isdefined(OUT_OF_SCENE) && (const OUT_OF_SCENE = Vec2(-1000, -1000))
+
+struct BoidAgent
+  position::Vec2
+  velocity::Vec2 # facing direction is taken to be the normalized velocity
+  mass::Float32
+end
+
+function step_euler(agent::BoidAgent, forces::Vec2, Δt)
+  (; position, velocity, mass) = agent
+
+  position == OUT_OF_SCENE && return agent
+
+  # Use a simple Euler integration scheme to get the next state.
+  acceleration = forces / mass
+  new_position = wrap_around(position + velocity * Δt)
+  new_velocity = velocity + acceleration * Δt
+
+  BoidAgent(new_position, new_velocity, mass)
+end
+
+wrap_around(position::Vec2) = mod.(position .+ 1F, 2F) .- 1F
+
 @testset "Definitions" begin
   image = SampledImage(IT(zeros(32, 32)))
   blur = GaussianBlur(1.0, 1.0)
