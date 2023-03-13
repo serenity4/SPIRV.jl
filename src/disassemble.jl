@@ -103,7 +103,7 @@ function disassemble(io::IO, amod::AnnotatedModule)
 end
 
 function println_metadata(io::IO, meta::ModuleMetadata)
-  @assert meta.magic_number == magic_number
+  @assert meta.magic_number == MAGIC_NUMBER
   println(io, "SPIR-V")
   println(io, "Version: ", join([meta.version.major, meta.version.minor], "."))
   println(io, "Generator: ", repr(meta.generator_magic_number))

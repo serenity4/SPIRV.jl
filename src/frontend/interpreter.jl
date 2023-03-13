@@ -39,8 +39,8 @@ function cap_world(world, max_world)
 end
 
 # Constructor adapted from Julia's `NativeInterpreter`.
-function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = InferenceParams(),
-  opt_params = OptimizationParams(inline_cost_threshold = 1000),
+function SPIRVInterpreter(world::UInt = get_world_counter(); inf_params = InferenceParams(aggressive_constant_propagation = true, assume_bindings_static = true),
+  opt_params = OptimizationParams(inlining = true, inline_cost_threshold = 1000, trust_inference = true),
   method_tables = [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE],
   global_cache = DEFAULT_CI_CACHE)
   SPIRVInterpreter(

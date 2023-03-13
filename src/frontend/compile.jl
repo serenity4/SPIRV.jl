@@ -272,6 +272,8 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     # for instructions such as `OpPhi`.
     # Actual `nothing` arguments are passed by symbol directly.
     (isnothing(jinst) || jinst === GlobalRef(Base, :nothing)) && continue
+    Meta.isexpr(jinst, :loopinfo) && continue
+    Meta.isexpr(jinst, :coverage) && continue
     jtype = ssavaluetypes[i]
     isa(jtype, Core.PartialStruct) && (jtype = jtype.typ)
     isa(jtype, Core.Const) && (jtype = typeof(jtype.val))
