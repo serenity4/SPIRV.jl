@@ -444,7 +444,7 @@ end
         g = g13()
         ctree = ControlTree(g)
         test_coverage(g, ctree)
-        @test_broken ctree == ControlTree(1, REGION_BLOCK, [
+        @test ctree == ControlTree(1, REGION_BLOCK, [
           ControlTree(1, REGION_BLOCK),
           ControlTree(2, REGION_BLOCK),
           ControlTree(3, REGION_BLOCK),

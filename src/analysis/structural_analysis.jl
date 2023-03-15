@@ -118,8 +118,9 @@ end
 end
 
 @active termination_region(args) begin
-  @when (g, v) = args begin
+  @when (g, v, backedges) = args begin
     length(outneighbors(g, v)) ≥ 2 || return
+    all(!in(Edge(v, w), backedges) for w in outneighbors(g, v)) || return
     termination_blocks = filter(w -> isempty(outneighbors(g, w)) && length(inneighbors(g, w)) == 1, outneighbors(g, v))
     isempty(termination_blocks) && return
     Some(termination_blocks)
@@ -127,14 +128,16 @@ end
 end
 
 function acyclic_region(g, v, ec, doms, domtrees, backedges)
-  ret = @trymatch (g, v) begin
-    block_region(vs) => (REGION_BLOCK, vs)
-    if_then_region(v, t, m) => (REGION_IF_THEN, [v, t])
-    if_then_else_region(v, t, e, m) => (REGION_IF_THEN_ELSE, [v, t, e])
-    case_region(branches, target) => (REGION_CASE, [v; branches; target])
-    termination_region(termination_blocks) => (REGION_TERMINATION, [v; termination_blocks])
+  @trymatch (g, v) begin
+    block_region(vs) => return (REGION_BLOCK, vs)
+    if_then_region(v, t, m) => return (REGION_IF_THEN, [v, t])
+    if_then_else_region(v, t, e, m) => return (REGION_IF_THEN_ELSE, [v, t, e])
+    case_region(branches, target) => return (REGION_CASE, [v; branches; target])
   end
-  !isnothing(ret) && return ret
+  @trymatch (g, v, backedges) begin
+    termination_region(termination_blocks) => return (REGION_TERMINATION, [v; termination_blocks])
+  end
+
   # Possibly a proper region
   # Test that we don't have a loop or improper region.
   any(u -> in(Edge(u, v), backedges), inneighbors(g, v)) && return
