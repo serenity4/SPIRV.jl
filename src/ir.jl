@@ -27,6 +27,7 @@ The ID counter can also be incremented without notice.
 end
 
 @forward IR.metadata (decorate!, metadata!, has_decoration, decorations, set_name!)
+@forward IR.fdefs (Base.iterate,)
 
 Base.getindex(ir::IR, i::Int) = collect(ir.fdefs)[i]
 

@@ -9,7 +9,8 @@ plotcfg(tgt::SPIRV.SPIRVTarget; kwargs...) = plotcfg(tgt.cfg; kwargs...)
 plotcfg(cfg::ControlFlowGraph; kwargs...) = plotcfg(cfg.g; kwargs...)
 plotcfg(shader::SPIRV.Shader, args...; kwargs...) = plotcfg(SPIRV.Module(shader), args...; kwargs...)
 plotcfg(mod::SPIRV.Module, args...; kwargs...) = plotcfg(IR(mod), args...; kwargs...)
-function plotcfg(ir::IR, fdef = 1; ssa_indices = true, kwargs...)
+plotcfg(ir::IR; kwargs...) = plotcfg(only(ir); kwargs...)
+function plotcfg(fdef::SPIRV.FunctionDefinition; ssa_indices = true, kwargs...)
   isa(fdef, Integer) && (fdef = collect(ir.fdefs)[fdef])
   if ssa_indices
     names = fdef.block_ids

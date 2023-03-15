@@ -31,6 +31,8 @@ g11() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 1 => 6, 6 => 5)
 g12() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 5, 4 => 6, 5 => 7, 6 => 7)
 "CFG with a loop which contains multiple block regions before the header."
 g13() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 5, 5 => 6, 6 => 4, 6 => 7)
+"CFG with a loop and a selection both nested at the same level with the same merge points inside a selection."
+g14() = DeltaGraph(1 => 5, 5 => 2, 5 => 6, 1 => 3, 2 => 4, 4 => 2, 2 => 3)
 
 test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
 

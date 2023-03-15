@@ -23,10 +23,7 @@ function add_merge_headers!(fdef::FunctionDefinition)
       length(local_back_edges) > 1 && throw_compilation_error("there is more than one backedge to a loop")
       vcont = src(only(local_back_edges))
 
-      vmerge_candidates = merge_candidates(ctree, cfg)
-      length(vmerge_candidates) == 0 && throw_compilation_error("no merge candidate found for a loop")
-      length(vmerge_candidates) > 1 && throw_compilation_error("more than one merge candidates found for a loop")
-      vmerge = vmerge_candidates[1]
+      vmerge = merge_candidate(ctree, cfg)
       header = @ex OpLoopMerge(fdef[vmerge].id, fdef[vcont].id, LoopControlNone)
       insert!(blk, lastindex(blk), header)
 
@@ -45,9 +42,23 @@ function is_breaking_node(ctree::ControlTree, cfg::AbstractGraph)
   any(!in(loop_nodes), outneighbors(cfg, node_index(ctree)))
 end
 
+function is_last_in_block(p::ControlTree, ctree::ControlTree)
+  while !isempty(p.children) && is_block(p)
+    ctree === last(p) && return true
+    p = last(p)
+  end
+  false
+end
+
 function merge_candidate(ctree::ControlTree, cfg::AbstractGraph)
+  is_loop(ctree) && return merge_candidate_loop(ctree, cfg)
+  is_selection(ctree) && return merge_candidate_selection(ctree, cfg)
+  error("A loop or selection node is expected.")
+end
+
+function merge_candidate_selection(ctree::ControlTree, cfg::AbstractGraph)
   is_selection(ctree) || error("Cannot determine merge candidate for a node that is not a selection construct.")
-  p = find_parent(p -> is_selection(p) || is_loop(p) || is_block(p) && node_index(p[end]) !== node_index(ctree), ctree)
+  p = find_parent(p -> is_selection(p) || is_loop(p) || is_block(p) && !is_last_in_block(p, ctree), ctree)
   # If the selection is a top-level construct, we can choose an arbitrary children, but we still need to provide a merge header.
   isnothing(p) && return node_index(last(ctree))
   is_selection(p) && return merge_candidate(p, cfg)
@@ -62,19 +73,15 @@ function merge_candidate(ctree::ControlTree, cfg::AbstractGraph)
   node_index(p[i + 1])
 end
 
-function merge_candidates(ctree::ControlTree, cfg::AbstractGraph{T}) where {T}
+function merge_candidate_loop(ctree::ControlTree, cfg::AbstractGraph)
   is_loop(ctree) || error("Cannot determine merge candidates for a node that is not a loop.")
   scc = node_index.(Leaves(ctree))
   set = Set(scc)
-  candidates = T[]
-  vhead = node_index(ctree)
   for v in scc
     for w in outneighbors(cfg, v)
-      # `vhead` is assumed to be the only node which can have back-edges from nodes inside the loop.
-      !in(w, set) && push!(candidates, w)
+      !in(w, set) && return w
     end
   end
-  unique!(candidates)
 end
 
 function restructure_merge_blocks!(ir::IR)
@@ -88,38 +95,28 @@ function restructure_merge_blocks!(fdef::FunctionDefinition, idcounter::IDCounte
   cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
 
-  for ctree in PreOrderDFS(ctree_global)
+  for ctree in PostOrderDFS(ctree_global)
     is_selection(ctree) || is_loop(ctree) || continue
-    v = node_index(ctree)
-    for inner in ctree.children
-      node_index(inner) == v && continue
-      is_selection(inner) || is_loop(inner) || continue
-      is_selection(inner) && (w = merge_candidate(inner, cfg))
-      if is_loop(inner)
-        ws = merge_candidates(inner, cfg)
-        @assert length(ws) == 1
-        w = ws[1]
-      end
-      merge_blk = fdef[w]
+    outer_construct = find_parent(p -> is_selection(p) || is_loop(p), ctree)
+    isnothing(outer_construct) && continue
+    merge_inner, merge_outer = merge_candidate.((ctree, outer_construct), cfg)
+    merge_inner ≠ merge_outer && continue
+    merge_blk = fdef[merge_inner]
 
-      # We will in general have only one branching block for selection constructs
-      # and possibly multiple ones for loops (as break statements are allowed).
-      # TODO: Optimize this by using the property above to avoid traversing all leaves.
-      branching_blks = Block[fdef[node_index(tree)] for tree in Leaves(inner) if in(w, outneighbors(cfg, node_index(tree)))]
+    # We will in general have only one branching block for selection constructs
+    # and possibly multiple ones for loops (as break statements are allowed).
+    # TODO: Optimize this by using the property above to avoid traversing all leaves.
+    branching_blks = Block[fdef[node_index(tree)] for tree in Leaves(ctree) if in(merge_inner, outneighbors(cfg, node_index(tree)))]
+    new = new_block!(fdef, next!(idcounter))
 
-      new = new_block!(fdef, next!(idcounter))
+    # Adjust branching instructions from branching blocks so that they branch to the new node instead.
+    redirect_branches!(branching_blks, merge_blk.id, new.id)
 
-      # Adjust branching instructions from branching blocks so that they branch to the new node instead.
-      redirect_branches!(branching_blks, merge_blk.id, new.id)
+    # Intercept OpPhi instructions in the original merge block by the new block.
+    intercept_phi_instructions!!(idcounter, branching_blks, new, merge_blk)
 
-      # Intercept OpPhi instructions in the original merge block by the new block.
-      intercept_phi_instructions!!(idcounter, branching_blks, new, merge_blk)
-
-      push!(new, @ex OpBranch(merge_blk.id))
-    end
+    push!(new, @ex OpBranch(merge_blk.id))
   end
-
-  diff
 end
 
 nesting_levels(ctree::ControlTree) = nesting_levels!(Dictionary{Int,Pair{ControlTree,Int}}(), ctree, 1)

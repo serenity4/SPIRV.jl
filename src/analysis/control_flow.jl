@@ -139,7 +139,7 @@ function EdgeClassification(g::AbstractGraph{T}, tree::SimpleTree{T}) where {T}
   ec
 end
 
-struct ControlFlowGraph{E<:AbstractEdge,T,G<:AbstractGraph{T}} <: AbstractGraph{T}
+@refbroadcast struct ControlFlowGraph{E<:AbstractEdge,T,G<:AbstractGraph{T}} <: AbstractGraph{T}
   g::G
   dfst::SpanningTreeDFS{G}
   ec::EdgeClassification{E}
@@ -148,7 +148,7 @@ struct ControlFlowGraph{E<:AbstractEdge,T,G<:AbstractGraph{T}} <: AbstractGraph{
   ControlFlowGraph(g::G, dfst::SpanningTreeDFS{G}, ec::EdgeClassification{E}, is_reducible::Bool, is_structured::Bool) where {T, G<:AbstractGraph{T}, E<:AbstractEdge} = new{E,T,G}(g, dfst, ec, is_reducible, is_structured)
 end
 
-@forward ControlFlowGraph.g (Graphs.vertices, Graphs.edges, Graphs.add_edge!, Graphs.edgetype, Graphs.add_vertex!, Graphs.rem_edge!, Graphs.rem_vertex!, Graphs.rem_vertices!, Graphs.inneighbors, Graphs.outneighbors, Graphs.nv, Graphs.ne, dominators)
+@forward ControlFlowGraph.g (Graphs.vertices, Graphs.edges, Graphs.add_edge!, Base.eltype, Graphs.edgetype, Graphs.add_vertex!, Graphs.rem_edge!, Graphs.rem_vertex!, Graphs.rem_vertices!, Graphs.inneighbors, Graphs.outneighbors, Graphs.nv, Graphs.ne, dominators)
 
 Graphs.is_directed(::Type{<:ControlFlowGraph}) = true
 

@@ -64,7 +64,7 @@ end
   # Starting module: two conditionals sharing the same merge block.
   ir = ir_from_cfg(g11())
   # Restructure merge blocks.
-  fdef = only(ir.fdefs)
+  fdef = only(ir)
   n = nexs(fdef)
   bound = id_bound(ir)
   restructure_merge_blocks!(ir)
@@ -82,7 +82,7 @@ end
 
   # Starting module: A conditional and a loop sharing the same merge block, with the loop inside the conditional.
   ir = ir_from_cfg(g10())
-  fdef = only(ir.fdefs)
+  fdef = only(ir)
   n = nexs(fdef)
   bound = id_bound(ir)
   restructure_merge_blocks!(ir)
@@ -104,7 +104,7 @@ end
 
   ir = ir_from_cfg(g12())
   add_merge_headers!(ir)
-  fdef = only(ir.fdefs)
+  fdef = only(ir)
   (merge_blk, (header_blk,)) = only(pairs(merge_blocks(fdef)))
   @test opcode(last(fdef[header_blk])) == SPIRV.OpBranchConditional
 
@@ -137,4 +137,12 @@ end
   restructure_merge_blocks!(ir)
   @test unwrap(validate(ir))
   @test SPIRV.Module(ir) == SPIRV.Module(restructure_merge_blocks!(deepcopy(ir)))
+
+  ir = ir_from_cfg(g14())
+  fdef = only(ir)
+  @test unwrap(validate(ir))
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test isempty(conflicted_merge_blocks(fdef))
+  @test unwrap(validate(ir))
 end;
