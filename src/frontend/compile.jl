@@ -305,7 +305,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         ex = @ex OpBranchConditional(cond_id, ResultID(node + 1, tr), dest)
         add_expression!(blk, tr, ex, core_ssaval)
         @case _
-        if isa(jtype, GlobalRef)
+        if isa(jinst, GlobalRef)
           value = follow_globalref(jinst)
           if isa(value, UnionAll) || isa(value, DataType)
             # Just keep references to types for later.
