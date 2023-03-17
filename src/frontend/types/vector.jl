@@ -135,17 +135,6 @@ Base.propertynames(::Type{<:Vec{2}}) = (:x,:y)
 Base.propertynames(::Type{<:Vec{3}}) = (:x,:y,:z)
 Base.propertynames(::Type{<:Vec{4}}) = (:x,:y,:z,:w)
 
-using .Broadcast: Broadcasted, BroadcastStyle, DefaultArrayStyle, Style
-
-struct BroadcastStyleSPIRV{T} <: BroadcastStyle end
-
-Base.BroadcastStyle(T::Type{<:Vec}) = BroadcastStyleSPIRV{T}()
-Base.BroadcastStyle(::BroadcastStyleSPIRV{T1}, ::BroadcastStyleSPIRV{T2}) where {T1,T2} = BroadcastStyleSPIRV{promote_type(T1,T2)}()
-Base.BroadcastStyle(::DefaultArrayStyle{0}, style::BroadcastStyleSPIRV) = style
-Base.similar(bc::Broadcasted{BroadcastStyleSPIRV{T}}, ::Type) where {T} = zero(T)
-@inline Broadcast.instantiate(bc::Broadcasted{BroadcastStyleSPIRV{T}}) where {T<:Vec} = bc
-@inline Base.materialize!(v::T, bc::Broadcasted{BroadcastStyleSPIRV{T}}) where {T<:Vec} = copyto!(v, only(bc.args))
-
 for (f, op) in zip((:+, :-, :*, :/, :rem, :mod, :atan), (:Add, :Sub, :Mul, :Div, :Rem, :Mod, :Atan2))
   @eval Base.$f(v1::Vec{N}, v2::Vec{N}) where {N} = $f(promote(v1, v2)...)
   @eval Base.$f(v::Vec, x::Scalar) = $f(promote(v, x)...)
@@ -178,14 +167,6 @@ Base.any(x::Vec{<:Any,Bool}) = Any(x)
 @noinline Any(x::Vec{<:Any,Bool}) = any(x.data)
 Base.all(x::Vec{<:Any,Bool}) = All(x)
 @noinline All(x::Vec{<:Any,Bool}) = all(x.data)
-
-@inline Base.broadcasted(f::F, v::T) where {F,T<:Vec} = Vec(f.(getcomponents(v)))
-@inline Base.broadcasted(f::F, v1::T, v2::T...) where {F,T<:Vec} = Vec(f.((getcomponents(v) for v in (v1, v2...))...))
-@inline Base.broadcasted(f::F, v1::Vec, v2::Vec...) where {F} = Base.broadcasted(f, promote(v1, v2...)...)
-@inline Base.broadcasted(f::F, x::Vec, y::Scalar, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
-@inline Base.broadcasted(f::F, x::Scalar, y::Vec, vs::Vec...) where {F} = Base.broadcasted(f, promote(x, y, vs...)...)
-
-getcomponents(v::Vec{N}) where {N} = ntuple_uint32(i -> v[i], N)
 
 vectorize(op, v1::T, v2::T) where {T<:Vec} = Vec(op.(v1.data, v2.data))
 vectorize(op, v::T, x::Scalar) where {T<:Vec} = Vec(op.(v.data, x))

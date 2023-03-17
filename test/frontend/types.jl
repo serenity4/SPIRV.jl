@@ -177,6 +177,15 @@ using SPIRV: component_type, texel_type, sampled_type, column
 
     @test isa(repr(arr), String)
     @test isa(repr(MIME"text/plain"(), arr), String)
+
+    arr = zero(Arr{3,Vec2})
+    bc = arr .+ one(Arr{3,Vec2})
+    @test typeof(bc) == typeof(arr)
+    @test bc == one(Arr{3,Vec2})
+    bc = arr .+ 3 .+ arr
+    @test typeof(bc) == typeof(arr)
+    @test bc == 3 .+ arr
+    @test_broken getindex.(bc, 1) == Arr(3F, 3F)
   end
 
   @testset "Images" begin
