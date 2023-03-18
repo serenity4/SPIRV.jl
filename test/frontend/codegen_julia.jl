@@ -20,7 +20,7 @@ function store(mat::Mat)
 end
 
 macro test_code(code, args...)
-  maxlength = nothing; minlength = nothing; spirv_chunk = true
+  maxlength = nothing; minlength = nothing; spirv_chunk = true; spirv_chunk_broken = false
   for arg in args
     Meta.isexpr(arg, :(=)) || isa(arg, Symbol) || throw(ArgumentError("Expected parameter expression, got $arg"))
     name, value = isa(arg, Symbol) ? (arg, arg) : arg.args
@@ -29,14 +29,15 @@ macro test_code(code, args...)
     elseif name == :minlength
       minlength = esc(value)
     elseif name == :spirv_chunk
+      value === QuoteNode(:broken) && (spirv_chunk_broken = true)
       spirv_chunk = esc(value)
     else
       throw(ArgumentError("Parameter name expected to be one of :maxlength, :minlength, :spirv_chunk; got :$name"))
     end
   end
   code = esc(code)
-  test(ex) = begin
-    ex = :(@test $ex)
+  test(ex; broken = false) = begin
+    ex = :(@test $ex broken = $broken)
     ex.args[2] = __source__
     ex
   end
@@ -48,7 +49,7 @@ macro test_code(code, args...)
     $(test(:(unwrap(SPIRV.validate(code)))))
     !isnothing(maxlength) && $(test(:(length(code.code) ≤ maxlength)))
     !isnothing(minlength) && $(test(:(length(code.code) ≥ minlength)))
-    if spirv_chunk
+    if spirv_chunk !== false
       sts = code.code[1:(end - 1)]
       is_spirv_chunk = all(sts) do st
         Meta.isexpr(st, :call) && st.args[1] == GlobalRef(Base, :getfield) && return true
@@ -56,9 +57,9 @@ macro test_code(code, args...)
         isa(st, GlobalRef) && return true
         Meta.isexpr(st, :invoke) || (@error "Expected `invoke` expression, got `$st`"; return false)
         mi = st.args[1]::Core.MethodInstance
-        (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || (@error "Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`")
+        (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || (@error "Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`"; false)
       end
-      $(test(:is_spirv_chunk))
+      $(test(:is_spirv_chunk, broken = spirv_chunk_broken))
     end
     nothing
   end
@@ -112,6 +113,8 @@ end
     end
 
     @testset "Constant propagation" begin
+      # TODO: These tests are highly unreliable because constant propagation is disabled for overlaid methods.
+      # The situation should be improved once https://github.com/JuliaGPU/GPUCompiler.jl/issues/384 is implemented.
       function test_constprop()
         x = 3
         z = 10 + x
@@ -137,7 +140,7 @@ end
       end
 
       (; code) = SPIRV.@code_typed test_constprop3()
-      @test code[1] == Core.ReturnNode(6.0)
+      @test code[1] == Core.ReturnNode(6.0) broken = VERSION ≥ v"1.10.0-DEV.101"
 
       function test_constprop4()
         x = exp(3.0)
@@ -228,6 +231,10 @@ end
 
     ci = SPIRV.@code_typed debuginfo=:source deepcopy(::Vec2)
     @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
+
+    # Currently broken because of a Pi node, let's keep it here nonetheless.
+    ci = SPIRV.@code_typed debuginfo=:source test_constprop3()
+    @test_code ci spirv_chunk = :broken # 1 conversion, 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source all(::Vec{2,Bool})
     @test_code ci minlength = 2 maxlength = 2 # 2 accesses, 1 logical operation, 1 return

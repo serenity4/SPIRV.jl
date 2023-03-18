@@ -46,7 +46,12 @@ const SmallFloat = Union{Float16,Float32}
 @override (/)(x::T, y::T) where {T<:IEEEFloat}  = FDiv(x, y)
 @noinline FDiv(x::T, y::T) where {T<:IEEEFloat} = Base.div_float(x, y)
 @override rem(x::T, y::T) where {T<:IEEEFloat}  = FRem(x, y)
-@noinline FRem(x::T, y::T) where {T<:IEEEFloat} = Base.rem_float(x, y)
+@noinline FRem(x::T, y::T) where {T<:IEEEFloat} = @static if VERSION < v"1.10.0-DEV.101"
+  Base.rem_float(x, y)::T
+else
+  copysign(Base.rem_internal(abs(x), abs(y)), x)::T
+end
+
 @override mod(x::T, y::T) where {T<:IEEEFloat}  = FMod(x, y)
 @noinline function FMod(x::T, y::T) where {T<:IEEEFloat}
   r = rem(x, y)

@@ -43,9 +43,10 @@ result_type(::Type{MatStyle{N,M}}, ::Type{T}) where {N,M,T} = Mat{N,M,T}
 # Base.similar(bc::Broadcasted{<:MatStyle{N,M}}, ::Type{T}) where {N,M,T} = zero(Mat{N,M,T})
 
 function Base.copy(bc::Broadcasted{S}) where {S<:StyleOverride} # = copyto!(similar(bc, Broadcast.combine_eltypes(bc.f, bc.args)), bc)
-  bc′ = Broadcast.flatten(bc)
-  T = Broadcast.combine_eltypes(bc′.f, bc′.args)
+  T = Broadcast.combine_eltypes(bc.f, bc.args)
+  T === Any && error("Failed to infer a proper eltype for the broadcast operation")
   RT = result_type(S, T)
+  bc′ = Broadcast.flatten(bc)
   RT(compute_broadcast(bc′)...)
 end
 
