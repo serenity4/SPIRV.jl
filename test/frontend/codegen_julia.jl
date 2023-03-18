@@ -41,6 +41,8 @@ macro test_code(code, args...)
     ex.args[2] = __source__
     ex
   end
+  logmacro = GlobalRef(Base, Symbol(spirv_chunk_broken ? "@debug" : "@error"))
+  log(msg) = Expr(:macrocall, logmacro, __source__, msg)
   ex = quote
     code = $code
     maxlength = $maxlength
@@ -55,9 +57,9 @@ macro test_code(code, args...)
         Meta.isexpr(st, :call) && st.args[1] == GlobalRef(Base, :getfield) && return true
         Meta.isexpr(st, :new) && return true
         isa(st, GlobalRef) && return true
-        Meta.isexpr(st, :invoke) || (@error "Expected `invoke` expression, got `$st`"; return false)
+        Meta.isexpr(st, :invoke) || ($(log(:("Expected `invoke` expression, got `$st`"))); return false)
         mi = st.args[1]::Core.MethodInstance
-        (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || (@error "Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`"; false)
+        (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || (log(:("Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`")); false)
       end
       $(test(:is_spirv_chunk, broken = spirv_chunk_broken))
     end
