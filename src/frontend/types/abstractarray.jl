@@ -44,10 +44,16 @@ end
   Store(ptr, x)
 end
 
-@generated Base.foldl(f::F, xs::AbstractSPIRVArray) where {F<:Function} = foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex(xs)[2:end]; init = :(xs[$(firstindex(xs))]))
-@generated Base.foldr(f::F, xs::AbstractSPIRVArray) where {F<:Function} = foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex(xs)[1:(end - 1)]; init = :(xs[$(lastindex(xs))]))
-Base.any(f::F, xs::AbstractSPIRVArray) where {F<:Function} = foldl((x, y) -> f(x) | f(y), xs)
-Base.all(f::F, xs::AbstractSPIRVArray) where {F<:Function} = foldl((x, y) -> f(x) & f(y), xs)
+@generated Base.foldl(f::F, xs::AbstractSPIRVArray) where {F<:Function} =
+  foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex(xs)[2:end]; init = :(xs[$(firstindex(xs))]))
+@generated Base.foldl(f::F, xs::AbstractSPIRVArray, init) where {F <: Function} =
+  foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex(xs); init = :init)
+@generated Base.foldr(f::F, xs::AbstractSPIRVArray) where {F<:Function} =
+  foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex(xs)[1:(end - 1)]; init = :(xs[$(lastindex(xs))]))
+@generated Base.foldr(f::F, xs::AbstractSPIRVArray, init) where {F <: Function} =
+  foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex(xs); init = :init)
+Base.any(f::F, xs::AbstractSPIRVArray) where {F<:Function} = foldl((x, y) -> x | f(y), xs, false)
+Base.all(f::F, xs::AbstractSPIRVArray) where {F<:Function} = foldl((x, y) -> x & f(y), xs, true)
 @generated Base.sum(f::F, xs::AbstractSPIRVArray) where {F<:Function} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex(xs))...)
 @generated Base.prod(f::F, xs::AbstractSPIRVArray) where {F<:Function} = Expr(:call, :*, (:(f(xs[$i])) for i in eachindex(xs))...)
 Base.sum(xs::AbstractSPIRVArray) = sum(identity, xs)

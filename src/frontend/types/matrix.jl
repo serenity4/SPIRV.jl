@@ -49,3 +49,5 @@ Base.one(T::Type{<:Mat}) = T(ntuple(Returns(one(coltype(T))), ncols(T))...)
 
 @noinline CompositeExtract(m::Mat, i::UInt32, j::UInt32) = m.cols[j + 1][i + 1]
 @noinline AccessChain(m::Mat, index::UInt32, second_index::UInt32) = AccessChain(m, index + second_index * UInt32(nrows(m)))
+
+Base.copyto!(dst::Mat{N,M}, src::Mat{N,M}) where {N,M} = (setindex!(dst, src); dst)

@@ -71,35 +71,11 @@ using SPIRV: component_type, texel_type, sampled_type, column
     v.x = 10
     @test v.x === 10.0
     v2 = similar(v)
-    @test all(iszero, v2)
     @test eltype(v2) == eltype(v)
     @test size(v2) == size(v)
 
-    v[] = v2
-    @test all(iszero, v)
-    @test iszero(sum(v))
-    @test sum(x -> x + 1, v) == 4
-
     @test_throws ArgumentError Vec(1.0)
     @test_throws ArgumentError Vec(1.0, 2.0, 3.0, 4.0, 5.0)
-
-    # Broadcasting.
-    v = Vec2(1, 2)
-    copyto!(v, Vec2(0, 0))
-    @test all(iszero, v)
-    @test_throws MethodError copyto!(v, Vec3(0, 0, 0))
-    v = Vec2(1, 2)
-    @test v .+ v == v + v == 2v
-    @test v .- v == v - v == zero(Vec2)
-    @test v .* Vec(1, 1) == v * Vec(1, 1) == v
-    @test v ./ Vec(1, 1) == v * Vec(1, 1) == v
-    @test 1 .* v == 1 * v == v
-    @test v .* v .+ v .* 1 == v * v + v * 1 == Vec2(2, 6)
-    @test ceil.(v .* 0.3F .+ exp.(v)) == Vec2(4, 8)
-
-    v = Vec3(2.3, 1.7, -1.2)
-    @test foldr(+, v) === foldl(+, v) === sum(v) === sum(collect(v)) === 2.8F
-    @test foldr(*, v) === foldl(*, v) === prod(v) === prod(collect(v))
 
     @test isa(repr(v), String)
     @test isa(repr(MIME"text/plain"(), v), String)
@@ -111,18 +87,20 @@ using SPIRV: component_type, texel_type, sampled_type, column
     @test m[1, 2] === 3.0
     @test column(m, 1) == Vec(1.0, 1.0)
     @test column(m, 2) == Vec(3.0, 2.0)
+    mz = @mat [0.0 0.0
+               0.0 0.0]
     m2 = @mat [1.0 3.0
                1.0 2.0]
     @test m == m2
     m[1, 2] = 5.0
     @test m[1, 2] === 5.0
     m2 = similar(m)
-    @test all(iszero, m2)
+    @test m2 == mz
     @test eltype(m2) == eltype(m)
     @test size(m2) == size(m)
 
     m[] = m2
-    @test all(iszero, m)
+    @test m == m2 == mz
 
     m = @mat Float32[
       1 2 3 4
@@ -138,27 +116,23 @@ using SPIRV: component_type, texel_type, sampled_type, column
 
   @testset "Arr" begin
     arr = Arr(1.0, 3.0, 1.0, 2.0)
-    @test all(arr .== arr.data)
+    arrz = Arr(0.0, 0.0, 0.0, 0.0)
     @test arr[2] === 3.0
     arr[3] = 4
     @test arr[4] == last(arr) === 2.0
     @test first(arr) === 1.0
     arr2 = similar(arr)
-    @test all(iszero, arr2)
+    @test arr2 == arrz
     @test eltype(arr2) == eltype(arr)
     @test size(arr2) == size(arr)
 
     arr[] = arr2
-    @test all(iszero, arr)
-    @test arr == arr2
+    @test arr == arr2 == arrz
     arr[1] = 42.0
     @test arr[2] ≠ 42.0
     @test firstindex(arr) === 0U
     @test lastindex(arr) === 3U
     @test eachindex(arr) === 0U:3U
-
-    @test all(iszero, zero(Arr{16,Float32}))
-    @test all(isone, one(Arr{16,Float32}))
 
     # `Arr` with mutable contents.
     arr = Arr(Vec2(1, 2), Vec2(3, 4))
@@ -177,15 +151,6 @@ using SPIRV: component_type, texel_type, sampled_type, column
 
     @test isa(repr(arr), String)
     @test isa(repr(MIME"text/plain"(), arr), String)
-
-    arr = zero(Arr{3,Vec2})
-    bc = arr .+ one(Arr{3,Vec2})
-    @test typeof(bc) == typeof(arr)
-    @test bc == one(Arr{3,Vec2})
-    bc = arr .+ 3 .+ arr
-    @test typeof(bc) == typeof(arr)
-    @test bc == 3 .+ arr
-    @test_broken getindex.(bc, 1) == Arr(3F, 3F)
   end
 
   @testset "Images" begin
@@ -214,11 +179,17 @@ using SPIRV: component_type, texel_type, sampled_type, column
     v = Vec2(2, 3)
     v2 = copy(v)
     v2.x = 1
-    @test v.x == 1
+    @test v.x == 2
 
-    v2 = deepcopy(v)
-    v2.x = 1
-    @test v.x == 1
+    arr = Arr(Vec2(2, 3), Vec2(4, 5))
+    arr2 = copy(arr)
+    arr2[1].y = 10
+    @test arr[1].y == 10
+
+    arr = Arr(Vec2(2, 3), Vec2(4, 5))
+    arr2 = deepcopy(arr)
+    arr2[1].y = 10
+    @test arr[1].y == 3
 
     ptr = Pointer(2)
     ptr2 = copy(ptr)
@@ -236,5 +207,81 @@ using SPIRV: component_type, texel_type, sampled_type, column
     ptr2 = copy(ptr)
     ptr[] = Vec(3, 4)
     @test ptr2[] == Vec(1, 2)
+  end
+
+  @testset "Broadcasting" begin
+    arr = zero(Arr{3,Vec2})
+    bc = arr .+ one(Arr{3,Vec2})
+    @test typeof(bc) == typeof(arr)
+    @test bc == one(Arr{3,Vec2})
+    @test_throws "use broadcasting with dot syntax" arr .+ one(Vec3)
+    bc = arr .+ Ref(one(Vec2))
+    @test typeof(bc) == typeof(arr)
+    @test bc == one(Arr{3,Vec2})
+    @test getindex.(bc, 1) == Arr(1F, 1F, 1F)
+    arr = zero(Arr{3,Float32})
+    bc = arr .+ 3 .+ arr
+    @test typeof(bc) == typeof(arr)
+    @test bc == 3 .+ arr
+    arr = one(Arr{3,Float32})
+    bc = arr .+ one(Vec3) ./ 0.5F
+    @test typeof(bc) == typeof(arr)
+    @test bc == 3 .* one(Arr{3,Float32})
+    arr = one(Arr{3,Vec2})
+    bc = getindex.(arr .+ Ref(Vec2(1, 2)), 1U)
+    @test typeof(bc) == Arr{3,Float32}
+    @test bc == 3 .* one(Arr{3,Float32})
+    arr = Arr(1, 2, 3)
+    bc = arr .== arr.data
+    @test isa(bc, Arr{3,Bool})
+    @test all(bc)
+
+    v = Vec2(1, 2)
+    copyto!(v, Vec2(0, 0))
+    @test all(iszero, v)
+    # XXX: Don't subtype `AbstractArray` to have a `MethodError` here.
+    # @test_throws MethodError copyto!(v, Vec3(0, 0, 0))
+    v = Vec2(1, 2)
+    @test v .+ v == v + v == 2v
+    @test v .- v == v - v == zero(Vec2)
+    @test v .* Vec(1, 1) == v
+    @test v ./ Vec(1, 1) == v
+    @test 1 .* v == v
+    @test v .* v .+ v .* 1 == v .* v + v == Vec2(2, 6)
+    @test ceil.(v .* 0.3F .+ exp.(v)) == Vec2(4, 8)
+    v .+= v
+    @test v == Vec2(2, 4)
+    @test [1, 2] .+ Vec2(2, 4) == Vec2(3, 6)
+
+    # TODO: Add support for the following broadcast operations:
+    # ::Arr{1000,Float32} .+ ::Float32 # using a loop
+    # ::Vec2 .+ ::Vec2
+    # ::Mat2 .+ ::Vec2 # the vector is considered a column
+    # ::Vector .+ ::Mat2 # if size matches)
+    # ::Mat2 .+ ::Float32
+  end
+
+  @testset "Folding operations" begin
+    v = Vec4(2, 3, 4, 5)
+    v2 = similar(v)
+    @test all(iszero, v2)
+    v[] = v2
+    @test all(iszero, v)
+    @test iszero(sum(v))
+    @test sum(x -> x + 1, v) == 4
+
+    v = Vec3(2.3, 1.7, -1.2)
+    @test foldr(+, v) === foldl(+, v) === sum(v) === sum(collect(v)) === 2.8F
+    @test foldr(*, v) === foldl(*, v) === prod(v) === prod(collect(v))
+
+    @test all(iszero, zero(Arr{16,Float32}))
+    @test all(isone, one(Arr{16,Float32}))
+    @test all(iszero, zero(Vec{4,Float32}))
+    @test all(isone, one(Vec{4,Float32}))
+    @test all(iszero, zero(Mat4))
+    @test all(isone, one(Mat4))
+
+    @test all(iszero, zero(Arr{16,Vec2}))
+    @test all(iszero, zero(Arr{16,Mat3}))
   end
 end;

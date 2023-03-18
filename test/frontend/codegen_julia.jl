@@ -52,6 +52,7 @@ macro test_code(code, args...)
       sts = code.code[1:(end - 1)]
       is_spirv_chunk = all(sts) do st
         Meta.isexpr(st, :call) && st.args[1] == GlobalRef(Base, :getfield) && return true
+        Meta.isexpr(st, :new) && return true
         isa(st, GlobalRef) && return true
         Meta.isexpr(st, :invoke) || (@error "Expected `invoke` expression, got `$st`"; return false)
         mi = st.args[1]::Core.MethodInstance
@@ -168,7 +169,7 @@ end
       v1 = Vec(0.0, 1.0, 0.0)
       v2 = Vec(1.0, 2.0, 1.0)
       v3 = Vec(3.0, 1.0, -1.0)
-      f_vector(x, y, z) = (x + y) * (z - y)
+      f_vector(x, y, z) = (x + y) .* (z - y)
       @test f_vector(v1, v2, v3) == Vec(2.0, -3.0, -2.0)
 
       (; code, ssavaluetypes) = SPIRV.@code_typed f_vector(v1, v2, v3)
@@ -274,7 +275,13 @@ end
     @test_code ci minlength = 30 maxlength = 30 # 10 accesses, 9 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source ((x, y) -> x .+ y)(::Vec2, ::Vec2)
-    @test_code ci minlength = 12 maxlength = 30 # 4 accesses, 2 additions, 1 construct, 1 return
+    @test_code ci minlength = 2 maxlength = 2 # 1 addition, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source ((arr, x) -> getindex.(arr .+ Ref(x), 1U))(::Arr{3,Vec2}, ::Vec2)
+    @test_code ci minlength = 12 maxlength = 30 # Just make sure broadcast results in a single instruction chunk.
+
+    ci = SPIRV.@code_typed debuginfo=:source (arr -> (arr .+= arr))(::Arr{3,Vec2})
+    @test_code ci minlength = 18 maxlength = 18
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float32}}, ::Arr{3,Float32})
     @test_code ci minlength = 1 maxlength = 1 # 1 return
@@ -283,18 +290,18 @@ end
     @test_code ci minlength = 11 maxlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source lerp(::Vec2, ::Vec2, ::Float32)
-    @test_code ci minlength = 7 maxlength = 7 # a bunch of math operations
+    @test_code ci minlength = 7 maxlength = 17 # A bunch of math operations, code length is variable due to the possibility of constructing intermediate vectors.
 
     ci = SPIRV.@code_typed debuginfo=:source slerp(::Vec2, ::Vec2, ::Float32)
     @test_code ci minlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
-    @test_code ci minlength = 100 maxlength = 400 spirv_chunk = false
+    @test_code ci minlength = 100 maxlength = 150 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source compute_blur_2(::GaussianBlur, ::SampledImage{IT}, ::Vec2)
     @test_code ci minlength = 100 maxlength = 400 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source step_euler(::BoidAgent, ::Vec2, ::Float32)
-    @test_code ci minlength = 60 maxlength = 70 spirv_chunk = false # Assumes that `wrap_around` is inlined, otherwise should be fewer lines.
+    @test_code ci minlength = 50 maxlength = 70 spirv_chunk = false # Assumes that `wrap_around` is inlined, otherwise should be fewer lines.
   end
 end;
