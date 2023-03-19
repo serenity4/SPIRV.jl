@@ -224,10 +224,11 @@ function spir_type(@nospecialize(t::Union{DataType,Type{Union{}}}), tmap::Option
         _ => ArrayType(spir_type(Array{eltype,n - 1}, tmap), nothing)
       end
     end
-    ::Type{<:Tuple} => @match (n = length(t.parameters), t) begin
-      (GuardBy(>(1)), ::Type{<:NTuple}) => ArrayType(spir_type(eltype(t), tmap), Constant(UInt32(n)))
+    ::Type{<:Tuple} => if allequal(fieldtypes(t))
+      ArrayType(spir_type(eltype(t), tmap), Constant(UInt32(fieldcount(t))))
+    else
       # Generate structure on the fly.
-      _ => StructType(spir_type.(t.parameters, tmap))
+      StructType([spir_type(subt, tmap) for subt in fieldtypes(t)])
     end
     ::Type{<:Pointer} => PointerType(StorageClassPhysicalStorageBuffer, spir_type(eltype(t), tmap))
     ::Type{<:Vec} => VectorType(spir_type(eltype(t), tmap), length(t))

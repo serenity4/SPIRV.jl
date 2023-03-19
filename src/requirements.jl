@@ -54,6 +54,7 @@ function FeatureRequirements(instructions, supported::FeatureSupport)
         end
         &OpTypeInt => @trymatch Int(arg) begin
           8  => CapabilityInt8
+          16  => CapabilityInt16
           64 => CapabilityInt64
         end
       end

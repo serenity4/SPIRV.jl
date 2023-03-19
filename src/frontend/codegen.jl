@@ -20,22 +20,25 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       &Base.bitcast => (OpBitcast, args[2:2])
       ::Core.IntrinsicFunction => throw_compilation_error("reached illegal core intrinsic function '$f'")
       &getfield => begin
+        # If a third argument is provided, we ignore it; it indicates whether the field access is checked,
+        # and for SPIR-V code there is no way to express such checks.
         composite = args[1]
         field_idx = @match args[2] begin
           node::QuoteNode => begin
             node.value::Symbol
             sym = (args[2]::QuoteNode).value::Symbol
             T = get_type(composite, target)
-            T <: Union{Arr, Vec, Mat} && sym === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden.")
+            T <: Union{Arr, Vec, Mat} && sym === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden")
             field_idx = findfirst(==(sym), fieldnames(T))
             !isnothing(field_idx) || throw_compilation_error("symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
             field_idx
           end
           idx::Integer => idx
+          idx::Core.SSAValue => throw_compilation_error("dynamic access into tuple or struct members is not yet supported")
         end
         (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
       end
-      &Core.tuple => throw_compilation_error("the function `Core.tuple` is not supported at the moment")
+      &Core.tuple => (OpCompositeConstruct, args) # throw_compilation_error("the function `Core.tuple` is not supported at the moment")
       ::Function => throw_compilation_error("dynamic dispatch detected for function $f. All call sites must be statically resolved")
       _ => throw_compilation_error("call to unknown function $f")
     end

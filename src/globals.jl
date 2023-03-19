@@ -73,6 +73,13 @@ function Instruction(t::FunctionType, id::ResultID, globals::GlobalsInfo)
 end
 function Expression(c::Constant, id::ResultID)
   (; type) = c
+  (; value) = c
+  if (isa(type, IntegerType) || isa(type, FloatType)) && type.width < 32
+    value =
+      type.width == 8 ? UInt32(reinterpret(UInt8, c.value)) :
+      type.width == 16 ? UInt32(reinterpret(UInt16, c.value)) :
+      error("Expected width to be a power of two starting from 8, got a width of $(type.width)")
+  end
   @match (c.value, c.is_spec_const) begin
     (::Nothing, _) => @ex id = OpConstantNull()::type
     (true, false) => @ex id = OpConstantTrue()::type
@@ -81,7 +88,7 @@ function Expression(c::Constant, id::ResultID)
     (false, true) => @ex id = OpSpecConstantFalse()::type
     (ids::Vector{ResultID}, false) => @ex id = OpConstantComposite(ids...)::type
     (ids::Vector{ResultID}, true) => @ex id = OpSpecConstantComposite(ids...)::type
-    (GuardBy(isprimitivetype ∘ typeof), _) => @ex id = OpConstant(reinterpret(UInt32, [c.value]))::type
+    (GuardBy(isprimitivetype ∘ typeof), _) => @ex id = OpConstant(reinterpret(UInt32, [value]))::type
     _ => error("Unexpected value $(c.value) with type $type for constant expression")
   end
 end

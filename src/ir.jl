@@ -124,6 +124,8 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
           t = types[type_id]
           T = julia_type(t)
           literal = @match T begin
+            &UInt8 || &Int8 => reinterpret(T, UInt8(only(arguments)))
+            &Float16 || &UInt16 || &Int16 => reinterpret(T, UInt16(only(arguments)))
             &Float32 || &UInt32 || &Int32 => reinterpret(T, only(arguments))
             &Float64 || &UInt64 || &Int64 => only(reinterpret(T, [arguments[1]::Word, arguments[2]::Word]))
             _ => error("Unexpected literal of type $T found in constant instruction with arguments $arguments")
