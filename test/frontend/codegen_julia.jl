@@ -235,8 +235,8 @@ end
     @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
 
     # Currently broken because of a Pi node, let's keep it here nonetheless.
-    ci = SPIRV.@code_typed debuginfo=:source test_constprop3()
-    @test_code ci spirv_chunk = :broken # 1 conversion, 1 intrinsic, 1 return
+    ci = SPIRV.@code_typed debuginfo=:source (() -> 3.0 + 2F + Base.mod(10.0, 3.0))()
+    @test_code ci minlength = 3 maxlength = 3 # 2 intrinsics, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source all(::Vec{2,Bool})
     @test_code ci minlength = 2 maxlength = 2 # 2 accesses, 1 logical operation, 1 return
