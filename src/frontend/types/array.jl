@@ -1,11 +1,16 @@
 mutable struct Arr{N,T} <: AbstractSPIRVArray{T,1}
   data::NTuple{N,T}
+  Arr{N,T}(components::T...) where {N, T} = CompositeConstruct(Arr{N,T}, components...)
 end
 
+Arr{N,T}(components::Tuple) where {N,T} = Arr{N,T}(components...)
+Arr{N,T}(data::AbstractVector) where {N,T} = Arr{N,T}(ntuple(i -> data[i], N))
+Arr{N,T}(components...) where {N,T} = Arr{N,T}(convert.(T, components)...)
 Arr(components...) = Arr(promote(components...)...)
 Arr(components::T...) where {T} = Arr{length(components),T}(components...)
-Arr{N,T}(components::T...) where {N, T} = CompositeConstruct(Arr{N,T}, components...)
+Arr(components::Tuple) = Arr(components...)
 Arr{T}(components...) where {T} = Arr{length(components),T}(convert.(T, components)...)
+
 @noinline (@generated CompositeConstruct(::Type{Arr{N,T}}, data::T...) where {N,T} = Expr(:new, Arr{N,T}, :data))
 
 Base.length(::Type{<:Arr{N}}) where {N} = N

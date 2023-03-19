@@ -73,6 +73,12 @@ using SPIRV: component_type, texel_type, sampled_type, column
     v2 = similar(v)
     @test eltype(v2) == eltype(v)
     @test size(v2) == size(v)
+    v = Vec4(1, 2, 3, 4)
+    @test v.xy == v.rg == Vec2(1, 2)
+    v.xy = Vec2(6, 7)
+    @test v.xy == Vec2(6, 7)
+    v.rab = (1, 2, 3)
+    @test v == Vec4(1, 7, 3, 2)
 
     @test_throws ArgumentError Vec(1.0)
     @test_throws ArgumentError Vec(1.0, 2.0, 3.0, 4.0, 5.0)
