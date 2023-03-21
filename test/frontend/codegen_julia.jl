@@ -59,7 +59,7 @@ macro test_code(code, args...)
         isa(st, GlobalRef) && return true
         Meta.isexpr(st, :invoke) || ($(log(:("Expected `invoke` expression, got `$st`"))); return false)
         mi = st.args[1]::Core.MethodInstance
-        (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || (log(:("Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`")); false)
+        (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || ($(log(:("Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`")); false))
       end
       $(test(:is_spirv_chunk, broken = spirv_chunk_broken))
     end
@@ -301,7 +301,7 @@ end
     ci = SPIRV.@code_typed debuginfo=:source lerp(::Vec2, ::Vec2, ::Float32)
     @test_code ci minlength = 7 maxlength = 17 # A bunch of math operations, code length is variable due to the possibility of constructing intermediate vectors.
 
-    ci = SPIRV.@code_typed debuginfo=:source slerp(::Vec2, ::Vec2, ::Float32)
+    ci = SPIRV.@code_typed debuginfo=:source slerp_2d(::Vec2, ::Vec2, ::Float32)
     @test_code ci minlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)

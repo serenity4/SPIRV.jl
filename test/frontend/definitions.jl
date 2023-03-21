@@ -1,3 +1,5 @@
+using .MathFunctions
+
 function f_straightcode(x)
   y = x + 1
   z = 3y
@@ -42,24 +44,6 @@ function compute_blur_2(blur::GaussianBlur, reference, uv)
   end
   res
 end
-
-distance2(x::Vec, y::Vec) = sum(x -> x^2, y - x)
-distance(x::Vec, y::Vec) = sqrt(distance2(x, y))
-norm(x::Vec) = distance(x, zero(x))
-normalize(x::Vec) = ifelse(iszero(x), x, x / norm(x))
-
-function angle_2d(x, y)
-  θ = atan(y[2], y[1]) - atan(x[2], x[1])
-  θ % 2(π)F
-end
-
-function slerp(x, y, t)
-  θ = angle_2d(x, y)
-  wx = sin((1 - t)θ)
-  wy = sin(t * θ)
-  normalize(x * wx + y * wy)
-end
-lerp(x, y, t) = x * t + (1 - t)y
 
 IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
 

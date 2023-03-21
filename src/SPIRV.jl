@@ -85,6 +85,7 @@ include("frontend/types/array.jl")
 include("frontend/types/image.jl")
 include("frontend/types/broadcast.jl")
 include("frontend/types/base/ranges.jl")
+include("frontend/MathFunctions.jl")
 include("layouts.jl")
 include("serialization.jl")
 include("frontend/intrinsics_glsl.jl")
@@ -100,6 +101,8 @@ include("spirv_dsl.jl")
 include("precompile.jl")
 
 export
+  MathFunctions,
+
   # Conversion character literals.
   U, F,
 
