@@ -409,9 +409,8 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
       &Core.ReturnNode() => return validation_error("Unreachable statement detected (previous instruction: $(code.code[i - 1]))", i, ex, line)
       Expr(:foreigncall, _...) => return validation_error("Foreign call detected", i, ex, line)
       Expr(:call, f, _...) => @match follow_globalref(f) begin
-        &Base.not_int || &Base.bitcast || &Base.getfield => nothing
+        &Base.not_int || &Base.bitcast || &Base.getfield || &Core.tuple => nothing
         ::Core.IntrinsicFunction => return validation_error("Illegal core intrinsic function `$f` detected", i, ex, line)
-        &Core.tuple => return validation_error("Call to unsupported function `Core.tuple` detected", i, ex, line)
         ::Function => return validation_error("Dynamic dispatch detected", i, ex, line)
         _ => return validation_error("Expected `GlobalRef`", i, ex, line)
       end

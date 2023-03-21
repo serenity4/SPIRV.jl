@@ -33,7 +33,7 @@ function rotate_2d(v, angle)
   cv = v.x + v.y * im
   crot = cos(angle) + sin(angle) * im
   cv′ = cv * crot
-  Vec2(real(cv′), imag(cv′))
+  typeof(v)(real(cv′), imag(cv′))
 end
 
 normalize(x::AbstractSPIRVArray) = ifelse(iszero(x), x, x / norm(x))
@@ -56,9 +56,17 @@ function compute_roots(a, b, c)
   (t₁, t₂)
 end
 
-function linearstep(slope, value)
-  T = typeof(slope)
-  clamp(T(0.5) + slope * value, zero(T), one(T))
+"""
+Remap a value from `(low1, high1)` to `(low2, high2)`.
+"""
+function remap(value, low1, high1, low2, high2)
+  low2 + (value - low1) * (high2 - low2) / (high1 - low1)
+end
+
+function linearstep(min, max, value)
+  value < min && return zero(value)
+  value ≥ max && return one(value)
+  remap(value, min, max, zero(value), one(value))
 end
 
 """
@@ -69,7 +77,7 @@ Has null 1-derivative at `min` and `max`.
 function smoothstep(min, max, value)
   value < min && return zero(value)
   value ≥ max && return one(value)
-  x = (value - min) / (max - min)
+  x = remap(value, min, max, zero(value), one(value))
   x^2 * (3 - 2x)
 end
 
@@ -81,7 +89,7 @@ Has null 1- and 2-derivatives at `min` and `max`.
 function smootherstep(min, max, value)
   value < min && return zero(value)
   value ≥ max && return one(value)
-  x = (value - min) / (max - min)
+  x = remap(value, min, max, zero(value), one(value))
   x^3 * (x * (6x - 15) + 10)
 end
 

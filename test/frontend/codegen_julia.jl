@@ -302,7 +302,22 @@ end
     @test_code ci minlength = 7 maxlength = 17 # A bunch of math operations, code length is variable due to the possibility of constructing intermediate vectors.
 
     ci = SPIRV.@code_typed debuginfo=:source slerp_2d(::Vec2, ::Vec2, ::Float32)
-    @test_code ci minlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
+    @test_code ci minlength = 30
+
+    ci = SPIRV.@code_typed debuginfo=:source rotate_2d(::Vec2, ::Float32)
+    @test_code ci minlength = 30
+
+    ci = SPIRV.@code_typed debuginfo=:source linearstep(::Float32, ::Float32, ::Float32)
+    @test_code ci minlength = 10 maxlength = 20 spirv_chunk = false
+
+    ci = SPIRV.@code_typed debuginfo=:source smoothstep(::Float32, ::Float32, ::Float32)
+    @test_code ci minlength = 10 maxlength = 20 spirv_chunk = false
+
+    ci = SPIRV.@code_typed debuginfo=:source smootherstep(::Float32, ::Float32, ::Float32)
+    @test_code ci minlength = 10 maxlength = 20 spirv_chunk = false
+
+    ci = SPIRV.@code_typed debuginfo=:source compute_roots(::Float32, ::Float32, ::Float32)
+    @test_code ci minlength = 30 maxlength = 50 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
     @test_code ci minlength = 100 maxlength = 150 spirv_chunk = false
