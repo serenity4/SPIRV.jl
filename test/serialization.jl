@@ -14,6 +14,7 @@ end
 @testset "Serialization/deserialization" begin
   dataset = [
     (1, 2U),
+    (3F, 6F),
     Align2(1, 2),
     (1, 2U, 3, (4U, 2F), 5F, 10, 11, 12),
     (1, Vec3(2, 3, 4)),

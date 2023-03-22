@@ -171,6 +171,7 @@ datasize(layout::LayoutStrategy, t::Union{VectorType,MatrixType}) = t.n * datasi
 datasize(layout::LayoutStrategy, t::ArrayType) = extract_size(t) * stride(layout, t.eltype)
 datasize(layout::LayoutStrategy, t::StructType) = dataoffset(layout, t, length(t.members)) + datasize(layout, t.members[end])
 dataoffset(layout::VulkanLayout, t::SPIRType, i::Integer) = 0
+dataoffset(layout::VulkanLayout, t::ArrayType, i::Integer) = (i - 1) * stride(layout, t.eltype)
 function dataoffset(layout::VulkanLayout, t::StructType, i::Integer)
   i == 1 && return 0
   subt = t.members[i]
