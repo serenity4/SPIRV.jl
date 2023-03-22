@@ -133,28 +133,6 @@ is_merge_instruction(inst::AbstractInstruction) = in(opcode(inst), (OpSelectionM
 is_label_instruction(inst::AbstractInstruction) = opcode(inst) == OpLabel
 is_phi_instruction(inst::AbstractInstruction) = opcode(inst) == OpPhi
 
-function termination_instruction(blk::Block)
-  ex = blk[end]
-  @assert is_termination_instruction(ex)
-  ex
-end
-
-function merge_header(blk::Block)
-  ex = blk[end]
-  @assert is_merge_instruction(ex)
-  ex
-end
-
-function phi_expressions(blk::Block)
-  exs = Expression[]
-  for ex in blk
-    if ex.op == OpPhi
-      push!(exs, ex)
-    end
-  end
-  exs
-end
-
 "Find the function index which contains the instruction with result ID `fid`."
 function find_function(amod::AnnotatedModule, fid::ResultID)
   for (i, af) in enumerate(amod.annotated_functions)

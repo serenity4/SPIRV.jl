@@ -145,4 +145,20 @@ end
   add_merge_headers!(ir)
   @test isempty(conflicted_merge_blocks(fdef))
   @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g15())
+  fdef = only(ir)
+  @test unwrap(validate(ir))
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test isempty(conflicted_merge_blocks(fdef))
+  @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g16())
+  fdef = only(ir)
+  @test unwrap(validate(ir))
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test isempty(conflicted_merge_blocks(fdef))
+  @test unwrap(validate(ir))
 end;

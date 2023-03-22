@@ -1,4 +1,5 @@
 using SPIRV, Test
+using SPIRV.MathFunctions
 
 resource(filename) = joinpath(@__DIR__, "resources", filename)
 read_module(file) = read(joinpath(@__DIR__, "modules", file * (last(splitext(file)) == ".jl" ? "" : ".jl")), String)

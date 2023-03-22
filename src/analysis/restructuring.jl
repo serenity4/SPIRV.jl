@@ -1,11 +1,20 @@
-function add_merge_headers!(ir::IR)
+abstract type FunctionPass end
+
+function (pass!::FunctionPass)(ir::IR)
   for fdef in ir.fdefs
-    add_merge_headers!(fdef)
+    new_function!(pass!, fdef)
+    pass!(fdef)
   end
   ir
 end
 
-function add_merge_headers!(fdef::FunctionDefinition)
+new_function!(pass::FunctionPass, fdef::FunctionDefinition) = pass
+
+struct AddMergeHeaders <: FunctionPass end
+
+add_merge_headers!(ir::IR) = AddMergeHeaders()(ir)
+
+function (::AddMergeHeaders)(fdef::FunctionDefinition)
   cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
   back_edges = backedges(cfg)
@@ -66,9 +75,7 @@ function merge_candidate_selection(ctree::ControlTree, cfg::AbstractGraph)
   if i == lastindex(p.children)
     is_loop(p) || error("A selection construct must not be the last block unless its parent is a loop.")
     is_breaking_node(ctree, cfg) && return nothing
-    candidates = merge_candidates(p, cfg)
-    length(candidates) == 1 || error("Expected exactly one merge candidate for the parent loop, got ", length(candidates))
-    return candidates[1]
+    return merge_candidate(p, cfg)
   end
   node_index(p[i + 1])
 end
@@ -84,38 +91,49 @@ function merge_candidate_loop(ctree::ControlTree, cfg::AbstractGraph)
   end
 end
 
-function restructure_merge_blocks!(ir::IR)
-  for fdef in ir.fdefs
-    restructure_merge_blocks!(fdef, ir.idcounter)
-  end
-  ir
+struct RestructureMergeBlocks <: FunctionPass
+  restructured::Set{Int}
+  idcounter::IDCounter
 end
+RestructureMergeBlocks(ir::IR) = RestructureMergeBlocks(Set{Int}(), ir.idcounter)
+new_function!(pass!::RestructureMergeBlocks, fdef::FunctionDefinition) = empty!(pass!.restructured)
 
-function restructure_merge_blocks!(fdef::FunctionDefinition, idcounter::IDCounter)
+restructure_merge_blocks!(ir::IR) = RestructureMergeBlocks(ir)(ir)
+
+function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
   cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
+  # Control-flow structures become outdated as the function is modified.
+  # Instead of reconstructing the CFG and control trees after every modification
+  # (which is done here by re-applying the pass), we only do it when it is really needed.
+  # Currently, we re-apply the pass when an outer construct had one of its inner constructs
+  # restructured and then becomes an inner construct itself.
+  reapply_on = Set{Int}()
 
   for ctree in PostOrderDFS(ctree_global)
+    in(node_index(ctree), pass!.restructured) && continue
     is_selection(ctree) || is_loop(ctree) || continue
     outer_construct = find_parent(p -> is_selection(p) || is_loop(p), ctree)
     isnothing(outer_construct) && continue
     merge_inner, merge_outer = merge_candidate.((ctree, outer_construct), cfg)
     merge_inner ≠ merge_outer && continue
+    in(node_index(ctree), reapply_on) && return pass!(fdef)
     merge_blk = fdef[merge_inner]
 
     # We will in general have only one branching block for selection constructs
     # and possibly multiple ones for loops (as break statements are allowed).
     # TODO: Optimize this by using the property above to avoid traversing all leaves.
     branching_blks = Block[fdef[node_index(tree)] for tree in Leaves(ctree) if in(merge_inner, outneighbors(cfg, node_index(tree)))]
-    new = new_block!(fdef, next!(idcounter))
+    new = new_block!(fdef, next!(pass!.idcounter))
 
-    # Adjust branching instructions from branching blocks so that they branch to the new node instead.
     redirect_branches!(branching_blks, merge_blk.id, new.id)
 
     # Intercept OpPhi instructions in the original merge block by the new block.
-    intercept_phi_instructions!!(idcounter, branching_blks, new, merge_blk)
+    intercept_phi_instructions!!(pass!.idcounter, branching_blks, new, merge_blk)
 
     push!(new, @ex OpBranch(merge_blk.id))
+    push!(pass!.restructured, node_index(ctree))
+    push!(reapply_on, node_index(outer_construct))
   end
 end
 

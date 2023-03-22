@@ -7,6 +7,37 @@ Block(id::ResultID) = Block(id, Expression[])
 
 @forward Block.exs (Base.getindex, Base.iterate, Base.length, Base.keys, Base.push!, Base.pushfirst!, Base.pop!, Base.popfirst!, Base.firstindex, Base.lastindex, Base.insert!, Base.view)
 
+function termination_instruction(blk::Block)
+  ex = blk[end]
+  @assert is_termination_instruction(ex)
+  ex
+end
+
+function merge_header(blk::Block)
+  ex = blk[end]
+  @assert is_merge_instruction(ex)
+  ex
+end
+
+function phi_expressions(blk::Block)
+  exs = Expression[]
+  for ex in blk
+    if ex.op == OpPhi
+      push!(exs, ex)
+    end
+  end
+  exs
+end
+
+function directly_reachable_blocks(blk::Block)
+  inst = termination_instruction(blk)
+  @match opcode(inst) begin
+    &OpBranch => ResultID[inst[end]]
+    &OpBranchConditional => collect(ResultID, inst[end-1:end])
+    &OpSwitch => collect(ResultID, inst[4:2:end])
+  end
+end
+
 @auto_hash_equals struct FunctionDefinition
   type::FunctionType
   control::FunctionControl
