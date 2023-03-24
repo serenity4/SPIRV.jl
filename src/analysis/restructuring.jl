@@ -18,7 +18,7 @@ function (::AddMergeHeaders)(fdef::FunctionDefinition)
   cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
   back_edges = backedges(cfg)
-  traversed = BitVector(undef, nv(cfg))
+  traversed = falses(nv(cfg))
   for ctree in PreOrderDFS(ctree_global)
     is_block(ctree) && continue
     v = node_index(ctree)
