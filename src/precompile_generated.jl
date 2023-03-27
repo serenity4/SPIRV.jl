@@ -1,601 +1,2045 @@
-    Base.precompile(Tuple{typeof(+),Vec{3, Float64},Vec{3, Float64}})   # time: 2.1449165
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:inferred, :interp), Tuple{Bool, SPIRVInterpreter}},Type{SPIRVTarget},Any,Type})   # time: 1.5137424
-    Base.precompile(Tuple{typeof(acyclic_region),DeltaGraph{Int64},Int64})   # time: 1.2065501
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:interp,), Tuple{SPIRVInterpreter}},typeof(compile),Any,Any,AllSupported})   # time: 0.8474841
-    Base.precompile(Tuple{typeof(satisfy_requirements!),IR,AllSupported})   # time: 0.642026
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:satisfy_requirements,), Tuple{Bool}},Type{IR},Module})   # time: 0.58354944
-    Base.precompile(Tuple{typeof(annotate),Module})   # time: 0.46529242
-    Base.precompile(Tuple{typeof(promote_to_interface_block),SampledImageType,StorageClass})   # time: 0.44266462
-    Base.precompile(Tuple{typeof(sin),Float32})   # time: 0.4303311
-    Base.precompile(Tuple{typeof(renumber_ssa),Module})   # time: 0.42425898
-    Base.precompile(Tuple{typeof(interpret),Function,Vararg{Any}})   # time: 0.41341922
-    Base.precompile(Tuple{typeof(*),Vec2,Float32})   # time: 0.38055432
-    Base.precompile(Tuple{typeof(==),Vec{2, Int32},Vec2})   # time: 0.37066913
-    Base.precompile(Tuple{typeof(cyclic_region),DeltaGraph{Int64},Int64})   # time: 0.3674796
-    Base.precompile(Tuple{typeof(read),Type{Module},String})   # time: 0.36503908
-    Base.precompile(Tuple{typeof(restructure_merge_blocks!),IR})   # time: 0.36336225
-    Base.precompile(Tuple{typeof(merge),Decorations,Decorations})   # time: 0.36292443
-    Base.precompile(Tuple{Type{ControlTree},DeltaGraph{Int64}})   # time: 0.35505286
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(*),Vec{2, Float64},Float32})   # time: 0.3441501
-    Base.precompile(Tuple{typeof(getindex),Arr{4, Float64},UInt32})   # time: 0.32969177
-    Base.precompile(Tuple{typeof(deserialize),Type{Mat4},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},VulkanLayout})   # time: 0.30219328
-    Base.precompile(Tuple{typeof(spir_type),DataType,TypeMap})   # time: 0.2722128
-    Base.precompile(Tuple{typeof(datasize),NoPadding,Type{Vec3}})   # time: 0.26070464
-    Base.precompile(Tuple{typeof(generate_ir),Expr})   # time: 0.25759274
-    Base.precompile(Tuple{Type{VulkanLayout},Vector{DataType}})   # time: 0.25244847
-    Base.precompile(Tuple{typeof(serialize),Vector{Arr{2, UInt8}},NativeLayout})   # time: 0.23368752
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, Constant}})   # time: 0.21903574
-    Base.precompile(Tuple{typeof(dependent_functions),IR,ResultID})   # time: 0.21210119
-    Base.precompile(Tuple{typeof(show),IOBuffer,MIME{Symbol("text/plain")},Module})   # time: 0.19356732
-    Base.precompile(Tuple{typeof(read),IOBuffer,Type{PhysicalModule}})   # time: 0.1900757
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,String,Literal})   # time: 0.18805777
-    Base.precompile(Tuple{Type{UseDefChain},AnnotatedModule,AnnotatedFunction,ResultID,StackTrace})   # time: 0.16414867
-    Base.precompile(Tuple{typeof(emit_constant!),ModuleTarget,Translation,Tuple{Float64, Tuple{UInt32, Int64}}})   # time: 0.1622477
-    Base.precompile(Tuple{typeof(append_decorations!),Vector{Instruction},ResultID,Decorations})   # time: 0.15318824
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{Int64, UInt32}},Vector{UInt8},NoPadding})   # time: 0.15300412
-    Base.precompile(Tuple{Type{Module},String})   # time: 0.15048805
-    Base.precompile(Tuple{Type{Shader},SPIRVTarget,ShaderInterface,VulkanAlignment})   # time: 0.12823956
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{Int64, Vec3}},Vector{UInt8},NativeLayout})   # time: 0.12275458
-    Base.precompile(Tuple{Type{ExplicitLayout},NativeLayout,Vector{DataType}})   # time: 0.12156865
-    Base.precompile(Tuple{typeof(==),Vec3,Vec3})   # time: 0.11422481
-    Base.precompile(Tuple{Type{ModuleTarget}})   # time: 0.114053346
-    Base.precompile(Tuple{typeof(deserialize),Type{Mat{2, 3, Float32}},Vector{UInt8},VulkanLayout})   # time: 0.10801705
-    Base.precompile(Tuple{typeof(deserialize),Type{Mat{2, 5, Float32}},Vector{UInt8},VulkanLayout})   # time: 0.103730075
-    Base.precompile(Tuple{typeof(haskey),BijectiveMapping{ResultID, SPIRType},SampledImageType})   # time: 0.10289829
-    Base.precompile(Tuple{typeof(deserialize),Type{Base.RefValue{Vec4}},Vector{UInt8},NativeLayout})   # time: 0.100749925
-    Base.precompile(Tuple{typeof(validate),Module})   # time: 0.09886374
-    Base.precompile(Tuple{typeof(deepcopy),Vec2})   # time: 0.09882359
-    Base.precompile(Tuple{typeof(isapprox),Module,Module})   # time: 0.09725195
-    Base.precompile(Tuple{typeof(deserialize),Type{Base.RefValue{Vec4}},Vector{UInt8},NoPadding})   # time: 0.095764205
-    Base.precompile(Tuple{var"##s645#322",Any,Any,Any,Any})   # time: 0.09397204
-    Base.precompile(Tuple{Type{FeatureRequirements},Vector{Instruction},AllSupported})   # time: 0.09327775
-    Base.precompile(Tuple{typeof(add_options!),EntryPoint,GeometryExecutionOptions})   # time: 0.09310356
-    Base.precompile(Tuple{typeof(==),Vec{3, Float64},Vec{3, Float64}})   # time: 0.0921099
-    Base.precompile(Tuple{typeof(copy),Pointer{Tuple{Int64, Vec2}}})   # time: 0.09192988
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),Type{Int32},Vec2})   # time: 0.09066481
-    Base.precompile(Tuple{typeof(==),T<:SPIRV.Vec,T<:SPIRV.Vec})   # time: 0.090504006
-    Base.precompile(Tuple{typeof(validate),IR})   # time: 0.08545839
-    Base.precompile(Tuple{typeof(merge_vertices!),DeltaGraph{Int64},Int64,Int64,Int64})   # time: 0.08446557
-    Base.precompile(Tuple{Type{Vec2},Int64,Int64})   # time: 0.0815935
-    Base.precompile(Tuple{typeof(deserialize),Type{Arr{2, Int64}},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},VulkanLayout})   # time: 0.07951385
-    Base.precompile(Tuple{typeof(datasize),NativeLayout,Type{Vec{2, Int16}}})   # time: 0.07884036
-    Base.precompile(Tuple{typeof(clamp),Float64,Float64,Float64})   # time: 0.07069411
-    Base.precompile(Tuple{typeof(merge_blocks),FunctionDefinition})   # time: 0.0681418
-    Base.precompile(Tuple{Type{Mat4},Vec4,Vec4,Vec4,Vec4})   # time: 0.068016395
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},String})   # time: 0.067255415
-    Base.precompile(Tuple{typeof(==),AnnotatedFunction,AnnotatedFunction})   # time: 0.066538244
-    Base.precompile(Tuple{typeof(all),typeof(iszero),Vec{4, Float64}})   # time: 0.06613931
-    Base.precompile(Tuple{Type{ShaderExecutionOptions},ExecutionModel})   # time: 0.06404015
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,FunctionControl,Type})   # time: 0.060250796
-    Base.precompile(Tuple{typeof(deserialize),Type{Mat4},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.05959624
-    Base.precompile(Tuple{typeof(datasize),ShaderLayout,StructType})   # time: 0.058935545
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},StorageClass})   # time: 0.0580453
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(/),Float64,Vec{2, UInt32}})   # time: 0.05775136
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,ExecutionMode,Type})   # time: 0.05598825
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,Capability,Type})   # time: 0.05290829
-    Base.precompile(Tuple{typeof(isapprox),PhysicalModule,PhysicalModule})   # time: 0.052294467
-    Base.precompile(Tuple{typeof(validate),ComputeExecutionOptions,ExecutionModel})   # time: 0.049567237
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(*),Vec{2, Int32},Vec2})   # time: 0.049452133
-    Base.precompile(Tuple{typeof(show),IOContext{IOBuffer},ControlTree})   # time: 0.048165374
-    Base.precompile(Tuple{typeof(deserialize),Type{Mat{2, 5, Float32}},Vector{UInt8},NativeLayout})   # time: 0.047704756
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(*),Vec3,Float64})   # time: 0.047440596
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,ExecutionModel,Type})   # time: 0.046129704
-    Base.precompile(Tuple{typeof(axes),Mat})   # time: 0.045747574
-    Base.precompile(Tuple{typeof(deserialize),Type{Vec{2, Int16}},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{UInt64}}, true},NativeLayout})   # time: 0.044925444
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,Decoration,Type})   # time: 0.044660993
-    Base.precompile(Tuple{typeof(deserialize),Type{Vec3},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{UInt64}}, true},NativeLayout})   # time: 0.04421092
-    Base.precompile(Tuple{typeof(zero),Type{Arr{16, Float32}}})   # time: 0.043922152
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,FunctionControl,OperandInfo})   # time: 0.043839607
-    Base.precompile(Tuple{typeof(deserialize),Type{Arr{2, Vec3}},Vector{UInt8},NoPadding})   # time: 0.042678997
-    Base.precompile(Tuple{typeof(getproperty),Vec3,Symbol})   # time: 0.042268034
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}},Vector{UInt8},NativeLayout})   # time: 0.04197337
-    Base.precompile(Tuple{typeof(serialize),Vector{Arr{2, UInt8}},NoPadding})   # time: 0.04172489
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,SelectionControl,Type})   # time: 0.04088524
-    Base.precompile(Tuple{typeof(alignment),VulkanLayout,StructType})   # time: 0.04082586
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,LoopControl,Type})   # time: 0.040808767
-    Base.precompile(Tuple{typeof(all),typeof(isone),Arr{16, Vec4}})   # time: 0.040515576
-    Base.precompile(Tuple{typeof(getproperty),Vec{2, Int16},Symbol})   # time: 0.040473275
-    Base.precompile(Tuple{typeof(all),Vec{2, Bool}})   # time: 0.03982332
-    Base.precompile(Tuple{Type{Constant},Tuple{Float64, Tuple{UInt32, Int64}},ModuleTarget,Translation})   # time: 0.039397467
-    Base.precompile(Tuple{typeof(compact),DeltaGraph{Int64}})   # time: 0.039344277
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},SelectionControl})   # time: 0.03925636
-    Base.precompile(Tuple{typeof(deserialize),Type{Vec{2, Int16}},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.03873732
-    isdefined(SPIRV, Symbol("#92#93")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#92#93")),IOContext{IOBuffer},Vararg{Any}})   # time: 0.03858122
-    Base.precompile(Tuple{Type{Translation}})   # time: 0.038460627
-    Base.precompile(Tuple{typeof(add_options!),EntryPoint,CommonExecutionOptions})   # time: 0.037719883
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:storage_classes,), Tuple{Vector{StorageClass}}},Type{ShaderInterface},ExecutionModel})   # time: 0.037197288
-    Base.precompile(Tuple{Type{Instruction},OpCode,ResultID,Nothing,ResultID,Vararg{Any}})   # time: 0.036614817
-    Base.precompile(Tuple{Type{DeltaGraph}})   # time: 0.036244377
-    Base.precompile(Tuple{typeof(deserialize_mutable),Type{Vec4},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{UInt64}}, true},NativeLayout})   # time: 0.035864916
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}},Vector{UInt8},NoPadding})   # time: 0.035554446
-    Base.precompile(Tuple{typeof(parse),Type{SPIRType},Instruction,BijectiveMapping{ResultID, SPIRType},BijectiveMapping{ResultID, Constant}})   # time: 0.035529926
-    Base.precompile(Tuple{typeof(rem_vertex!),DeltaGraph{Int64},Int64})   # time: 0.035337735
-    Base.precompile(Tuple{Type{Vec3},Int64,Int64,Int64})   # time: 0.034599207
-    Base.precompile(Tuple{typeof(one),Type{Arr{16, Vec4}}})   # time: 0.034581836
-    Base.precompile(Tuple{Type{EdgeClassification},DeltaGraph{Int64}})   # time: 0.033855524
-    Base.precompile(Tuple{typeof(decorate!),Decorations,Decoration,Int64})   # time: 0.033692278
-    Base.precompile(Tuple{typeof(one),Type{Arr{16, Float32}}})   # time: 0.03344138
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,StorageClass,Type})   # time: 0.033103656
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,BuiltIn,Type})   # time: 0.032736514
-    Base.precompile(Tuple{typeof(serialize),Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64},NoPadding})   # time: 0.032647748
-    Base.precompile(Tuple{typeof(zero),Type{Arr{16, Vec4}}})   # time: 0.03234131
-    Base.precompile(Tuple{Type{Expression},OpCode,FloatType,ResultID,Core.SSAValue,Vararg{Any}})   # time: 0.03160907
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,FunctionType})   # time: 0.031479634
-    Base.precompile(Tuple{typeof(serialize),Tuple{Int64, UInt32},VulkanLayout})   # time: 0.03141539
-    Base.precompile(Tuple{Type{Vec2},Int64,Vararg{Int64}})   # time: 0.031375762
-    Base.precompile(Tuple{Type{Instruction},OpCode,Nothing,Nothing,SourceLanguage,Vararg{Any}})   # time: 0.031331662
-    Base.precompile(Tuple{typeof(deserialize_immutable),Type{Tuple{Int64, UInt32}},Vector{UInt8},NoPadding})   # time: 0.031040536
-    Base.precompile(Tuple{Type{TypeMap}})   # time: 0.030466374
-    let fbody = try Base.bodyfunction(which(spir_type, (DataType,TypeMap,))) catch missing end
-    if !ismissing(fbody)
-        precompile(fbody, (Bool,Nothing,Bool,typeof(spir_type),DataType,TypeMap,))
-    end
-end   # time: 0.030451998
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,MemoryModel,Type})   # time: 0.030207478
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,SourceLanguage,Type})   # time: 0.029894222
-    Base.precompile(Tuple{typeof(exp),Float32})   # time: 0.029820817
-    Base.precompile(Tuple{typeof(add_type_layouts!),TypeMetadata,VulkanLayout})   # time: 0.029666195
-    Base.precompile(Tuple{typeof(edges),DeltaGraph{Int64}})   # time: 0.029454432
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,Dim,Type})   # time: 0.029300664
-    Base.precompile(Tuple{typeof(prod),Vec3})   # time: 0.029252056
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,AddressingModel,Type})   # time: 0.028935952
-    Base.precompile(Tuple{typeof(getindex),Image{ImageFormatRgba32f, Dim2D, 0, false, false, 1, Vec4},Int64,Int64})   # time: 0.028798912
-    Base.precompile(Tuple{typeof(deserialize),Type{Mat{2, 5, Float32}},Vector{UInt8},NoPadding})   # time: 0.02871674
-    Base.precompile(Tuple{Type{Instruction},OpCode,ResultID,ResultID,FunctionControl,Vararg{Any}})   # time: 0.028310657
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,ImageFormat,Type})   # time: 0.027950462
-    Base.precompile(Tuple{Type{Instruction},OpCode,Nothing,ResultID,StorageClass,Vararg{Any}})   # time: 0.02792068
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},MemoryAccess})   # time: 0.027661145
-    Base.precompile(Tuple{typeof(deserialize),Type{Mat{2, 3, Float32}},Vector{UInt8},NoPadding})   # time: 0.027129129
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Arr{2, UInt8}}},Vector{UInt8},NativeLayout})   # time: 0.02637409
-    Base.precompile(Tuple{typeof(mod),Float64,Float64})   # time: 0.026371159
-    Base.precompile(Tuple{typeof(flow_through),Function,ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, DeltaGraph{Int64}},Int64})   # time: 0.02611375
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},BuiltIn})   # time: 0.0259442
-    Base.precompile(Tuple{typeof(getindex),Pointer{Vector{Int64}},Int64})   # time: 0.025845675
-    Base.precompile(Tuple{typeof(sum),Vec{4, Float64}})   # time: 0.025838543
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,UInt32,Literal})   # time: 0.02581121
-    Base.precompile(Tuple{Type{DeltaGraph},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64}})   # time: 0.025652839
-    Base.precompile(Tuple{typeof(add_merge_headers!),IR})   # time: 0.025553757
-    Base.precompile(Tuple{typeof(deserialize),Type{Mat{2, 3, Float32}},Vector{UInt8},NativeLayout})   # time: 0.025178501
-    Base.precompile(Tuple{typeof(serialize),Mat{2, 3, Float32},VulkanLayout})   # time: 0.025084358
-    Base.precompile(Tuple{typeof(parse),Type{Module},String})   # time: 0.024966445
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Arr{2, Int64}}},Vector{UInt8},NoPadding})   # time: 0.024635779
-    Base.precompile(Tuple{typeof(format_parameter),OperandInfo})   # time: 0.02461974
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Arr{2, Int64}}},Vector{UInt8},NativeLayout})   # time: 0.02449341
-    Base.precompile(Tuple{typeof(sinks),DeltaGraph{Int64}})   # time: 0.024385056
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:memory_model,), Tuple{MemoryModel}},Type{IR}})   # time: 0.024298187
-    Base.precompile(Tuple{typeof(deserialize),Type{Mat4},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{UInt64}}, true},NativeLayout})   # time: 0.024205957
-    Base.precompile(Tuple{typeof(emit_argument),IndentedIO{IOContext{IOBuffer}},Int64,ResultID,Id})   # time: 0.02412827
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Arr{2, UInt8}}},Vector{UInt8},NoPadding})   # time: 0.024100946
-    Base.precompile(Tuple{SampledImage{Image{ImageFormatRgba16f, Dim2D, 0, false, false, 1, Vec4}},Vec2})   # time: 0.024091452
-    Base.precompile(Tuple{typeof(showerror),IOBuffer,CompilationError})   # time: 0.023281636
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, Variable}})   # time: 0.023202918
-    Base.precompile(Tuple{typeof(getproperty),Vec{2, Float64},Symbol})   # time: 0.022924997
-    Base.precompile(Tuple{typeof(postdominator),ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, DeltaGraph{Int64}},Int64})   # time: 0.022599678
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},FunctionControl})   # time: 0.022295572
-    Base.precompile(Tuple{typeof(==),Vec2,Vec2})   # time: 0.022248147
-    Base.precompile(Tuple{typeof(show),IOBuffer,MIME{Symbol("text/plain")},IR})   # time: 0.022191046
-    Base.precompile(Tuple{typeof(nexs),FunctionDefinition})   # time: 0.022133015
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(/),Float32,Vec{2, UInt32}})   # time: 0.021908073
-    isdefined(SPIRV, Symbol("#362#363")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#362#363")),Int64})   # time: 0.02185187
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(+),Vec2,Vec2})   # time: 0.021720702
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},Decoration})   # time: 0.021662366
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Vec3}},Vector{UInt8},NativeLayout})   # time: 0.02159506
-    Base.precompile(Tuple{typeof(serialize),Mat{2, 5, Float32},VulkanLayout})   # time: 0.021551535
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},MemoryModel})   # time: 0.021382717
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(*),Vec3,Float32})   # time: 0.021376979
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{Int64, Vec3}},Vector{UInt8},NoPadding})   # time: 0.021062046
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, FunctionType}})   # time: 0.021013206
-    Base.precompile(Tuple{typeof(serialize),Vector{Arr{2, UInt8}},VulkanLayout})   # time: 0.020982493
-    Base.precompile(Tuple{typeof(add_options!),EntryPoint,ComputeExecutionOptions})   # time: 0.020925678
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{UInt32, Float32}},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.020707231
-    Base.precompile(Tuple{typeof(deserialize),Type{Vec3},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.020648416
-    Base.precompile(Tuple{typeof(emit_expression!),ModuleTarget,Translation,SPIRVTarget,FunctionDefinition,Expr,Type,Block})   # time: 0.020163596
-    Base.precompile(Tuple{typeof(emit_constant!),ModuleTarget,Translation,Vec2})   # time: 0.01998175
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},ExecutionModel})   # time: 0.019724036
-    Base.precompile(Tuple{typeof(datasize),NoPadding,Type{Vec{2, Int16}}})   # time: 0.019493775
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},SourceLanguage})   # time: 0.019138418
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Arr{2, UInt8}}},Vector{UInt8},VulkanLayout})   # time: 0.018657226
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Arr{2, Int64}}},Vector{UInt8},VulkanLayout})   # time: 0.018651685
-    Base.precompile(Tuple{typeof(acos),Float32})   # time: 0.01852641
-    Base.precompile(Tuple{typeof(copy),Pointer{Vec{2, Int64}}})   # time: 0.018411348
-    Base.precompile(Tuple{typeof(convert),Type{Vec{2, Int16}},Vec{2, Int64}})   # time: 0.018315293
-    Base.precompile(Tuple{typeof(convert),Type{Arr{3, Float64}},Arr{3, Float32}})   # time: 0.018296905
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{Int64, UInt32}},Vector{UInt8},NativeLayout})   # time: 0.01817249
-    Base.precompile(Tuple{typeof(serialize),Tuple{Int64, Vec3},NativeLayout})   # time: 0.017960545
-    Base.precompile(Tuple{typeof(deserialize),Type{Float32},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.017815348
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},AddressingModel})   # time: 0.017786527
-    Base.precompile(Tuple{typeof(serialize),Arr{2, Vec3},NoPadding})   # time: 0.017766068
-    Base.precompile(Tuple{typeof(serialize),Vector{Arr{2, Int64}},NoPadding})   # time: 0.017692944
-    Base.precompile(Tuple{Type{Instruction},OpCode,ResultID,ResultID,ResultID,Vararg{ResultID}})   # time: 0.017650267
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(mod),Vec2,Float32})   # time: 0.017596858
-    Base.precompile(Tuple{typeof(deserialize),Type{Int32},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.017418448
-    Base.precompile(Tuple{Type{ShaderInterface},ExecutionModel})   # time: 0.01731018
-    Base.precompile(Tuple{typeof(serialize),Mat{2, 5, Float32},NoPadding})   # time: 0.017197013
-    Base.precompile(Tuple{typeof(append_debug_annotations!),Vector{Instruction},ResultID,Metadata})   # time: 0.016965944
-    isdefined(SPIRV, Symbol("#362#363")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#362#363")),Int64})   # time: 0.016951239
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,ImageOperands,OperandInfo})   # time: 0.01659929
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},ExecutionMode})   # time: 0.016552286
-    Base.precompile(Tuple{Type{Instruction},OpCode,ResultID,ResultID,Float32})   # time: 0.016404139
-    Base.precompile(Tuple{typeof(serialize),Tuple{Int64, UInt32},NoPadding})   # time: 0.016349938
-    Base.precompile(Tuple{typeof(fill_phi_branches!),IR})   # time: 0.01620581
-    Base.precompile(Tuple{typeof(size),Image{ImageFormatRgba16f, Dim2D, 0, false, false, 1, Vec4},Int64})   # time: 0.016197478
-    Base.precompile(Tuple{typeof(nesting_levels),ControlTree})   # time: 0.015999429
-    Base.precompile(Tuple{Type{SPIRVInterpreter}})   # time: 0.01589988
-    Base.precompile(Tuple{Type{Arr{Float32}},Float64,Float64,Float64,Float64,Float64})   # time: 0.01582676
-    Base.precompile(Tuple{typeof(copyto!),Vec3,Vec{3, Float64}})   # time: 0.015712174
-    Base.precompile(Tuple{Type{Mat{2, 3, Float32}},Vec2,Vec2,Vec2})   # time: 0.01529733
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:interp,), Tuple{SPIRVInterpreter}},typeof(compile),Any,Any,SupportedFeatures})   # time: 0.01510083
-    Base.precompile(Tuple{typeof(dataoffset),NoPadding,DataType,Int64})   # time: 0.015017008
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},OpCodeGLSL})   # time: 0.015014648
-    Base.precompile(Tuple{Type{Instruction},OpCode,ResultID,ResultID,Int32})   # time: 0.014837691
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},LoopControl})   # time: 0.014584789
-    Base.precompile(Tuple{typeof(datasize),NoPadding,Type{Mat4}})   # time: 0.014485354
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},Capability})   # time: 0.014409048
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,SelectionControl,OperandInfo})   # time: 0.014379671
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,LoopControl,OperandInfo})   # time: 0.014353042
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, FloatType}})   # time: 0.014075749
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},ImageFormat})   # time: 0.014059157
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},Dim})   # time: 0.014046105
-    Base.precompile(Tuple{Type{Instruction},OpCode,Nothing,ResultID,Int64,Vararg{Int64}})   # time: 0.014024696
-    Base.precompile(Tuple{Type{StructType},Vector{FloatType}})   # time: 0.013851804
-    Base.precompile(Tuple{typeof(deserialize),Type{Arr{2, Vec3}},Vector{UInt8},VulkanLayout})   # time: 0.013753846
-    Base.precompile(Tuple{typeof(serialize),Vector{Arr{2, Int64}},NativeLayout})   # time: 0.013730952
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Int64}},Vector{UInt8},NativeLayout})   # time: 0.013648545
-    Base.precompile(Tuple{typeof(datasize),NoPadding,Type{Vec4}})   # time: 0.013089554
-    Base.precompile(Tuple{typeof(getindex),VulkanLayout,Type{Mat{2, 5, Float32}}})   # time: 0.012963774
-    Base.precompile(Tuple{typeof(similar),Arr{4, Float64}})   # time: 0.012939882
-    Base.precompile(Tuple{typeof(similar),Mat{2, 2, Float64}})   # time: 0.012852165
-    Base.precompile(Tuple{Type{Constant},Int64})   # time: 0.012667909
-    Base.precompile(Tuple{typeof(==),PhysicalModule,PhysicalModule})   # time: 0.012638215
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(*),Vec2,Vec{2, Int64}})   # time: 0.012636303
-    Base.precompile(Tuple{typeof(decorate!),Decorations,Decoration,Int64,Int64,Vararg{Int64}})   # time: 0.012474768
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, VectorType}})   # time: 0.01246929
-    isdefined(SPIRV, Symbol("#347#350")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#347#350")),Vector{Int64}})   # time: 0.012445634
-    Base.precompile(Tuple{typeof(validate),FragmentExecutionOptions,ExecutionModel})   # time: 0.012347764
-    Base.precompile(Tuple{typeof(deserialize),Type{Arr{2, UInt8}},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},VulkanLayout})   # time: 0.012299045
-    Base.precompile(Tuple{typeof(deserialize_mutable),Type{Vec4},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.012271895
-    Base.precompile(Tuple{typeof(log),Float32})   # time: 0.012168827
-    Base.precompile(Tuple{typeof(getproperty),Vec{4, Float64},Symbol})   # time: 0.012140259
-    Base.precompile(Tuple{Type{LayoutInfo},Int64,Int64,Int64,Vector{UInt64}})   # time: 0.012132751
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, ImageType}})   # time: 0.011852406
-    Base.precompile(Tuple{typeof(serialize),Mat{2, 3, Float32},NoPadding})   # time: 0.011847815
-    Base.precompile(Tuple{typeof(serialize),Vector{Vec3},VulkanLayout})   # time: 0.011712737
-    isdefined(SPIRV, Symbol("#347#350")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#347#350")),Vector{Float64}})   # time: 0.011689831
-    Base.precompile(Tuple{Type{StructType},Vector{ArrayType}})   # time: 0.011642534
-    Base.precompile(Tuple{typeof(validate),CommonExecutionOptions,ExecutionModel})   # time: 0.011508698
-    Base.precompile(Tuple{typeof(deserialize),Type{Int8},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{UInt64}}, true},NativeLayout})   # time: 0.011505154
-    Base.precompile(Tuple{typeof(*),Int64,Vec2})   # time: 0.011476992
-    Base.precompile(Tuple{typeof(decorate!),Decorations,Decoration,Int64,Int64,Int64})   # time: 0.011463244
-    Base.precompile(Tuple{typeof(alignment),VulkanLayout,Type})   # time: 0.011312496
-    Base.precompile(Tuple{Type{DeltaGraph},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64}})   # time: 0.011280417
-    Base.precompile(Tuple{typeof(invalidate_all!),SPIRVInterpreter})   # time: 0.011249667
-    Base.precompile(Tuple{Type{FunctionType},VoidType,Vector{PointerType}})   # time: 0.01123974
-    Base.precompile(Tuple{Type{StructType},Vector{ScalarType}})   # time: 0.011150739
-    Base.precompile(Tuple{Type{StructType},Vector{StructType}})   # time: 0.011125215
-    Base.precompile(Tuple{typeof(serialize),Base.RefValue{Vec4},NativeLayout})   # time: 0.011110139
-    Base.precompile(Tuple{typeof(serialize),Base.RefValue{Vec4},VulkanLayout})   # time: 0.011087055
-    Base.precompile(Tuple{typeof(similar),Arr{2, Vec2}})   # time: 0.011055506
-    Base.precompile(Tuple{typeof(decorate!),Metadata,Int64,Decoration,Int64})   # time: 0.011028494
-    Base.precompile(Tuple{typeof(serialize),Vector{Arr{2, Int64}},VulkanLayout})   # time: 0.010981906
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, PointerType}})   # time: 0.010932821
-    Base.precompile(Tuple{typeof(add_options!),EntryPoint,TessellationExecutionOptions})   # time: 0.010828068
-    Base.precompile(Tuple{typeof(getproperty),Vec4,Symbol})   # time: 0.010823759
-    Base.precompile(Tuple{typeof(serialize),Base.RefValue{Vec4},NoPadding})   # time: 0.010771547
-    Base.precompile(Tuple{typeof(deserialize_immutable),Type{Tuple{Vec3, Vec3}},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.010759177
-    Base.precompile(Tuple{typeof(merge!),VulkanLayout,VulkanLayout})   # time: 0.010734187
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(exp),Vec2})   # time: 0.010733794
-    Base.precompile(Tuple{typeof(serialize!),Vector{UInt8},Tuple{UInt32, Float32},VulkanLayout})   # time: 0.010697769
-    Base.precompile(Tuple{typeof(add_options!),EntryPoint,FragmentExecutionOptions})   # time: 0.010687074
-    Base.precompile(Tuple{typeof(serialize),Mat{2, 3, Float32},NativeLayout})   # time: 0.010676302
-    Base.precompile(Tuple{typeof(common_ancestor),DominatorTree,Vector{DominatorTree}})   # time: 0.010648712
-    Base.precompile(Tuple{typeof(serialize),Arr{2, Vec3},VulkanLayout})   # time: 0.010537911
-    Base.precompile(Tuple{typeof(serialize!),Vector{UInt8},Mat4,VulkanLayout})   # time: 0.010429058
-    Base.precompile(Tuple{typeof(validate),MeshExecutionOptions,ExecutionModel})   # time: 0.010376064
-    Base.precompile(Tuple{Type{FunctionType},FloatType,Vector{BooleanType}})   # time: 0.010316967
-    Base.precompile(Tuple{Type{StructType},Vector{IntegerType}})   # time: 0.010304434
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, StructType}})   # time: 0.010218435
-    Base.precompile(Tuple{typeof(eachindex),Arr{2, Int64}})   # time: 0.010132211
-    Base.precompile(Tuple{typeof(deserialize),Type{Matrix{Int64}},Vector{UInt8},VulkanLayout,Tuple{Int64, Int64}})   # time: 0.010090401
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, ArrayType}})   # time: 0.009900763
-    Base.precompile(Tuple{typeof(datasize),NoPadding,Type{Mat{2, 3, Float32}}})   # time: 0.009896059
-    Base.precompile(Tuple{typeof(concrete_datasize),NoPadding,Mat{2, 3, Float32}})   # time: 0.009868277
-    Base.precompile(Tuple{Type{Mat{3, 4, Float32}},Vec3,Vararg{Vec3}})   # time: 0.009852596
-    Base.precompile(Tuple{typeof(serialize),Arr{2, Vec3},NativeLayout})   # time: 0.009844374
-    let fbody = try Base.bodyfunction(which(spir_type, (DataType,TypeMap,))) catch missing end
-    if !ismissing(fbody)
-        precompile(fbody, (Bool,StorageClass,Bool,typeof(spir_type),DataType,TypeMap,))
-    end
-end   # time: 0.00982191
-    Base.precompile(Tuple{typeof(validate),GeometryExecutionOptions,ExecutionModel})   # time: 0.009521256
-    Base.precompile(Tuple{typeof(CompositeConstruct),Type{Mat{3, 4, Float32}},Vec3,Vec3,Vec3,Vec3})   # time: 0.009252763
-    Base.precompile(Tuple{Type{Mat{2, 2, Float64}},Vec{2, Float64},Vararg{Vec{2, Float64}}})   # time: 0.009174421
-    Base.precompile(Tuple{typeof(concrete_datasize),NoPadding,Base.RefValue{Vec4}})   # time: 0.009081267
-    Base.precompile(Tuple{typeof(isapprox),StructType,StructType})   # time: 0.009046574
-    Base.precompile(Tuple{typeof(validate),TessellationExecutionOptions,ExecutionModel})   # time: 0.009018506
-    Base.precompile(Tuple{typeof(dominators),DeltaGraph{Int64}})   # time: 0.008949599
-    Base.precompile(Tuple{typeof(datasize),NoPadding,Type{Base.RefValue{Vec4}}})   # time: 0.008947683
-    Base.precompile(Tuple{typeof(==),FeatureRequirements,FeatureRequirements})   # time: 0.008878624
-    Base.precompile(Tuple{typeof(get_signature),Expr})   # time: 0.008794902
-    Base.precompile(Tuple{typeof(datasize),NoPadding,Type})   # time: 0.008772115
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Vec3}},Vector{UInt8},VulkanLayout})   # time: 0.008715957
-    Base.precompile(Tuple{typeof(emit_expression!),ModuleTarget,Translation,SPIRVTarget,FunctionDefinition,Core.PhiNode,Type,Block})   # time: 0.008688691
-    Base.precompile(Tuple{Type{StructType},Vector{MatrixType}})   # time: 0.008613914
-    Base.precompile(Tuple{Type{Vec3},Float64,Vararg{Float64}})   # time: 0.008607035
-    Base.precompile(Tuple{Type{TypeMetadata},VulkanLayout})   # time: 0.008483346
-    Base.precompile(Tuple{Type{DeltaGraph},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64}})   # time: 0.008360356
-    Base.precompile(Tuple{Type{Instruction},OpCode,Nothing,Nothing,ResultID,UInt32,Decoration})   # time: 0.008351044
-    Base.precompile(Tuple{Type{Instruction},OpCode,Nothing,Nothing,ResultID,Decoration,UInt32})   # time: 0.008290259
-    Base.precompile(Tuple{typeof(deserialize),Type{Matrix{Int64}},Vector{UInt8},NativeLayout,Tuple{Int64, Int64}})   # time: 0.008244073
-    Base.precompile(Tuple{Type{SPIRVInterpreter},Vector{Core.MethodTable}})   # time: 0.008184565
-    isdefined(SPIRV, Symbol("#409#412")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#409#412")),Int64})   # time: 0.0081594
-    Base.precompile(Tuple{Type{Instruction},OpCode,Nothing,Nothing,ResultID,UInt32,Decoration,UInt32})   # time: 0.008143818
-    Base.precompile(Tuple{Type{Vec{2, UInt32}},Int64,Vararg{Int64}})   # time: 0.00801599
-    Base.precompile(Tuple{typeof(emit_constant!),ModuleTarget,Translation,Bool})   # time: 0.007961535
-    Base.precompile(Tuple{Type{Expression},OpCode,FloatType,ResultID,Base.ReinterpretArray{UInt32, 1, Float64, Vector{Float64}, false}})   # time: 0.007943286
-    Base.precompile(Tuple{Type{DeltaGraph},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64}})   # time: 0.007880885
-    Base.precompile(Tuple{typeof(storage_class),Core.SSAValue,ModuleTarget,Translation,FunctionDefinition})   # time: 0.007767656
-    Base.precompile(Tuple{typeof(deserialize),Type{UInt32},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.007720848
-    Base.precompile(Tuple{Type{DeltaGraph},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64}})   # time: 0.007603416
-    Base.precompile(Tuple{Type{DeltaGraph},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64}})   # time: 0.007589358
-    Base.precompile(Tuple{typeof(==),ControlTree,ControlTree})   # time: 0.007585182
-    Base.precompile(Tuple{Type{Instruction},OpCode,Nothing,Nothing,ResultID,Decoration})   # time: 0.007546198
-    Base.precompile(Tuple{Type{StackFrame},AnnotatedModule,ResultID})   # time: 0.007540996
-    Base.precompile(Tuple{Type{DeltaGraph},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64}})   # time: 0.007535147
-    Base.precompile(Tuple{Type{DeltaGraph},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64}})   # time: 0.00747193
-    Base.precompile(Tuple{typeof(deserialize),Type{Int8},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.007305866
-    Base.precompile(Tuple{typeof(datasize),VulkanLayout,Type{Int32}})   # time: 0.007298835
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Vec3}},Vector{UInt8},NoPadding})   # time: 0.007286612
-    Base.precompile(Tuple{Type{DeltaGraph},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64},Pair{Int64, Int64}})   # time: 0.007285748
-    Base.precompile(Tuple{Type{Expression},OpCode,FloatType,ResultID,Base.ReinterpretArray{UInt32, 1, Float32, Vector{Float32}, false}})   # time: 0.007204979
-    Base.precompile(Tuple{Type{Expression},OpCode,IntegerType,ResultID,Base.ReinterpretArray{UInt32, 1, Int32, Vector{Int32}, false}})   # time: 0.007155532
-    Base.precompile(Tuple{typeof(serialize),Mat{2, 5, Float32},NativeLayout})   # time: 0.007078615
-    Base.precompile(Tuple{typeof(define_entry_point!),ModuleTarget,Translation,FunctionDefinition,ExecutionModel,CommonExecutionOptions})   # time: 0.006959847
-    isdefined(SPIRV, Symbol("#381#382")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#381#382")),Int64})   # time: 0.006829103
-    Base.precompile(Tuple{typeof(deserialize),Type{Arr{2, Vec3}},Vector{UInt8},NativeLayout})   # time: 0.006798068
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:storage_classes, :interfaces), Tuple{Dict{DataType, Vector{StorageClass}}, Vector{DataType}}},Type{VulkanLayout},Vector{DataType}})   # time: 0.006542449
-    Base.precompile(Tuple{typeof(define_entry_point!),ModuleTarget,Translation,FunctionDefinition,ExecutionModel,FragmentExecutionOptions})   # time: 0.006506816
-    Base.precompile(Tuple{Type{Mat{2, 5, Float32}},Vec2,Vec2,Vec2,Vec2,Vec2})   # time: 0.006474031
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:interfaces,), Tuple{Vector{DataType}}},Type{VulkanLayout},Vector{DataType}})   # time: 0.006403541
-    Base.precompile(Tuple{typeof(getindex),Pointer{Vector{Int32}},Int64})   # time: 0.006373497
-    Base.precompile(Tuple{typeof(deserialize),Type{Base.RefValue{Vec4}},Vector{UInt8},VulkanLayout})   # time: 0.006174443
-    Base.precompile(Tuple{typeof(define_entry_point!),ModuleTarget,Translation,FunctionDefinition,ExecutionModel,ComputeExecutionOptions})   # time: 0.006129186
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, IntegerType}})   # time: 0.006125278
-    Base.precompile(Tuple{typeof(conflicted_merge_blocks),FunctionDefinition})   # time: 0.006112883
-    isdefined(SPIRV, Symbol("#345#348")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#345#348")),Int64})   # time: 0.00609166
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Int64}},Vector{UInt8},VulkanLayout})   # time: 0.006005666
-    Base.precompile(Tuple{Type{DeltaGraph},Int64,Pair{Int64, Int64},Vararg{Pair{Int64, Int64}}})   # time: 0.005996202
-    Base.precompile(Tuple{typeof(getindex),Mat{2, 2, Float64},Int64,Int64})   # time: 0.005945837
-    Base.precompile(Tuple{typeof(serialize),Tuple{Int64, Vec3},NoPadding})   # time: 0.005926393
-    Base.precompile(Tuple{typeof(getindex),Mat{4, 4, Float64},Int64,Int64})   # time: 0.005911714
-    Base.precompile(Tuple{typeof(==),DeltaGraph{Int64},DeltaGraph{Int64}})   # time: 0.005869306
-    Base.precompile(Tuple{typeof(append_decorations!),Vector{Instruction},ResultID,Metadata})   # time: 0.00582223
-    Base.precompile(Tuple{Type{Vec4},Int64,Int64,Int64,Int64})   # time: 0.005772888
-    Base.precompile(Tuple{typeof(all),typeof(iszero),Arr{16, Vec4}})   # time: 0.005731818
-    Base.precompile(Tuple{typeof(alignment),VulkanLayout,ArrayType})   # time: 0.005701952
-    Base.precompile(Tuple{Type{ControlFlowGraph},DeltaGraph{Int64}})   # time: 0.005691444
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},IntegerType,ResultID})   # time: 0.005643931
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,PointerType})   # time: 0.005522875
-    isdefined(SPIRV, Symbol("#callback#317")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#callback#317")),MethodInstance,UInt32})   # time: 0.005522492
-    Base.precompile(Tuple{typeof(==),Vec{2, Int64},Vec{2, Int64}})   # time: 0.005395497
-    isdefined(SPIRV, Symbol("#362#363")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#362#363")),Int64})   # time: 0.005350698
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(+),Vec3,Vec{3, Float64}})   # time: 0.005325812
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),FloatType})   # time: 0.005323607
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},ResultID,ArrayType})   # time: 0.005296352
-    Base.precompile(Tuple{typeof(deserialize_immutable),Type{Tuple{Int64, Vec3}},Vector{UInt8},NoPadding})   # time: 0.005198211
-    Base.precompile(Tuple{Type{ImageType},Instruction,FloatType})   # time: 0.005172332
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),PointerType})   # time: 0.005159599
-    Base.precompile(Tuple{Type{ShaderInterface},Any,Any,Any,Any,Any,Any})   # time: 0.0051402
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,Capability,OperandInfo})   # time: 0.00513361
-    Base.precompile(Tuple{typeof(datasize),VulkanLayout,Type{Int8}})   # time: 0.00511381
-    Base.precompile(Tuple{typeof(CompositeConstruct),Type{Mat{2, 2, Float64}},Vec{2, Float64},Vec{2, Float64}})   # time: 0.005057729
-    isdefined(SPIRV, Symbol("#14#15")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#14#15")),Tuple{ArrayType, ArrayType}})   # time: 0.004979398
-    Base.precompile(Tuple{typeof(deserialize_immutable),Type{Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}},Vector{UInt8},NoPadding})   # time: 0.004948345
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),BooleanType})   # time: 0.004940251
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),IntegerType})   # time: 0.004928743
-    Base.precompile(Tuple{typeof(deserialize),Type{Vector{Int64}},Vector{UInt8},NoPadding})   # time: 0.004917667
-    Base.precompile(Tuple{typeof(sum),Arr{10, Float32}})   # time: 0.004892849
-    Base.precompile(Tuple{typeof(-),Vec2,Vec2})   # time: 0.004891451
-    Base.precompile(Tuple{typeof(==),Vec{2, Float64},Vec{2, Float64}})   # time: 0.004864865
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),ImageType})   # time: 0.0048555
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(*),Vec{2, UInt32},Float32})   # time: 0.004791746
-    Base.precompile(Tuple{typeof(eachindex),Arr{5, Float32}})   # time: 0.004773215
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,OpCodeGLSL,OperandInfo})   # time: 0.004770409
-    Base.precompile(Tuple{typeof(add_options!),EntryPoint,MeshExecutionOptions})   # time: 0.004737852
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),ArrayType})   # time: 0.004693497
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},ResultID,VoidType})   # time: 0.004687778
-    Base.precompile(Tuple{Type{Arr},Vec3,Vec3})   # time: 0.004660166
-    Base.precompile(Tuple{typeof(axes),Mat{2, 2, Float64}})   # time: 0.004639297
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,UInt32,OperandInfo})   # time: 0.004633299
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),VectorType})   # time: 0.004527514
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),MatrixType})   # time: 0.004488032
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),SampledImageType})   # time: 0.00448802
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,Int64,OperandInfo})   # time: 0.004429953
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},ResultID,VectorType})   # time: 0.0043428
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,Float64,OperandInfo})   # time: 0.00431886
-    Base.precompile(Tuple{typeof(deserialize),Type{Matrix{Int64}},Vector{UInt8},NoPadding,Tuple{Int64, Int64}})   # time: 0.004301646
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},ResultID,MatrixType})   # time: 0.004300275
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,BooleanType})   # time: 0.004283122
-    Base.precompile(Tuple{typeof(deserialize),Type{Int64},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{UInt64}}, true},NativeLayout})   # time: 0.004273641
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,VoidType})   # time: 0.004244708
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,SampledImageType})   # time: 0.004240321
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,SamplerType})   # time: 0.004235706
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},ResultID,BooleanType})   # time: 0.004233997
-    Base.precompile(Tuple{typeof(serialize),Tuple{Int64, UInt32},NativeLayout})   # time: 0.004221974
-    Base.precompile(Tuple{typeof(emit_constant!),ModuleTarget,Translation,Float32})   # time: 0.004179732
-    isdefined(SPIRV, Symbol("#362#363")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#362#363")),Int64})   # time: 0.004179708
-    Base.precompile(Tuple{Type{Vec{1, Float64}},Float64})   # time: 0.004149342
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,StructType})   # time: 0.004141263
-    isdefined(SPIRV, Symbol("#376#378")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#376#378")),StructType})   # time: 0.004118159
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,Int32,OperandInfo})   # time: 0.004105949
-    Base.precompile(Tuple{typeof(-),Vec{3, Float64},Vec{3, Float64}})   # time: 0.004066403
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,Core.SSAValue,OperandInfo})   # time: 0.004050053
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(-),Vec2,Vec2})   # time: 0.004049094
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{UInt32, Float32}},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},VulkanLayout})   # time: 0.004006092
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,Float32,OperandInfo})   # time: 0.004002192
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,ExecutionMode,OperandInfo})   # time: 0.003989866
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,FloatType})   # time: 0.003964414
-    Base.precompile(Tuple{typeof(validate),Shader})   # time: 0.003956772
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,Decoration,OperandInfo})   # time: 0.003922008
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,ArrayType})   # time: 0.003920401
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},ResultID,ImageType})   # time: 0.003867521
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:storage_classes, :variable_decorations, :features), Tuple{Vector{StorageClass}, Dictionary{Int64, Decorations}, SupportedFeatures}},Type{ShaderInterface},ExecutionModel})   # time: 0.003830398
-    Base.precompile(Tuple{typeof(datasize),NoPadding,Type{Tuple{Int64, Vec3}}})   # time: 0.003817015
-    Base.precompile(Tuple{typeof(all),typeof(iszero),Arr{16, Float32}})   # time: 0.003814267
-    Base.precompile(Tuple{typeof(sum),Vec4})   # time: 0.003803154
-    Base.precompile(Tuple{typeof(serialize),Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64},NativeLayout})   # time: 0.003802734
-    Base.precompile(Tuple{typeof(axes),Arr{2, Int64}})   # time: 0.003801382
-    Base.precompile(Tuple{typeof(setindex!),Image{ImageFormatRgba32f, Dim2D, 0, false, false, 1, Vec4},Vec4,Int64})   # time: 0.003793432
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,StorageClass,OperandInfo})   # time: 0.003792709
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,VectorType})   # time: 0.003788764
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,MatrixType})   # time: 0.003767638
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(ceil),Vec2})   # time: 0.003757528
-    Base.precompile(Tuple{typeof(serialize),Vector{Int64},VulkanLayout})   # time: 0.003753936
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},SampledImageType,ResultID})   # time: 0.003718081
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,IntegerType})   # time: 0.00371128
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,BuiltIn,OperandInfo})   # time: 0.003710085
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,SourceLanguage,OperandInfo})   # time: 0.003705484
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,Variable})   # time: 0.003697546
-    Base.precompile(Tuple{typeof(emit_constant!),ModuleTarget,Translation,Int32})   # time: 0.003695472
-    Base.precompile(Tuple{typeof(alignment),VulkanLayout,MatrixType})   # time: 0.00369232
-    Base.precompile(Tuple{typeof(serialize),Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64},VulkanLayout})   # time: 0.003638561
-    Base.precompile(Tuple{typeof(alignment),VulkanLayout,FloatType})   # time: 0.003624454
-    isdefined(SPIRV, Symbol("#95#96")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#95#96")),ArrayType})   # time: 0.003620223
-    Base.precompile(Tuple{typeof(serialize),Tuple{Int64, Vec3},VulkanLayout})   # time: 0.00360619
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, Any},ResultID,ImageType})   # time: 0.003603936
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(+),Vec3,Vec3})   # time: 0.003592984
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,AddressingModel,OperandInfo})   # time: 0.003561791
-    Base.precompile(Tuple{typeof(*),Vec{3, Float64},Vec{3, Float64}})   # time: 0.003554827
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,String,OperandInfo})   # time: 0.003546929
-    Base.precompile(Tuple{typeof(serialize),Matrix{Int64},VulkanLayout})   # time: 0.003543435
-    Base.precompile(Tuple{typeof(eachindex),Mat{2, 2, Float64}})   # time: 0.003536624
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,ExecutionModel,OperandInfo})   # time: 0.003531236
-    Base.precompile(Tuple{typeof(show),IOContext{IOBuffer},MIME{Symbol("text/plain")},IR})   # time: 0.003505026
-    Base.precompile(Tuple{Type{StructType},Vector{VectorType}})   # time: 0.003485345
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,ResultID,OperandInfo})   # time: 0.003464133
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,Dim,OperandInfo})   # time: 0.003427033
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},SamplerType,ResultID})   # time: 0.003426176
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:storage_classes, :variable_decorations), Tuple{Vector{StorageClass}, Dictionary{Int64, Decorations}}},Type{ShaderInterface},ExecutionModel})   # time: 0.003404883
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,MemoryModel,OperandInfo})   # time: 0.003397667
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},StructType,ResultID})   # time: 0.00338591
-    Base.precompile(Tuple{typeof(add_extra_operands!),Vector{OperandInfo},Int64,ImageFormat,OperandInfo})   # time: 0.003343784
-    Base.precompile(Tuple{typeof(serialize),Vector{Int64},NativeLayout})   # time: 0.003324273
-    Base.precompile(Tuple{typeof(store_expr),Expr})   # time: 0.003321821
-    Base.precompile(Tuple{typeof(serialize),Matrix{Int64},NativeLayout})   # time: 0.003275221
-    Base.precompile(Tuple{typeof(load_expr),Expr})   # time: 0.00325887
-    Base.precompile(Tuple{typeof(insert!),BijectiveMapping{ResultID, SPIRType},FloatType,ResultID})   # time: 0.003242286
-    Base.precompile(Tuple{Type{Vec2},Float64,Float64})   # time: 0.003198813
-    Base.precompile(Tuple{typeof(cap_world),UInt64,UInt32})   # time: 0.003163836
-    isdefined(SPIRV, Symbol("#409#412")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#409#412")),Int64})   # time: 0.003143672
-    Base.precompile(Tuple{typeof(serialize!),Vector{UInt8},Tuple{Float32, Float32, Float32},NativeLayout})   # time: 0.00310549
-    Base.precompile(Tuple{typeof(alignment),VulkanLayout,VectorType})   # time: 0.003070028
-    Base.precompile(Tuple{typeof(datasize),NativeLayout,Type{Mat4}})   # time: 0.003067814
-    Base.precompile(Tuple{Type{Expression},Instruction,BijectiveMapping{ResultID, SPIRType}})   # time: 0.003040137
-    Base.precompile(Tuple{typeof(/),Vec2,Float32})   # time: 0.00303434
-    Base.precompile(Tuple{typeof(deserialize),Type{UInt32},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},VulkanLayout})   # time: 0.003033664
-    Base.precompile(Tuple{typeof(alignment),VulkanLayout,IntegerType})   # time: 0.003027343
-    Base.precompile(Tuple{typeof(load_variables!),Vector{ResultID},Block,ModuleTarget,Translation,FunctionDefinition,OpCode})   # time: 0.002989054
-    Base.precompile(Tuple{typeof(serialize!),Vector{UInt8},Vec{2, Int16},NativeLayout})   # time: 0.002904299
-    Base.precompile(Tuple{typeof(setindex!),Image{ImageFormatRgba32f, Dim2D, 0, false, false, 1, Vec4},Vec4,Int64,Int64})   # time: 0.002799733
-    Base.precompile(Tuple{typeof(deserialize),Type{Int64},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},NoPadding})   # time: 0.002797197
-    Base.precompile(Tuple{typeof(has_decoration),Decorations,Decoration})   # time: 0.002791306
-    Base.precompile(Tuple{typeof(deserialize),Type{Int32},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},VulkanLayout})   # time: 0.002749256
-    Base.precompile(Tuple{typeof(store_expr),Int64,Expr})   # time: 0.002718776
-    Base.precompile(Tuple{typeof(deserialize),Type{Int64},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},VulkanLayout})   # time: 0.00271358
-    Base.precompile(Tuple{typeof(validate),FragmentExecutionOptions})   # time: 0.002615083
-    Base.precompile(Tuple{typeof(getindex),Pointer{Vector{Vec2}},Int64})   # time: 0.002421156
-    isdefined(SPIRV, Symbol("#433#444")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#433#444")),Expr})   # time: 0.002398279
-    Base.precompile(Tuple{typeof(serialize),Vector{Vec3},NativeLayout})   # time: 0.002370624
-    Base.precompile(Tuple{SampledImage{Image{ImageFormatR16f, Dim2D, 0, false, false, 1, Float32}},Vec2})   # time: 0.002313156
-    Base.precompile(Tuple{typeof(getindex),Mat{3, 4, Float32},Int64,Int64})   # time: 0.00229013
-    Base.precompile(Tuple{typeof(getindex),Vec2,UInt32})   # time: 0.002286362
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{Int64, UInt32}},Vector{UInt8},VulkanLayout})   # time: 0.002267335
-    Base.precompile(Tuple{Type{ControlTree},Int64,RegionType,Tuple{ControlTree, ControlTree, ControlTree}})   # time: 0.002254663
-    isdefined(SPIRV, Symbol("#381#382")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#381#382")),Int64})   # time: 0.002253688
-    Base.precompile(Tuple{typeof(store_expr),Symbol,Expr})   # time: 0.002217012
-    Base.precompile(Tuple{typeof(has_decoration),Metadata,Int64,Decoration})   # time: 0.002203961
-    Base.precompile(Tuple{typeof(getindex),Arr{3, Float64},Int64})   # time: 0.002191897
-    Base.precompile(Tuple{typeof(getindex),Vec{2, Int32},UInt32})   # time: 0.002182497
-    Base.precompile(Tuple{typeof(haskey),BijectiveMapping{ResultID, SPIRType},StructType})   # time: 0.002162751
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}},Vector{UInt8},VulkanLayout})   # time: 0.002142531
-    Base.precompile(Tuple{typeof(deserialize),Type{Tuple{Int64, Vec3}},Vector{UInt8},VulkanLayout})   # time: 0.002126956
-    Base.precompile(Tuple{typeof(deserialize),Type{Float32},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},VulkanLayout})   # time: 0.002116164
-    isdefined(SPIRV, Symbol("#95#96")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#95#96")),MatrixType})   # time: 0.00210835
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:limit,), Tuple{Int64}},typeof(Core.Compiler.findall),Type{<:Tuple{Any, Bool}},NOverlayMethodTable})   # time: 0.002096781
-    Base.precompile(Tuple{typeof(haskey),BijectiveMapping{ResultID, SPIRType},SamplerType})   # time: 0.002091309
-    Base.precompile(Tuple{typeof(remap_args!),Vector{ResultID},ModuleTarget,Translation,OpCode})   # time: 0.002079746
-    Base.precompile(Tuple{typeof(haskey),BijectiveMapping{ResultID, SPIRType},IntegerType})   # time: 0.002077303
-    Base.precompile(Tuple{typeof(store_expr),Expr,Expr})   # time: 0.002057931
-    Base.precompile(Tuple{typeof(getindex),Arr{5, Float32},UInt32})   # time: 0.002033234
-    Base.precompile(Tuple{typeof(getindex),Arr{1, Float32},UInt32})   # time: 0.002024597
-    Base.precompile(Tuple{typeof(serialize!),Vector{UInt8},Mat4,NativeLayout})   # time: 0.001979624
-    Base.precompile(Tuple{typeof(haskey),BijectiveMapping{ResultID, SPIRType},FloatType})   # time: 0.001961354
-    Base.precompile(Tuple{typeof(promote_to_interface_block),FloatType,StorageClass})   # time: 0.001953308
-    Base.precompile(Tuple{typeof(merge),Metadata,Metadata})   # time: 0.001933875
-    Base.precompile(Tuple{typeof(image_type),ImageFormat,Dim,Int64,Bool,Bool,Int64})   # time: 0.001919037
-    Base.precompile(Tuple{typeof(getindex),Arr{2, UInt8},UInt32})   # time: 0.001899146
-    Base.precompile(Tuple{typeof(all),typeof(isone),Arr{16, Float32}})   # time: 0.001893898
-    Base.precompile(Tuple{typeof(getindex),Arr{2, Int64},UInt32})   # time: 0.001878015
-    Base.precompile(Tuple{typeof(setindex!),Vec4,Vec4})   # time: 0.001837664
-    Base.precompile(Tuple{typeof(getindex),BijectiveMapping{ResultID, Constant},ResultID})   # time: 0.001837389
-    Base.precompile(Tuple{typeof(sprintc_mime),Function,IR})   # time: 0.001800889
-    Base.precompile(Tuple{Type{VulkanLayout},VulkanAlignment,TypeMap,Dict{IntegerType, Set{StorageClass}},Set{StructType}})   # time: 0.001792544
-    Base.precompile(Tuple{typeof(ConvertUToPtr),Type,UInt64})   # time: 0.001735334
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:storage_classes, :variable_decorations, :type_metadata), Tuple{Vector{StorageClass}, Dictionary{Int64, Decorations}, Dictionary{DataType, Metadata}}},Type{ShaderInterface},ExecutionModel})   # time: 0.001696862
-    Base.precompile(Tuple{typeof(==),Module,Module})   # time: 0.001668809
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:storage_classes, :variable_decorations, :type_metadata, :features), Tuple{Vector{StorageClass}, Dictionary{Int64, Decorations}, Dictionary{DataType, Metadata}, SupportedFeatures}},Type{ShaderInterface},ExecutionModel})   # time: 0.001661704
-    Base.precompile(Tuple{typeof(getindex),BijectiveMapping{ResultID, SPIRType},VoidType})   # time: 0.001604105
-    Base.precompile(Tuple{typeof(setindex!),Mat{2, 2, Float64},Mat{2, 2, Float64}})   # time: 0.001559853
-    Base.precompile(Tuple{typeof(promote_to_interface_block),VectorType,StorageClass})   # time: 0.001559846
-    Base.precompile(Tuple{typeof(serialize),Matrix{Int64},NoPadding})   # time: 0.00154702
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, MatrixType}})   # time: 0.001545889
-    Base.precompile(Tuple{typeof(haskey),BijectiveMapping{ResultID, SPIRType},VectorType})   # time: 0.001525208
-    Base.precompile(Tuple{typeof(serialize),Vector{Vec3},NoPadding})   # time: 0.001492873
-    Base.precompile(Tuple{typeof(dataoffset),NativeLayout,Type{NTuple{4, NTuple{4, Float32}}},Int64})   # time: 0.001485904
-    isdefined(SPIRV, Symbol("#119#120")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#119#120")),ResultID})   # time: 0.00145578
-    isdefined(SPIRV, Symbol("#101#102")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#101#102")),Tuple{ResultID, SPIRType}})   # time: 0.001447893
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, VoidType}})   # time: 0.001433332
-    Base.precompile(Tuple{typeof(setproperty!),Vec4,Symbol,UInt32})   # time: 0.001402347
-    Base.precompile(Tuple{typeof(datasize),VulkanLayout,StructType})   # time: 0.001402097
-    Base.precompile(Tuple{typeof(serialize),Vector{Int64},NoPadding})   # time: 0.001400594
-    Base.precompile(Tuple{typeof(haskey),BijectiveMapping{ResultID, SPIRType},BooleanType})   # time: 0.001397924
-    Base.precompile(Tuple{typeof(source_version),SourceLanguage,UInt32})   # time: 0.001393656
-    Base.precompile(Tuple{Type{SimpleTree},ControlNode,ControlTree,Vector{ControlTree}})   # time: 0.00137952
-    Base.precompile(Tuple{typeof(load_if_variable!),Block,ModuleTarget,Translation,FunctionDefinition,Core.SSAValue})   # time: 0.001376425
-    Base.precompile(Tuple{typeof(deserialize),Type{Int8},SubArray{UInt8, 1, Vector{UInt8}, Tuple{UnitRange{Int64}}, true},VulkanLayout})   # time: 0.001370062
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, SampledImageType}})   # time: 0.001348746
-    Base.precompile(Tuple{typeof(haskey),BijectiveMapping{ResultID, SPIRType},ImageType})   # time: 0.001344933
-    Base.precompile(Tuple{Type{Pointer},Base.RefValue{Vec{2, Int64}}})   # time: 0.001343153
-    Base.precompile(Tuple{typeof(serialize!),Vector{UInt8},NTuple{4, Float32},NativeLayout})   # time: 0.001337568
-    Base.precompile(Tuple{typeof(Core.kwcall),NamedTuple{(:origin,), Tuple{Symbol}},Type{FragmentExecutionOptions}})   # time: 0.001334887
-    Base.precompile(Tuple{typeof(getindex),Arr{2, Vec2},UInt32})   # time: 0.001314134
-    Base.precompile(Tuple{typeof(add_operand!),Vector{UInt32},UInt32})   # time: 0.001255223
-    Base.precompile(Tuple{Type{Pointer},Base.RefValue{Tuple{Int64, Vec2}}})   # time: 0.001253771
-    Base.precompile(Tuple{typeof(load_if_variable!),Block,ModuleTarget,Translation,FunctionDefinition,Core.Argument})   # time: 0.001250353
-    Base.precompile(Tuple{typeof(dataoffset),NativeLayout,Type{Vec{2, Int16}},Int64})   # time: 0.001249078
-    Base.precompile(Tuple{Type{Expression},OpCode,IntegerType,ResultID,Vector{Any}})   # time: 0.001230777
-    Base.precompile(Tuple{typeof(dataoffset),NativeLayout,Type{Tuple{Int16, Int16}},Int64})   # time: 0.001202483
-    Base.precompile(Tuple{typeof(setindex!),TypeMap,BooleanType,DataType})   # time: 0.00118397
-    Base.precompile(Tuple{Type{ImageType},FloatType,Dim,UInt32,UInt32,UInt32,Bool,ImageFormat,Nothing})   # time: 0.001179843
-    Base.precompile(Tuple{typeof(dataoffset),NativeLayout,Type{NTuple{4, Float32}},Int64})   # time: 0.001178857
-    Base.precompile(Tuple{typeof(dataoffset),NativeLayout,Type{Mat4},Int64})   # time: 0.001178644
-    Base.precompile(Tuple{Type{Decorations}})   # time: 0.001169558
-    Base.precompile(Tuple{typeof(copy),Pointer{Vec2}})   # time: 0.001164415
-    Base.precompile(Tuple{typeof(storage_class),Core.Argument,ModuleTarget,Translation,FunctionDefinition})   # time: 0.001160019
-    Base.precompile(Tuple{Type{Expression},OpCode,ArrayType,ResultID,ResultID,Vararg{ResultID}})   # time: 0.001156747
-    Base.precompile(Tuple{typeof(decorations),TypeMetadata,ArrayType})   # time: 0.001155419
-    Base.precompile(Tuple{typeof(serialize!),Vector{UInt8},Vec{2, Int16},NoPadding})   # time: 0.001153042
-    Base.precompile(Tuple{typeof(setproperty!),Vec4,Symbol,Float32})   # time: 0.001152592
-    Base.precompile(Tuple{typeof(serialize!),Vector{UInt8},Tuple{Float32, Float32, Float32},NoPadding})   # time: 0.001142443
-    Base.precompile(Tuple{typeof(Base.Broadcast.broadcasted),typeof(+),Vec2,Float32})   # time: 0.001140365
-    Base.precompile(Tuple{Type{Vec3},Int64,Vararg{Int64}})   # time: 0.001108357
-    Base.precompile(Tuple{Type{Expression},OpCode,FloatType,ResultID,ResultID,Vararg{Any}})   # time: 0.00110435
-    Base.precompile(Tuple{typeof(setindex!),Vec{4, Float64},Vec{4, Float64}})   # time: 0.001081867
-    isdefined(SPIRV, Symbol("#103#104")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#103#104")),Pair{ResultID, BooleanType}})   # time: 0.001077438
-    Base.precompile(Tuple{typeof(Base.Broadcast.materialize!),Vec3,Broadcasted{BroadcastStyleSPIRV{Vec3}, Tuple{Base.OneTo{Int64}}, typeof(identity), Tuple{Vec3}}})   # time: 0.001050086
-    Base.precompile(Tuple{typeof(all),typeof(iszero),Vec2})   # time: 0.001046947
-    Base.precompile(Tuple{typeof(similar),Vec2})   # time: 0.001045527
-    Base.precompile(Tuple{Type{Vec},Float32,Float32,Float32,Float32})   # time: 0.001043747
-    Base.precompile(Tuple{typeof(clamp),Float32,Float32,Float32})   # time: 0.001016669
-    isdefined(SPIRV, Symbol("#381#382")) && Base.precompile(Tuple{getfield(SPIRV, Symbol("#381#382")),Int64})   # time: 0.001013961
-    Base.precompile(Tuple{SampledImage{Image{ImageFormatRgba16f, Dim2D, 0, false, false, 1, Vec4}},Float32,Float32})   # time: 0.00100878
-    Base.precompile(Tuple{typeof(getindex),AnnotatedModule,ResultID})   # time: 0.001002083
+precompile(Tuple{typeof(SPIRV_Tools_jll.find_artifact_dir)})
+precompile(Tuple{Type{SPIRV.DeltaGraph{T} where T}})
+precompile(Tuple{typeof(Graphs.add_vertices!), SPIRV.DeltaGraph{Int64}, Int64})
+precompile(Tuple{typeof(Graphs.vertices), SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{Type{SPIRV.DeltaGraph{T} where T}, Int64})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.DeltaGraph{Int64}, SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{typeof(Graphs.SimpleGraphs.rem_vertex!), SPIRV.DeltaGraph{Int64}, Int64})
+precompile(Tuple{typeof(Graphs.SimpleGraphs.add_vertex!), SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{typeof(Graphs.SimpleGraphs.add_edge!), SPIRV.DeltaGraph{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Graphs.edges), SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{typeof(Graphs.SimpleGraphs.rem_edge!), SPIRV.DeltaGraph{Int64}, Graphs.SimpleGraphs.SimpleEdge{Int64}})
+precompile(Tuple{Type{SPIRV.DeltaGraph{T} where T}, Int64, Pair{Int64, Int64}, Vararg{Pair{Int64, Int64}}})
+precompile(Tuple{typeof(SPIRV.compact), SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{typeof(Graphs.merge_vertices!), SPIRV.DeltaGraph{Int64}, Int64, Int64, Int64})
+precompile(Tuple{typeof(Graphs.merge_vertices!), SPIRV.DeltaGraph{Int64}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.ResultID}, Int64})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, SPIRV.ResultID, Vararg{SPIRV.ResultID}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, Type{SPIRV.ResultID}, Tuple{Array{Int64, 1}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, Type{SPIRV.ResultID}, Tuple{Array{Int64, 1}}}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Instruction, SPIRV.Instruction})
+precompile(Tuple{typeof(Base.isequal), SPIRV.ResultID, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.getindex), Type{SPIRV.Instruction}, SPIRV.Instruction, SPIRV.Instruction})
+precompile(Tuple{typeof(Base.vect), SPIRV.Instruction, Vararg{SPIRV.Instruction}})
+precompile(Tuple{typeof(Base.:(==)), Array{SPIRV.Instruction, 1}, Array{SPIRV.Instruction, 1}})
+precompile(Tuple{typeof(SPIRV.invalid_format), String, Vararg{Any}})
+precompile(Tuple{Type{SPIRV.SPIRFormatError}, String})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.EnumInfos, Symbol})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.OpCode})
+precompile(Tuple{typeof(Base.convert), Type{Base.Fix2{typeof(Base.:(!=)), SPIRV.OpCode}}, Base.Fix2{typeof(Base.:(!=)), SPIRV.OpCode}})
+precompile(Tuple{typeof(Base.convert), Type{Base.ComposedFunction{Base.Fix2{typeof(Base.:(!=)), SPIRV.OpCode}, typeof(SPIRV.opcode)}}, Base.ComposedFunction{Base.Fix2{typeof(Base.:(!=)), SPIRV.OpCode}, typeof(SPIRV.opcode)}})
+precompile(Tuple{typeof(Base.unwrap_composed), Base.ComposedFunction{Base.ComposedFunction{Base.Fix2{typeof(Base.:(!=)), SPIRV.OpCode}, typeof(SPIRV.opcode)}, typeof(Base.peek)}})
+precompile(Tuple{typeof(Base.in), Tuple{SPIRV.OpCode, SPIRV.OpCode}})
+precompile(Tuple{typeof(Base.convert), Type{Base.Fix2{typeof(Base.in), Tuple{SPIRV.OpCode, SPIRV.OpCode}}}, Base.Fix2{typeof(Base.in), Tuple{SPIRV.OpCode, SPIRV.OpCode}}})
+precompile(Tuple{typeof(Base.convert), Type{Base.ComposedFunction{typeof(Base.:(!)), Base.Fix2{typeof(Base.in), Tuple{SPIRV.OpCode, SPIRV.OpCode}}}}, Base.ComposedFunction{typeof(Base.:(!)), Base.Fix2{typeof(Base.in), Tuple{SPIRV.OpCode, SPIRV.OpCode}}}})
+precompile(Tuple{typeof(Base.convert), Type{Base.ComposedFunction{Base.ComposedFunction{typeof(Base.:(!)), Base.Fix2{typeof(Base.in), Tuple{SPIRV.OpCode, SPIRV.OpCode}}}, typeof(SPIRV.opcode)}}, Base.ComposedFunction{Base.ComposedFunction{typeof(Base.:(!)), Base.Fix2{typeof(Base.in), Tuple{SPIRV.OpCode, SPIRV.OpCode}}}, typeof(SPIRV.opcode)}})
+precompile(Tuple{typeof(Base.in), NTuple{7, SPIRV.OpCode}})
+precompile(Tuple{typeof(Base.convert), Type{Base.Fix2{typeof(Base.in), NTuple{7, SPIRV.OpCode}}}, Base.Fix2{typeof(Base.in), NTuple{7, SPIRV.OpCode}}})
+precompile(Tuple{typeof(Base.convert), Type{Base.ComposedFunction{typeof(Base.:(!)), Base.Fix2{typeof(Base.in), NTuple{7, SPIRV.OpCode}}}}, Base.ComposedFunction{typeof(Base.:(!)), Base.Fix2{typeof(Base.in), NTuple{7, SPIRV.OpCode}}}})
+precompile(Tuple{typeof(Base.convert), Type{Base.ComposedFunction{Base.ComposedFunction{typeof(Base.:(!)), Base.Fix2{typeof(Base.in), NTuple{7, SPIRV.OpCode}}}, typeof(SPIRV.opcode)}}, Base.ComposedFunction{Base.ComposedFunction{typeof(Base.:(!)), Base.Fix2{typeof(Base.in), NTuple{7, SPIRV.OpCode}}}, typeof(SPIRV.opcode)}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.OpCode})
+precompile(Tuple{typeof(Base.convert), Type{Base.Fix2{typeof(Base.:(==)), SPIRV.OpCode}}, Base.Fix2{typeof(Base.:(==)), SPIRV.OpCode}})
+precompile(Tuple{typeof(Base.convert), Type{Base.ComposedFunction{Base.Fix2{typeof(Base.:(==)), SPIRV.OpCode}, typeof(SPIRV.opcode)}}, Base.ComposedFunction{Base.Fix2{typeof(Base.:(==)), SPIRV.OpCode}, typeof(SPIRV.opcode)}})
+precompile(Tuple{typeof(Base.unwrap_composed), Base.ComposedFunction{Base.ComposedFunction{Base.Fix2{typeof(Base.:(==)), SPIRV.OpCode}, typeof(SPIRV.opcode)}, typeof(Base.peek)}})
+precompile(Tuple{Type{SPIRV.PhysicalModule}, String})
+precompile(Tuple{typeof(SPIRV.operand_infos), SPIRV.OpCode, Vararg{Any}})
+precompile(Tuple{typeof(SPIRV.info), SPIRV.OpCode, Bool})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.InstructionInfo, Symbol})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Array{SPIRV.OperandInfo, 1}, Symbol})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.getproperty), Tuple{Array{SPIRV.OperandInfo, 1}, Base.RefValue{Symbol}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(Base.getproperty), Tuple{Array{SPIRV.OperandInfo, 1}, Base.RefValue{Symbol}}}})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Type{DataType}})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{DataType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(SPIRV.next_id), SwapStreams.SwapStream{Bool, Base.GenericIOBuffer{Array{UInt8, 1}}}, typeof(SPIRV.read_word), Array{DataType, 1}, SPIRV.Id})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Type{SPIRV.Id}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.Id, 1}, SPIRV.Id, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{SPIRV.Id, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Type{Base.Enums.Enum{Int64}}})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{Base.Enums.Enum{Int64}, 1}, Array{SPIRV.Id, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, SPIRV.Literal, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{Base.Enums.Enum{Int64}, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(SPIRV.next_id), SwapStreams.SwapStream{Bool, Base.GenericIOBuffer{Array{UInt8, 1}}}, typeof(SPIRV.read_word), Array{Base.Enums.Enum{Int64}, 1}, SPIRV.Id})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Type{Any}})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{Any, 1}, Array{DataType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, SPIRV.Id, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(SPIRV.next_id), SwapStreams.SwapStream{Bool, Base.GenericIOBuffer{Array{UInt8, 1}}}, typeof(SPIRV.read_word), Array{Any, 1}, SPIRV.Id})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{Any, 1}, Array{DataType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, SPIRV.Literal, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Type{SPIRV.Literal}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.Literal, 1}, SPIRV.Literal, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{SPIRV.Literal, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(SPIRV.next_id), SwapStreams.SwapStream{Bool, Base.GenericIOBuffer{Array{UInt8, 1}}}, typeof(SPIRV.read_word), Array{SPIRV.Literal, 1}, SPIRV.Id})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{Any, 1}, Array{Base.Enums.Enum{Int64}, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Type, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{Any, 1}, Array{SPIRV.Id, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(Base.getproperty), Tuple{Base.Broadcast.Extruded{Array{SPIRV.OperandInfo, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{Symbol}}}, Type, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(SPIRV.next_id), SwapStreams.SwapStream{Bool, Base.GenericIOBuffer{Array{UInt8, 1}}}, typeof(SPIRV.read_word), Array{SPIRV.Id, 1}, SPIRV.Id})
+precompile(Tuple{typeof(Base.in), Type, Tuple{SPIRV.Id, SPIRV.Id}})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:class, :operands, :capabilities, :extensions, :min_version), Tuple{String, Array{SPIRV.OperandInfo, 1}, Array{SPIRV.Capability, 1}, Array{String, 1}, Base.VersionNumber}}, NamedTuple{(:class, :operands, :capabilities, :extensions, :min_version), Tuple{String, Array{SPIRV.OperandInfo, 1}, Array{SPIRV.Capability, 1}, Array{String, 1}, Base.VersionNumber}}, SPIRV.InstructionInfo, NamedTuple{(:operands,), Tuple{Array{SPIRV.OperandInfo, 1}}}})
+precompile(Tuple{Type{Tuple}, NamedTuple{(:class, :operands, :capabilities, :extensions, :min_version), Tuple{String, Array{SPIRV.OperandInfo, 1}, Array{SPIRV.Capability, 1}, Array{String, 1}, Base.VersionNumber}}})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.Capability, SPIRV.OperandInfo})
+precompile(Tuple{typeof(Base.in), SPIRV.Id, Tuple{SPIRV.Id, SPIRV.Id}})
+precompile(Tuple{typeof(Base.in), SPIRV.Literal, Tuple{SPIRV.Id, SPIRV.Id}})
+precompile(Tuple{typeof(Base.getindex), Base.Dict{Any, String}, SPIRV.Literal})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, String, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.AddressingModel, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.MemoryModel, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.ExecutionModel, SPIRV.OperandInfo})
+precompile(Tuple{typeof(Base.getindex), Base.Dict{Any, String}, SPIRV.Id})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.ResultID, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.SourceLanguage, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, UInt32, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.Decoration, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.BuiltIn, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.StorageClass, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.FunctionControl, SPIRV.OperandInfo})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Array{SPIRV.FunctionControl, 1}, SPIRV.var"#41#42"}})
+precompile(Tuple{typeof(Base.convert), Type{ResultTypes.Result{Bool, SPIRV.ValidationError}}, Bool})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.Module})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.Capability})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, String})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.AddressingModel})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.MemoryModel})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.ResultID})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.SourceLanguage})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, UInt32})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.Decoration})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.BuiltIn})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.StorageClass})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.FunctionControl})
+precompile(Tuple{typeof(ResultTypes.unwrap), ResultTypes.Result{Bool, SPIRV.ValidationError}})
+precompile(Tuple{typeof(Base.show), Base.GenericIOBuffer{Array{UInt8, 1}}, Base.Multimedia.MIME{Symbol("text/plain")}, SPIRV.Module})
+precompile(Tuple{SPIRV.var"#95#96"{Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}, typeof(SPIRV.disassemble)}, Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, Vararg{Any}})
+precompile(Tuple{typeof(SPIRV.disassemble), Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, SPIRV.Module})
+precompile(Tuple{typeof(Base.print), Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, SPIRV.OpCode})
+precompile(Tuple{typeof(Base.deepcopy_internal), Array{SPIRV.OperandInfo, 1}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.OperandInfo, 1}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Array{SPIRV.Capability, 1}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.Capability, Type})
+precompile(Tuple{typeof(Base.print), Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, SPIRV.ResultID})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, String, SPIRV.Literal})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.AddressingModel, Type})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.MemoryModel, Type})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.ExecutionModel, Type})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.ResultID, SPIRV.Id})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.SourceLanguage, Type})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, UInt32, SPIRV.Literal})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.Decoration, Type})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.BuiltIn, Type})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.StorageClass, Type})
+precompile(Tuple{Type{Pair{A, B} where B where A}, Symbol, SPIRV.FunctionControl})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.FunctionControl, Type})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.PhysicalModule, SPIRV.PhysicalModule})
+precompile(Tuple{typeof(SPIRV.assemble), SPIRV.PhysicalModule})
+precompile(Tuple{typeof(SPIRV.assemble), SPIRV.Module})
+precompile(Tuple{typeof(Base.write), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.PhysicalModule})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.ExecutionMode, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.ExecutionMode})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.ExecutionMode, Type})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.Dim, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.ImageFormat, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.SelectionControl, SPIRV.OperandInfo})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Array{SPIRV.SelectionControl, 1}, SPIRV.var"#41#42"}})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.LoopControl, SPIRV.OperandInfo})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Array{SPIRV.LoopControl, 1}, SPIRV.var"#41#42"}})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.Dim})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.ImageFormat})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.SelectionControl})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.LoopControl})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.Dim, Type})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.ImageFormat, Type})
+precompile(Tuple{Type{Pair{A, B} where B where A}, Symbol, SPIRV.SelectionControl})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.SelectionControl, Type})
+precompile(Tuple{Type{Pair{A, B} where B where A}, Symbol, SPIRV.LoopControl})
+precompile(Tuple{typeof(SPIRV.emit_argument), SPIRV.IndentedIO{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}}, Int64, SPIRV.LoopControl, Type})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.AnnotatedFunction, SPIRV.AnnotatedFunction})
+precompile(Tuple{Type{SPIRV.IntegerType}, Int64, Bool})
+precompile(Tuple{Type{SPIRV.FloatType}, Int64})
+precompile(Tuple{typeof(Base.:(==)), Nothing, SPIRV.StorageClass})
+precompile(Tuple{typeof(SPIRV.promote_to_interface_block), SPIRV.IntegerType, Nothing})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.IntegerType, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.IntegerType, SPIRV.IntegerType})
+precompile(Tuple{Type{SPIRV.Constant}, Int64})
+precompile(Tuple{Type{SPIRV.ArrayType}, SPIRV.IntegerType, SPIRV.Constant})
+precompile(Tuple{typeof(Base.vect), SPIRV.IntegerType, Vararg{Any}})
+precompile(Tuple{typeof(Base.promote_typeof), SPIRV.IntegerType, SPIRV.FloatType, Vararg{Any}})
+precompile(Tuple{typeof(Base.promote_typeof), SPIRV.FloatType, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.promote_type), Type{SPIRV.IntegerType}, Type{SPIRV.SPIRType}})
+precompile(Tuple{typeof(Base.getindex), Type{SPIRV.SPIRType}, SPIRV.IntegerType, SPIRV.FloatType, SPIRV.ArrayType})
+precompile(Tuple{Type{SPIRV.StructType}, Array{SPIRV.SPIRType, 1}})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.StructType, SPIRV.StructType})
+precompile(Tuple{typeof(Base.isapprox), SPIRV.StructType, SPIRV.StructType})
+precompile(Tuple{SPIRV.var"#14#15", Tuple{SPIRV.IntegerType, SPIRV.IntegerType}})
+precompile(Tuple{SPIRV.var"#14#15", Tuple{SPIRV.FloatType, SPIRV.FloatType}})
+precompile(Tuple{SPIRV.var"#14#15", Tuple{SPIRV.ArrayType, SPIRV.ArrayType}})
+precompile(Tuple{typeof(Base.isapprox), SPIRV.IntegerType, SPIRV.IntegerType})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.StorageClass, SPIRV.StructType})
+precompile(Tuple{typeof(Base.isapprox), SPIRV.PointerType, SPIRV.PointerType})
+precompile(Tuple{Type{SPIRV.TypeMap}})
+precompile(Tuple{SPIRV.var"##spir_type#25", Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}, typeof(SPIRV.spir_type), Core.TypeofBottom, Nothing})
+precompile(Tuple{typeof(SPIRV.spir_type), Core.TypeofBottom, Nothing})
+precompile(Tuple{typeof(SPIRV.spir_type), DataType, SPIRV.TypeMap})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.IntegerType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Int64}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.ArrayType, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.ArrayType, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.ArrayType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Int64, Int64}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.:(*)), Int64, Type{SPIRV.LiteralType{UInt32}}})
+precompile(Tuple{Type{SPIRV.Constant}, UInt32})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Int64}}, SPIRV.ArrayType})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#27#28"{SPIRV.TypeMap}, Tuple{DataType, DataType}})
+precompile(Tuple{typeof(Base.collect), Base.Generator{Tuple{DataType, DataType}, SPIRV.var"#27#28"{SPIRV.TypeMap}}})
+precompile(Tuple{typeof(Base._array_for), Type{SPIRV.IntegerType}, Base.HasLength, Int64})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.IntegerType, 1}, SPIRV.IntegerType, Base.Generator{Tuple{DataType, DataType}, SPIRV.var"#27#28"{SPIRV.TypeMap}}, Int64})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.FloatType, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.FloatType, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.FloatType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Float64}, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.setindex_widen_up_to), Array{SPIRV.IntegerType, 1}, SPIRV.FloatType, Int64})
+precompile(Tuple{typeof(Base.collect_to!), Array{SPIRV.ScalarType, 1}, Base.Generator{Tuple{DataType, DataType}, SPIRV.var"#27#28"{SPIRV.TypeMap}}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.StructType}, Array{SPIRV.ScalarType, 1}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.StructType, SPIRV.StructType})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.StructType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Int64, Float64}}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Pointer{Tuple{Int64, Float64}}}})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.PointerType, SPIRV.PointerType})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.PointerType, SPIRV.PointerType})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.PointerType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Pointer{Tuple{Int64, Float64}}}, SPIRV.PointerType})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.PointerType, Symbol})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:wrap_mutable,), Tuple{Bool}}, typeof(SPIRV.spir_type), DataType, SPIRV.TypeMap})
+precompile(Tuple{typeof(Base.getindex), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Int64})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Type{SPIRV.StructType}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.StructType, 1}, SPIRV.StructType, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{SPIRV.StructType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.StructType}, Array{SPIRV.StructType, 1}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Base.RefValue{Tuple{Int64, Float64}}}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.StructType, Symbol})
+precompile(Tuple{typeof(Base.Iterators.only), Array{SPIRV.SPIRType, 1}})
+precompile(Tuple{typeof(SPIRV.spir_type), Core.TypeofBottom, SPIRV.TypeMap})
+precompile(Tuple{SPIRV.var"##spir_type#25", Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}, typeof(SPIRV.spir_type), Core.TypeofBottom, SPIRV.TypeMap})
+precompile(Tuple{typeof(Base.convert), Type{SPIRV.ResultID}, Int64})
+precompile(Tuple{Type{SPIRV.ModuleTarget}})
+precompile(Tuple{Type{SPIRV.Translation}})
+precompile(Tuple{typeof(SPIRV.promote_to_interface_block), SPIRV.FloatType, Nothing})
+precompile(Tuple{typeof(SPIRV.emit_constant!), SPIRV.ModuleTarget, SPIRV.Translation, Tuple{Float64, Tuple{UInt32, Int64}}})
+precompile(Tuple{Type{SPIRV.Constant}, Tuple{Float64, Tuple{UInt32, Int64}}, SPIRV.ModuleTarget, SPIRV.Translation})
+precompile(Tuple{typeof(Base._array_for), Type{SPIRV.FloatType}, Base.HasLength, Int64})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.FloatType, 1}, SPIRV.FloatType, Base.Generator{Tuple{DataType, DataType}, SPIRV.var"#27#28"{SPIRV.TypeMap}}, Int64})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{UInt32}, SPIRV.IntegerType})
+precompile(Tuple{Type{SPIRV.StructType}, Array{SPIRV.IntegerType, 1}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{UInt32, Int64}}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.setindex_widen_up_to), Array{SPIRV.FloatType, 1}, SPIRV.StructType, Int64})
+precompile(Tuple{typeof(Base.collect_to!), Array{SPIRV.SPIRType, 1}, Base.Generator{Tuple{DataType, DataType}, SPIRV.var"#27#28"{SPIRV.TypeMap}}, Int64, Int64})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Float64, Tuple{UInt32, Int64}}}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.collect), Base.Generator{Tuple{Int64, Int64}, SPIRV.var"#430#433"{Tuple{Float64, Tuple{UInt32, Int64}}, SPIRV.ModuleTarget, SPIRV.Translation}}})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.FloatType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.collect), Base.Generator{Tuple{Int64, Int64}, SPIRV.var"#430#433"{Tuple{UInt32, Int64}, SPIRV.ModuleTarget, SPIRV.Translation}}})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.IntegerType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.hash), Array{SPIRV.ResultID, 1}, UInt64})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.iterate), Array{SPIRV.SPIRType, 1}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.iterate), Array{SPIRV.SPIRType, 1}, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.StructType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.ModuleTarget, Symbol})
+precompile(Tuple{typeof(Base.length), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}})
+precompile(Tuple{typeof(Base.length), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.Constant}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.IDCounter})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.Constant}, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Constant, Symbol})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Translation, Symbol})
+precompile(Tuple{typeof(Base.getindex), Type{SPIRV.ResultID}, Int64, Int64})
+precompile(Tuple{typeof(Base.:(==)), Array{SPIRV.ResultID, 1}, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{typeof(Base._nt_names), Type{NamedTuple{(:scratch,), Tuple{Array{SPIRV.Decoration, 1}}}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.BuiltIn, 1}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.Scope, 1}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.FunctionParameterAttribute, 1}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.FPRoundingMode, 1}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.FPFastMathMode, 1}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.LinkageType, 1}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.ResultID, 1}}})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.EnumerantInfo, Symbol})
+precompile(Tuple{typeof(Base.length), Array{SPIRV.OperandInfo, 1}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Array{SPIRV.OperandInfo, 1}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(SPIRV.format_parameter), Tuple{Array{SPIRV.OperandInfo, 1}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(SPIRV.format_parameter), Tuple{Array{SPIRV.OperandInfo, 1}}}})
+precompile(Tuple{SPIRV.var"#95#96"{Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}, SPIRV.var"#1#2"{SPIRV.OperandInfo}}, Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}})
+precompile(Tuple{typeof(Base.print), Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, String, SPIRV.Literal, Vararg{Any}})
+precompile(Tuple{typeof(Base.print), Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, SPIRV.Literal})
+precompile(Tuple{typeof(Base.string), String, SPIRV.Decoration, Vararg{Any}})
+precompile(Tuple{typeof(Base.print), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.Decoration})
+precompile(Tuple{typeof(Base.isempty), Array{SPIRV.Instruction, 1}})
+precompile(Tuple{typeof(Base.isequal), SPIRV.Decoration, SPIRV.Decoration})
+precompile(Tuple{typeof(Base.:(|)), SPIRV.ImageOperands, SPIRV.ImageOperands})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, Nothing, SPIRV.ResultID, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.ResultID, SPIRV.ImageOperands, SPIRV.ResultID, SPIRV.ResultID}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, Nothing, Array{Any, 1}})
+precompile(Tuple{Type{SPIRV.AllSupported}})
+precompile(Tuple{Type{SPIRV.FeatureRequirements}, Array{SPIRV.Instruction, 1}, SPIRV.AllSupported})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.ImageOperands, SPIRV.OperandInfo})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Array{SPIRV.ImageOperands, 1}, SPIRV.var"#41#42"}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Array{SPIRV.ImageOperands, 1}, SPIRV.var"#41#42"}, Int64})
+precompile(Tuple{typeof(Base.vcat), Array{SPIRV.OperandInfo, 1}, Array{SPIRV.OperandInfo, 1}, Array{SPIRV.OperandInfo, 1}})
+precompile(Tuple{typeof(Base.insert!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.OperandInfo})
+precompile(Tuple{typeof(Base.getindex), Array{SPIRV.ImageOperands, 1}, Int64})
+precompile(Tuple{Type{UInt32}, SPIRV.ImageOperands})
+precompile(Tuple{typeof(Base.get), Base.Dict{UInt32, SPIRV.EnumerantInfo}, UInt32, Nothing})
+precompile(Tuple{Type{SPIRV.FeatureRequirements}, Array{Any, 1}, Array{SPIRV.Capability, 1}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.FeatureRequirements, SPIRV.FeatureRequirements})
+precompile(Tuple{Type{NamedTuple{(:memory_model,), T} where T<:Tuple}, Tuple{SPIRV.MemoryModel}})
+precompile(Tuple{Type{SPIRV.ModuleMetadata}, UInt32, UInt32, Base.VersionNumber, Int64})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:memory_model,), Tuple{SPIRV.MemoryModel}}, Type{SPIRV.IR}})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.IR, Symbol})
+precompile(Tuple{typeof(Base.in), SPIRV.Capability, Array{SPIRV.Capability, 1}})
+precompile(Tuple{typeof(Base.convert), Type{SPIRV.OpCode}, SPIRV.OpCode})
+precompile(Tuple{Base.Iterators.var"#5#6"{Tuple{Array{SPIRV.ResultID, 1}, Array{SPIRV.SPIRType, 1}}}, Int64})
+precompile(Tuple{typeof(Base.getproperty), Accessors.DynamicIndexLens{SPIRV.var"#39#40"}, Symbol})
+precompile(Tuple{typeof(Base.convert), Type{SPIRV.AddressingModel}, SPIRV.AddressingModel})
+precompile(Tuple{typeof(SPIRV.satisfy_requirements!), SPIRV.IR, SPIRV.AllSupported})
+precompile(Tuple{typeof(Base.pairs), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.PairDictionary{SPIRV.ResultID, SPIRV.SPIRType, Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.SPIRType}}})
+precompile(Tuple{typeof(Base.pairs), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.Constant}})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.PairDictionary{SPIRV.ResultID, SPIRV.Constant, Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.Constant}}})
+precompile(Tuple{typeof(Base.pairs), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.Variable}})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.PairDictionary{SPIRV.ResultID, SPIRV.Variable, Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.Variable}}})
+precompile(Tuple{Type{UInt32}, SPIRV.AddressingModel})
+precompile(Tuple{Type{UInt32}, SPIRV.MemoryModel})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:satisfy_requirements,), Tuple{Bool}}, Type{SPIRV.IR}, SPIRV.Module})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.Capability, 1}, SPIRV.Capability})
+precompile(Tuple{typeof(Base.setproperty!), SPIRV.IR, Symbol, SPIRV.AddressingModel})
+precompile(Tuple{typeof(Base.setproperty!), SPIRV.IR, Symbol, SPIRV.MemoryModel})
+precompile(Tuple{typeof(Base.convert), Type{SPIRV.MemoryModel}, SPIRV.MemoryModel})
+precompile(Tuple{Type{SPIRV.EntryPoint}, Symbol, SPIRV.ResultID, SPIRV.ExecutionModel, Array{Any, 1}, Array{Any, 1}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.ResultID, 1}, SPIRV.ResultID, Int64})
+precompile(Tuple{typeof(SPIRV.source_version), SPIRV.SourceLanguage, UInt32})
+precompile(Tuple{Type{SPIRV.Source}, SPIRV.SourceLanguage, Base.VersionNumber, Nothing, Nothing, Array{Any, 1}})
+precompile(Tuple{typeof(SPIRV.decorate!), SPIRV.IR, SPIRV.ResultID, Int64, SPIRV.Decoration, Vararg{Any}})
+precompile(Tuple{SPIRV.var"##decorate!#115", Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}, typeof(SPIRV.decorate!), SPIRV.IR, SPIRV.ResultID, Vararg{Any}})
+precompile(Tuple{typeof(SPIRV.decorate!), Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.Metadata}, SPIRV.ResultID, Int64, SPIRV.Decoration, Vararg{Any}})
+precompile(Tuple{typeof(SPIRV.decorate!), SPIRV.Metadata, SPIRV.Decoration, SPIRV.BuiltIn})
+precompile(Tuple{typeof(SPIRV.decorate!), SPIRV.IR, SPIRV.ResultID, SPIRV.Decoration, UInt32})
+precompile(Tuple{typeof(SPIRV.decorate!), SPIRV.Metadata, SPIRV.Decoration, UInt32})
+precompile(Tuple{typeof(Base.parse), Type{SPIRV.SPIRType}, SPIRV.Instruction, SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.Constant}})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.VoidType})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.VoidType, Array{Any, 1}})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.FunctionType})
+precompile(Tuple{Type{SPIRV.FloatType}, UInt32})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.FloatType})
+precompile(Tuple{Type{SPIRV.VectorType}, SPIRV.Instruction, SPIRV.FloatType})
+precompile(Tuple{Type{SPIRV.VectorType}, SPIRV.FloatType, UInt32})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.VectorType})
+precompile(Tuple{Type{SPIRV.IntegerType}, UInt32, UInt32})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.IntegerType})
+precompile(Tuple{Type{SPIRV.Constant}, UInt32, SPIRV.IntegerType, Bool})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.ArrayType})
+precompile(Tuple{SPIRV.var"#16#17"{SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}}, SPIRV.ResultID})
+precompile(Tuple{typeof(Base._array_for), Type{SPIRV.VectorType}, Base.HasShape{1}, Tuple{Base.OneTo{Int64}}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.VectorType, 1}, SPIRV.VectorType, Base.Generator{Array{Any, 1}, SPIRV.var"#16#17"{SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}}}, Int64})
+precompile(Tuple{typeof(Base.setindex_widen_up_to), Array{SPIRV.VectorType, 1}, SPIRV.FloatType, Int64})
+precompile(Tuple{typeof(Base.collect_to!), Array{SPIRV.SPIRType, 1}, Base.Generator{Array{Any, 1}, SPIRV.var"#16#17"{SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}}}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.StructType})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.Instruction, SPIRV.StructType})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.PointerType})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.Instruction, SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}})
+precompile(Tuple{Type{SPIRV.Constant}, Int32, SPIRV.IntegerType, Bool})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.Instruction, SPIRV.VectorType})
+precompile(Tuple{Type{SPIRV.Constant}, Float32, SPIRV.FloatType, Bool})
+precompile(Tuple{Type{SPIRV.MatrixType}, SPIRV.VectorType, UInt32})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base._array_for), Type{SPIRV.MatrixType}, Base.HasShape{1}, Tuple{Base.OneTo{Int64}}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.MatrixType, 1}, SPIRV.MatrixType, Base.Generator{Array{Any, 1}, SPIRV.var"#16#17"{SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}}}, Int64})
+precompile(Tuple{Type{SPIRV.StructType}, Array{SPIRV.MatrixType, 1}})
+precompile(Tuple{Type{SPIRV.Module}, SPIRV.IR})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, Nothing, SPIRV.ExecutionModel, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ExecutionModel, SPIRV.ResultID, String, Vararg{SPIRV.ResultID, 4}}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, Nothing, Array{Any, 1}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, Nothing, SPIRV.SourceLanguage, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.SourceLanguage, UInt32}})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.FunctionType})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.FunctionType})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.PointerType})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.PointerType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.VoidType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.VoidType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.VoidType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.VoidType})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.PairDictionary{SPIRV.ResultID, SPIRV.SPIRType, Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.SPIRType}}, Int64})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.FunctionType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.FunctionType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.FunctionType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.FunctionType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.FloatType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.FloatType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.FloatType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.VectorType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.VectorType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.VectorType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.IntegerType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.IntegerType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.IntegerType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.ArrayType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.ArrayType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.ArrayType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.StructType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.StructType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.StructType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.StructType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.PointerType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.PointerType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.PointerType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.PointerType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.MatrixType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.MatrixType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.Constant}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.Constant}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.Constant})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.PairDictionary{SPIRV.ResultID, SPIRV.Constant, Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.Constant}}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.Variable}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.Variable}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.Variable})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.PairDictionary{SPIRV.ResultID, SPIRV.Variable, Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.Variable}}, Int64})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.VoidType}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.Instruction, 1}, SPIRV.Instruction, Int64})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.FunctionType}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.VoidType})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.FloatType}})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.VectorType}})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.IntegerType}})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.Constant})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.Constant}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.IntegerType, SPIRV.ResultID, Array{UInt32, 1}})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.IntegerType, Nothing})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.ArrayType}})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.StructType}})
+precompile(Tuple{SPIRV.var"#98#99"{SPIRV.GlobalsInfo}, SPIRV.VectorType})
+precompile(Tuple{SPIRV.var"#98#99"{SPIRV.GlobalsInfo}, SPIRV.FloatType})
+precompile(Tuple{SPIRV.var"#98#99"{SPIRV.GlobalsInfo}, SPIRV.ArrayType})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.PointerType}})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.Variable})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.Variable}})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.PointerType, Nothing})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.IntegerType, SPIRV.ResultID, Base.ReinterpretArray{UInt32, 1, Int32, Array{Int32, 1}, false}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.FloatType, SPIRV.ResultID, Base.ReinterpretArray{UInt32, 1, Float32, Array{Float32, 1}, false}})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.FloatType, Nothing})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.MatrixType}})
+precompile(Tuple{SPIRV.var"#98#99"{SPIRV.GlobalsInfo}, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.Iterators._zip_iterate_all), Tuple{Base.UnitRange{Int64}, Base.Generator{Base.Iterators.Zip{Tuple{Array{SPIRV.ResultID, 1}, Array{SPIRV.SPIRType, 1}}}, SPIRV.var"#104#105"}}, Tuple{Tuple{}, Tuple{}}})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.VoidType, Nothing})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.VectorType, Nothing})
+precompile(Tuple{typeof(Base._nt_names), Type{NamedTuple{(:instructions,), Tuple{Array{SPIRV.Instruction, 1}}}}})
+precompile(Tuple{typeof(Base.isapprox), SPIRV.Module, SPIRV.Module})
+precompile(Tuple{typeof(Base.deepcopy_internal), Array{SPIRV.Instruction, 1}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.Instruction, 1}})
+precompile(Tuple{typeof(Base.isequal), SPIRV.StorageClass, SPIRV.StorageClass})
+precompile(Tuple{typeof(Base.isequal), SPIRV.FunctionControl, SPIRV.FunctionControl})
+precompile(Tuple{typeof(Base.isequal), SPIRV.AddressingModel, SPIRV.AddressingModel})
+precompile(Tuple{typeof(Base.isequal), SPIRV.MemoryModel, SPIRV.MemoryModel})
+precompile(Tuple{typeof(Base.isequal), SPIRV.BuiltIn, SPIRV.BuiltIn})
+precompile(Tuple{typeof(Base.isequal), SPIRV.Capability, SPIRV.Capability})
+precompile(Tuple{typeof(Base.isequal), SPIRV.ExecutionModel, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Module, SPIRV.Module})
+precompile(Tuple{typeof(Base.isequal), SPIRV.SourceLanguage, SPIRV.SourceLanguage})
+precompile(Tuple{typeof(Base.isapprox), SPIRV.PhysicalModule, SPIRV.PhysicalModule})
+precompile(Tuple{typeof(Base._nt_names), Type{NamedTuple{(:capabilities,), Tuple{Array{SPIRV.Capability, 1}}}}})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.IR})
+precompile(Tuple{typeof(SPIRV.decorate!), SPIRV.IR, SPIRV.ResultID, SPIRV.Decoration, SPIRV.BuiltIn})
+precompile(Tuple{SPIRV.var"#123#124", SPIRV.ResultID})
+precompile(Tuple{typeof(Base._array_for), Type{SPIRV.PointerType}, Base.HasShape{1}, Tuple{Base.OneTo{Int64}}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.PointerType, 1}, SPIRV.PointerType, Base.Generator{Array{Any, 1}, SPIRV.var"#123#124"}, Int64})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.VoidType, Array{SPIRV.PointerType, 1}})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.FloatType, Array{SPIRV.PointerType, 1}})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.Instruction, SPIRV.FloatType})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.VectorType, Array{SPIRV.PointerType, 1}})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.IntegerType, Array{SPIRV.PointerType, 1}})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.Instruction, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.BooleanType})
+precompile(Tuple{typeof(Base._array_for), Type{SPIRV.ArrayType}, Base.HasShape{1}, Tuple{Base.OneTo{Int64}}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.ArrayType, 1}, SPIRV.ArrayType, Base.Generator{Array{Any, 1}, SPIRV.var"#16#17"{SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}}}, Int64})
+precompile(Tuple{Type{SPIRV.StructType}, Array{SPIRV.ArrayType, 1}})
+precompile(Tuple{Type{SPIRV.Constant}, Array{SPIRV.ResultID, 1}, SPIRV.VectorType, Bool})
+precompile(Tuple{Type{SPIRV.VectorType}, SPIRV.Instruction, SPIRV.IntegerType})
+precompile(Tuple{Type{SPIRV.VectorType}, SPIRV.IntegerType, UInt32})
+precompile(Tuple{Type{SPIRV.ImageType}, SPIRV.Instruction, SPIRV.FloatType})
+precompile(Tuple{Type{SPIRV.ImageType}, SPIRV.FloatType, SPIRV.Dim, UInt32, UInt32, UInt32, Bool, SPIRV.ImageFormat, Nothing})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ResultID, SPIRV.ImageType})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.Instruction, SPIRV.ImageType})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ExecutionModel, SPIRV.ResultID, String, SPIRV.ResultID}})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ImageType})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ImageType})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.BooleanType})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.BooleanType})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.VoidType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.BooleanType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.BooleanType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.BooleanType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.BooleanType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.ImageType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.ImageType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.ImageType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.ImageType})
+precompile(Tuple{SPIRV.var"#100#101"{SPIRV.GlobalsInfo}, SPIRV.PointerType})
+precompile(Tuple{SPIRV.var"#98#99"{SPIRV.GlobalsInfo}, SPIRV.IntegerType})
+precompile(Tuple{SPIRV.var"#98#99"{SPIRV.GlobalsInfo}, SPIRV.StructType})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.BooleanType}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.VectorType, SPIRV.ResultID, SPIRV.ResultID, Vararg{SPIRV.ResultID}})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.ImageType}})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.BooleanType, Nothing})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ImageType, Nothing})
+precompile(Tuple{typeof(Base.Iterators._zip_iterate_all), Tuple{Base.UnitRange{Int64}, Base.Generator{Base.Iterators.Zip{Tuple{Array{SPIRV.ResultID, 1}, Array{SPIRV.SPIRType, 1}}}, SPIRV.var"#104#105"}}, Tuple{Tuple{Int64}, Tuple{Tuple{Int64, Int64}}}})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.StructType, Nothing})
+precompile(Tuple{typeof(Base.isequal), SPIRV.SelectionControl, SPIRV.SelectionControl})
+precompile(Tuple{typeof(Base.isequal), SPIRV.Dim, SPIRV.Dim})
+precompile(Tuple{typeof(Base.isequal), SPIRV.ImageFormat, SPIRV.ImageFormat})
+precompile(Tuple{typeof(Base.isequal), SPIRV.LoopControl, SPIRV.LoopControl})
+precompile(Tuple{typeof(Base.isequal), SPIRV.ExecutionMode, SPIRV.ExecutionMode})
+precompile(Tuple{Type{SPIRV.IR}, SPIRV.Module})
+precompile(Tuple{Type{UInt32}, SPIRV.Capability})
+precompile(Tuple{Type{UInt32}, SPIRV.ExecutionModel})
+precompile(Tuple{Type{UInt32}, SPIRV.SourceLanguage})
+precompile(Tuple{Type{UInt32}, SPIRV.Decoration})
+precompile(Tuple{Type{UInt32}, SPIRV.BuiltIn})
+precompile(Tuple{Type{UInt32}, SPIRV.StorageClass})
+precompile(Tuple{typeof(Base.show), Base.GenericIOBuffer{Array{UInt8, 1}}, Base.Multimedia.MIME{Symbol("text/plain")}, SPIRV.IR})
+precompile(Tuple{typeof(Base.getproperty), Base.MappingRF{SPIRV.var"#59#60", typeof(Base.max)}, Symbol})
+precompile(Tuple{typeof(Base.reduce_empty), Base.MappingRF{SPIRV.var"#59#60", typeof(Base.max)}, Type{SPIRV.Instruction}})
+precompile(Tuple{typeof(Base.something), Nothing, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.read), Type{SPIRV.Module}, String})
+precompile(Tuple{typeof(Base.parse), Type{SPIRV.ResultID}, Base.SubString{String}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ExecutionModel, SPIRV.ResultID, String}})
+precompile(Tuple{SPIRV.var"##VulkanAlignment#387", Bool, Bool, Type{SPIRV.VulkanAlignment}})
+precompile(Tuple{Type{SPIRV.VulkanLayout}, Array{DataType, 1}})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Type{SPIRV.IntegerType}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.IntegerType, 1}, SPIRV.IntegerType, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{SPIRV.IntegerType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.iterate), Array{SPIRV.StorageClass, 1}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Int32}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Int8}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Vec{2, Int16}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Int16}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.length), Type{SPIRV.Vec{2, Int16}}})
+precompile(Tuple{Type{SPIRV.VectorType}, SPIRV.IntegerType, Int64})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.VectorType, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.VectorType, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.VectorType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Vec{2, Int16}}, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Type{SPIRV.SPIRType}})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{SPIRV.SPIRType, 1}, Array{SPIRV.IntegerType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, SPIRV.VectorType, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{SPIRV.SPIRType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{SPIRV.SPIRType, 1}, Array{SPIRV.IntegerType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, SPIRV.StructType, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.ArrayType}, SPIRV.StructType, SPIRV.Constant})
+precompile(Tuple{typeof(SPIRV.nrows), Type{SPIRV.Mat{4, 4, Float32}}})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Mat{4, 4, Float32}}})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Float32}, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.length), Type{SPIRV.Vec{4, Float32}}})
+precompile(Tuple{Type{SPIRV.VectorType}, SPIRV.FloatType, Int64})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Vec{4, Float32}}, SPIRV.VectorType})
+precompile(Tuple{typeof(SPIRV.ncols), Type{SPIRV.Mat{4, 4, Float32}}})
+precompile(Tuple{Type{SPIRV.MatrixType}, SPIRV.VectorType, Int64})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.MatrixType, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.MatrixType, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.MatrixType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Mat{4, 4, Float32}}, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{SPIRV.SPIRType, 1}, Array{SPIRV.IntegerType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, SPIRV.MatrixType, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.empty), Base.Dict{Any, Any}, Type{SPIRV.IntegerType}, Type{Base.Set{SPIRV.StorageClass}}})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.IntegerType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.grow_to!), Base.Dict{SPIRV.IntegerType, Base.Set{SPIRV.StorageClass}}, Base.Generator{SPIRV.TypeMap, SPIRV.var"#397#399"{SPIRV.TypeMetadata}}, Int64})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.empty), Base.Dict{SPIRV.IntegerType, Base.Set{SPIRV.StorageClass}}, Type{SPIRV.SPIRType}, Type{Base.Set{SPIRV.StorageClass}}})
+precompile(Tuple{typeof(Base.merge!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Dict{SPIRV.IntegerType, Base.Set{SPIRV.StorageClass}}})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.grow_to!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Generator{SPIRV.TypeMap, SPIRV.var"#397#399"{SPIRV.TypeMetadata}}, Int64})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.VectorType})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.hashindex), SPIRV.IntegerType, Int64})
+precompile(Tuple{typeof(Base.hashindex), SPIRV.StructType, Int64})
+precompile(Tuple{typeof(Base.hashindex), SPIRV.ArrayType, Int64})
+precompile(Tuple{typeof(Base.hashindex), SPIRV.VectorType, Int64})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.FloatType})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.MatrixType})
+precompile(Tuple{Type{SPIRV.NoPadding}})
+precompile(Tuple{Type{SPIRV.NativeLayout}})
+precompile(Tuple{Type{SPIRV.ExplicitLayout}, SPIRV.NativeLayout, Array{DataType, 1}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.NativeLayout, Type, Base.UnitRange{Int64}})
+precompile(Tuple{Type{SPIRV.LayoutInfo}, Int64, Int64, Int64, Array{UInt64, 1}})
+precompile(Tuple{Type{SPIRV.LayoutInfo}, Int64, Int64, Int64, Nothing})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#381#382"{DataType}, Base.UnitRange{Int64}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, typeof(Base.identity), Base.Generator{Base.UnitRange{Int64}, SPIRV.var"#381#382"{DataType}}})
+precompile(Tuple{typeof(Base._xfadjoint), Base.BottomRF{typeof(Base.add_sum)}, Base.Generator{Base.Generator{Base.UnitRange{Int64}, SPIRV.var"#381#382"{DataType}}, typeof(Base.identity)}})
+precompile(Tuple{typeof(Base.indexed_iterate), Tuple{Base.MappingRF{SPIRV.var"#381#382"{DataType}, Base.BottomRF{typeof(Base.add_sum)}}, Base.UnitRange{Int64}}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Tuple{Base.MappingRF{SPIRV.var"#381#382"{DataType}, Base.BottomRF{typeof(Base.add_sum)}}, Base.UnitRange{Int64}}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.LayoutInfo}, Int64, UInt64, Int64, Array{UInt64, 1}})
+precompile(Tuple{typeof(Base.Broadcast.broadcastable), Type{SPIRV.Vec{2, Int16}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{SPIRV.Vec{2, Int16}}}, Base.UnitRange{Int64}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{SPIRV.Vec{2, Int16}}}, Base.UnitRange{Int64}}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{Tuple{Int16, Int16}}}, Base.UnitRange{Int64}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{Tuple{Int16, Int16}}}, Base.UnitRange{Int64}}}})
+precompile(Tuple{Base.MappingRF{SPIRV.var"#381#382"{DataType}, Base.BottomRF{typeof(Base.add_sum)}}, Int64, Int64})
+precompile(Tuple{Base.MappingRF{SPIRV.var"#381#382"{DataType}, Base.BottomRF{typeof(Base.add_sum)}}, UInt64, Int64})
+precompile(Tuple{typeof(Base.Broadcast.broadcastable), Type{SPIRV.Mat{4, 4, Float32}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{SPIRV.Mat{4, 4, Float32}}}, Base.UnitRange{Int64}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{SPIRV.Mat{4, 4, Float32}}}, Base.UnitRange{Int64}}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{NTuple{4, NTuple{4, Float32}}}}, Base.UnitRange{Int64}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{NTuple{4, NTuple{4, Float32}}}}, Base.UnitRange{Int64}}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{NTuple{4, Float32}}}, Base.UnitRange{Int64}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(SPIRV.dataoffset), Tuple{Base.RefValue{SPIRV.NativeLayout}, Base.RefValue{Type{NTuple{4, Float32}}}, Base.UnitRange{Int64}}}})
+precompile(Tuple{typeof(Base.vect), SPIRV.NoPadding, Vararg{Any}})
+precompile(Tuple{typeof(Base.promote_typeof), SPIRV.NoPadding, SPIRV.NativeLayout, Vararg{Any}})
+precompile(Tuple{typeof(Base.promote_typeof), SPIRV.NativeLayout, SPIRV.ExplicitLayout, Vararg{Any}})
+precompile(Tuple{typeof(Base.promote_typeof), SPIRV.ExplicitLayout, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Base.promote_type), Type{SPIRV.NativeLayout}, Type{SPIRV.LayoutStrategy}})
+precompile(Tuple{typeof(Base.promote_type), Type{SPIRV.NoPadding}, Type{SPIRV.LayoutStrategy}})
+precompile(Tuple{typeof(Base.getindex), Type{SPIRV.LayoutStrategy}, SPIRV.NoPadding, SPIRV.NativeLayout, SPIRV.ExplicitLayout, Vararg{Any}})
+precompile(Tuple{typeof(Base.afoldl), Base.var"#109#110"{Array{SPIRV.LayoutStrategy, 1}}, Int64, SPIRV.NoPadding, SPIRV.NativeLayout, SPIRV.ExplicitLayout, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Base.iterate), Array{SPIRV.LayoutStrategy, 1}})
+precompile(Tuple{typeof(SPIRV.alignment), SPIRV.NoPadding, Type})
+precompile(Tuple{SPIRV.var"#383#384"{Tuple{Int16, Int16}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{SPIRV.Vec{2, Int16}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.NoPadding, Type{SPIRV.Vec{2, Int16}}})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.NoPadding, Type{SPIRV.Mat{4, 4, Float32}}})
+precompile(Tuple{SPIRV.var"#383#384"{NTuple{4, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{NTuple{4, NTuple{4, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{SPIRV.Mat{4, 4, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Base.ntuple), SPIRV.var"#383#384"{SPIRV.Mat{4, 4, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Base.iterate), Array{SPIRV.LayoutStrategy, 1}, Int64})
+precompile(Tuple{typeof(SPIRV.alignment), SPIRV.ExplicitLayout, Type})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.ExplicitLayout, Type})
+precompile(Tuple{typeof(Base.stride), SPIRV.ExplicitLayout, Type})
+precompile(Tuple{typeof(SPIRV.alignment), SPIRV.VulkanLayout, Type})
+precompile(Tuple{typeof(Base.getproperty), Base.MappingRF{typeof(SPIRV.scalar_alignment), typeof(Base.max)}, Symbol})
+precompile(Tuple{typeof(Base.reduce_empty), Base.MappingRF{typeof(SPIRV.scalar_alignment), typeof(Base.max)}, Type{SPIRV.SPIRType}})
+precompile(Tuple{typeof(Base.getproperty), Base.MappingRF{typeof(SPIRV.base_alignment), typeof(Base.max)}, Symbol})
+precompile(Tuple{typeof(Base.reduce_empty), Base.MappingRF{typeof(SPIRV.base_alignment), typeof(Base.max)}, Type{SPIRV.SPIRType}})
+precompile(Tuple{typeof(SPIRV.alignment), SPIRV.VulkanLayout, SPIRV.StructType})
+precompile(Tuple{typeof(SPIRV.base_alignment), SPIRV.IntegerType})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.VulkanLayout, Type})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.VulkanLayout, SPIRV.StructType})
+precompile(Tuple{typeof(SPIRV.alignment), SPIRV.VulkanLayout, SPIRV.IntegerType})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.VulkanLayout, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.stride), SPIRV.VulkanLayout, Type})
+precompile(Tuple{typeof(Base.stride), SPIRV.VulkanLayout, SPIRV.StructType})
+precompile(Tuple{typeof(SPIRV.dataoffset), SPIRV.VulkanLayout, Type, Int64})
+precompile(Tuple{typeof(SPIRV.base_alignment), SPIRV.VectorType})
+precompile(Tuple{typeof(SPIRV.scalar_alignment), SPIRV.IntegerType})
+precompile(Tuple{typeof(SPIRV.alignment), SPIRV.VulkanLayout, SPIRV.VectorType})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.VulkanLayout, SPIRV.VectorType})
+precompile(Tuple{typeof(SPIRV.base_alignment), SPIRV.StructType})
+precompile(Tuple{typeof(SPIRV.alignment), SPIRV.VulkanLayout, SPIRV.ArrayType})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.VulkanLayout, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.stride), SPIRV.VulkanLayout, SPIRV.ArrayType})
+precompile(Tuple{typeof(SPIRV.dataoffset), SPIRV.VulkanLayout, SPIRV.ArrayType, Int64})
+precompile(Tuple{typeof(SPIRV.base_alignment), SPIRV.MatrixType})
+precompile(Tuple{typeof(SPIRV.scalar_alignment), SPIRV.FloatType})
+precompile(Tuple{typeof(SPIRV.alignment), SPIRV.VulkanLayout, SPIRV.MatrixType})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.VulkanLayout, SPIRV.MatrixType})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.VulkanLayout, SPIRV.FloatType})
+precompile(Tuple{Type{SPIRV.TypeMetadata}, Array{DataType, 1}})
+precompile(Tuple{typeof(SPIRV.add_type_layouts!), SPIRV.TypeMetadata, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(SPIRV.decorate!), SPIRV.Metadata, SPIRV.Decoration, Int64})
+precompile(Tuple{typeof(SPIRV.decorations), SPIRV.TypeMetadata, SPIRV.StructType, Int64})
+precompile(Tuple{Type{SPIRV.ShaderLayout}, SPIRV.TypeMetadata})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.ShaderLayout, Type})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.ShaderLayout, SPIRV.StructType})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.ShaderLayout, SPIRV.VectorType})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.ShaderLayout, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.vect), SPIRV.StorageClass})
+precompile(Tuple{Type{Pair{A, B} where B where A}, Type, Array{SPIRV.StorageClass, 1}})
+precompile(Tuple{Type{Base.Dict{K, V} where V where K}, Pair{DataType, Array{SPIRV.StorageClass, 1}}})
+precompile(Tuple{Type{NamedTuple{(:storage_classes, :interfaces), T} where T<:Tuple}, Tuple{Base.Dict{DataType, Array{SPIRV.StorageClass, 1}}, Array{DataType, 1}}})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:storage_classes, :interfaces), Tuple{Base.Dict{DataType, Array{SPIRV.StorageClass, 1}}, Array{DataType, 1}}}, Type{SPIRV.VulkanLayout}, Array{DataType, 1}})
+precompile(Tuple{typeof(Base.push!), Base.Set{SPIRV.StorageClass}, SPIRV.StorageClass})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.StructType, 1}, SPIRV.StructType})
+precompile(Tuple{Type{SPIRV.TypeMetadata}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Base.getindex), SPIRV.VulkanLayout, DataType})
+precompile(Tuple{typeof(Base.getindex), SPIRV.TypeMetadata, DataType})
+precompile(Tuple{typeof(SPIRV.isinterface), SPIRV.VulkanLayout, SPIRV.StructType})
+precompile(Tuple{typeof(SPIRV.has_decoration), SPIRV.TypeMetadata, SPIRV.StructType, SPIRV.Decoration})
+precompile(Tuple{typeof(SPIRV.decorate!), Dictionaries.Dictionary{SPIRV.SPIRType, SPIRV.Metadata}, SPIRV.ArrayType, SPIRV.Decoration, Int64})
+precompile(Tuple{typeof(Base.stride), SPIRV.VulkanLayout, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.vect), Type{SPIRV.Arr{4, Tuple{Float64, Float64}}}})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Arr{4, Tuple{Float64, Float64}}}})
+precompile(Tuple{Type{SPIRV.ArrayType}, SPIRV.FloatType, SPIRV.Constant})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Float64, Float64}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.length), Type{SPIRV.Arr{4, Tuple{Float64, Float64}}}})
+precompile(Tuple{Type{SPIRV.ArrayType}, SPIRV.ArrayType, SPIRV.Constant})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Arr{4, Tuple{Float64, Float64}}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(SPIRV.decorations), SPIRV.TypeMetadata, SPIRV.ArrayType})
+precompile(Tuple{typeof(SPIRV.has_decoration), SPIRV.Decorations, SPIRV.Decoration})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Decorations, Symbol})
+precompile(Tuple{Type{SPIRV.VulkanLayout}, SPIRV.VulkanAlignment, SPIRV.TypeMap, Base.Dict{SPIRV.IntegerType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StructType}})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:interfaces,), Tuple{Array{DataType, 1}}}, Type{SPIRV.VulkanLayout}, Array{DataType, 1}})
+precompile(Tuple{typeof(Base.merge!), SPIRV.VulkanLayout, SPIRV.VulkanLayout})
+precompile(Tuple{Type{Pair{A, B} where B where A}, Type, SPIRV.IntegerType})
+precompile(Tuple{Type{Pair{A, B} where B where A}, Type, SPIRV.StructType})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.VulkanLayout, Symbol})
+precompile(Tuple{typeof(Base.vect), SPIRV.StructType})
+precompile(Tuple{Type{Base.Set{T} where T}, Array{SPIRV.StructType, 1}})
+precompile(Tuple{typeof(Base.:(==)), Base.Set{SPIRV.StructType}, Base.Set{SPIRV.StructType}})
+precompile(Tuple{typeof(Base.:(*)), Int64, Type{SPIRV.LiteralType{Float32}}})
+precompile(Tuple{SPIRV.var"##s648#354", Vararg{Any, 5}})
+precompile(Tuple{SPIRV.var"##s648#370", Vararg{Any, 5}})
+precompile(Tuple{SPIRV.var"##s648#359", Vararg{Any, 6}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Int64, UInt32}}, SPIRV.StructType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Float32, Float32}}, SPIRV.ArrayType})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#27#28"{SPIRV.TypeMap}, NTuple{8, DataType}})
+precompile(Tuple{typeof(Base.collect), Base.Generator{NTuple{8, DataType}, SPIRV.var"#27#28"{SPIRV.TypeMap}}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.IntegerType, 1}, SPIRV.IntegerType, Base.Generator{NTuple{8, DataType}, SPIRV.var"#27#28"{SPIRV.TypeMap}}, Int64})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{UInt32, Float32}}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.setindex_widen_up_to), Array{SPIRV.IntegerType, 1}, SPIRV.StructType, Int64})
+precompile(Tuple{typeof(Base.collect_to!), Array{SPIRV.SPIRType, 1}, Base.Generator{NTuple{8, DataType}, SPIRV.var"#27#28"{SPIRV.TypeMap}}, Int64, Int64})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}}, SPIRV.StructType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Vec{3, Float32}}, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.setindex_widen_up_to), Array{SPIRV.IntegerType, 1}, SPIRV.VectorType, Int64})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Int64, SPIRV.Vec{3, Float32}}}, SPIRV.StructType})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Type{SPIRV.VectorType}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.VectorType, 1}, SPIRV.VectorType, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{SPIRV.VectorType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.StructType}, Array{SPIRV.VectorType, 1}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Base.RefValue{SPIRV.Vec{4, Float32}}}, SPIRV.StructType})
+precompile(Tuple{Type{SPIRV.ArrayType}, SPIRV.IntegerType, Nothing})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Array{Int64, 1}}, SPIRV.ArrayType})
+precompile(Tuple{Type{SPIRV.ArrayType}, SPIRV.VectorType, Nothing})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Array{SPIRV.Vec{3, Float32}, 1}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Arr{2, SPIRV.Vec{3, Float32}}}})
+precompile(Tuple{typeof(Base.length), Type{SPIRV.Arr{2, SPIRV.Vec{3, Float32}}}})
+precompile(Tuple{Type{SPIRV.ArrayType}, SPIRV.VectorType, SPIRV.Constant})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Arr{2, SPIRV.Vec{3, Float32}}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Arr{2, Int64}}})
+precompile(Tuple{typeof(Base.length), Type{SPIRV.Arr{2, Int64}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Arr{2, Int64}}, SPIRV.ArrayType})
+precompile(Tuple{Type{SPIRV.ArrayType}, SPIRV.ArrayType, Nothing})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Array{SPIRV.Arr{2, Int64}, 1}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Arr{2, UInt8}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{UInt8}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.length), Type{SPIRV.Arr{2, UInt8}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Arr{2, UInt8}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Array{SPIRV.Arr{2, UInt8}, 1}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(SPIRV.nrows), Type{SPIRV.Mat{2, 3, Float32}}})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Mat{2, 3, Float32}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Vec{2, Float32}}, SPIRV.VectorType})
+precompile(Tuple{typeof(SPIRV.ncols), Type{SPIRV.Mat{2, 3, Float32}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Mat{2, 3, Float32}}, SPIRV.MatrixType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Mat{2, 5, Float32}}, SPIRV.MatrixType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Array{Int64, 2}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.hashindex), SPIRV.FloatType, Int64})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Int64, UInt32}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Int64, UInt32}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Float32, Float32}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Float32, Float32}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Int64, SPIRV.Vec{3, Float32}}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, Tuple{Float32, Float32, Float32}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Int64, SPIRV.Vec{3, Float32}}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Int64}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{UInt64}}, true}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Vec{3, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{UInt64}}, true}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), Base.RefValue{SPIRV.Vec{4, Float32}}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, NTuple{4, Float32}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Base.RefValue{SPIRV.Vec{4, Float32}}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(SPIRV.deserialize_mutable), Type{SPIRV.Vec{4, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{UInt64}}, true}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), Array{Int64, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{Int64, 1}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), Array{SPIRV.Vec{3, Float32}, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{SPIRV.Vec{3, Float32}, 1}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), SPIRV.Arr{2, SPIRV.Vec{3, Float32}}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Arr{2, SPIRV.Vec{3, Float32}}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), Array{SPIRV.Arr{2, Int64}, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{SPIRV.Arr{2, Int64}, 1}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(SPIRV.unsigned_index), Int64})
+precompile(Tuple{typeof(Serialization.serialize), Array{SPIRV.Arr{2, UInt8}, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{SPIRV.Arr{2, UInt8}, 1}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, SPIRV.Vec{2, Int16}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Int8}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{UInt64}}, true}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Vec{2, Int16}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{UInt64}}, true}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, SPIRV.Mat{4, 4, Float32}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Mat{4, 4, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{UInt64}}, true}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), SPIRV.Mat{2, 3, Float32}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Mat{2, 3, Float32}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), SPIRV.Mat{2, 5, Float32}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Mat{2, 5, Float32}}, Array{UInt8, 1}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.serialize), Array{Int64, 2}, SPIRV.NativeLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{Int64, 2}}, Array{UInt8, 1}, SPIRV.NativeLayout, Tuple{Int64, Int64}})
+precompile(Tuple{SPIRV.var"#383#384"{Tuple{Int64, UInt32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Int64, UInt32}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{Tuple{Int64, UInt32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Int64, UInt32}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.deserialize_immutable), Type{Tuple{Int64, UInt32}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Int64}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{UInt32}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#383#384"{Tuple{Float32, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Float32, Float32}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Float32, Float32}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Int32}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#383#384"{Tuple{UInt32, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, Int64, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, UInt32, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, Tuple{UInt32, Float32}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, Float32, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.deserialize_immutable), Type{Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{UInt32, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Float32}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Int64, SPIRV.Vec{3, Float32}}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.NoPadding, Type{Tuple{Int64, SPIRV.Vec{3, Float32}}}})
+precompile(Tuple{typeof(Base.ntuple), SPIRV.var"#383#384"{Tuple{Int64, SPIRV.Vec{3, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{Tuple{Float32, Float32, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{SPIRV.Vec{3, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.NoPadding, Type{SPIRV.Vec{3, Float32}}})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, Tuple{Float32, Float32, Float32}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{Tuple{Int64, SPIRV.Vec{3, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Int64, SPIRV.Vec{3, Float32}}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.deserialize_immutable), Type{Tuple{Int64, SPIRV.Vec{3, Float32}}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{SPIRV.Vec{3, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Vec{3, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.serialize), Base.RefValue{SPIRV.Vec{4, Float32}}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.concrete_datasize), SPIRV.NoPadding, Base.RefValue{SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.NoPadding, Type{Base.RefValue{SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{typeof(Base.ntuple), SPIRV.var"#383#384"{Base.RefValue{SPIRV.Vec{4, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{SPIRV.Vec{4, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(SPIRV.datasize), SPIRV.NoPadding, Type{SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, NTuple{4, Float32}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{Base.RefValue{SPIRV.Vec{4, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#385#386"{SPIRV.Vec{4, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Base.RefValue{SPIRV.Vec{4, Float32}}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.deserialize_mutable), Type{SPIRV.Vec{4, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.serialize), Array{Int64, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{Int64, 1}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.serialize), Array{SPIRV.Vec{3, Float32}, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{SPIRV.Vec{3, Float32}, 1}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#383#384"{Tuple{SPIRV.Vec{3, Float32}, SPIRV.Vec{3, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{SPIRV.Arr{2, SPIRV.Vec{3, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), SPIRV.Arr{2, SPIRV.Vec{3, Float32}}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{SPIRV.Arr{2, SPIRV.Vec{3, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#385#386"{Tuple{SPIRV.Vec{3, Float32}, SPIRV.Vec{3, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Arr{2, SPIRV.Vec{3, Float32}}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.deserialize_immutable), Type{Tuple{SPIRV.Vec{3, Float32}, SPIRV.Vec{3, Float32}}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#383#384"{Tuple{Int64, Int64}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{SPIRV.Arr{2, Int64}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), Array{SPIRV.Arr{2, Int64}, 1}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{SPIRV.Arr{2, Int64}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{SPIRV.Arr{2, Int64}, 1}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#383#384"{Tuple{UInt8, UInt8}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{SPIRV.Arr{2, UInt8}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), Array{SPIRV.Arr{2, UInt8}, 1}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{SPIRV.Arr{2, UInt8}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{SPIRV.Arr{2, UInt8}, 1}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, SPIRV.Vec{2, Int16}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Int8}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{SPIRV.Vec{2, Int16}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Vec{2, Int16}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, SPIRV.Mat{4, 4, Float32}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{SPIRV.Mat{4, 4, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Mat{4, 4, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#383#384"{Tuple{Tuple{Float32, Float32}, Tuple{Float32, Float32}, Tuple{Float32, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{SPIRV.Mat{2, 3, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), SPIRV.Mat{2, 3, Float32}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{SPIRV.Mat{2, 3, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Mat{2, 3, Float32}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#383#384"{NTuple{5, Tuple{Float32, Float32}}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{SPIRV.var"#383#384"{SPIRV.Mat{2, 5, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), SPIRV.Mat{2, 5, Float32}, SPIRV.NoPadding})
+precompile(Tuple{SPIRV.var"#385#386"{SPIRV.Mat{2, 5, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Mat{2, 5, Float32}}, Array{UInt8, 1}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.serialize), Array{Int64, 2}, SPIRV.NoPadding})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{Int64, 2}}, Array{UInt8, 1}, SPIRV.NoPadding, Tuple{Int64, Int64}})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Int64, UInt32}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(SPIRV.padding), SPIRV.VulkanLayout, Type, Int64})
+precompile(Tuple{typeof(SPIRV.pad!), Array{UInt8, 1}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Int64, UInt32}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Int64}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{UInt32}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Float32, Float32}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Float32, Float32}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Float32}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Int32}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(SPIRV.alignment), SPIRV.VulkanLayout, SPIRV.FloatType})
+precompile(Tuple{typeof(SPIRV.base_alignment), SPIRV.FloatType})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, Int64, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, UInt32, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, Tuple{UInt32, Float32}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(SPIRV.serialize!), Array{UInt8, 1}, Float32, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Int64, UInt32, Int64, Tuple{UInt32, Float32}, Float32, Int64, Int64, Int64}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{UInt32, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.serialize), Tuple{Int64, SPIRV.Vec{3, Float32}}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Tuple{Int64, SPIRV.Vec{3, Float32}}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Vec{3, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.serialize), Base.RefValue{SPIRV.Vec{4, Float32}}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Base.RefValue{SPIRV.Vec{4, Float32}}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Vec{4, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.serialize), Array{Int64, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Base.stride), SPIRV.VulkanLayout, SPIRV.IntegerType})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{Int64, 1}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.serialize), Array{SPIRV.Vec{3, Float32}, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{SPIRV.Vec{3, Float32}, 1}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{Type{Array{SPIRV.Vec{3, Float32}, 1}}, UndefInitializer, Int64})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.Vec{3, Float32}, 1}, SPIRV.Vec{3, Float32}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), SPIRV.Arr{2, SPIRV.Vec{3, Float32}}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Arr{2, SPIRV.Vec{3, Float32}}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{SPIRV.var"#402#403"{SPIRV.Vec{3, Float32}, Array{UInt8, 1}, SPIRV.VulkanLayout, Int64, Int64}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), Array{SPIRV.Arr{2, Int64}, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{SPIRV.Arr{2, Int64}, 1}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{Type{Array{SPIRV.Arr{2, Int64}, 1}}, UndefInitializer, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Arr{2, Int64}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{SPIRV.var"#402#403"{Int64, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout, Int64, Int64}, Int64})
+precompile(Tuple{Type{SPIRV.Arr{2, Int64}}, Tuple{Int64, Int64}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.Arr{2, Int64}, 1}, SPIRV.Arr{2, Int64}, Int64})
+precompile(Tuple{typeof(Serialization.serialize), Array{SPIRV.Arr{2, UInt8}, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{SPIRV.Arr{2, UInt8}, 1}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{Type{Array{SPIRV.Arr{2, UInt8}, 1}}, UndefInitializer, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Arr{2, UInt8}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{SPIRV.var"#402#403"{UInt8, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout, Int64, Int64}, Int64})
+precompile(Tuple{Type{SPIRV.Arr{2, UInt8}}, Tuple{UInt8, UInt8}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.Arr{2, UInt8}, 1}, SPIRV.Arr{2, UInt8}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Int8}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Vec{2, Int16}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Mat{4, 4, Float32}}, Base.SubArray{UInt8, 1, Array{UInt8, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.serialize), SPIRV.Mat{2, 3, Float32}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Mat{2, 3, Float32}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.serialize), SPIRV.Mat{2, 5, Float32}, SPIRV.VulkanLayout})
+precompile(Tuple{SPIRV.var"#383#384"{NTuple{5, Float32}, SPIRV.NoPadding}, Int64})
+precompile(Tuple{typeof(Serialization.deserialize), Type{SPIRV.Mat{2, 5, Float32}}, Array{UInt8, 1}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.serialize), Array{Int64, 2}, SPIRV.VulkanLayout})
+precompile(Tuple{typeof(Serialization.deserialize), Type{Array{Int64, 2}}, Array{UInt8, 1}, SPIRV.VulkanLayout, Tuple{Int64, Int64}})
+precompile(Tuple{Type{SPIRV.ResultID}, UInt32})
+precompile(Tuple{Base.Iterators.var"#5#6"{Tuple{Array{SPIRV.ResultID, 1}, Array{SPIRV.ResultID, 1}}}, Int64})
+precompile(Tuple{typeof(SPIRV.generate_ir), Expr})
+precompile(Tuple{typeof(SPIRV.is_function_macro), LineNumberNode})
+precompile(Tuple{typeof(SPIRV.is_function_macro), Expr})
+precompile(Tuple{typeof(Base.insert!), SPIRV.Bindings, Symbol, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Bindings, Symbol})
+precompile(Tuple{SPIRV.var"#458#469", Symbol})
+precompile(Tuple{Type{Array{SPIRV.ResultID, 1}}, UndefInitializer, Tuple{Int64}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.ResultID, 1}, SPIRV.ResultID, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#458#469"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{SPIRV.var"#455#466", Symbol})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.ResultID, 1}, SPIRV.ResultID, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#455#466"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{typeof(Base.getindex), Array{SPIRV.ResultID, 1}, Int64})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.Dictionary{Symbol, SPIRV.Bindings}})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.Dictionary{Symbol, SPIRV.Bindings}, Int64})
+precompile(Tuple{typeof(Base.pairs), SPIRV.Bindings})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.PairDictionary{Symbol, SPIRV.ResultID, Dictionaries.Dictionary{Symbol, SPIRV.ResultID}}})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{Symbol, SPIRV.ResultID}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{Symbol, SPIRV.ResultID}, Int64, Int64})
+precompile(Tuple{typeof(Base.iterate), Dictionaries.PairDictionary{Symbol, SPIRV.ResultID, Dictionaries.Dictionary{Symbol, SPIRV.ResultID}}, Int64})
+precompile(Tuple{typeof(Base.lastindex), SPIRV.Module})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Module, Int64})
+precompile(Tuple{typeof(Accessors.set), SPIRV.Instruction, Accessors.PropertyLens{:result_id}, SPIRV.ResultID})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Array{Any, 1}}}, NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Array{Any, 1}}}, SPIRV.Instruction, NamedTuple{(:result_id,), Tuple{SPIRV.ResultID}}})
+precompile(Tuple{Type{Tuple}, NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Array{Any, 1}}}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Array{Any, 1}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Module, SPIRV.Instruction, Int64})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Instruction, Symbol})
+precompile(Tuple{typeof(SPIRV.renumber_ssa), SPIRV.Module})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, Nothing, Nothing, Array{Any, 1}}}, NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, Nothing, Nothing, Array{Any, 1}}}, SPIRV.Instruction, NamedTuple{(:arguments,), Tuple{Array{Any, 1}}}})
+precompile(Tuple{Type{Tuple}, NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, Nothing, Nothing, Array{Any, 1}}}})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.Instruction, 1}, SPIRV.Instruction})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, Nothing, SPIRV.ResultID, Array{Any, 1}}}, NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, Nothing, SPIRV.ResultID, Array{Any, 1}}}, SPIRV.Instruction, NamedTuple{(:result_id,), Tuple{SPIRV.ResultID}}})
+precompile(Tuple{Type{Tuple}, NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, Nothing, SPIRV.ResultID, Array{Any, 1}}}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, SPIRV.ResultID, Array{Any, 1}})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Array{Any, 1}}}, NamedTuple{(:opcode, :type_id, :result_id, :arguments), Tuple{SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Array{Any, 1}}}, SPIRV.Instruction, NamedTuple{(:type_id,), Tuple{SPIRV.ResultID}}})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.Module, SPIRV.Module})
+precompile(Tuple{typeof(Base.length), SPIRV.Module})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.ResultID, SPIRV.ResultID})
+precompile(Tuple{typeof(SPIRV.id_bound), SPIRV.Module})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Module, Symbol})
+precompile(Tuple{typeof(SPIRV.compute_id_bound), Array{SPIRV.Instruction, 1}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.ResultID, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Array{Int64, 1}, SPIRV.var"#170#171"{Array{Base.Set{Int64}, 1}}}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Array{Int64, 1}, SPIRV.var"#170#171"{Array{Base.Set{Int64}, 1}}}, Int64})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, Nothing, SPIRV.ResultID, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, String}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, SPIRV.ResultID})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, SPIRV.ResultID, SPIRV.ResultID})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, SPIRV.FunctionControl, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.FunctionControl, SPIRV.ResultID}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.ResultID, SPIRV.ResultID}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, Nothing, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, Nothing})
+precompile(Tuple{typeof(Base.getindex), Type{SPIRV.Instruction}, SPIRV.Instruction, SPIRV.Instruction, SPIRV.Instruction, Vararg{SPIRV.Instruction}})
+precompile(Tuple{Type{SPIRV.Module}, SPIRV.ModuleMetadata, Array{SPIRV.Instruction, 1}})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.BooleanType, Array{Any, 1}})
+precompile(Tuple{typeof(Base.in), SPIRV.Composite, Tuple{SPIRV.Id, SPIRV.Id}})
+precompile(Tuple{typeof(Base.getindex), Base.Dict{Any, String}, SPIRV.Composite})
+precompile(Tuple{typeof(ResultTypes.iserror), ResultTypes.Result{Bool, SPIRV.ValidationError}})
+precompile(Tuple{typeof(ResultTypes.unwrap_error), ResultTypes.Result{Bool, SPIRV.ValidationError}})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.ValidationError, Symbol})
+precompile(Tuple{typeof(SPIRV.fill_phi_branches!), SPIRV.IR})
+precompile(Tuple{SPIRV.var"#451#462", Int64})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Int64, 1}, Int64, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#451#462"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{SPIRV.var"#450#461", Float32})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Float32, 1}, Float32, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#450#461"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{SPIRV.var"#454#465", Expr})
+precompile(Tuple{SPIRV.var"#459#470", Expr})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, SPIRV.ResultID, Int64, Vararg{Int64}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Float32})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, SPIRV.ResultID, SPIRV.ResultID, Vararg{Any}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, SPIRV.ResultID, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, Int64, SPIRV.OperandInfo})
+precompile(Tuple{Type{SPIRV.IntegerType}, Int64, Int64})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, Float32, SPIRV.OperandInfo})
+precompile(Tuple{typeof(Base._array_for), Type{SPIRV.IntegerType}, Base.HasShape{1}, Tuple{Base.OneTo{Int64}}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.IntegerType, 1}, SPIRV.IntegerType, Base.Generator{Array{Any, 1}, SPIRV.var"#123#124"}, Int64})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.FloatType, Array{SPIRV.IntegerType, 1}})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.IntegerType, Array{SPIRV.IntegerType, 1}})
+precompile(Tuple{SPIRV.var"#100#101"{SPIRV.GlobalsInfo}, SPIRV.IntegerType})
+precompile(Tuple{SPIRV.var"#453#464", Expr})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Expr, 1}, Expr, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#453#464"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{SPIRV.var"#450#461", Expr})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Expr, 1}, Expr, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#450#461"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, Nothing, SPIRV.Capability})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Float16})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, Float16, SPIRV.OperandInfo})
+precompile(Tuple{Type{SPIRV.Constant}, Float16, SPIRV.FloatType, Bool})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.FloatType, SPIRV.ResultID, Array{UInt32, 1}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.ResultID}})
+precompile(Tuple{typeof(Base._array_for), Type{SPIRV.BooleanType}, Base.HasShape{1}, Tuple{Base.OneTo{Int64}}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{SPIRV.BooleanType, 1}, SPIRV.BooleanType, Base.Generator{Array{Any, 1}, SPIRV.var"#123#124"}, Int64})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.FloatType, Array{SPIRV.BooleanType, 1}})
+precompile(Tuple{SPIRV.var"#100#101"{SPIRV.GlobalsInfo}, SPIRV.BooleanType})
+precompile(Tuple{SPIRV.var"#458#469", Expr})
+precompile(Tuple{typeof(Base.setindex_widen_up_to), Array{SPIRV.ResultID, 1}, Expr, Int64})
+precompile(Tuple{typeof(Base.collect_to!), Array{Any, 1}, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#458#469"}, Int64, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.SelectionControl}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.ResultID, SPIRV.LoopControl}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, Int32})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, Int32, SPIRV.OperandInfo})
+precompile(Tuple{SPIRV.var"#451#462", Expr})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Expr, 1}, Expr, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#451#462"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{SPIRV.var"#451#462", Symbol})
+precompile(Tuple{typeof(Base.setindex_widen_up_to), Array{Expr, 1}, SPIRV.ResultID, Int64})
+precompile(Tuple{typeof(Base.collect_to!), Array{Any, 1}, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#451#462"}, Int64, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{SPIRV.var"#455#466", Expr})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Expr, 1}, Expr, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#455#466"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, Nothing, SPIRV.ResultID, SPIRV.StorageClass, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.StorageClass, SPIRV.ResultID}})
+precompile(Tuple{Type{SPIRV.Instruction}, SPIRV.OpCode, SPIRV.ResultID, SPIRV.ResultID, SPIRV.StorageClass})
+precompile(Tuple{Type{SPIRV.Module}, String})
+precompile(Tuple{typeof(SPIRV.dependent_functions), SPIRV.IR, SPIRV.ResultID})
+precompile(Tuple{typeof(Base._unique_from), Base.Generator{AbstractTrees.PreOrderDFS{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.var"#15#16"}, SPIRV.var"#152#153"}, Array{SPIRV.FunctionDefinition, 1}, Base.Set{SPIRV.FunctionDefinition}, AbstractTrees.PreOrderState{AbstractTrees.ImplicitCursor{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Union{Nothing, Tuple{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Int64}}}}})
+precompile(Tuple{typeof(Base.unique_from), Base.Generator{AbstractTrees.PreOrderDFS{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.var"#15#16"}, SPIRV.var"#152#153"}, Array{SPIRV.FunctionDefinition, 1}, Base.Set{SPIRV.FunctionDefinition}, AbstractTrees.PreOrderState{AbstractTrees.ImplicitCursor{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Union{Nothing, Tuple{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Int64}}}}})
+precompile(Tuple{typeof(Base.iterate), AbstractTrees.PreOrderDFS{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.var"#15#16"}, AbstractTrees.PreOrderState{AbstractTrees.ImplicitCursor{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Union{Nothing, Tuple{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Int64}}}}})
+precompile(Tuple{SPIRV.var"#152#153", AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}})
+precompile(Tuple{typeof(Base.in!), SPIRV.FunctionDefinition, Base.Set{SPIRV.FunctionDefinition}})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.FunctionDefinition, 1}, SPIRV.FunctionDefinition})
+precompile(Tuple{typeof(AbstractTrees.nextsibling), AbstractTrees.ImplicitCursor{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Union{Nothing, Tuple{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Int64}}}})
+precompile(Tuple{typeof(AbstractTrees.children), AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Base.Set{SPIRV.ResultID}, AbstractTrees.var"#10#11"{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}}}, Int64})
+precompile(Tuple{Type{AbstractTrees.ImplicitCursor{N, P, S} where S where P where N}, AbstractTrees.ImplicitCursor{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Union{Nothing, Tuple{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Int64}}}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Tuple{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Int64}})
+precompile(Tuple{Type{AbstractTrees.PreOrderState{T} where T<:(AbstractTrees.TreeCursor{N, P} where P where N)}, AbstractTrees.ImplicitCursor{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Union{Nothing, Tuple{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Int64}}}})
+precompile(Tuple{Type{AbstractTrees.ImplicitCursor{N, P, S} where S where P where N}, AbstractTrees.ImplicitCursor{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Union{Nothing, Tuple{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Int64}}}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Nothing})
+precompile(Tuple{Type{Base.Set{T} where T}, Array{SPIRV.FunctionDefinition, 1}})
+precompile(Tuple{Type{Base.Set{T} where T}, SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.FunctionDefinition}})
+precompile(Tuple{typeof(Base.:(==)), Base.Set{SPIRV.FunctionDefinition}, Base.Set{Any}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.FunctionDefinition}, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.vect), SPIRV.FunctionDefinition})
+precompile(Tuple{typeof(Base.:(==)), Array{SPIRV.FunctionDefinition, 1}, Array{SPIRV.FunctionDefinition, 1}})
+precompile(Tuple{typeof(Base.isequal), SPIRV.FloatType, SPIRV.FloatType})
+precompile(Tuple{Type{AbstractTrees.ImplicitCursor{N, P, S} where S where P where N}, AbstractTrees.ImplicitCursor{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Nothing, Any}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Tuple{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Int64}})
+precompile(Tuple{Type{AbstractTrees.ImplicitCursor{N, P, S} where S where P where N}, AbstractTrees.ImplicitCursor{AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Nothing, Any}, AbstractTrees.IndexNode{SPIRV.StaticCallTree, SPIRV.ResultID}, Nothing})
+precompile(Tuple{typeof(Base.length), Array{SPIRV.FunctionDefinition, 1}})
+precompile(Tuple{typeof(Base.in), SPIRV.FunctionDefinition, Array{SPIRV.FunctionDefinition, 1}})
+precompile(Tuple{typeof(Base.getproperty), Base.MappingRF{SPIRV.var"#140#141", typeof(Base.max)}, Symbol})
+precompile(Tuple{typeof(Base.reduce_empty), Base.MappingRF{SPIRV.var"#140#141", typeof(Base.max)}, Type{Pair{Int64, Int64}}})
+precompile(Tuple{Type{SPIRV.EdgeClassification{E} where E<:(Graphs.AbstractEdge{T} where T)}, SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.EdgeClassification{Graphs.SimpleGraphs.SimpleEdge{Int64}}, Symbol})
+precompile(Tuple{typeof(SPIRV.dominators), SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{typeof(SPIRV.backedges), SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{Type{SPIRV.DominatorNode}, Nothing})
+precompile(Tuple{Type{Base.Pairs{Symbol, V, I, A} where A where I where V}, NamedTuple{(:by,), Tuple{SPIRV.var"#280#281"}}, Tuple{Symbol}})
+precompile(Tuple{typeof(Base.getproperty), Base.Order.By{SPIRV.var"#280#281", Base.Order.ForwardOrdering}, Symbol})
+precompile(Tuple{typeof(Base.getproperty), Base.Order.Lt{Base.Sort.var"#26#27"{Base.Order.By{SPIRV.var"#280#281", Base.Order.ForwardOrdering}}}, Symbol})
+precompile(Tuple{typeof(Base._nt_names), Type{NamedTuple{(:scratch,), Tuple{Array{SPIRV.SimpleTree{SPIRV.DominatorNode}, 1}}}}})
+precompile(Tuple{typeof(SPIRV.acyclic_region), SPIRV.DeltaGraph{Int64}, Int64})
+precompile(Tuple{Base.var"##_#98", Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}, Base.ComposedFunction{Base.ComposedFunction{Type{AbstractTrees.PostOrderState{T} where T<:(AbstractTrees.TreeCursor{N, P} where P where N)}, typeof(AbstractTrees.descendleft)}, Type{AbstractTrees.TreeCursor{N, P} where P where N}}, SPIRV.SimpleTree{SPIRV.DominatorNode}})
+precompile(Tuple{typeof(Base.call_composed), Tuple{Base.Constructor{AbstractTrees.PostOrderState{T} where T<:(AbstractTrees.TreeCursor{N, P} where P where N)}, typeof(AbstractTrees.descendleft), Base.Constructor{AbstractTrees.TreeCursor{N, P} where P where N}}, Tuple{SPIRV.SimpleTree{SPIRV.DominatorNode}}, Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}})
+precompile(Tuple{typeof(Base.iterate), AbstractTrees.PostOrderDFS{SPIRV.SimpleTree{SPIRV.DominatorNode}}, AbstractTrees.PostOrderState{AbstractTrees.StableIndexedCursor{SPIRV.SimpleTree{SPIRV.DominatorNode}}}})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SimpleTree{SPIRV.DominatorNode}, 1}, SPIRV.SimpleTree{SPIRV.DominatorNode}})
+precompile(Tuple{typeof(Base.:(==)), Tuple{SPIRV.RegionType, Array{Int64, 1}}, Tuple{SPIRV.RegionType, Array{Int64, 1}}})
+precompile(Tuple{Type{Base.Pairs{Symbol, V, I, A} where A where I where V}, NamedTuple{(:by,), Tuple{SPIRV.var"#282#283"}}, Tuple{Symbol}})
+precompile(Tuple{typeof(Base.getproperty), Base.Order.By{SPIRV.var"#282#283", Base.Order.ForwardOrdering}, Symbol})
+precompile(Tuple{typeof(Base.getproperty), Base.Order.Lt{Base.Sort.var"#26#27"{Base.Order.By{SPIRV.var"#282#283", Base.Order.ForwardOrdering}}}, Symbol})
+precompile(Tuple{typeof(SPIRV.cyclic_region), SPIRV.DeltaGraph{Int64}, Int64})
+precompile(Tuple{typeof(Base.filter), SPIRV.var"#271#276"{Array{Int64, 1}}, Array{Graphs.SimpleGraphs.SimpleEdge{Int64}, 1}})
+precompile(Tuple{Type{Base.Pairs{Symbol, V, I, A} where A where I where V}, NamedTuple{(:by,), Tuple{SPIRV.var"#284#287"}}, Tuple{Symbol}})
+precompile(Tuple{typeof(Base.getproperty), Base.Order.By{SPIRV.var"#284#287", Base.Order.ForwardOrdering}, Symbol})
+precompile(Tuple{typeof(Base.getproperty), Base.Order.Lt{Base.Sort.var"#26#27"{Base.Order.By{SPIRV.var"#284#287", Base.Order.ForwardOrdering}}}, Symbol})
+precompile(Tuple{typeof(Base.convert), Type{SPIRV.RegionType}, SPIRV.RegionType})
+precompile(Tuple{Type{SPIRV.SimpleTree{SPIRV.ControlNode}}, SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{typeof(SPIRV.add_edges!), SPIRV.DeltaGraph{Int64}, Array{Graphs.SimpleGraphs.SimpleEdge{Int64}, 1}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#285#288"{Dictionaries.Dictionary{Int64, SPIRV.SimpleTree{SPIRV.ControlNode}}}, Array{Int64, 1}})
+precompile(Tuple{Type{SPIRV.SimpleTree{SPIRV.ControlNode}}, SPIRV.ControlNode, Base.Generator{Array{Int64, 1}, SPIRV.var"#285#288"{Dictionaries.Dictionary{Int64, SPIRV.SimpleTree{SPIRV.ControlNode}}}}})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:data, :parent, :children), Tuple{SPIRV.ControlNode, SPIRV.SimpleTree{SPIRV.ControlNode}, Array{SPIRV.SimpleTree{SPIRV.ControlNode}, 1}}}, NamedTuple{(:data, :parent, :children), Tuple{SPIRV.ControlNode, Nothing, Array{SPIRV.SimpleTree{SPIRV.ControlNode}, 1}}}, SPIRV.SimpleTree{SPIRV.ControlNode}, NamedTuple{(:parent,), Tuple{SPIRV.SimpleTree{SPIRV.ControlNode}}}})
+precompile(Tuple{Type{Tuple}, NamedTuple{(:data, :parent, :children), Tuple{SPIRV.ControlNode, SPIRV.SimpleTree{SPIRV.ControlNode}, Array{SPIRV.SimpleTree{SPIRV.ControlNode}, 1}}}})
+precompile(Tuple{Type{SPIRV.SimpleTree{T} where T}, SPIRV.ControlNode, SPIRV.SimpleTree{SPIRV.ControlNode}, Array{SPIRV.SimpleTree{SPIRV.ControlNode}, 1}})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SimpleTree{SPIRV.ControlNode}, 1}, SPIRV.SimpleTree{SPIRV.ControlNode}})
+precompile(Tuple{typeof(Graphs.outneighbors), SPIRV.DeltaGraph{Int64}, Int64})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:data, :parent, :children), Tuple{SPIRV.ControlNode, SPIRV.SimpleTree{SPIRV.ControlNode}, Array{SPIRV.SimpleTree{SPIRV.ControlNode}, 1}}}, NamedTuple{(:data, :parent, :children), Tuple{SPIRV.ControlNode, SPIRV.SimpleTree{SPIRV.ControlNode}, Array{SPIRV.SimpleTree{SPIRV.ControlNode}, 1}}}, SPIRV.SimpleTree{SPIRV.ControlNode}, NamedTuple{(:parent,), Tuple{SPIRV.SimpleTree{SPIRV.ControlNode}}}})
+precompile(Tuple{Base.var"##_#98", Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}, Base.ComposedFunction{Base.ComposedFunction{Type{AbstractTrees.LeavesState{T} where T<:(AbstractTrees.TreeCursor{N, P} where P where N)}, typeof(AbstractTrees.descendleft)}, Type{AbstractTrees.TreeCursor{N, P} where P where N}}, SPIRV.SimpleTree{SPIRV.ControlNode}})
+precompile(Tuple{typeof(Base.call_composed), Tuple{Base.Constructor{AbstractTrees.LeavesState{T} where T<:(AbstractTrees.TreeCursor{N, P} where P where N)}, typeof(AbstractTrees.descendleft), Base.Constructor{AbstractTrees.TreeCursor{N, P} where P where N}}, Tuple{SPIRV.SimpleTree{SPIRV.ControlNode}}, Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}})
+precompile(Tuple{typeof(Base.iterate), AbstractTrees.Leaves{SPIRV.SimpleTree{SPIRV.ControlNode}}, AbstractTrees.LeavesState{AbstractTrees.StableIndexedCursor{SPIRV.SimpleTree{SPIRV.ControlNode}}}})
+precompile(Tuple{Type{SPIRV.SimpleTree{SPIRV.ControlNode}}, Int64, SPIRV.RegionType})
+precompile(Tuple{typeof(Base.vect), SPIRV.SimpleTree{SPIRV.ControlNode}, Vararg{SPIRV.SimpleTree{SPIRV.ControlNode}}})
+precompile(Tuple{Type{SPIRV.SimpleTree{SPIRV.ControlNode}}, Int64, SPIRV.RegionType, Array{SPIRV.SimpleTree{SPIRV.ControlNode}, 1}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.SimpleTree{SPIRV.ControlNode}, SPIRV.SimpleTree{SPIRV.ControlNode}})
+precompile(Tuple{Type{SPIRV.SimpleTree{SPIRV.ControlNode}}, Int64, SPIRV.RegionType, Tuple{SPIRV.SimpleTree{SPIRV.ControlNode}, SPIRV.SimpleTree{SPIRV.ControlNode}, SPIRV.SimpleTree{SPIRV.ControlNode}}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#273#278"{Array{SPIRV.SimpleTree{SPIRV.DominatorNode}, 1}}, Array{Int64, 1}})
+precompile(Tuple{typeof(Base.collect), Base.Generator{Array{Int64, 1}, SPIRV.var"#273#278"{Array{SPIRV.SimpleTree{SPIRV.DominatorNode}, 1}}}})
+precompile(Tuple{typeof(SPIRV.common_ancestor), SPIRV.SimpleTree{SPIRV.DominatorNode}, Array{SPIRV.SimpleTree{SPIRV.DominatorNode}, 1}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#274#279"{SPIRV.DeltaGraph{Int64}, Array{Int64, 1}, Int64}, Array{Int64, 1}})
+precompile(Tuple{typeof(Base.any), Base.Generator{Array{Int64, 1}, SPIRV.var"#274#279"{SPIRV.DeltaGraph{Int64}, Array{Int64, 1}, Int64}}})
+precompile(Tuple{Type{SPIRV.ControlFlowGraph{E, T, G} where G<:Graphs.AbstractGraph{T} where T where E<:(Graphs.AbstractEdge{T} where T)}, SPIRV.DeltaGraph{Int64}})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, SPIRV.DeltaGraph{Int64}}, Symbol})
+precompile(Tuple{Type{SPIRV.SimpleTree{SPIRV.DominatorNode}}, SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, SPIRV.DeltaGraph{Int64}}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.SimpleTree{SPIRV.DominatorNode}, Int64})
+precompile(Tuple{typeof(AbstractTrees.parent), SPIRV.SimpleTree{SPIRV.DominatorNode}})
+precompile(Tuple{typeof(AbstractTrees.children), SPIRV.SimpleTree{SPIRV.DominatorNode}})
+precompile(Tuple{typeof(Base.all), Function, Array{SPIRV.SimpleTree{SPIRV.DominatorNode}, 1}})
+precompile(Tuple{typeof(Base._all), Base.ComposedFunction{typeof(Base.isempty), typeof(AbstractTrees.children)}, Array{SPIRV.SimpleTree{SPIRV.DominatorNode}, 1}, Base.Colon})
+precompile(Tuple{typeof(SPIRV.flow_through), Function, SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, SPIRV.DeltaGraph{Int64}}, Int64})
+precompile(Tuple{typeof(Graphs.is_cyclic), SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, SPIRV.DeltaGraph{Int64}}})
+precompile(Tuple{typeof(Graphs.nv), SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, SPIRV.DeltaGraph{Int64}}})
+precompile(Tuple{typeof(Base.getindex), Type{SPIRV.Instruction}})
+precompile(Tuple{typeof(SPIRV.generate_module), Expr})
+precompile(Tuple{typeof(SPIRV.annotate), SPIRV.Module})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.AnnotatedModule, Symbol})
+precompile(Tuple{typeof(Base.Iterators.only), Array{SPIRV.AnnotatedFunction, 1}})
+precompile(Tuple{typeof(SPIRV.interpret), Function, Vararg{Any}})
+precompile(Tuple{SPIRV.AbstractInterpretation{SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, Graphs.SimpleGraphs.SimpleDiGraph{Int64}}}, Function, SPIRV.AnnotatedModule, SPIRV.AnnotatedFunction})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.AnnotatedFunction, Symbol})
+precompile(Tuple{typeof(SPIRV.instructions), SPIRV.AnnotatedModule, Base.UnitRange{Int64}})
+precompile(Tuple{typeof(Base.:(==)), Array{SPIRV.Instruction, 1}, Base.SubArray{SPIRV.Instruction, 1, Array{SPIRV.Instruction, 1}, Tuple{Base.UnitRange{Int64}}, true}})
+precompile(Tuple{typeof(Base.empty!), Array{SPIRV.Instruction, 1}})
+precompile(Tuple{typeof(Base.indexed_iterate), Array{SPIRV.AnnotatedFunction, 1}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Array{SPIRV.AnnotatedFunction, 1}, Int64, Int64})
+precompile(Tuple{typeof(Base.vcat), Base.SubArray{SPIRV.Instruction, 1, Array{SPIRV.Instruction, 1}, Tuple{Base.UnitRange{Int64}}, true}, Base.SubArray{SPIRV.Instruction, 1, Array{SPIRV.Instruction, 1}, Tuple{Base.UnitRange{Int64}}, true}, Base.SubArray{SPIRV.Instruction, 1, Array{SPIRV.Instruction, 1}, Tuple{Base.UnitRange{Int64}}, true}})
+precompile(Tuple{Type{SPIRV.StackTrace}})
+precompile(Tuple{Type{SPIRV.UseDefChain}, SPIRV.AnnotatedModule, SPIRV.AnnotatedFunction, SPIRV.ResultID, SPIRV.StackTrace})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.UseDefChain, Symbol})
+precompile(Tuple{typeof(Base.getindex), SPIRV.AnnotatedModule, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Array{SPIRV.UseDefChain, 1}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(AbstractTrees.nodevalue), Tuple{Array{SPIRV.UseDefChain, 1}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(AbstractTrees.nodevalue), Tuple{Array{SPIRV.UseDefChain, 1}}}})
+precompile(Tuple{typeof(Base.vect), SPIRV.ResultID, Vararg{SPIRV.ResultID}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.AnnotatedModule, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.getindex), Tuple{Base.RefValue{SPIRV.AnnotatedModule}, Array{SPIRV.ResultID, 1}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(Base.getindex), Tuple{Base.RefValue{SPIRV.AnnotatedModule}, Array{SPIRV.ResultID, 1}}}})
+precompile(Tuple{Type{AbstractTrees.Leaves{T} where T}, SPIRV.UseDefChain})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, AbstractTrees.Leaves{SPIRV.UseDefChain}})
+precompile(Tuple{Base.var"##_#98", Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}, Base.ComposedFunction{Base.ComposedFunction{Type{AbstractTrees.LeavesState{T} where T<:(AbstractTrees.TreeCursor{N, P} where P where N)}, typeof(AbstractTrees.descendleft)}, Type{AbstractTrees.TreeCursor{N, P} where P where N}}, SPIRV.UseDefChain})
+precompile(Tuple{typeof(Base.call_composed), Tuple{Base.Constructor{AbstractTrees.LeavesState{T} where T<:(AbstractTrees.TreeCursor{N, P} where P where N)}, typeof(AbstractTrees.descendleft), Base.Constructor{AbstractTrees.TreeCursor{N, P} where P where N}}, Tuple{SPIRV.UseDefChain}, Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}})
+precompile(Tuple{typeof(Base.iterate), AbstractTrees.Leaves{SPIRV.UseDefChain}, AbstractTrees.LeavesState{AbstractTrees.ImplicitCursor{SPIRV.UseDefChain, SPIRV.UseDefChain, Union{Nothing, Tuple{SPIRV.UseDefChain, Int64}}}}})
+precompile(Tuple{typeof(AbstractTrees.nextsibling), AbstractTrees.ImplicitCursor{SPIRV.UseDefChain, SPIRV.UseDefChain, Union{Nothing, Tuple{SPIRV.UseDefChain, Int64}}}})
+precompile(Tuple{typeof(AbstractTrees.children), SPIRV.UseDefChain})
+precompile(Tuple{typeof(Base.iterate), Array{SPIRV.UseDefChain, 1}, Int64})
+precompile(Tuple{Type{AbstractTrees.ImplicitCursor{N, P, S} where S where P where N}, AbstractTrees.ImplicitCursor{SPIRV.UseDefChain, SPIRV.UseDefChain, Union{Nothing, Tuple{SPIRV.UseDefChain, Int64}}}, SPIRV.UseDefChain, Nothing})
+precompile(Tuple{Type{AbstractTrees.LeavesState{T} where T<:(AbstractTrees.TreeCursor{N, P} where P where N)}, AbstractTrees.ImplicitCursor{SPIRV.UseDefChain, SPIRV.UseDefChain, Union{Nothing, Tuple{SPIRV.UseDefChain, Int64}}}})
+precompile(Tuple{typeof(Base.empty), Array{Any, 1}, Type{SPIRV.UseDefChain}})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.UseDefChain, 1}, SPIRV.UseDefChain})
+precompile(Tuple{typeof(Base.grow_to!), Array{SPIRV.UseDefChain, 1}, AbstractTrees.Leaves{SPIRV.UseDefChain}, AbstractTrees.LeavesState{AbstractTrees.ImplicitCursor{SPIRV.UseDefChain, SPIRV.UseDefChain, Union{Nothing, Tuple{SPIRV.UseDefChain, Int64}}}}})
+precompile(Tuple{Type{AbstractTrees.ImplicitCursor{N, P, S} where S where P where N}, AbstractTrees.ImplicitCursor{SPIRV.UseDefChain, Nothing, Any}, SPIRV.UseDefChain, Nothing})
+precompile(Tuple{Type{SPIRV.StackFrame}, Nothing, Nothing})
+precompile(Tuple{Type{SPIRV.StackFrame}, SPIRV.AnnotatedModule, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.vect), SPIRV.StackFrame})
+precompile(Tuple{Type{SPIRV.StackTrace}, Array{SPIRV.StackFrame, 1}})
+precompile(Tuple{typeof(Base.getindex), Array{SPIRV.AnnotatedFunction, 1}, Int64})
+precompile(Tuple{typeof(SPIRV.sprintc_mime), Function, SPIRV.IR})
+precompile(Tuple{SPIRV.var"#95#96"{Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}, typeof(Base.show)}, Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, Vararg{Any}})
+precompile(Tuple{typeof(Base.show), Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, Base.Multimedia.MIME{Symbol("text/plain")}, SPIRV.IR})
+precompile(Tuple{typeof(Base.collect), NTuple{4, SPIRV.ResultID}})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.FloatType, Array{Any, 1}})
+precompile(Tuple{typeof(Base.Iterators.only), SPIRV.IR})
+precompile(Tuple{typeof(Base.reduce_empty), Base.MappingRF{typeof(Base.length), Base.BottomRF{typeof(Base.add_sum)}}, Type{SPIRV.Block}})
+precompile(Tuple{typeof(SPIRV.nexs), SPIRV.FunctionDefinition})
+precompile(Tuple{typeof(SPIRV.id_bound), SPIRV.IR})
+precompile(Tuple{SPIRV.var"#310#313", Nothing})
+precompile(Tuple{typeof(Base.getproperty), Base.Set{SPIRV.OpCode}, Symbol})
+precompile(Tuple{typeof(SPIRV.restructure_merge_blocks!), SPIRV.IR})
+precompile(Tuple{Type{Base.Iterators.Filter{F, I} where I where F}, SPIRV.var"#312#315"{SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, Graphs.SimpleGraphs.SimpleDiGraph{Int64}}, Int64}, AbstractTrees.Leaves{SPIRV.SimpleTree{SPIRV.ControlNode}}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#311#314"{SPIRV.FunctionDefinition}, Base.Iterators.Filter{SPIRV.var"#312#315"{SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, Graphs.SimpleGraphs.SimpleDiGraph{Int64}}, Int64}, AbstractTrees.Leaves{SPIRV.SimpleTree{SPIRV.ControlNode}}}})
+precompile(Tuple{typeof(Base.collect), Type{SPIRV.Block}, Base.Generator{Base.Iterators.Filter{SPIRV.var"#312#315"{SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, Graphs.SimpleGraphs.SimpleDiGraph{Int64}}, Int64}, AbstractTrees.Leaves{SPIRV.SimpleTree{SPIRV.ControlNode}}}, SPIRV.var"#311#314"{SPIRV.FunctionDefinition}}})
+precompile(Tuple{SPIRV.var"#312#315"{SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, Graphs.SimpleGraphs.SimpleDiGraph{Int64}}, Int64}, SPIRV.SimpleTree{SPIRV.ControlNode}})
+precompile(Tuple{SPIRV.var"#311#314"{SPIRV.FunctionDefinition}, SPIRV.SimpleTree{SPIRV.ControlNode}})
+precompile(Tuple{typeof(Base.iterate), Base.Iterators.Filter{SPIRV.var"#312#315"{SPIRV.ControlFlowGraph{Graphs.SimpleGraphs.SimpleEdge{Int64}, Int64, Graphs.SimpleGraphs.SimpleDiGraph{Int64}}, Int64}, AbstractTrees.Leaves{SPIRV.SimpleTree{SPIRV.ControlNode}}}, AbstractTrees.LeavesState{AbstractTrees.StableIndexedCursor{SPIRV.SimpleTree{SPIRV.ControlNode}}}})
+precompile(Tuple{Type{UInt32}, SPIRV.ResultID})
+precompile(Tuple{typeof(SPIRV.throw_compilation_error), String})
+precompile(Tuple{typeof(SPIRV.add_merge_headers!), SPIRV.IR})
+precompile(Tuple{typeof(SPIRV.merge_blocks), SPIRV.FunctionDefinition})
+precompile(Tuple{typeof(Base.length), Dictionaries.Dictionary{SPIRV.ResultID, Array{SPIRV.ResultID, 1}}})
+precompile(Tuple{typeof(SPIRV.conflicted_merge_blocks), SPIRV.FunctionDefinition})
+precompile(Tuple{typeof(Base.resize!), Array{SPIRV.ResultID, 1}, Int64})
+precompile(Tuple{typeof(Base.resize!), Array{Array{SPIRV.ResultID, 1}, 1}, Int64})
+precompile(Tuple{typeof(Base.isempty), Dictionaries.Dictionary{SPIRV.ResultID, Array{SPIRV.ResultID, 1}}})
+precompile(Tuple{Base.var"#6#7"{Pair{A, B} where B where A}, Tuple{Int64, SPIRV.ResultID}})
+precompile(Tuple{typeof(SPIRV.nesting_levels), SPIRV.SimpleTree{SPIRV.ControlNode}})
+precompile(Tuple{typeof(Base.pairs), Dictionaries.Dictionary{SPIRV.ResultID, Array{SPIRV.ResultID, 1}}})
+precompile(Tuple{typeof(Base.Iterators.only), Dictionaries.PairDictionary{SPIRV.ResultID, Array{SPIRV.ResultID, 1}, Dictionaries.Dictionary{SPIRV.ResultID, Array{SPIRV.ResultID, 1}}}})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, Array{SPIRV.ResultID, 1}}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, Array{SPIRV.ResultID, 1}}, Int64, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Array{SPIRV.ResultID, 1}, Int64})
+precompile(Tuple{typeof(Base.getindex), SPIRV.FunctionDefinition, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.last), SPIRV.Block})
+precompile(Tuple{typeof(SPIRV.opcode), SPIRV.Expression})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.OpCode, SPIRV.OpCode})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.in), Pair{SPIRV.ResultID, SPIRV.ResultID}, Base.Set{Pair{SPIRV.ResultID, SPIRV.ResultID}}})
+precompile(Tuple{typeof(Base.push!), Base.Set{Pair{SPIRV.ResultID, SPIRV.ResultID}}, Pair{SPIRV.ResultID, SPIRV.ResultID}})
+precompile(Tuple{typeof(Base.iterate), Base.Iterators.PartitionIterator{SPIRV.Expression}, Int64})
+precompile(Tuple{typeof(Base.haskey), Base.IdDict{Any, Any}, SPIRV.IR})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, String}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{String, SPIRV.ResultID}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.EntryPoint}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.EntryPoint, 1}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.Metadata}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.Metadata, 1}})
+precompile(Tuple{typeof(Base.haskey), Base.IdDict{Any, Any}, SPIRV.Metadata})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.SPIRType}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.SPIRType, 1}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Array{SPIRV.SPIRType, 1}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.SPIRType, SPIRV.ResultID}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.Constant}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.Constant, 1}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.Constant, SPIRV.ResultID}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.Variable}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.Variable, 1}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.Variable, SPIRV.ResultID}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.FunctionDefinition}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.FunctionDefinition, 1}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Array{SPIRV.Expression, 1}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.Expression, 1}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.Block}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.Block, 1}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.FunctionDefinition, SPIRV.ResultID}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.haskey), Base.IdDict{Any, Any}, SPIRV.DebugInfo})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, Symbol}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{SPIRV.ResultID, SPIRV.LineInfo}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.similar), Array{SPIRV.LineInfo, 1}})
+precompile(Tuple{typeof(Base.haskey), Base.IdDict{Any, Any}, SPIRV.IDCounter})
+precompile(Tuple{typeof(Base.deepcopy_internal), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(SPIRV.MathFunctions.lerp), Float64, Float64, Float64})
+precompile(Tuple{SPIRV.var"##s648#344", Vararg{Any, 4}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#345#346", Base.UnitRange{UInt32}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Base.UnitRange{UInt32}, SPIRV.var"#345#346"}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Base.UnitRange{UInt32}, SPIRV.var"#345#346"}, UInt32})
+precompile(Tuple{typeof(Base.:(*)), Float64, Type{SPIRV.LiteralType{Float32}}})
+precompile(Tuple{SPIRV.var"##s648#331", Vararg{Any, 5}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Vec{2, Float64}}})
+precompile(Tuple{typeof(Base.getproperty), Base.BottomRF{SPIRV.var"#332#333"}, Symbol})
+precompile(Tuple{typeof(Base.mapfoldl_impl), typeof(Base.identity), SPIRV.var"#332#333", Symbol, Base.UnitRange{UInt32}})
+precompile(Tuple{typeof(SPIRV.MathFunctions.linearstep), Int64, Int64, Int64})
+precompile(Tuple{Base.Iterators.var"#5#6"{Tuple{SPIRV.Vec{2, Float64}, SPIRV.Vec{2, Float32}}}, Int64})
+precompile(Tuple{typeof(Base.isapprox), SPIRV.Vec{2, Float64}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Vec{2, Float64}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{Base.Iterators.var"#5#6"{Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}}}, Int64})
+precompile(Tuple{typeof(Base.isapprox), SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(SPIRV.image_type), SPIRV.ImageFormat, SPIRV.Dim, Int64, Bool, Bool, Int64})
+precompile(Tuple{Type{SPIRV.Vec{2, Float32}}, Int64, Vararg{Int64}})
+precompile(Tuple{Type{SPIRV.Vec{2, Float32}}, Float32, Vararg{Float32}})
+precompile(Tuple{Type{SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}, Array{Float64, 2}})
+precompile(Tuple{Type{SPIRV.SampledImage{I} where I<:(SPIRV.Image{Format, Dim, Depth, Arrayed, MS, Sampled, T} where T where Sampled where MS where Arrayed where Depth where Dim where Format)}, SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{Type{SPIRV.Vec{2, UInt32}}, Int64, Vararg{Int64}})
+precompile(Tuple{Type{SPIRV.Vec{2, UInt32}}, UInt32, Vararg{UInt32}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Vec{2, UInt32}}, UInt32, UInt32})
+precompile(Tuple{typeof(Base.convert), Type{SPIRV.Vec{2, UInt32}}, SPIRV.Vec{2, UInt32}})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Vec{3, Float32}}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Vec{3, Float32}, Float32, Int64})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Vec{3, Float32}, SPIRV.Vec{3, Float32}})
+precompile(Tuple{typeof(SPIRV.get_signature), Expr})
+precompile(Tuple{SPIRV.var"#418#419", Expr})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Symbol, 1}, Symbol, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#418#419"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{Type{SPIRV.SPIRVInterpreter}})
+precompile(Tuple{typeof(SPIRV.invalidate_all!), SPIRV.SPIRVInterpreter})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.SPIRVInterpreter, Symbol})
+precompile(Tuple{Type{NamedTuple{(:inferred, :interp), T} where T<:Tuple}, Tuple{Bool, SPIRV.SPIRVInterpreter}})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:inferred, :interp), Tuple{Bool, SPIRV.SPIRVInterpreter}}, Type{SPIRV.SPIRVTarget}, Any, Type})
+precompile(Tuple{typeof(Core.Compiler.abstract_call_known), SPIRV.SPIRVInterpreter, Any, Core.Compiler.ArgInfo, Core.Compiler.StmtInfo, Core.Compiler.InferenceState, Int64})
+precompile(Tuple{Type{Core.CodeInstance}, SPIRV.SPIRVInterpreter, Core.Compiler.InferenceResult, Any, Core.Compiler.WorldRange})
+precompile(Tuple{typeof(Core.Compiler.builtin_tfunction), SPIRV.SPIRVInterpreter, Any, Array{Any, 1}, Core.Compiler.InferenceState})
+precompile(Tuple{typeof(Core.Compiler.builtin_tfunction), SPIRV.SPIRVInterpreter, Any, Array{Any, 1}, Core.Compiler.IRCode})
+precompile(Tuple{typeof(SPIRV.IAdd), Int64, Int64})
+precompile(Tuple{typeof(SPIRV.ConvertSToF), Type{Float32}, Int64})
+precompile(Tuple{SPIRV.var"#callback#326"{SPIRV.CodeInstanceCache}, Core.MethodInstance, UInt32})
+precompile(Tuple{typeof(SPIRV.cap_world), UInt64, UInt32})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.SPIRVTarget, Symbol})
+precompile(Tuple{typeof(Base.haskey), SPIRV.CodeInstanceCache, Core.MethodInstance})
+precompile(Tuple{typeof(SPIRV.load_expr), Expr})
+precompile(Tuple{typeof(SPIRV.store_expr), Expr})
+precompile(Tuple{typeof(SPIRV.store_expr), Int64, Expr})
+precompile(Tuple{typeof(SPIRV.store_expr), Symbol, Expr})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#360#363"{Int64, Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}}, Base.UnitRange{Int64}})
+precompile(Tuple{typeof(Base.collect), Base.Generator{Base.UnitRange{Int64}, SPIRV.var"#360#363"{Int64, Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}}}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Float64, 1}, Float64, Base.Generator{Base.UnitRange{Int64}, SPIRV.var"#361#364"{Int64, Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}}}, Int64})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Array{Float64, 1}, 1}, Array{Float64, 1}, Base.Generator{Base.UnitRange{Int64}, SPIRV.var"#360#363"{Int64, Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}}}, Int64})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#362#365"{Symbol}, Array{Array{Float64, 1}, 1}})
+precompile(Tuple{typeof(Base.collect), Base.Generator{Array{Array{Float64, 1}, 1}, SPIRV.var"#362#365"{Symbol}}})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Int64, 1}, Int64, Base.Generator{Base.UnitRange{Int64}, SPIRV.var"#361#364"{Int64, Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}}}, Int64})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Array{Int64, 1}, 1}, Array{Int64, 1}, Base.Generator{Base.UnitRange{Int64}, SPIRV.var"#360#363"{Int64, Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}}}, Int64})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#362#365"{Expr}, Array{Array{Int64, 1}, 1}})
+precompile(Tuple{typeof(Base.collect), Base.Generator{Array{Array{Int64, 1}, 1}, SPIRV.var"#362#365"{Expr}}})
+precompile(Tuple{Type{SPIRV.Pointer{T} where T}, Base.RefValue{Int64}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Pointer{Int64}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Pointer{Int64}, Int64})
+precompile(Tuple{Type{SPIRV.Pointer{T} where T}, Int64})
+precompile(Tuple{Type{SPIRV.Pointer{T} where T}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Pointer{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Pointer{SPIRV.Vec{2, Float32}}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{Type{SPIRV.Arr{N, T} where T where N}, SPIRV.Vec{2, Float32}, Vararg{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{Type{SPIRV.Arr{2, SPIRV.Vec{2, Float32}}}, SPIRV.Vec{2, Float32}, Vararg{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Arr{2, SPIRV.Vec{2, Float32}}}, SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{Type{SPIRV.Pointer{T} where T}, SPIRV.Arr{2, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.getproperty), Base.BottomRF{SPIRV.var"#352#353"}, Symbol})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Pointer{SPIRV.Arr{2, SPIRV.Vec{2, Float32}}}, UInt32, UInt32})
+precompile(Tuple{Type{SPIRV.Pointer{Array{Int64, 1}}}, UInt64})
+precompile(Tuple{typeof(SPIRV.ConvertUToPtr), Type, UInt64})
+precompile(Tuple{Type{SPIRV.Pointer{Array{Int64, 1}}}, Ptr{Array{Int64, 1}}, UInt64})
+precompile(Tuple{typeof(Base.eltype), SPIRV.Pointer{Array{Int64, 1}}})
+precompile(Tuple{typeof(Base.getproperty), Base.Broadcast.Broadcasted{Base.Broadcast.Style{Tuple}, Nothing, typeof(SPIRV.unsigned_index), Tuple{Tuple{}}}, Symbol})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Pointer{Array{Int64, 1}}, Int64})
+precompile(Tuple{Type{SPIRV.Pointer{Int64}}, UInt64})
+precompile(Tuple{Type{SPIRV.Pointer{Int64}}, Ptr{Int64}, UInt64})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Pointer{Array{Int64, 1}}, Int64, Int64})
+precompile(Tuple{typeof(Base.vect), SPIRV.Vec{2, Float32}, Vararg{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.pointer), Array{SPIRV.Vec{2, Float32}, 1}})
+precompile(Tuple{typeof(Base.convert), Type{UInt64}, Ptr{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{Type{SPIRV.Pointer{Array{SPIRV.Vec{2, Float32}, 1}}}, UInt64})
+precompile(Tuple{Type{SPIRV.Pointer{Array{SPIRV.Vec{2, Float32}, 1}}}, Ptr{Array{SPIRV.Vec{2, Float32}, 1}}, UInt64})
+precompile(Tuple{typeof(Base.eltype), SPIRV.Pointer{Array{SPIRV.Vec{2, Float32}, 1}}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Pointer{Array{SPIRV.Vec{2, Float32}, 1}}, Int64})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Pointer{Array{SPIRV.Vec{2, Float32}, 1}}, SPIRV.Vec{2, Float32}, Int64})
+precompile(Tuple{Type{SPIRV.Vec{N, T} where T where N}, Float64, Vararg{Float64}})
+precompile(Tuple{Type{SPIRV.Vec{4, Float64}}, Float64, Vararg{Float64}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Vec{4, Float64}}, Vararg{Float64, 4}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Vec{4, Float64}, Int64})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Vec{4, Float64}, Int64, Int64})
+precompile(Tuple{typeof(Base.last), SPIRV.Vec{4, Float64}})
+precompile(Tuple{typeof(Base.first), SPIRV.Vec{4, Float64}})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Vec{4, Float64}, Symbol})
+precompile(Tuple{typeof(Base.setproperty!), SPIRV.Vec{4, Float64}, Symbol, Int64})
+precompile(Tuple{typeof(Base.similar), SPIRV.Vec{4, Float64}})
+precompile(Tuple{typeof(Base.size), SPIRV.Vec{4, Float64}})
+precompile(Tuple{Type{SPIRV.Vec{4, Float32}}, Int64, Vararg{Int64}})
+precompile(Tuple{Type{SPIRV.Vec{4, Float32}}, Float32, Vararg{Float32}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Vec{2, Float32}, Float32, Int64})
+precompile(Tuple{typeof(Base.setproperty!), SPIRV.Vec{4, Float32}, Symbol, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.ntuple), SPIRV.var"#357#358"{SPIRV.Vec{4, Float32}, SPIRV.Vec{2, Float32}, Tuple{UInt32, UInt32}}, Int64})
+precompile(Tuple{typeof(Base.setproperty!), SPIRV.Vec{4, Float32}, Symbol, Tuple{Int64, Int64, Int64}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Vec{4, Float32}, SPIRV.Vec{4, Float32}})
+precompile(Tuple{Type{SPIRV.Vec{1, Float64}}, Float64})
+precompile(Tuple{Type{SPIRV.Vec{5, Float64}}, Float64, Vararg{Float64}})
+precompile(Tuple{typeof(Base.repr), SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.show), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.repr), Base.Multimedia.MIME{Symbol("text/plain")}, SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.isassigned), SPIRV.Vec{4, Float32}, Int64, Int64})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Vec{4, Float32}, Int64, Int64})
+precompile(Tuple{typeof(Base.replace_in_print_matrix), SPIRV.Vec{4, Float32}, Int64, Int64, String})
+precompile(Tuple{Type{SPIRV.Vec{2, Float64}}, Float64, Vararg{Float64}})
+precompile(Tuple{Type{SPIRV.Mat{N, M, T} where T where M where N}, SPIRV.Vec{2, Float64}, Vararg{SPIRV.Vec{2, Float64}}})
+precompile(Tuple{Type{SPIRV.Mat{2, 2, Float64}}, SPIRV.Vec{2, Float64}, Vararg{SPIRV.Vec{2, Float64}}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Mat{2, 2, Float64}}, SPIRV.Vec{2, Float64}, SPIRV.Vec{2, Float64}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Mat{2, 2, Float64}, Int64, Int64})
+precompile(Tuple{typeof(SPIRV.column), SPIRV.Mat{2, 2, Float64}, Int64})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Vec{2, Float64}, SPIRV.Vec{2, Float64}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Mat{2, 2, Float64}, SPIRV.Mat{2, 2, Float64}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Mat{2, 2, Float64}, Float64, Int64, Int64})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.Vec{2, Float64}, 1}}})
+precompile(Tuple{typeof(Base.similar), SPIRV.Mat{2, 2, Float64}})
+precompile(Tuple{typeof(Base.size), SPIRV.Mat{2, 2, Float64}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Mat{2, 2, Float64}, SPIRV.Mat{2, 2, Float64}})
+precompile(Tuple{Type{SPIRV.Vec{3, Float32}}, Int64, Vararg{Int64}})
+precompile(Tuple{Type{SPIRV.Vec{3, Float32}}, Float32, Vararg{Float32}})
+precompile(Tuple{Type{SPIRV.Mat{3, 4, Float32}}, SPIRV.Vec{3, Float32}, Vararg{SPIRV.Vec{3, Float32}}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Mat{3, 4, Float32}}, Vararg{SPIRV.Vec{3, Float32}, 4}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Mat{3, 4, Float32}, Int64, Int64})
+precompile(Tuple{typeof(Base.repr), SPIRV.Mat{3, 4, Float32}})
+precompile(Tuple{typeof(Base.show), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.Mat{3, 4, Float32}})
+precompile(Tuple{typeof(Base.isassigned), SPIRV.Mat{3, 4, Float32}, Int64, Int64})
+precompile(Tuple{typeof(Base.repr), Base.Multimedia.MIME{Symbol("text/plain")}, SPIRV.Mat{3, 4, Float32}})
+precompile(Tuple{typeof(Base.replace_in_print_matrix), SPIRV.Mat{3, 4, Float32}, Int64, Int64, String})
+precompile(Tuple{Type{SPIRV.Arr{N, T} where T where N}, Float64, Vararg{Float64}})
+precompile(Tuple{Type{SPIRV.Arr{4, Float64}}, Float64, Vararg{Float64}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Arr{4, Float64}}, Vararg{Float64, 4}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Arr{4, Float64}, Int64})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Arr{4, Float64}, Int64, Int64})
+precompile(Tuple{typeof(Base.last), SPIRV.Arr{4, Float64}})
+precompile(Tuple{typeof(Base.first), SPIRV.Arr{4, Float64}})
+precompile(Tuple{typeof(Base.similar), SPIRV.Arr{4, Float64}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Arr{4, Float64}, SPIRV.Arr{4, Float64}})
+precompile(Tuple{typeof(Base.size), SPIRV.Arr{4, Float64}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Arr{4, Float64}, SPIRV.Arr{4, Float64}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Arr{4, Float64}, Float64, Int64})
+precompile(Tuple{typeof(Base.firstindex), SPIRV.Arr{4, Float64}})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Arr{2, SPIRV.Vec{2, Float32}}, Symbol})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Arr{2, SPIRV.Vec{2, Float32}}, Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{2}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(==)), Tuple{SPIRV.Arr{2, SPIRV.Vec{2, Float32}}, Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.Vec{2, Float32}, 1}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}}, 1}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{2}, Nothing, typeof(Base.:(==)), Tuple{SPIRV.Arr{2, SPIRV.Vec{2, Float32}}, Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}}}}})
+precompile(Tuple{typeof(Base.all), SPIRV.Arr{2, Bool}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Arr{2, SPIRV.Vec{2, Float32}}, Int64})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Arr{2, SPIRV.Vec{2, Float32}}, SPIRV.Vec{2, Float32}, Int64})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.Vec{4, Float32}, 1}}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, Base.var"#218#219"{SPIRV.var"#371#372"{SPIRV.Vec{4, Float32}}}, Base.UnitRange{Int64}})
+precompile(Tuple{typeof(Base.getproperty), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{SPIRV.Vec{4, Float32}}}}, Symbol})
+precompile(Tuple{typeof(Base._similar_shape), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{SPIRV.Vec{4, Float32}}}}, Base.HasShape{1}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Arr{16, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Arr{16, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{Type{SPIRV.Arr{16, SPIRV.Vec{4, Float32}}}, SPIRV.Vec{4, Float32}, Vararg{SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Arr{16, SPIRV.Vec{4, Float32}}}, Vararg{SPIRV.Vec{4, Float32}, 16}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Arr{16, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.all), typeof(Base.iszero), SPIRV.Arr{16, SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.foldl), SPIRV.var"#342#343"{typeof(Base.iszero)}, SPIRV.Arr{16, SPIRV.Vec{4, Float32}}, Bool})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Arr{16, SPIRV.Vec{4, Float32}}, Int64})
+precompile(Tuple{typeof(Base.setproperty!), SPIRV.Vec{4, Float32}, Symbol, Float64})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, Base.var"#218#219"{SPIRV.var"#373#374"{SPIRV.Vec{4, Float32}}}, Base.UnitRange{Int64}})
+precompile(Tuple{typeof(Base.getproperty), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#373#374"{SPIRV.Vec{4, Float32}}}}, Symbol})
+precompile(Tuple{typeof(Base._similar_shape), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#373#374"{SPIRV.Vec{4, Float32}}}}, Base.HasShape{1}})
+precompile(Tuple{typeof(Base.one), Type{SPIRV.Arr{16, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{typeof(Base.all), typeof(Base.isone), SPIRV.Arr{16, SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.repr), SPIRV.Arr{16, SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.show), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.Arr{16, SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.typeinfo_eltype), Type{SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.repr), Base.Multimedia.MIME{Symbol("text/plain")}, SPIRV.Arr{16, SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.isassigned), SPIRV.Arr{16, SPIRV.Vec{4, Float32}}, Int64, Int64})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Arr{16, SPIRV.Vec{4, Float32}}, Int64, Int64})
+precompile(Tuple{typeof(Base.alignment), Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.show), Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.show), Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, String, SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:context, :sizehint), Tuple{Base.IOContext{Base.GenericIOBuffer{Array{UInt8, 1}}}, Int64}}, typeof(Base.sprint), Function, SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.replace_in_print_matrix), SPIRV.Arr{16, SPIRV.Vec{4, Float32}}, Int64, Int64, String})
+precompile(Tuple{typeof(Base.zeros), Type{SPIRV.Vec{4, Float32}}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}, Array{SPIRV.Vec{4, Float32}, 2}})
+precompile(Tuple{typeof(SPIRV.texel_type), SPIRV.Image{Format, Dim, Depth, Arrayed, MS, Sampled, T} where T where Sampled where MS where Arrayed where Depth where Dim where Format})
+precompile(Tuple{typeof(SPIRV.format), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}, Int64})
+precompile(Tuple{typeof(Base.getindex), Array{SPIRV.Vec{4, Float32}, 2}, Int64})
+precompile(Tuple{typeof(Base.convert), Type{SPIRV.Vec{4, Float32}}, SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}, Int64, Int64})
+precompile(Tuple{typeof(Base.getindex), Array{SPIRV.Vec{4, Float32}, 2}, Base.IteratorsMD.CartesianIndex{2}})
+precompile(Tuple{typeof(Base.one), Type{SPIRV.Vec{4, Float32}}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}, SPIRV.Vec{4, Float32}, Int64})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.Vec{4, Float32}, 2}, SPIRV.Vec{4, Float32}, Int64})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}, SPIRV.Vec{4, Float32}, Int64, Int64})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.Vec{4, Float32}, 2}, SPIRV.Vec{4, Float32}, Base.IteratorsMD.CartesianIndex{2}})
+precompile(Tuple{Type{SPIRV.Sampler}})
+precompile(Tuple{Type{SPIRV.SampledImage{I} where I<:(SPIRV.Image{Format, Dim, Depth, Arrayed, MS, Sampled, T} where T where Sampled where MS where Arrayed where Depth where Dim where Format)}, SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}, SPIRV.Sampler})
+precompile(Tuple{typeof(SPIRV.sampled_type), SPIRV.SampledImage{SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{SPIRV.SampledImage{SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}, Float32})
+precompile(Tuple{typeof(Base.eltype), SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}})
+precompile(Tuple{SPIRV.SampledImage{SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}, Float32, Float32})
+precompile(Tuple{SPIRV.SampledImage{SPIRV.Image{SPIRV.ImageFormat(0x00000001), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}, SPIRV.Vec{2, Float32}, Int64})
+precompile(Tuple{typeof(Base.copy), SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.setproperty!), SPIRV.Vec{2, Float32}, Symbol, Int64})
+precompile(Tuple{typeof(Base.copy), SPIRV.Arr{2, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.haskey), Base.IdDict{Any, Any}, SPIRV.Arr{2, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.deepcopy_internal), Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}}, Base.IdDict{Any, Any}})
+precompile(Tuple{typeof(Base.haskey), Base.IdDict{Any, Any}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.copy), SPIRV.Pointer{Int64}})
+precompile(Tuple{Type{Ref{T} where T}, Tuple{Int64, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{Type{SPIRV.Pointer{T} where T}, Base.RefValue{Tuple{Int64, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Base.copy), SPIRV.Pointer{Tuple{Int64, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Pointer{Tuple{Int64, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Base.one), Type{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Pointer{Tuple{Int64, SPIRV.Vec{2, Float32}}}, Tuple{Int64, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.:(==)), Tuple{Int64, SPIRV.Vec{2, Float32}}, Tuple{Int64, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{Type{SPIRV.Vec{N, T} where T where N}, Int64, Vararg{Int64}})
+precompile(Tuple{Type{SPIRV.Vec{2, Int64}}, Int64, Vararg{Int64}})
+precompile(Tuple{Type{Ref{T} where T}, SPIRV.Vec{2, Int64}})
+precompile(Tuple{Type{SPIRV.Pointer{T} where T}, Base.RefValue{SPIRV.Vec{2, Int64}}})
+precompile(Tuple{typeof(Base.copy), SPIRV.Pointer{SPIRV.Vec{2, Int64}}})
+precompile(Tuple{typeof(Base.haskey), Base.IdDict{Any, Any}, SPIRV.Vec{2, Int64}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Pointer{SPIRV.Vec{2, Int64}}, SPIRV.Vec{2, Int64}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.Pointer{SPIRV.Vec{2, Int64}}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Vec{2, Int64}, SPIRV.Vec{2, Int64}})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Base.one), Type{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, SPIRV.Arr{3, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, SPIRV.Arr{3, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}}, 1}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, SPIRV.Arr{3, SPIRV.Vec{2, Float32}}}}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, SPIRV.Arr{3, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.one), Type{SPIRV.Vec{3, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, SPIRV.Vec{3, Float32}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, SPIRV.Vec{3, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, SPIRV.Vec{3, Float32}}}})
+precompile(Tuple{Type{Ref{T} where T}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, Base.RefValue{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, Base.RefValue{SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{Tuple{SPIRV.Vec{2, Float32}}, 1}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{Tuple{SPIRV.Vec{2, Float32}, Vararg{SPIRV.Vec{2, Float32}}}, 1}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, Base.RefValue{SPIRV.Vec{2, Float32}}}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, Int64})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.getindex), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, Int64}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{Tuple{Any, Vararg{SPIRV.Vec{2, Float32}}}, 1}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.getindex), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, Int64}}})
+precompile(Tuple{Type{SPIRV.Arr{N, T} where T where N}, Float32, Vararg{Float32}})
+precompile(Tuple{Type{SPIRV.Arr{3, Float32}}, Float32, Vararg{Float32}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Arr{3, Float32}, SPIRV.Arr{3, Float32}})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Arr{3, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Arr{3, Float32}, Int64})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, Float32}, Int64}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, Float32}, Int64}}, SPIRV.Arr{3, Float32}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, Float32}, Int64}}, SPIRV.Arr{3, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, Float32}, Int64}}, SPIRV.Arr{3, Float32}}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Int64, SPIRV.Arr{3, Float32}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{Int64, SPIRV.Arr{3, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{Int64, SPIRV.Arr{3, Float32}}}})
+precompile(Tuple{typeof(Base.one), Type{SPIRV.Arr{3, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Vec{3, Float32}, Float32})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.VecStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(/)), Tuple{SPIRV.Vec{3, Float32}, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Arr{3, Float32}, Base.Broadcast.Broadcasted{SPIRV.VecStyle{3}, Nothing, typeof(Base.:(/)), Tuple{SPIRV.Vec{3, Float32}, Float32}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, Float32}, Base.Broadcast.Broadcasted{SPIRV.VecStyle{3}, Nothing, typeof(Base.:(/)), Tuple{SPIRV.Vec{3, Float32}, Float32}}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, Float32}, Base.Broadcast.Broadcasted{SPIRV.VecStyle{3}, Nothing, typeof(Base.:(/)), Tuple{SPIRV.Vec{3, Float32}, Float32}}}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(*)), Tuple{Int64, SPIRV.Arr{3, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(*)), Tuple{Int64, SPIRV.Arr{3, Float32}}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, Base.RefValue{SPIRV.Vec{2, Float32}}}}, UInt32})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.getindex), Tuple{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, Base.RefValue{SPIRV.Vec{2, Float32}}}}, UInt32}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.getindex), Tuple{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Arr{3, SPIRV.Vec{2, Float32}}, Base.RefValue{SPIRV.Vec{2, Float32}}}}, UInt32}}})
+precompile(Tuple{Type{SPIRV.Arr{N, T} where T where N}, Int64, Vararg{Int64}})
+precompile(Tuple{Type{SPIRV.Arr{3, Int64}}, Int64, Vararg{Int64}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Arr{3, Int64}}, Int64, Int64, Int64})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Arr{3, Int64}, Symbol})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Arr{3, Int64}, Tuple{Int64, Int64, Int64}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(==)), Tuple{SPIRV.Arr{3, Int64}, Tuple{Int64, Int64, Int64}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.ArrStyle{3}, Nothing, typeof(Base.:(==)), Tuple{SPIRV.Arr{3, Int64}, Tuple{Int64, Int64, Int64}}}})
+precompile(Tuple{typeof(Base.all), SPIRV.Arr{3, Bool}})
+precompile(Tuple{typeof(Base.copyto!), SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.all), typeof(Base.iszero), SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), typeof(Base.:(+)), SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.:(+)), SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.:(*)), Int64, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), typeof(Base.:(-)), SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.:(-)), SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Int64}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Int64}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Int64}}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(/)), Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Int64}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(/)), Tuple{SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Int64}}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Int64, SPIRV.Vec{2, Float32}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(*)), Tuple{Int64, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{Int64, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), typeof(Base.:(*)), SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Vec{2, Float32}, Int64})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Int64}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Vec{2, Float32}, Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Int64}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{SPIRV.Vec{2, Float32}, Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Int64}}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(+)), Tuple{SPIRV.Vec{2, Float32}, Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Int64}}}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, SPIRV.Vec{2, Float32}, Float32})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), typeof(Base.exp), SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Float32}}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Float32}}, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(+)), Tuple{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Float32}}, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.ceil), Tuple{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(+)), Tuple{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Float32}}, SPIRV.Vec{2, Float32}}}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.ceil), Tuple{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(+)), Tuple{Base.Broadcast.Broadcasted{SPIRV.VecStyle{2}, Nothing, typeof(Base.:(*)), Tuple{SPIRV.Vec{2, Float32}, Float32}}, SPIRV.Vec{2, Float32}}}}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize!), SPIRV.Vec{2, Float32}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.Broadcast.broadcasted), Function, Array{Int64, 1}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{Type{Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Axes, F, Args} where Args<:Tuple where F where Axes}, typeof(Base.:(+)), Tuple{Array{Int64, 1}, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Base.Broadcast.materialize), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Nothing, typeof(Base.:(+)), Tuple{Array{Int64, 1}, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Base.:(==)), Array{Float32, 1}, SPIRV.Vec{2, Float32}})
+precompile(Tuple{typeof(Base.similar), SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.all), typeof(Base.iszero), SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.Vec{4, Float32}, SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.sum), SPIRV.Vec{4, Float32}})
+precompile(Tuple{Type{SPIRV.Vec{3, Float32}}, Float64, Vararg{Float64}})
+precompile(Tuple{SPIRV.var"##s648#334", Vararg{Any, 4}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Vec{3, Float32}}})
+precompile(Tuple{typeof(Base._xfadjoint), Base.BottomRF{Base.FlipArgs{SPIRV.var"#335#336"}}, Base.Generator{Base.UnitRange{UInt32}, typeof(Base.identity)}})
+precompile(Tuple{typeof(Base.getproperty), Base.BottomRF{Base.FlipArgs{SPIRV.var"#335#336"}}, Symbol})
+precompile(Tuple{typeof(Base.getproperty), Base.FlipArgs{SPIRV.var"#335#336"}, Symbol})
+precompile(Tuple{typeof(Base.foldl_impl), Base.BottomRF{Base.FlipArgs{SPIRV.var"#335#336"}}, Expr, Base.StepRange{UInt32, Int32}})
+precompile(Tuple{typeof(Base.foldr), typeof(Base.:(+)), SPIRV.Vec{3, Float32}})
+precompile(Tuple{SPIRV.var"##s648#328", Vararg{Any, 4}})
+precompile(Tuple{typeof(Base.getproperty), Base.BottomRF{SPIRV.var"#329#330"}, Symbol})
+precompile(Tuple{typeof(Base.mapfoldl_impl), typeof(Base.identity), SPIRV.var"#329#330", Expr, Base.UnitRange{UInt32}})
+precompile(Tuple{typeof(Base.foldl), typeof(Base.:(+)), SPIRV.Vec{3, Float32}})
+precompile(Tuple{typeof(Base.sum), SPIRV.Vec{3, Float32}})
+precompile(Tuple{typeof(Base.collect), SPIRV.Vec{3, Float32}})
+precompile(Tuple{typeof(Base.foldr), typeof(Base.:(*)), SPIRV.Vec{3, Float32}})
+precompile(Tuple{typeof(Base.foldl), typeof(Base.:(*)), SPIRV.Vec{3, Float32}})
+precompile(Tuple{SPIRV.var"##s648#347", Vararg{Any, 4}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, SPIRV.var"#348#349", Base.UnitRange{UInt32}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Base.UnitRange{UInt32}, SPIRV.var"#348#349"}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Base.UnitRange{UInt32}, SPIRV.var"#348#349"}, UInt32})
+precompile(Tuple{typeof(Base.prod), SPIRV.Vec{3, Float32}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, Base.var"#218#219"{SPIRV.var"#371#372"{Float32}}, Base.UnitRange{Int64}})
+precompile(Tuple{typeof(Base.getproperty), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{Float32}}}, Symbol})
+precompile(Tuple{typeof(Base._similar_shape), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{Float32}}}, Base.HasShape{1}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{Float32}}}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{Float32}}}, Int64})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Arr{16, Float32}}})
+precompile(Tuple{Type{SPIRV.Arr{16, Float32}}, Float32, Vararg{Float32}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Arr{16, Float32}}, Vararg{Float32, 16}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Arr{16, Float32}}})
+precompile(Tuple{typeof(Base.all), typeof(Base.iszero), SPIRV.Arr{16, Float32}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, Base.var"#218#219"{SPIRV.var"#373#374"{Float32}}, Base.UnitRange{Int64}})
+precompile(Tuple{typeof(Base.getproperty), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#373#374"{Float32}}}, Symbol})
+precompile(Tuple{typeof(Base._similar_shape), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#373#374"{Float32}}}, Base.HasShape{1}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#373#374"{Float32}}}})
+precompile(Tuple{typeof(Base.iterate), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#373#374"{Float32}}}, Int64})
+precompile(Tuple{typeof(Base.one), Type{SPIRV.Arr{16, Float32}}})
+precompile(Tuple{typeof(Base.all), typeof(Base.isone), SPIRV.Arr{16, Float32}})
+precompile(Tuple{typeof(Base.all), typeof(Base.isone), SPIRV.Vec{4, Float32}})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Mat{4, 4, Float32}}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Mat{4, 4, Float32}}})
+precompile(Tuple{typeof(Base.all), typeof(Base.iszero), SPIRV.Mat{4, 4, Float32}})
+precompile(Tuple{typeof(Base.one), Type{SPIRV.Mat{4, 4, Float32}}})
+precompile(Tuple{typeof(Base.all), typeof(Base.isone), SPIRV.Mat{4, 4, Float32}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, Base.var"#218#219"{SPIRV.var"#371#372"{SPIRV.Vec{2, Float32}}}, Base.UnitRange{Int64}})
+precompile(Tuple{typeof(Base.getproperty), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{SPIRV.Vec{2, Float32}}}}, Symbol})
+precompile(Tuple{typeof(Base._similar_shape), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{SPIRV.Vec{2, Float32}}}}, Base.HasShape{1}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Arr{16, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Arr{16, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{Type{SPIRV.Arr{16, SPIRV.Vec{2, Float32}}}, SPIRV.Vec{2, Float32}, Vararg{SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Arr{16, SPIRV.Vec{2, Float32}}}, Vararg{SPIRV.Vec{2, Float32}, 16}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Arr{16, SPIRV.Vec{2, Float32}}}})
+precompile(Tuple{typeof(Base.all), typeof(Base.iszero), SPIRV.Arr{16, SPIRV.Vec{2, Float32}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.Vec{3, Float32}, 1}}})
+precompile(Tuple{typeof(Core.Compiler.eltype), Type{Array{SPIRV.Mat{3, 3, Float32}, 1}}})
+precompile(Tuple{Type{Base.Generator{I, F} where F where I}, Base.var"#218#219"{SPIRV.var"#371#372"{SPIRV.Mat{3, 3, Float32}}}, Base.UnitRange{Int64}})
+precompile(Tuple{typeof(Base.getproperty), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{SPIRV.Mat{3, 3, Float32}}}}, Symbol})
+precompile(Tuple{typeof(Base._similar_shape), Base.Generator{Base.UnitRange{Int64}, Base.var"#218#219"{SPIRV.var"#371#372"{SPIRV.Mat{3, 3, Float32}}}}, Base.HasShape{1}})
+precompile(Tuple{typeof(Base.zero), Type{SPIRV.Arr{16, SPIRV.Mat{3, 3, Float32}}}})
+precompile(Tuple{Type{SPIRV.Arr{16, SPIRV.Mat{3, 3, Float32}}}, SPIRV.Mat{3, 3, Float32}, Vararg{SPIRV.Mat{3, 3, Float32}}})
+precompile(Tuple{typeof(SPIRV.CompositeConstruct), Type{SPIRV.Arr{16, SPIRV.Mat{3, 3, Float32}}}, Vararg{SPIRV.Mat{3, 3, Float32}, 16}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Arr{16, SPIRV.Mat{3, 3, Float32}}}})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Mat{3, 3, Float32}}})
+precompile(Tuple{typeof(Base.all), typeof(Base.iszero), SPIRV.Arr{16, SPIRV.Mat{3, 3, Float32}}})
+precompile(Tuple{typeof(Base.foldl), SPIRV.var"#342#343"{typeof(Base.iszero)}, SPIRV.Arr{16, SPIRV.Mat{3, 3, Float32}}, Bool})
+precompile(Tuple{typeof(Core.Compiler.findall), Type, SPIRV.NOverlayMethodTable})
+precompile(Tuple{typeof(SPIRV.method_lookup_result), Core.Compiler.MethodMatchResult})
+precompile(Tuple{SPIRV.var"#418#419", Symbol})
+precompile(Tuple{typeof(Base.collect_to_with_first!), Array{Expr, 1}, Expr, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#418#419"}, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{typeof(Base.collect_to!), Array{Any, 1}, Base.Generator{Base.SubArray{Any, 1, Array{Any, 1}, Tuple{Base.UnitRange{Int64}}, true}, SPIRV.var"#418#419"}, Int64, Tuple{Base.OneTo{Int64}, Int64}})
+precompile(Tuple{typeof(SPIRV.store_expr), Expr, Expr})
+precompile(Tuple{typeof(SPIRV.SLessThanEqual), Int64, Int64})
+precompile(Tuple{typeof(SPIRV.SNegate), Int64})
+precompile(Tuple{typeof(SPIRV.SConvert), Type{Int32}, Int64})
+precompile(Tuple{typeof(SPIRV.FNegate), Float32})
+precompile(Tuple{typeof(SPIRV.FConvert), Type{Float32}, Float64})
+precompile(Tuple{Core.Compiler.var"##analyze_method!#452", Bool, Array{Any, 1}, typeof(Core.Compiler.analyze_method!), Core.MethodMatch, Array{Any, 1}, Core.Compiler.CallInfo, UInt8, Core.Compiler.InliningState{SPIRV.SPIRVInterpreter}})
+precompile(Tuple{typeof(SPIRV.ConvertSToF), Type{Float64}, Int64})
+precompile(Tuple{typeof(SPIRV.FDiv), Float64, Float64})
+precompile(Tuple{typeof(SPIRV.Sqrt), Float64})
+precompile(Tuple{Core.Compiler.var"##resolve_todo#451", Array{Any, 1}, typeof(Core.Compiler.resolve_todo), Core.MethodInstance, Core.Compiler.InferenceResult, Array{Any, 1}, Core.Compiler.CallInfo, UInt8, Core.Compiler.InliningState{SPIRV.SPIRVInterpreter}})
+precompile(Tuple{typeof(SPIRV.UConvert), Type{UInt32}, UInt16})
+precompile(Tuple{typeof(SPIRV.SLessThan), Int64, Int64})
+precompile(Tuple{typeof(SPIRV.FNegate), Float64})
+precompile(Tuple{typeof(SPIRV.SConvert), Type{Int128}, Int64})
+precompile(Tuple{typeof(SPIRV.IMul), Int64, Int64})
+precompile(Tuple{typeof(SPIRV.UConvert), Type{UInt128}, Int64})
+precompile(Tuple{typeof(SPIRV.SConvert), Type{Int64}, UInt16})
+precompile(Tuple{typeof(SPIRV.FAdd), Float64, Float64})
+precompile(Tuple{typeof(SPIRV.FConvert), Type{Float64}, Float32})
+precompile(Tuple{typeof(SPIRV.LogicalNot), Bool})
+precompile(Tuple{typeof(SPIRV.UConvert), Type{UInt8}, Int64})
+precompile(Tuple{typeof(SPIRV.SConvert), Type{Int32}, UInt8})
+precompile(Tuple{typeof(SPIRV.ISub), Int64, Int64})
+precompile(Tuple{typeof(SPIRV.UConvert), Type{UInt32}, Int64})
+precompile(Tuple{typeof(SPIRV.BitwiseAnd), UInt8, UInt8})
+precompile(Tuple{typeof(SPIRV.IEqual), UInt8, UInt8})
+precompile(Tuple{typeof(SPIRV.IEqual), Int64, Int64})
+precompile(Tuple{typeof(SPIRV.INotEqual), Int64, Int64})
+precompile(Tuple{typeof(SPIRV.LogicalNotEqual), Bool, Bool})
+precompile(Tuple{typeof(SPIRV.LogicalAnd), Bool, Bool})
+precompile(Tuple{typeof(SPIRV.UConvert), Type{UInt32}, UInt8})
+precompile(Tuple{typeof(SPIRV.ULessThan), UInt32, UInt32})
+precompile(Tuple{typeof(SPIRV.IEqual), UInt32, UInt32})
+precompile(Tuple{typeof(SPIRV.LogicalOr), Bool, Bool})
+precompile(Tuple{typeof(SPIRV.ISub), UInt32, UInt32})
+precompile(Tuple{typeof(SPIRV.UConvert), Type{UInt64}, UInt8})
+precompile(Tuple{typeof(SPIRV.SRem), Int64, Int64})
+precompile(Tuple{typeof(SPIRV.SConvert), Type{Int8}, Int64})
+precompile(Tuple{typeof(SPIRV.SConvert), Type{Int64}, Int8})
+precompile(Tuple{typeof(SPIRV.ISub), UInt64, UInt64})
+precompile(Tuple{typeof(SPIRV.IMul), UInt64, UInt64})
+precompile(Tuple{typeof(SPIRV.IAdd), UInt64, UInt64})
+precompile(Tuple{typeof(SPIRV.FOrdLessThan), Float32, Float32})
+precompile(Tuple{typeof(SPIRV.ConvertFToS), Type{Int64}, Float32})
+precompile(Tuple{typeof(SPIRV.FOrdLessThan), Float64, Float64})
+precompile(Tuple{typeof(SPIRV.ConvertFToS), Type{Int64}, Float64})
+precompile(Tuple{typeof(SPIRV.FUnordNotEqual), Float64, Float64})
+precompile(Tuple{typeof(SPIRV.FOrdEqual), Float64, Float64})
+precompile(Tuple{typeof(SPIRV.FAbs), Float64})
+precompile(Tuple{typeof(SPIRV.FOrdEqual), Float32, Float32})
+precompile(Tuple{typeof(SPIRV.Fma), Float64, Float64, Float64})
+precompile(Tuple{typeof(SPIRV.FSub), Float64, Float64})
+precompile(Tuple{typeof(SPIRV.FMul), Float64, Float64})
+precompile(Tuple{typeof(SPIRV.FOrdLessThanEqual), Float64, Float64})
+precompile(Tuple{typeof(SPIRV.FMul), Float32, Float32})
+precompile(Tuple{typeof(SPIRV.Round), Float32})
+precompile(Tuple{typeof(SPIRV.ConvertFToS), Type{Int32}, Float32})
+precompile(Tuple{typeof(SPIRV.Fma), Float32, Float32, Float32})
+precompile(Tuple{typeof(SPIRV.IAdd), Int32, Int32})
+precompile(Tuple{typeof(SPIRV.FOrdLessThanEqual), Float32, Float32})
+precompile(Tuple{typeof(SPIRV.SConvert), Type{Int64}, Int32})
+precompile(Tuple{typeof(SPIRV.Round), Float64})
+precompile(Tuple{Type{SPIRV.Vec{3, Float64}}, Float64, Vararg{Float64}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.Vec{3, Float64}, SPIRV.Vec{3, Float64}})
+precompile(Tuple{typeof(SPIRV.argtype), SPIRV.Vec{3, Float64}})
+precompile(Tuple{typeof(SPIRV.Select), Bool, Int64, Int64})
+precompile(Tuple{typeof(Base.vect), Type{SPIRV.SampledImage{SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}}, Vararg{DataType}})
+precompile(Tuple{typeof(SPIRV.argtype), Function})
+precompile(Tuple{typeof(SPIRV.SConvert), Type{Int64}, UInt32})
+precompile(Tuple{typeof(Base.eachindex), Type{SPIRV.Arr{10, Float32}}})
+precompile(Tuple{typeof(SPIRV.IAdd), UInt32, UInt32})
+precompile(Tuple{typeof(SPIRV.FSub), Float32, Float32})
+precompile(Tuple{typeof(SPIRV.Sqrt), Float32})
+precompile(Tuple{typeof(SPIRV.FUnordNotEqual), Float32, Float32})
+precompile(Tuple{typeof(SPIRV.FAbs), Float32})
+precompile(Tuple{typeof(SPIRV.ULessThanEqual), UInt32, UInt32})
+precompile(Tuple{typeof(SPIRV.ConvertUToF), Type{Float64}, UInt32})
+precompile(Tuple{typeof(SPIRV.ISub), Int32, Int32})
+precompile(Tuple{Type{SPIRV.SupportedFeatures}, Array{String, 1}, Array{SPIRV.Capability, 1}})
+precompile(Tuple{Type{NamedTuple{(:interp,), T} where T<:Tuple}, Tuple{SPIRV.SPIRVInterpreter}})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.BooleanType, SPIRV.BooleanType})
+precompile(Tuple{Type{UInt32}, SPIRV.OpCode})
+precompile(Tuple{typeof(Base.convert), Type{SPIRV.StorageClass}, SPIRV.StorageClass})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:interp,), Tuple{SPIRV.SPIRVInterpreter}}, typeof(SPIRV.compile), Any, Any, SPIRV.AllSupported})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:interp,), Tuple{SPIRV.SPIRVInterpreter}}, Type{SPIRV.SPIRVTarget}, Any, Type})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SPIRType, 1}, SPIRV.IntegerType})
+precompile(Tuple{typeof(SPIRV.throw_compilation_error), ErrorException, NamedTuple{(:target,), Tuple{SPIRV.SPIRVTarget}}})
+precompile(Tuple{typeof(Base.sprint), Function, SPIRV.CompilationError})
+precompile(Tuple{typeof(Base.showerror), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.CompilationError})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.StorageClass, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SPIRType, 1}, SPIRV.PointerType})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.VectorType, Array{SPIRV.SPIRType, 1}})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.VectorType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.PointerType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.FunctionType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.haskey), Dictionaries.Dictionary{Int64, SPIRV.Variable}, Int64})
+precompile(Tuple{typeof(SPIRV.emit_expression!), SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.SPIRVTarget, SPIRV.FunctionDefinition, Expr, Type, SPIRV.Block})
+precompile(Tuple{typeof(SPIRV.load_if_variable!), SPIRV.Block, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, Core.Argument})
+precompile(Tuple{typeof(SPIRV.load_if_variable!), SPIRV.Block, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, UInt32})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.FloatType, SPIRV.ResultID, SPIRV.ResultID, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, UInt32}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.FloatType, SPIRV.ResultID, Array{Any, 1}})
+precompile(Tuple{typeof(SPIRV.load_if_variable!), SPIRV.Block, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, Core.SSAValue})
+precompile(Tuple{typeof(SPIRV.load_if_variable!), SPIRV.Block, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, Float32})
+precompile(Tuple{typeof(SPIRV.emit_constant!), SPIRV.ModuleTarget, SPIRV.Translation, Float32})
+precompile(Tuple{typeof(SPIRV.follow_globalref), Any})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, Nothing, Nothing, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.parse), Type{SPIRV.Module}, String})
+precompile(Tuple{typeof(Base.isapprox), SPIRV.IR, SPIRV.Module})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.BooleanType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Bool}, SPIRV.BooleanType})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SPIRType, 1}, SPIRV.BooleanType})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Type{SPIRV.BooleanType}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.BooleanType, 1}, SPIRV.BooleanType, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{SPIRV.BooleanType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Type{SPIRV.ScalarType}})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{SPIRV.ScalarType, 1}, Array{SPIRV.BooleanType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, SPIRV.IntegerType, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{SPIRV.ScalarType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.StructType, Array{SPIRV.SPIRType, 1}})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.BooleanType, SPIRV.ResultID})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.StructType, SPIRV.ResultID, SPIRV.ResultID, Vararg{SPIRV.ResultID}})
+precompile(Tuple{SPIRV.var"#98#99"{SPIRV.GlobalsInfo}, SPIRV.BooleanType})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.StorageClass, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{SPIRV.SPIRType, 1}, Array{SPIRV.BooleanType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, SPIRV.MatrixType, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.MatrixType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.MatrixType})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.MatrixType, Nothing})
+precompile(Tuple{typeof(SPIRV.dim), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{typeof(SPIRV.is_depth), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{typeof(SPIRV.is_arrayed), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{typeof(SPIRV.is_multisampled), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{typeof(SPIRV.is_sampled), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}})
+precompile(Tuple{Type{SPIRV.ImageType}, SPIRV.FloatType, SPIRV.Dim, Bool, Bool, Bool, Bool, SPIRV.ImageFormat, Nothing})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.ImageType, SPIRV.ImageType})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.ImageType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}, SPIRV.ImageType})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.SampledImageType, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.SampledImageType, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.SampledImageType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.SampledImage{SPIRV.Image{SPIRV.ImageFormat(0x00000002), SPIRV.Dim(0x00000001), 0, false, false, 1, SPIRV.Vec{4, Float32}}}}, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SPIRType, 1}, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ImageType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.SampledImageType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.show), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.ImageFormat})
+precompile(Tuple{typeof(Base.show), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.Dim})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.SampledImageType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.SampledImageType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.SampledImageType})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.SampledImageType}})
+precompile(Tuple{SPIRV.var"#100#101"{SPIRV.GlobalsInfo}, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.SampledImageType, Nothing})
+precompile(Tuple{Type{UInt32}, SPIRV.Dim})
+precompile(Tuple{Type{UInt32}, SPIRV.ImageFormat})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SPIRType, 1}, SPIRV.ImageType})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.SamplerType, SPIRV.SamplerType})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.SamplerType, SPIRV.SamplerType})
+precompile(Tuple{typeof(Base.setindex!), SPIRV.TypeMap, SPIRV.SamplerType, DataType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Sampler}, SPIRV.SamplerType})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SPIRType, 1}, SPIRV.SamplerType})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.SamplerType})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.SamplerType, SPIRV.ResultID})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.SampledImageType, SPIRV.ResultID, SPIRV.ResultID, Vararg{SPIRV.ResultID}})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ResultID, SPIRV.SamplerType})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.SamplerType}, Int64})
+precompile(Tuple{typeof(Base.indexed_iterate), Pair{SPIRV.ResultID, SPIRV.SamplerType}, Int64, Int64})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, Any}, SPIRV.ResultID, SPIRV.SamplerType})
+precompile(Tuple{SPIRV.var"#106#107"{SPIRV.GlobalsInfo}, Pair{SPIRV.ResultID, SPIRV.SamplerType}})
+precompile(Tuple{SPIRV.var"#100#101"{SPIRV.GlobalsInfo}, SPIRV.ImageType})
+precompile(Tuple{SPIRV.var"#100#101"{SPIRV.GlobalsInfo}, SPIRV.SamplerType})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.SamplerType, Nothing})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SPIRType, 1}, SPIRV.FloatType})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.FloatType, Array{SPIRV.SPIRType, 1}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.OpCodeGLSL, Core.Argument, Core.Argument, Core.Argument}})
+precompile(Tuple{typeof(SPIRV.load_if_variable!), SPIRV.Block, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, SPIRV.ResultID})
+precompile(Tuple{typeof(SPIRV.load_if_variable!), SPIRV.Block, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, SPIRV.OpCodeGLSL})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.OpCodeGLSL, SPIRV.ResultID, SPIRV.ResultID, SPIRV.ResultID}})
+precompile(Tuple{SPIRV.var"#100#101"{SPIRV.GlobalsInfo}, SPIRV.FloatType})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, SPIRV.OpCodeGLSL, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.OpCodeGLSL})
+precompile(Tuple{typeof(Base.isequal), SPIRV.OpCodeGLSL, SPIRV.OpCodeGLSL})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.OpCodeGLSL, Core.Argument}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.OpCodeGLSL, SPIRV.ResultID}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.FloatType, SPIRV.ResultID, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.OpCodeGLSL, Core.SSAValue}})
+precompile(Tuple{Type{SPIRV.Arr{1, Float32}}, Float32})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Arr{1, Float32}}, SPIRV.ArrayType})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.StorageClass, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.haskey), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ArrayType, SPIRV.ResultID})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.VectorType, SPIRV.ResultID, SPIRV.ResultID, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.ResultID, UInt32, UInt32, UInt32}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.VectorType, SPIRV.ResultID, Array{Any, 1}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.VectorType, SPIRV.ResultID, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Pointer{Float32}}})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.StorageClass, SPIRV.FloatType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Pointer{Float32}}, SPIRV.PointerType})
+precompile(Tuple{typeof(SPIRV.storage_class), Core.Argument, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition})
+precompile(Tuple{typeof(ConstructionBase.setproperties), SPIRV.PointerType, NamedTuple{(:storage_class,), Tuple{SPIRV.StorageClass}}})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:storage_class, :type), Tuple{SPIRV.StorageClass, SPIRV.FloatType}}, NamedTuple{(:storage_class, :type), Tuple{SPIRV.StorageClass, SPIRV.FloatType}}, SPIRV.PointerType, NamedTuple{(:storage_class,), Tuple{SPIRV.StorageClass}}})
+precompile(Tuple{Type{Tuple}, NamedTuple{(:storage_class, :type), Tuple{SPIRV.StorageClass, SPIRV.FloatType}}})
+precompile(Tuple{typeof(SPIRV.emit_constant!), SPIRV.ModuleTarget, SPIRV.Translation, UInt32})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.PointerType, SPIRV.ResultID, SPIRV.ResultID, Vararg{SPIRV.ResultID}})
+precompile(Tuple{typeof(SPIRV.storage_class), Core.SSAValue, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, Nothing, Nothing, SPIRV.ResultID, Vararg{Any}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, Nothing, Nothing, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{typeof(Base.getindex), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ArrayType})
+precompile(Tuple{Type{SPIRV.SPIRVInterpreter}, Array{Core.MethodTable, 1}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.BooleanType, SPIRV.ResultID, SPIRV.ResultID, Vararg{SPIRV.ResultID}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.OpCodeGLSL, Core.Argument, Float32, Float32}})
+precompile(Tuple{typeof(SPIRV.emit_expression!), SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.SPIRVTarget, SPIRV.FunctionDefinition, Core.PhiNode, Type, SPIRV.Block})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.FloatType, SPIRV.ResultID, Core.SSAValue, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{Core.SSAValue, SPIRV.ResultID, Core.SSAValue, SPIRV.ResultID}})
+precompile(Tuple{typeof(Base.:(!=)), Nothing, SPIRV.Composite})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.Composite, Int64})
+precompile(Tuple{typeof(Base.:(!=)), SPIRV.Composite, SPIRV.Composite})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:interp,), Tuple{SPIRV.SPIRVInterpreter}}, typeof(SPIRV.compile), Any, Any, SPIRV.SupportedFeatures})
+precompile(Tuple{typeof(Base.similar), Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Type{SPIRV.FloatType}})
+precompile(Tuple{typeof(Base.setindex!), Array{SPIRV.FloatType, 1}, SPIRV.FloatType, Int64})
+precompile(Tuple{typeof(Base.Broadcast.copyto_nonleaf!), Array{SPIRV.FloatType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.StructType}, Array{SPIRV.FloatType, 1}})
+precompile(Tuple{typeof(Base.push!), Array{SPIRV.SPIRType, 1}, SPIRV.StructType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Arr{5, Float32}}, SPIRV.ArrayType})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.ArrayType, SPIRV.ResultID, SPIRV.ResultID, Vararg{SPIRV.ResultID}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.ImageType, SPIRV.ResultID, SPIRV.ResultID})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Vec{2, UInt32}}, SPIRV.VectorType})
+precompile(Tuple{typeof(SPIRV.get_type), Core.Argument, SPIRV.SPIRVTarget})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Pointer{UInt32}}})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.StorageClass, SPIRV.IntegerType})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Pointer{UInt32}}, SPIRV.PointerType})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:storage_class, :type), Tuple{SPIRV.StorageClass, SPIRV.IntegerType}}, NamedTuple{(:storage_class, :type), Tuple{SPIRV.StorageClass, SPIRV.IntegerType}}, SPIRV.PointerType, NamedTuple{(:storage_class,), Tuple{SPIRV.StorageClass}}})
+precompile(Tuple{Type{Tuple}, NamedTuple{(:storage_class, :type), Tuple{SPIRV.StorageClass, SPIRV.IntegerType}}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.IntegerType, SPIRV.ResultID, SPIRV.ResultID})
+precompile(Tuple{typeof(SPIRV.load_if_variable!), SPIRV.Block, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, Float64})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, Float64, SPIRV.OperandInfo})
+precompile(Tuple{typeof(SPIRV.emit_constant!), SPIRV.ModuleTarget, SPIRV.Translation, Float64})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Vec{2, Float64}}, SPIRV.VectorType})
+precompile(Tuple{typeof(SPIRV.add_extra_operands!), Array{SPIRV.OperandInfo, 1}, Int64, Core.SSAValue, SPIRV.OperandInfo})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.IntegerType, SPIRV.ResultID, SPIRV.ResultID, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.ResultID, Core.SSAValue, SPIRV.ResultID}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.IntegerType, SPIRV.ResultID, Array{Any, 1}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.PointerType, SPIRV.ResultID, Core.SSAValue, Vararg{Any}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.PointerType, SPIRV.ResultID, Array{Any, 1}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.IntegerType, SPIRV.ResultID, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.IntegerType, SPIRV.ResultID, Core.SSAValue, Vararg{Any}})
+precompile(Tuple{typeof(Base.collect), Tuple{Core.SSAValue, SPIRV.ResultID}})
+precompile(Tuple{typeof(SPIRV.emit_constant!), SPIRV.ModuleTarget, SPIRV.Translation, Bool})
+precompile(Tuple{SPIRV.var"#100#101"{SPIRV.GlobalsInfo}, SPIRV.StructType})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.FloatType, SPIRV.ResultID, Base.ReinterpretArray{UInt32, 1, Float64, Array{Float64, 1}, false}})
+precompile(Tuple{typeof(Base.get), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.ArrayType, Nothing})
+precompile(Tuple{typeof(Base.sprint), Function, SPIRV.ValidationError})
+precompile(Tuple{typeof(Base.showerror), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.ValidationError})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Vec{2, Int32}}, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Pointer{Int32}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Pointer{Int32}}, SPIRV.PointerType})
+precompile(Tuple{typeof(SPIRV.load_if_variable!), SPIRV.Block, SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, Int32})
+precompile(Tuple{typeof(SPIRV.emit_constant!), SPIRV.ModuleTarget, SPIRV.Translation, Int32})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Vec{3, Float64}}, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.eltype), Type{SPIRV.Pointer{Float64}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Pointer{Float64}}, SPIRV.PointerType})
+precompile(Tuple{Type{SPIRV.FunctionType}, SPIRV.IntegerType, Array{SPIRV.SPIRType, 1}})
+precompile(Tuple{typeof(SPIRV.BitwiseAnd), Int64, Int64})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{UInt64}, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.vect), SPIRV.ExecutionModel, Vararg{SPIRV.ExecutionModel}})
+precompile(Tuple{typeof(Base.iterate), Array{SPIRV.ExecutionModel, 1}})
+precompile(Tuple{SPIRV.var"##CommonExecutionOptions#435", Bool, Nothing, Nothing, Nothing, Nothing, Nothing, Type{SPIRV.CommonExecutionOptions}})
+precompile(Tuple{SPIRV.var"##FragmentExecutionOptions#436", SPIRV.CommonExecutionOptions, Bool, Symbol, Bool, Bool, Nothing, Type{SPIRV.FragmentExecutionOptions}})
+precompile(Tuple{SPIRV.var"##GeometryExecutionOptions#438", SPIRV.CommonExecutionOptions, Nothing, Symbol, Symbol, Nothing, Type{SPIRV.GeometryExecutionOptions}})
+precompile(Tuple{Type{SPIRV.ComputeExecutionOptions}, SPIRV.CommonExecutionOptions, Tuple{UInt32, UInt32, UInt32}})
+precompile(Tuple{SPIRV.var"##TessellationExecutionOptions#439", SPIRV.CommonExecutionOptions, Symbol, Symbol, Bool, Symbol, Nothing, Type{SPIRV.TessellationExecutionOptions}})
+precompile(Tuple{SPIRV.var"##MeshExecutionOptions#440", SPIRV.CommonExecutionOptions, Symbol, Nothing, Type{SPIRV.MeshExecutionOptions}})
+precompile(Tuple{Type{SPIRV.ShaderExecutionOptions}, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.CommonExecutionOptions, SPIRV.ExecutionModel})
+precompile(Tuple{Type{SPIRV.EntryPoint}, Symbol, SPIRV.ResultID, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.add_options!), SPIRV.EntryPoint, SPIRV.CommonExecutionOptions})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.EntryPoint, Symbol})
+precompile(Tuple{typeof(Base.allunique), Array{SPIRV.Instruction, 1}})
+precompile(Tuple{typeof(Base.iterate), Array{SPIRV.ExecutionModel, 1}, Int64})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.FragmentExecutionOptions, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.add_options!), SPIRV.EntryPoint, SPIRV.FragmentExecutionOptions})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.ComputeExecutionOptions, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.add_options!), SPIRV.EntryPoint, SPIRV.ComputeExecutionOptions})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ResultID, SPIRV.ExecutionMode, UInt32, UInt32, UInt32}})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.GeometryExecutionOptions, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.add_options!), SPIRV.EntryPoint, SPIRV.GeometryExecutionOptions})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.TessellationExecutionOptions, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.add_options!), SPIRV.EntryPoint, SPIRV.TessellationExecutionOptions})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.MeshExecutionOptions, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.add_options!), SPIRV.EntryPoint, SPIRV.MeshExecutionOptions})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:origin,), Tuple{Symbol}}, Type{SPIRV.FragmentExecutionOptions}})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.FragmentExecutionOptions})
+precompile(Tuple{Type{SPIRV.InvalidExecutionOptions}, String, SPIRV.FragmentExecutionOptions})
+precompile(Tuple{typeof(Base.sprint), Function, SPIRV.InvalidExecutionOptions})
+precompile(Tuple{typeof(Base.showerror), Base.GenericIOBuffer{Array{UInt8, 1}}, SPIRV.InvalidExecutionOptions})
+precompile(Tuple{typeof(SPIRV.compile), SPIRV.SPIRVTarget, SPIRV.AllSupported})
+precompile(Tuple{Type{NamedTuple{(:storage_classes,), T} where T<:Tuple}, Tuple{Array{SPIRV.StorageClass, 1}}})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:storage_classes,), Tuple{Array{SPIRV.StorageClass, 1}}}, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{SPIRV.var"##ShaderInterface#441", Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Any, Any}, Dictionaries.Dictionary{Any, Any}, SPIRV.AllSupported, SPIRV.CommonExecutionOptions, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{Type{SPIRV.Shader}, SPIRV.SPIRVTarget, SPIRV.ShaderInterface, SPIRV.VulkanAlignment})
+precompile(Tuple{typeof(SPIRV.promote_to_interface_block), SPIRV.VectorType, SPIRV.StorageClass})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Variable, Symbol})
+precompile(Tuple{typeof(SPIRV.define_entry_point!), SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, SPIRV.ExecutionModel, SPIRV.CommonExecutionOptions})
+precompile(Tuple{typeof(Base.insert!), SPIRV.BijectiveMapping{SPIRV.ResultID, SPIRV.SPIRType}, SPIRV.VoidType, SPIRV.ResultID})
+precompile(Tuple{typeof(Base.empty), Base.Dict{Any, Any}, Type{SPIRV.FloatType}, Type{Base.Set{SPIRV.StorageClass}}})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.FloatType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.FloatType})
+precompile(Tuple{typeof(Base.grow_to!), Base.Dict{SPIRV.FloatType, Base.Set{SPIRV.StorageClass}}, Base.Generator{SPIRV.TypeMap, SPIRV.var"#397#399"{SPIRV.TypeMetadata}}, Int64})
+precompile(Tuple{typeof(Base.empty), Base.Dict{SPIRV.FloatType, Base.Set{SPIRV.StorageClass}}, Type{SPIRV.SPIRType}, Type{Base.Set{SPIRV.StorageClass}}})
+precompile(Tuple{typeof(Base.merge!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Dict{SPIRV.FloatType, Base.Set{SPIRV.StorageClass}}})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.PointerType})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.PointerType})
+precompile(Tuple{typeof(Base.:(==)), SPIRV.StorageClass, SPIRV.StorageClass})
+precompile(Tuple{Type{SPIRV.Module}, SPIRV.Shader})
+precompile(Tuple{typeof(SPIRV.validate), SPIRV.Shader})
+precompile(Tuple{Type{SPIRV.Decorations}, SPIRV.Decoration, Int64})
+precompile(Tuple{Type{Pair{A, B} where B where A}, Int64, SPIRV.Decorations})
+precompile(Tuple{typeof(Base.vect), Pair{Int64, SPIRV.Decorations}})
+precompile(Tuple{typeof(Dictionaries.dictionary), Array{Pair{Int64, SPIRV.Decorations}, 1}})
+precompile(Tuple{Type{NamedTuple{(:storage_classes, :variable_decorations), T} where T<:Tuple}, Tuple{Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}}})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:storage_classes, :variable_decorations), Tuple{Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}}}, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{SPIRV.var"##ShaderInterface#441", Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{Any, Any}, SPIRV.AllSupported, SPIRV.CommonExecutionOptions, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(Base.isequal), SPIRV.VectorType, SPIRV.VectorType})
+precompile(Tuple{typeof(Base.vect), SPIRV.StorageClass, Vararg{SPIRV.StorageClass}})
+precompile(Tuple{Type{SPIRV.Decorations}, SPIRV.Decoration})
+precompile(Tuple{SPIRV.var"#_decorate!#108"{SPIRV.Decorations}, SPIRV.Decoration, Int64})
+precompile(Tuple{typeof(Base.vect), Pair{Int64, SPIRV.Decorations}, Vararg{Pair{Int64, SPIRV.Decorations}}})
+precompile(Tuple{Type{SPIRV.Metadata}})
+precompile(Tuple{typeof(Base.getproperty), SPIRV.Metadata, Symbol})
+precompile(Tuple{SPIRV.var"#_decorate!#111"{SPIRV.Metadata}, SPIRV.Decoration, Vararg{Any}})
+precompile(Tuple{typeof(SPIRV.decorate!), SPIRV.Metadata, SPIRV.Decoration})
+precompile(Tuple{SPIRV.var"#_decorate!#111"{SPIRV.Metadata}, Int64, Vararg{Any}})
+precompile(Tuple{typeof(SPIRV.decorate!), SPIRV.Metadata, Int64, SPIRV.Decoration, Int64})
+precompile(Tuple{Type{Pair{A, B} where B where A}, Type, SPIRV.Metadata})
+precompile(Tuple{typeof(Base.vect), Pair{DataType, SPIRV.Metadata}})
+precompile(Tuple{typeof(Dictionaries.dictionary), Array{Pair{DataType, SPIRV.Metadata}, 1}})
+precompile(Tuple{Type{NamedTuple{(:storage_classes, :variable_decorations, :type_metadata), T} where T<:Tuple}, Tuple{Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}}})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:storage_classes, :variable_decorations, :type_metadata), Tuple{Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}}}, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{SPIRV.var"##ShaderInterface#441", Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}, SPIRV.AllSupported, SPIRV.CommonExecutionOptions, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.promote_to_interface_block), SPIRV.StructType, SPIRV.StorageClass})
+precompile(Tuple{typeof(SPIRV.emit!), SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.SPIRType})
+precompile(Tuple{typeof(SPIRV.decorate!), SPIRV.ModuleTarget, SPIRV.ResultID, SPIRV.Decoration})
+precompile(Tuple{typeof(Base.insert!), Dictionaries.Dictionary{SPIRV.SPIRType, SPIRV.Metadata}, SPIRV.StructType, SPIRV.Metadata})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ExecutionModel, SPIRV.ResultID, String, SPIRV.ResultID, SPIRV.ResultID}})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.StructType, SPIRV.Metadata})
+precompile(Tuple{typeof(Accessors.set), SPIRV.ShaderInterface, Accessors.PropertyLens{:type_metadata}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:execution_model, :storage_classes, :variable_decorations, :type_metadata, :features, :execution_options), Tuple{SPIRV.ExecutionModel, Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}, SPIRV.AllSupported, SPIRV.CommonExecutionOptions}}, NamedTuple{(:execution_model, :storage_classes, :variable_decorations, :type_metadata, :features, :execution_options), Tuple{SPIRV.ExecutionModel, Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}, SPIRV.AllSupported, SPIRV.CommonExecutionOptions}}, SPIRV.ShaderInterface, NamedTuple{(:type_metadata,), Tuple{Dictionaries.Dictionary{DataType, SPIRV.Metadata}}}})
+precompile(Tuple{Type{Tuple}, NamedTuple{(:execution_model, :storage_classes, :variable_decorations, :type_metadata, :features, :execution_options), Tuple{SPIRV.ExecutionModel, Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}, SPIRV.AllSupported, SPIRV.CommonExecutionOptions}}})
+precompile(Tuple{Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel, Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}, SPIRV.AllSupported, SPIRV.CommonExecutionOptions})
+precompile(Tuple{Type{SPIRV.Decorations}, SPIRV.Decoration, SPIRV.BuiltIn})
+precompile(Tuple{typeof(SPIRV.promote_to_interface_block), SPIRV.IntegerType, SPIRV.StorageClass})
+precompile(Tuple{typeof(Base.isequal), SPIRV.IntegerType, SPIRV.IntegerType})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ExecutionModel, SPIRV.ResultID, String, SPIRV.ResultID, SPIRV.ResultID, SPIRV.ResultID}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{Tuple{Float32, Float32, Float32}}, SPIRV.ArrayType})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{SPIRV.SPIRType, 1}, Array{SPIRV.VectorType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, SPIRV.ArrayType, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{Type{SPIRV.ArrayType}, SPIRV.StructType, Nothing})
+precompile(Tuple{typeof(SPIRV.get_type), Core.SSAValue, SPIRV.SPIRVTarget})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.ArrayType, SPIRV.ResultID, SPIRV.ResultID, Vararg{Any}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.ArrayType, SPIRV.ResultID, Array{Any, 1}})
+precompile(Tuple{Type{NamedTuple{(:storage_classes, :variable_decorations, :type_metadata, :features), T} where T<:Tuple}, Tuple{Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}, SPIRV.SupportedFeatures}})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:storage_classes, :variable_decorations, :type_metadata, :features), Tuple{Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}, SPIRV.SupportedFeatures}}, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{SPIRV.var"##ShaderInterface#441", Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}, SPIRV.SupportedFeatures, SPIRV.CommonExecutionOptions, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(Base.hashindex), SPIRV.PointerType, Int64})
+precompile(Tuple{Type{Pair{A, B} where B where A}, SPIRV.ArrayType, SPIRV.Metadata})
+precompile(Tuple{typeof(SPIRV.add_operand!), Array{UInt32, 1}, SPIRV.MemoryAccess})
+precompile(Tuple{typeof(Accessors.set), SPIRV.ShaderInterface, Accessors.PropertyLens{:type_metadata}, Dictionaries.Dictionary{Any, Any}})
+precompile(Tuple{typeof(ConstructionBase.check_patch_properties_exist), NamedTuple{(:execution_model, :storage_classes, :variable_decorations, :type_metadata, :features, :execution_options), Tuple{SPIRV.ExecutionModel, Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{Any, Any}, SPIRV.SupportedFeatures, SPIRV.CommonExecutionOptions}}, NamedTuple{(:execution_model, :storage_classes, :variable_decorations, :type_metadata, :features, :execution_options), Tuple{SPIRV.ExecutionModel, Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{DataType, SPIRV.Metadata}, SPIRV.SupportedFeatures, SPIRV.CommonExecutionOptions}}, SPIRV.ShaderInterface, NamedTuple{(:type_metadata,), Tuple{Dictionaries.Dictionary{Any, Any}}}})
+precompile(Tuple{Type{Tuple}, NamedTuple{(:execution_model, :storage_classes, :variable_decorations, :type_metadata, :features, :execution_options), Tuple{SPIRV.ExecutionModel, Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{Any, Any}, SPIRV.SupportedFeatures, SPIRV.CommonExecutionOptions}}})
+precompile(Tuple{Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel, Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{Any, Any}, SPIRV.SupportedFeatures, SPIRV.CommonExecutionOptions})
+precompile(Tuple{SPIRV.var"##ShaderInterface#441", Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{Any, Any}, SPIRV.AllSupported, SPIRV.FragmentExecutionOptions, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.define_entry_point!), SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, SPIRV.ExecutionModel, SPIRV.FragmentExecutionOptions})
+precompile(Tuple{Type{UInt32}, SPIRV.ExecutionMode})
+precompile(Tuple{typeof(SPIRV.promote_to_interface_block), SPIRV.FloatType, SPIRV.StorageClass})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.BooleanType})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.BooleanType})
+precompile(Tuple{Type{NamedTuple{(:storage_classes, :variable_decorations, :features), T} where T<:Tuple}, Tuple{Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, SPIRV.SupportedFeatures}})
+precompile(Tuple{typeof(Core.kwcall), NamedTuple{(:storage_classes, :variable_decorations, :features), Tuple{Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, SPIRV.SupportedFeatures}}, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{SPIRV.var"##ShaderInterface#441", Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{Any, Any}, SPIRV.SupportedFeatures, SPIRV.FragmentExecutionOptions, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(SPIRV.image_type), Type{SPIRV.SampledImage{SPIRV.Image{SPIRV.ImageFormat(0x00000009), SPIRV.Dim(0x00000001), 0, false, false, 1, Float32}}}})
+precompile(Tuple{typeof(SPIRV.format), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000009), SPIRV.Dim(0x00000001), 0, false, false, 1, Float32}}})
+precompile(Tuple{typeof(SPIRV.dim), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000009), SPIRV.Dim(0x00000001), 0, false, false, 1, Float32}}})
+precompile(Tuple{typeof(SPIRV.is_depth), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000009), SPIRV.Dim(0x00000001), 0, false, false, 1, Float32}}})
+precompile(Tuple{typeof(SPIRV.is_arrayed), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000009), SPIRV.Dim(0x00000001), 0, false, false, 1, Float32}}})
+precompile(Tuple{typeof(SPIRV.is_multisampled), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000009), SPIRV.Dim(0x00000001), 0, false, false, 1, Float32}}})
+precompile(Tuple{typeof(SPIRV.is_sampled), Type{SPIRV.Image{SPIRV.ImageFormat(0x00000009), SPIRV.Dim(0x00000001), 0, false, false, 1, Float32}}})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Image{SPIRV.ImageFormat(0x00000009), SPIRV.Dim(0x00000001), 0, false, false, 1, Float32}}, SPIRV.ImageType})
+precompile(Tuple{typeof(SPIRV.promote_to_interface_block), SPIRV.SampledImageType, SPIRV.StorageClass})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.SampledImage{SPIRV.Image{SPIRV.ImageFormat(0x00000009), SPIRV.Dim(0x00000001), 0, false, false, 1, Float32}}}, SPIRV.SampledImageType})
+precompile(Tuple{Type{SPIRV.PointerType}, SPIRV.StorageClass, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.collect), NTuple{5, SPIRV.ResultID}})
+precompile(Tuple{Type{SPIRV.Expression}, SPIRV.OpCode, SPIRV.ArrayType, SPIRV.ResultID, Array{SPIRV.ResultID, 1}})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.ImageType})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.ImageType})
+precompile(Tuple{SPIRV.var"#397#399"{SPIRV.TypeMetadata}, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.setindex!), Base.Dict{SPIRV.SPIRType, Base.Set{SPIRV.StorageClass}}, Base.Set{SPIRV.StorageClass}, SPIRV.SampledImageType})
+precompile(Tuple{typeof(Base.hashindex), SPIRV.SampledImageType, Int64})
+precompile(Tuple{typeof(Base.hashindex), SPIRV.ImageType, Int64})
+precompile(Tuple{typeof(Base.collect), Tuple{SPIRV.ExecutionModel, SPIRV.ResultID, String, Vararg{SPIRV.ResultID, 5}}})
+precompile(Tuple{SPIRV.var"##ShaderInterface#441", Array{SPIRV.StorageClass, 1}, Dictionaries.Dictionary{Int64, SPIRV.Decorations}, Dictionaries.Dictionary{Any, Any}, SPIRV.SupportedFeatures, SPIRV.ComputeExecutionOptions, Type{SPIRV.ShaderInterface}, SPIRV.ExecutionModel})
+precompile(Tuple{typeof(Base.Broadcast.restart_copyto_nonleaf!), Array{SPIRV.SPIRType, 1}, Array{SPIRV.VectorType, 1}, Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{1}, Tuple{Base.OneTo{Int64}}, typeof(SPIRV.spir_type), Tuple{Base.Broadcast.Extruded{Array{Any, 1}, Tuple{Bool}, Tuple{Int64}}, Base.RefValue{SPIRV.TypeMap}}}, SPIRV.FloatType, Int64, Base.OneTo{Int64}, Int64, Int64})
+precompile(Tuple{typeof(SPIRV.emit_expression!), SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.SPIRVTarget, SPIRV.FunctionDefinition, GlobalRef, Type, SPIRV.Block})
+precompile(Tuple{typeof(SPIRV.emit_constant!), SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.Vec{2, Float32}})
+precompile(Tuple{Type{SPIRV.VectorType}, SPIRV.BooleanType, Int64})
+precompile(Tuple{typeof(Dictionaries.set!), Dictionaries.Dictionary{DataType, SPIRV.SPIRType}, Type{SPIRV.Vec{2, Bool}}, SPIRV.VectorType})
+precompile(Tuple{typeof(SPIRV.define_entry_point!), SPIRV.ModuleTarget, SPIRV.Translation, SPIRV.FunctionDefinition, SPIRV.ExecutionModel, SPIRV.ComputeExecutionOptions})
+precompile(Tuple{typeof(Base.isequal), SPIRV.StructType, SPIRV.StructType})
