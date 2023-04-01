@@ -4,7 +4,7 @@
 # otherwise we'll be missing a lot of precompile directives.
 
 tmp=/tmp/__SPIRV_compiled.jl
-dst="src/precompile_generated.jl"
+dst="src/precompilation_traces.jl"
 
 echo "Running tests with --trace-compile=$tmp"
 # julia --color=yes --project --startup-file=no --trace-compile=$tmp test/runtests.jl

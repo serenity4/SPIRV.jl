@@ -1,5 +1,6 @@
 module SPIRV
 
+using CompileTraces
 using CEnum
 using MLStyle
 using Graphs
