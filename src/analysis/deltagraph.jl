@@ -130,7 +130,8 @@ function Graphs.rem_vertex!(dg::DeltaGraph, v)
   true
 end
 
-Graphs.rem_vertices!(dg::DeltaGraph, vs...) = foreach(Fix1(rem_vertex!, dg), vs)
+Graphs.rem_vertices!(dg::DeltaGraph, vs) = foreach(Fix1(rem_vertex!, dg), vs)
+Graphs.rem_vertices!(dg::DeltaGraph, v::Integer, vs::Integer...) = rem_vertices!(dg, (v, vs...))
 
 add_edges!(g::AbstractGraph, edges) = foreach(Fix1(add_edge!, g), edges)
 Graphs.rem_edge!(dg::DeltaGraph, e::Edge) = rem_edge!(dg, e.src, e.dst)
