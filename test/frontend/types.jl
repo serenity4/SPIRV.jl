@@ -83,6 +83,8 @@ using SPIRV: component_type, texel_type, sampled_type, column
     @test_throws ArgumentError Vec(1.0)
     @test_throws ArgumentError Vec(1.0, 2.0, 3.0, 4.0, 5.0)
 
+    @test Vec2(1.0, 2.0) == Vec2((1.0, 2.0)) == convert(Vec2, (1.0, 2.0))
+
     @test isa(repr(v), String)
     @test isa(repr(MIME"text/plain"(), v), String)
   end
@@ -154,6 +156,8 @@ using SPIRV: component_type, texel_type, sampled_type, column
     arr[1].x = 3.0
     @test iszero(arr[2].x)
     @test all(isone, one(Arr{16,Vec4}))
+
+    @test Arr{2,Float32}(1.0, 2.0) == Arr{2,Float32}((1.0, 2.0)) == convert(Arr{2,Float32}, (1.0, 2.0))
 
     @test isa(repr(arr), String)
     @test isa(repr(MIME"text/plain"(), arr), String)

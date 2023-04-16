@@ -5,7 +5,7 @@ mutable struct Vec{N,T} <: GPUVector{N,T}
   Vec{N,T}(components::T...) where {N,T} = CompositeConstruct(Vec{N,T}, components...)
 end
 
-Vec{N,T}(data::NTuple) where {N,T} = Vec{N,T}(data...)
+Vec{N,T}(data::Tuple) where {N,T} = Vec{N,T}(data...)
 Vec{N,T}(data::AbstractVector) where {N,T} = Vec{N,T}(data...)
 Vec{N,T}(components...) where {N,T} = Vec{N,T}(convert.(T, components)...)
 Vec(components::Scalar...) = Vec(promote(components...)...)
@@ -32,6 +32,7 @@ Base.promote_rule(S::Type{<:Scalar}, ::Type{Vec{N,T}}) where {N,T} = Vec{N,promo
 Base.convert(::Type{Vec{N,T1}}, v::Vec{N,T2}) where {N,T1,T2} = Vec{N,T1}(ntuple_uint32(i -> convert(T1, @inbounds v[i]), N)...)
 Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T} = v
 Base.convert(T::Type{<:Vec}, x::Scalar) = T(ntuple(Returns(x), length(T)))
+Base.convert(T::Type{<:Vec}, t::Tuple) = T(t)
 # For some reason, the default display on `AbstractArray` really wants to treat one-dimensional vectors as two-dimensional...
 Base.getindex(v::Vec, index::Int64, other_index::Int64) = v[index]
 

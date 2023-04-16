@@ -22,6 +22,7 @@ Base.promote_rule(S::Type{<:Scalar}, ::Type{Arr{N,T}}) where {N,T} = Arr{N,promo
 Base.convert(::Type{Arr{N,T1}}, v::Arr{N,T2}) where {N,T1,T2} = Arr{N,T1}(ntuple_uint32(i -> convert(T1, @inbounds v[i]), N)...)
 Base.convert(::Type{T}, v::T) where {T<:Arr} = v
 Base.convert(T::Type{<:Arr}, x::Scalar) = T(ntuple(Returns(x), length(T)))
+Base.convert(T::Type{<:Arr}, t::Tuple) = T(t)
 Base.getindex(arr::Arr, index::Int64, other_index::Int64) = arr[index]
 
 @noinline CompositeExtract(arr::Arr, index::UInt32) = arr.data[index + 1]
