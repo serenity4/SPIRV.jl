@@ -11,7 +11,7 @@ struct SPIRVTarget
   Mapping from node index to instructions.
   """
   instructions::Vector{Vector{Any}}
-  indices::Vector{Int}
+  block_ranges::Vector{UnitRange{Int}}
   code::CodeInfo
   interp::SPIRVInterpreter
 end
@@ -45,16 +45,16 @@ end
 
 function SPIRVTarget(mi::MethodInstance, interp::AbstractInterpreter; inferred = false)
   if inferred
-    code = get(interp.global_cache, mi, nothing)
-    if isnothing(code)
+    code_instance = get(interp.global_cache, mi, nothing)
+    if isnothing(code_instance)
       # Run type inference on lowered code.
       target = SPIRVTarget(mi, interp; inferred = false)
       infer(target)
     else
-      SPIRVTarget(mi, code, interp)
+      SPIRVTarget(mi, code_instance, interp)
     end
   else
-    SPIRVTarget(mi, lowered_code(mi), interp)
+    SPIRVTarget(mi, lowered_code(mi), interp, inferred)
   end
 end
 
@@ -64,39 +64,6 @@ function lowered_code(mi::MethodInstance)
   (@ccall jl_code_for_staged(mi::Any)::Any)::CodeInfo
 end
 inferred_code(ci::CodeInstance) = isa(ci.inferred, CodeInfo) ? ci.inferred : Core.Compiler._uncompressed_ir(ci, ci.inferred)
-
-function delete_blocks!(code::CodeInfo, block_ranges, g, to_delete)
-  for deleted in sort(to_delete; rev = true)
-    range = block_ranges[deleted]
-    splice!(code.code, range)
-    splice!(code.ssavaluetypes, range)
-    splice!(code.ssaflags, range)
-    splice!(code.codelocs, range)
-  end
-  splice!(block_ranges, to_delete)
-  rem_vertices!(g, to_delete)
-  recompute_ranges!(block_ranges)
-end
-
-function recompute_ranges!(block_ranges)
-  prev = 0
-  for (i, range) in enumerate(block_ranges)
-    nmissing = first(range) - (prev + 1)
-    !iszero(nmissing) && (block_ranges[i] = range .- nmissing)
-    prev = last(block_ranges[i])
-  end
-end
-
-function remove_nothing_entry_nodes!(code::CodeInfo, block_ranges, g, cfg::Core.Compiler.CFG)
-  to_delete = Int[]
-  for (i, range) in enumerate(block_ranges)
-    length(range) == 1 || continue
-    inst = code.code[range[1]]
-    inst === nothing && isempty(cfg.blocks[i].preds) && push!(to_delete, i)
-  end
-  isempty(to_delete) && return
-  delete_blocks!(code, block_ranges, g, to_delete)
-end
 
 function construct_cfg(cfg::Core.Compiler.CFG)
   g = DeltaGraph(length(cfg.blocks))
@@ -111,27 +78,13 @@ function construct_cfg(cfg::Core.Compiler.CFG)
   g
 end
 
-SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = SPIRVTarget(mi, inferred_code(ci), interp)
-function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter)
-  code = copy(code)
-  code.code = deepcopy(code.code)
-  code.codelocs = deepcopy(code.codelocs)
-  code.ssavaluetypes = deepcopy(code.ssavaluetypes)
-  code.ssaflags = deepcopy(code.ssaflags)
-  bbs = compute_basic_blocks(code.code)
-  indices = [1; bbs.index]
-  block_ranges = [indices[i]:(indices[i + 1] - 1) for i in 1:(length(indices) - 1)]
-  g = construct_cfg(bbs)
-  remove_nothing_entry_nodes!(code, block_ranges, g, bbs)
-  g = compact(g)
-  insts = [code.code[range] for range in block_ranges]
-
-  # Strip remaining meta expressions if any.
-  if !isempty(last(insts)) && all(Meta.isexpr(st, :meta) for st in last(insts))
-    pop!(insts)
-    deleteat!(code.code, pop!(indices) - 1)
-    rem_vertex!(g, nv(g))
-  end
+SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = SPIRVTarget(mi, inferred_code(ci), interp, true)
+function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter, inferred::Bool)
+  inferred && (code = apply_passes(code))
+  cfg_core = compute_basic_blocks(code.code)
+  g = construct_cfg(cfg_core)
+  ranges = block_ranges(cfg_core)
+  insts = [code.code[range] for range in ranges]
 
   # Try to validate the code upon failure to report more helpful errors.
   local cfg
@@ -143,7 +96,7 @@ function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpr
     rethrow()
   end
 
-  SPIRVTarget(mi, cfg, insts, indices, code, interp)
+  SPIRVTarget(mi, cfg, insts, ranges, code, interp)
 end
 
 "Run type inference on the given `MethodInstance`."
@@ -185,9 +138,13 @@ function Base.show(io::IO, target::SPIRVTarget)
   print(io, "SPIRVTarget ($(nv(target.cfg)) nodes, $(ne(target.cfg)) edges, $(sum(length, target.instructions)) instructions)")
 end
 
-function block_ranges(target::SPIRVTarget)
-  map(Base.splat(UnitRange), zip(target.indices[1:(end - 1)], target.indices[2:end] .- 1))
+function block_ranges(cfg::Core.Compiler.CFG)
+  indices = [1; cfg.index]
+  map(Base.splat(UnitRange), zip(indices[1:(end - 1)], indices[2:end] .- 1))
 end
+block_ranges(target::SPIRVTarget) = target.block_ranges
+block_index(cfg::Core.Compiler.CFG, i::Integer) = findfirst(>(i), cfg.index)
+basic_block(cfg::Core.Compiler.CFG, i::Integer) = cfg.blocks[block_index(cfg, i)]
 
 @forward SPIRVTarget.cfg (traverse, postdminator)
 
