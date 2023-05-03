@@ -96,7 +96,7 @@ function Shader(target::SPIRVTarget, interface::ShaderInterface, layout::Union{V
 
   Shader(ir, ep, layout, memory_resources(ir, ep))
 end
-Shader(mi::MethodInstance, interface::ShaderInterface, interp::SPIRVInterpreter, layout::Union{VulkanAlignment, LayoutStrategy}) = Shader(SPIRVTarget(mi, interp; inferred = true), interface, layout)
+Shader(mi::MethodInstance, interface::ShaderInterface, interp::SPIRVInterpreter, layout::Union{VulkanAlignment, LayoutStrategy}) = Shader(SPIRVTarget(mi, interp), interface, layout)
 
 function IR(target::SPIRVTarget, interface::ShaderInterface)
   mt = ModuleTarget()

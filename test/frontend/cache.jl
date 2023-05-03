@@ -8,7 +8,7 @@ using SPIRV, Test
   tcached = @elapsed @target interp f_straightcode(::Float32)
   @test tinfer > tcached
   @test tinfer / tcached > 5
-  old_target = @target infer = false interp f_straightcode(::Float32)
+  old_target = @target interp f_straightcode(::Float32)
 
   @eval function f_straightcode(x)
     y = x + 1
@@ -16,9 +16,9 @@ using SPIRV, Test
     z^2
   end
 
-  target = @target infer = false interp f_straightcode(::Float32)
-  @test !haskey(global_cache, target.mi)
-  tinvalidated = @elapsed @target interp f_straightcode(::Float32)
+  timed = @timed @target interp f_straightcode(::Float32)
+  target = timed.value
+  tinvalidated = timed.time
   @test tinvalidated > tcached
   @test tinvalidated / tcached > 5
   @test haskey(global_cache, target.mi)

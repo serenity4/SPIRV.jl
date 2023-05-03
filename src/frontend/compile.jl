@@ -44,7 +44,7 @@ ResultID(bb::Int, tr::Translation) = tr.bbs[bb]
 ResultID(val::Core.SSAValue, tr::Translation) = tr.results[val]
 
 function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}), args...; interp = SPIRVInterpreter())
-  compile(SPIRVTarget(f, argtypes; interp, inferred = true), args...)
+  compile(SPIRVTarget(f, argtypes; interp), args...)
 end
 
 compile(target::SPIRVTarget, args...) = compile!(ModuleTarget(), Translation(), target, args...)

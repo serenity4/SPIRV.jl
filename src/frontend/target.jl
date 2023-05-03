@@ -31,9 +31,9 @@ function method_instance(@nospecialize(f), argtypes::Type = Tuple{}, interp::SPI
   mis[1]
 end
 
-function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; inferred = true, interp::SPIRVInterpreter = SPIRVInterpreter())
+function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; interp::SPIRVInterpreter = SPIRVInterpreter())
   reset_world!(interp)
-  SPIRVTarget(method_instance(f, argtypes, interp), interp; inferred)
+  SPIRVTarget(method_instance(f, argtypes, interp), interp)
 end
 
 function method_instances(@nospecialize(f), @nospecialize(t), interp::SPIRVInterpreter)
@@ -43,26 +43,14 @@ function method_instances(@nospecialize(f), @nospecialize(t), interp::SPIRVInter
   map(Core.Compiler.specialize_method, matches)
 end
 
-function SPIRVTarget(mi::MethodInstance, interp::AbstractInterpreter; inferred = true)
-  if inferred
-    code_instance = get(interp.global_cache, mi, nothing)
-    if isnothing(code_instance)
-      # Run type inference on lowered code.
-      infer(mi, interp)
-      SPIRVTarget(mi, interp; inferred = true)
-    else
-      SPIRVTarget(mi, code_instance, interp)
-    end
-  else
-    SPIRVTarget(mi, lowered_code(mi), interp, inferred)
-  end
+function SPIRVTarget(mi::MethodInstance, interp::AbstractInterpreter)
+  code_instance = get(interp.global_cache, mi, nothing)
+  !isnothing(code_instance) && return SPIRVTarget(mi, code_instance, interp)
+  # Run type inference on lowered code.
+  infer(mi, interp)
+  SPIRVTarget(mi, interp)
 end
 
-function lowered_code(mi::MethodInstance)
-  !Base.hasgenerator(mi) && return uncompressed_ir(mi.def::Method)
-  Base.may_invoke_generator(mi) || error("cannot call @generated function `", mi, "` ")
-  (@ccall jl_code_for_staged(mi::Any)::Any)::CodeInfo
-end
 inferred_code(ci::CodeInstance) = isa(ci.inferred, CodeInfo) ? ci.inferred : Core.Compiler._uncompressed_ir(ci, ci.inferred)
 
 function construct_cfg(cfg::Core.Compiler.CFG)
@@ -78,9 +66,9 @@ function construct_cfg(cfg::Core.Compiler.CFG)
   g
 end
 
-SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = SPIRVTarget(mi, inferred_code(ci), interp, true)
-function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter, inferred::Bool)
-  inferred && (code = apply_passes(code))
+SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = SPIRVTarget(mi, inferred_code(ci), interp)
+function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter)
+  code = apply_passes(code)
   cfg_core = compute_basic_blocks(code.code)
   g = construct_cfg(cfg_core)
   ranges = block_ranges(cfg_core)
@@ -160,19 +148,11 @@ function get_signature(ex::Expr)
   end
 end
 
-macro target(infer, interp, ex)
+macro target(interp, ex)
   cfg_args = get_signature(ex)
-  infer = @match infer begin
-    :(infer = $val) && if isa(val, Bool)
-    end => val
-    _ => error("Invalid `infer` option, expected infer=<val> where <val> can be either true or false.")
-  end
-  :(SPIRVTarget($(esc.(cfg_args)...); inferred = $infer, interp = $(esc(interp))))
+  :(SPIRVTarget($(esc.(cfg_args)...); interp = $(esc(interp))))
 end
 
-macro target(interp, ex)
-  :($(esc(:($(@__MODULE__).@target infer = true $interp $ex))))
-end
 macro target(ex)
   :($(esc(:($(@__MODULE__).@target $(SPIRVInterpreter()) $ex))))
 end
