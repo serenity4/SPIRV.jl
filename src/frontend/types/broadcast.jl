@@ -50,6 +50,18 @@ function Base.copy(bc::Broadcasted{S}) where {S<:StyleOverride} # = copyto!(simi
   RT(compute_broadcast(bc′)...)
 end
 
+# Note: `combine_eltypes` has been reimplemented from `Base` to get a more stable IR.
+# FIXME: Unions are not handled properly at the moment. Base.promote_typejoin_union is not used
+# because it is not currently optimized away. Perhaps this might be due to the overlayed methods
+# being prevented from being evaluated during abstract interpretation.
+# So `Tuple{Union{A, B}, C}` would be returned instead of `Union{Tuple{A, C}, Tuple{B, C}}`.
+
+eltypes(t::Tuple{Any}) = Tuple{Broadcast._broadcast_getindex_eltype(t[1])}
+eltypes(t::Tuple{Any,Any}) = Tuple{Broadcast._broadcast_getindex_eltype(t[1]), Broadcast._broadcast_getindex_eltype(t[2])}
+eltypes(t::Tuple) = Tuple{ntuple(i -> Broadcast._broadcast_getindex_eltype(t[i]), length(t))...}
+
+@override Broadcast.combine_eltypes(f, args::Tuple) = Base._return_type(f, eltypes(args))
+
 function compute_broadcast(bc::Broadcasted{<:Union{VecStyle{N},ArrStyle{N}}}) where {N}
   new_args = ntuple(length(bc.args)) do i
     arg = bc.args[i]

@@ -31,7 +31,7 @@ function method_instance(@nospecialize(f), argtypes::Type = Tuple{}, interp::SPI
   mis[1]
 end
 
-function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; inferred = false, interp::SPIRVInterpreter = SPIRVInterpreter())
+function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; inferred = true, interp::SPIRVInterpreter = SPIRVInterpreter())
   reset_world!(interp)
   SPIRVTarget(method_instance(f, argtypes, interp), interp; inferred)
 end
@@ -43,13 +43,13 @@ function method_instances(@nospecialize(f), @nospecialize(t), interp::SPIRVInter
   map(Core.Compiler.specialize_method, matches)
 end
 
-function SPIRVTarget(mi::MethodInstance, interp::AbstractInterpreter; inferred = false)
+function SPIRVTarget(mi::MethodInstance, interp::AbstractInterpreter; inferred = true)
   if inferred
     code_instance = get(interp.global_cache, mi, nothing)
     if isnothing(code_instance)
       # Run type inference on lowered code.
-      target = SPIRVTarget(mi, interp; inferred = false)
-      infer(target)
+      infer(mi, interp)
+      SPIRVTarget(mi, interp; inferred = true)
     else
       SPIRVTarget(mi, code_instance, interp)
     end
@@ -122,16 +122,6 @@ function infer(mi::MethodInstance, interp::AbstractInterpreter)
   end
   haskey(global_cache, mi) || error("Could not get inferred code from cache.")
   true
-end
-
-"""
-Run type inference on the provided target.
-
-The internal `MethodInstance` of the original target gets mutated in the process.
-"""
-function infer(target::SPIRVTarget)
-  infer(target.mi, target.interp)
-  SPIRVTarget(target.mi, target.interp, inferred = true)
 end
 
 function Base.show(io::IO, target::SPIRVTarget)

@@ -44,15 +44,14 @@ ResultID(bb::Int, tr::Translation) = tr.bbs[bb]
 ResultID(val::Core.SSAValue, tr::Translation) = tr.results[val]
 
 function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}), args...; interp = SPIRVInterpreter())
-  compile(SPIRVTarget(f, argtypes; interp), args...)
+  compile(SPIRVTarget(f, argtypes; interp, inferred = true), args...)
 end
 
 compile(target::SPIRVTarget, args...) = compile!(ModuleTarget(), Translation(), target, args...)
 
 function compile!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables::Dictionary{Int,Variable} = Dictionary{Int,Variable}())
   # TODO: restructure CFG
-  inferred = infer(target)
-  emit!(mt, tr, inferred, variables)
+  emit!(mt, tr, target, variables)
   mt
 end
 
