@@ -40,16 +40,16 @@ new_ssa_value(new::NewCodeInfo, old) = old
 
 function adjust_ssa_values!(new::NewCodeInfo)
   replace(old) = new_ssa_value(new, old)
-  replace_if_coressa(old) = isa(old, Core.SSAValue) ? new_ssa_value(new, old) : old
+  replace_ssa(old) = isa(old, Core.SSAValue) ? new_ssa_value(new, old) : old
   for (i, inst) in enumerate(new.insts)
     adjusted = @match inst begin
       ::Core.GotoNode => Core.GotoNode(replace(inst.label))
       ::Core.GotoIfNot => Core.GotoIfNot(replace.((inst.cond, inst.dest))...)
-      ::Core.PhiNode => Core.PhiNode(Int32[replace(e) for e in inst.edges], Any[replace(v) for v in inst.values])
-      ::Core.ReturnNode && if isdefined(inst, :val) end => Core.ReturnNode(replace_if_coressa(inst.val))
+      ::Core.PhiNode => Core.PhiNode(Int32[replace(e) for e in inst.edges], Any[replace_ssa(v) for v in inst.values])
+      ::Core.ReturnNode && if isdefined(inst, :val) end => Core.ReturnNode(replace_ssa(inst.val))
       ::Expr && if any(isa(arg, Core.SSAValue) && new.from_ssavalues[arg.id] for arg in inst.args) end => begin
           ex = Expr(inst.head)
-          append!(ex.args, replace_if_coressa.(inst.args))
+          append!(ex.args, replace_ssa.(inst.args))
           ex
         end
       _ => nothing
