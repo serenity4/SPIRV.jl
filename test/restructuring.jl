@@ -161,4 +161,9 @@ end
   add_merge_headers!(ir)
   @test isempty(conflicted_merge_blocks(fdef))
   @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g17())
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test unwrap(validate(ir))
 end;

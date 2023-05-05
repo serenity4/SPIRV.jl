@@ -82,13 +82,18 @@ end
 
 function merge_candidate_loop(ctree::ControlTree, cfg::AbstractGraph)
   is_loop(ctree) || error("Cannot determine merge candidates for a node that is not a loop.")
-  scc = node_index.(Leaves(ctree))
+  node = node_index(ctree)
+  sccs = strongly_connected_components(cfg)
+  scc = sccs[findfirst(x -> node in x, sccs)]
   set = Set(scc)
   for v in scc
     for w in outneighbors(cfg, v)
       !in(w, set) && return w
     end
   end
+  i = findfirst(!in(scc), outneighbors(cfg, node))
+  isnothing(i) && error("Infinite loop detected; no merge candidate could be found.")
+  outneighbors(cfg, node)[i]
 end
 
 struct RestructureMergeBlocks <: FunctionPass
