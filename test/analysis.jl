@@ -37,6 +37,8 @@ g14() = DeltaGraph(1 => 5, 5 => 2, 5 => 6, 1 => 3, 2 => 4, 4 => 2, 2 => 3)
 g15() = DeltaGraph(1 => 2, 1 => 3, 2 => 4, 2 => 5, 3 => 6, 3 => 7, 4 => 8, 5 => 8, 6 => 8, 7 => 8)
 "CFG with three nested `if-else` statements sharing the same merge block."
 g16() = DeltaGraph(1 => 2, 1 => 8, 2 => 3, 2 => 4, 3 => 5, 3 => 6, 5 => 7, 6 => 7, 4 => 7, 8 => 7)
+"Example from https://github.com/KhronosGroup/SPIRV-Tools/pull/5069"
+g17() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6)
 
 test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
 
@@ -498,6 +500,20 @@ end
             ControlTree(8, REGION_BLOCK),
           ]),
           ControlTree(7, REGION_BLOCK),
+        ])
+
+        g = g17()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_NATURAL_LOOP, [
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
+            ]),
+          ControlTree(5, REGION_BLOCK),
+          ControlTree(6, REGION_BLOCK),
         ])
       end
     end
