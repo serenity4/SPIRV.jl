@@ -109,6 +109,19 @@ function Base.merge(xs::Decorations...)
   res
 end
 
+function Base.show(io::IO, decs::Decorations)
+  print(io, Decorations, '(')
+  extract_args(dec) = nothing
+  extract_args(dec, value) = value
+  for (i, dec) in enumerate(sort(collect(decs.defined)))
+    i > 1 && print(io, ", ")
+    print(io, dec)
+    value = extract(extract_args, decs, dec)
+    !isnothing(value) && print(io, " = ", value)
+  end
+  print(io, ')')
+end
+
 append_decorations!(insts, id::ResultID, decs::Decorations, member_index::Signed) = append_decorations!(insts, id, decs, UInt32(member_index - 1))
 function append_decorations!(insts, id::ResultID, decs::Decorations, member_index::Optional{UInt32} = nothing)
   for dec in sort(collect(decs.defined))
