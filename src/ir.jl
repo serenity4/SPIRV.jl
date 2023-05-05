@@ -169,6 +169,14 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
         ex = Expression(inst, types)
         push!(current_function, Block(ex.result))
       end
+      @case "Miscellaneous"
+      if opcode == OpUndef
+        ex = Expression(inst, types)
+        # TODO: Handle `Undef`
+        # This currently breaks because `Undef` instructions are not `Variable`s.
+        # insert!(ir.global_vars, result_id, Variable(ex))
+        @warn "OpUndef instructions at top-level are not yet supported; skipping"
+      end
     end
     if !isnothing(current_function) && !isempty(current_function.blocks) && opcode ≠ OpVariable
       ex = Expression(inst, types)
