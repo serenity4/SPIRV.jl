@@ -5,7 +5,7 @@ end
 
 Block(id::ResultID) = Block(id, Expression[])
 
-@forward Block.exs (Base.getindex, Base.iterate, Base.length, Base.keys, Base.push!, Base.pushfirst!, Base.pop!, Base.popfirst!, Base.firstindex, Base.lastindex, Base.insert!, Base.view)
+@forward Block.exs (Base.getindex, Base.setindex!, Base.iterate, Base.length, Base.keys, Base.push!, Base.pushfirst!, Base.pop!, Base.popfirst!, Base.firstindex, Base.lastindex, Base.insert!, Base.view)
 
 function termination_instruction(blk::Block)
   ex = blk[end]
@@ -14,7 +14,7 @@ function termination_instruction(blk::Block)
 end
 
 function merge_header(blk::Block)
-  ex = blk[end]
+  ex = blk[end - 1]
   @assert is_merge_instruction(ex)
   ex
 end

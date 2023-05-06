@@ -37,8 +37,10 @@ g14() = DeltaGraph(1 => 5, 5 => 2, 5 => 6, 1 => 3, 2 => 4, 4 => 2, 2 => 3)
 g15() = DeltaGraph(1 => 2, 1 => 3, 2 => 4, 2 => 5, 3 => 6, 3 => 7, 4 => 8, 5 => 8, 6 => 8, 7 => 8)
 "CFG with three nested `if-else` statements sharing the same merge block."
 g16() = DeltaGraph(1 => 2, 1 => 8, 2 => 3, 2 => 4, 3 => 5, 3 => 6, 5 => 7, 6 => 7, 4 => 7, 8 => 7)
-"Example from https://github.com/KhronosGroup/SPIRV-Tools/pull/5069"
+"Straight CFG with a loop in the middle, where the loop merge is reachable from the loop header. Used to make sure that we don't create a termination region involving the loop header and that we don't treat the loop as the final element of the CFG."
 g17() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6)
+"CFG with a loop whose header branches to two blocks that are not the continue target or merge block."
+g18() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 5 => 6, 5 => 2)
 
 test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
 

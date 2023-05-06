@@ -247,7 +247,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
         1 => Decorations(SPIRV.DecorationLocation, 0),
         2 => Decorations(SPIRV.DecorationLocation, 0),
         3 => Decorations(SPIRV.DecorationDescriptorSet, 0).decorate!(SPIRV.DecorationBinding, 0),
-        4 => Decorations(SPIRV.DecorationLocation, 2),
+        4 => Decorations(SPIRV.DecorationLocation, 2).decorate!(SPIRV.DecorationFlat),
         5 => Decorations(SPIRV.DecorationLocation, 3),
       ]),
       features = SUPPORTED_FEATURES,

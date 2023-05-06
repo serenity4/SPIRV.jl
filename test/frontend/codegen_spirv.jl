@@ -415,6 +415,6 @@ SUPPORTED_FEATURES = SupportedFeatures(
     @test unwrap(validate(@compile (x -> round(x, RoundNearest))(::Float32)))
     @test unwrap(validate(@compile trunc(::Float32)))
     @test unwrap(validate(@compile (x -> trunc(UInt32, x))(::Float32)))
-    @test_throws "Memory accesses with PhysicalStorageBufferEXT must use Aligned" unwrap(validate(@compile (x -> @store x::Int32 = Int32(0))(::UInt64)))
+    @test_throws "Memory accesses with PhysicalStorageBuffer must use Aligned" unwrap(validate(@compile (x -> @store x::Int32 = Int32(0))(::UInt64)))
   end
 end;

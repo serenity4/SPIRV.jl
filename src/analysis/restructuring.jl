@@ -128,6 +128,8 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
     # We will in general have only one branching block for selection constructs
     # and possibly multiple ones for loops (as break statements are allowed).
     # TODO: Optimize this by using the property above to avoid traversing all leaves.
+    # We don't use `inneighbors` here because the CFG may have changed. Using control tree leaves
+    # is more robust and will prevent us from having to rebuild the CFG in that case.
     branching_blks = Block[fdef[node_index(tree)] for tree in Leaves(ctree) if in(merge_inner, outneighbors(cfg, node_index(tree)))]
     new = new_block!(fdef, next!(pass!.idcounter))
 
@@ -156,19 +158,19 @@ function nesting_levels!(nesting_levels, ctree::ControlTree, level::Integer)
   nesting_levels
 end
 
-function redirect_branches!(branching_blks::AbstractVector{Block}, dst::ResultID, new::ResultID)
-  for blk in branching_blks
+function redirect_branches!(from::AbstractVector{Block}, to::ResultID, new::ResultID)
+  for blk in from
     ex = termination_instruction(blk)
     @switch ex.op begin
       @case &OpBranch
       ex[1] = new
 
       @case &OpBranchConditional
-      index = findfirst(==(dst), ex)
+      index = findfirst(==(to), ex)
       ex[index] = new
 
       @case &OpSwitch
-      indices = findall(==(dst), ex)
+      indices = findall(==(to), ex)
       ex[indices] .= new
     end
   end
@@ -187,8 +189,8 @@ target be fully covered by the branching blocks, it will be transformed into a s
 Noting that the target block may have several `OpPhi` instructions involving all or part of the branching blocks, the intercepting block will end up
 with possibly more than one corresponding `OpPhi` instructions.
 """
-function intercept_phi_instructions!!(idcounter::IDCounter, from::AbstractVector{Block}, intercepter::Block, target::Block)
-  exs = phi_expressions(target)
+function intercept_phi_instructions!!(idcounter::IDCounter, from::AbstractVector{Block}, intercepter::Block, to::Block)
+  exs = phi_expressions(to)
 
   # Mapping from original Phi instructions to Phi instructions in the intercepter.
   intercepts = IdDict{Expression,Expression}()
@@ -245,4 +247,72 @@ function merge_blocks(fdef::FunctionDefinition)
     end
   end
   merge_blks
+end
+
+"""
+Apply the following SPIR-V rule to loop headers:
+> An OpSelectionMerge instruction is required to precede an OpBranchConditional instruction that has different True Label and False Label operands where neither are declared merge blocks or Continue Targets.
+
+This is done by turning a conditional branch in a loop header that does not target either the continue target or merge block into a simple branch to a new block which will make the original branching. Using a new block ensures that there is the possibility of adding an OpSelectionMerge header as the loop header already has an OpLoopMerge.
+"""
+struct RestructureLoopHeaderConditionals <: FunctionPass
+  idcounter::IDCounter
+end
+RestructureLoopHeaderConditionals(ir::IR) = RestructureLoopHeaderConditionals(ir.idcounter)
+new_function!(pass!::RestructureLoopHeaderConditionals, fdef::FunctionDefinition) = nothing
+
+restructure_loop_header_conditionals!(ir::IR) = RestructureLoopHeaderConditionals(ir)(ir)
+
+function (pass!::RestructureLoopHeaderConditionals)(fdef::FunctionDefinition)
+  cfg = ControlFlowGraph(fdef)
+  ctree_global = ControlTree(cfg)
+
+  for ctree in PostOrderDFS(ctree_global)
+    is_loop(ctree) || continue
+    header = ctree[1]
+    is_selection(header) || continue
+    v = node_index(header)
+    blk = fdef[v]
+    merge_header_inst = merge_header(blk)
+    @assert opcode(merge_header_inst) === OpLoopMerge "Expected OpLoopMerge, got $(opcode(merge_header_inst))"
+    merge = merge_header_inst[1]::ResultID
+    cont = merge_header_inst[2]::ResultID
+    any(in(fdef.block_ids[w], (merge, cont)) for w in outneighbors(cfg, v)) && continue
+    new = new_block!(fdef, next!(pass!.idcounter))
+    intercept_phi_instructions!(Block[fdef[w] for w in outneighbors(cfg, v)], blk, new)
+    vmerge = merge_candidate(header, cfg)::Int
+    merge_blk = fdef[vmerge]
+
+    if merge_blk.id == cont
+      # A continue target cannot be a merge point for a selection construct.
+      branching_blks = Block[fdef[u] for u in inneighbors(cfg, vmerge)]
+      new2 = new_block!(fdef, next!(pass!.idcounter))
+
+      redirect_branches!(branching_blks, merge_blk.id, new2.id)
+
+      # Intercept OpPhi instructions in the original merge block by the new block.
+      intercept_phi_instructions!!(pass!.idcounter, branching_blks, new2, merge_blk)
+
+      push!(new2, @ex OpBranch(merge_blk.id))
+      push!(new, @ex OpSelectionMerge(new2.id, SelectionControlNone))
+    else
+      push!(new, @ex OpSelectionMerge(merge_blk.id, SelectionControlNone))
+    end
+
+    push!(new, blk[end])
+    blk[end] = @ex OpBranch(new.id)
+  end
+end
+
+"""
+Intercept `OpPhi` instructions involving a source block in a set of targets, and replace the source block by an intercepting block.
+"""
+function intercept_phi_instructions!(to::AbstractVector{Block}, from::Block, intercepter::Block)
+  for blk in to
+    for ex in phi_expressions(blk)
+      i = findfirst(==(from.id), ex)
+      isnothing(i) && continue
+      ex[i] = intercepter.id
+    end
+  end
 end

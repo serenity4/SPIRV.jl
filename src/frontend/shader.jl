@@ -33,6 +33,7 @@ function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterfa
 
   restructure_merge_blocks!(ir)
   add_merge_headers!(ir)
+  restructure_loop_header_conditionals!(ir)
 
   ir
 end

@@ -1,5 +1,5 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: nesting_levels, merge_blocks, conflicted_merge_blocks, restructure_merge_blocks!, add_merge_headers!, id_bound, nexs, opcode
+using SPIRV: nesting_levels, merge_blocks, conflicted_merge_blocks, restructure_merge_blocks!, add_merge_headers!, restructure_loop_header_conditionals!, id_bound, nexs, opcode
 
 """
 Generate a minimal SPIR-V IR or module which contains dummy blocks realizing the provided control-flow graph.
@@ -165,5 +165,15 @@ end
   ir = ir_from_cfg(g17())
   restructure_merge_blocks!(ir)
   add_merge_headers!(ir)
+  @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g18())
+  # For some reason, we need the GLSL memory model to trigger the validation error.
+  push!(empty!(ir.capabilities), SPIRV.CapabilityShader)
+  ir.memory_model = SPIRV.MemoryModelGLSL450
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test_throws "Selection must be structured" unwrap(validate(ir))
+  restructure_loop_header_conditionals!(ir)
   @test unwrap(validate(ir))
 end;
