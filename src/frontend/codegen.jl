@@ -24,19 +24,22 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         # and for SPIR-V code there is no way to express such checks.
         composite = args[1]
         field_idx = @match args[2] begin
-          node::QuoteNode => begin
-            node.value::Symbol
-            sym = (args[2]::QuoteNode).value::Symbol
-            T = get_type(composite, target)
-            T <: Union{Arr, Vec, Mat} && sym === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden")
-            field_idx = findfirst(==(sym), fieldnames(T))
-            !isnothing(field_idx) || throw_compilation_error("symbol $(repr(sym)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
-            field_idx
-          end
+          node::QuoteNode => get_field_index(composite, node, target)
           idx::Integer => idx
-          idx::Core.SSAValue => throw_compilation_error("dynamic access into tuple or struct members is not yet supported")
+          idx::Core.SSAValue => throw_compilation_error("dynamic access into tuple or struct members is not supported")
         end
         (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
+      end
+      &setfield! => begin
+        composite = args[1]
+        field_idx = @match args[2] begin
+          node::QuoteNode => get_field_index(composite, node, target)
+          idx::Core.SSAValue => throw_compilation_error("dynamic access into tuple or struct members is not supported")
+          idx::Integer => idx
+          field => throw_compilation_error("unknown field type $(typeof(field))")
+        end
+        value = args[3]
+        throw_compilation_error("`setfield!` not supported at the moment")
       end
       &Core.tuple => (OpCompositeConstruct, args) # throw_compilation_error("the function `Core.tuple` is not supported at the moment")
       ::Function => throw_compilation_error("dynamic dispatch detected for function $f. All call sites must be statically resolved")
@@ -101,6 +104,16 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
 
   ex = @ex result = opcode(args...)::type
   (ex, type)
+end
+
+function get_field_index(composite_type, field::QuoteNode, target::SPIRVTarget)
+  isa(field.value, Symbol) || throw_compilation_error("`Symbol` value expected in `QuoteNode`, got $(repr(node.value))")
+  name = field.value::Symbol
+  T = get_type(composite_type, target)
+  T <: Union{Arr, Vec, Mat} && name === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden")
+  index = findfirst(==(name), fieldnames(T))
+  !isnothing(index) || throw_compilation_error("symbol $(repr(name)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
+  index
 end
 
 function lookup_opcode(fname::Symbol)
