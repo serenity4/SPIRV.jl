@@ -83,8 +83,9 @@ end
 function merge_candidate_loop(ctree::ControlTree, cfg::AbstractGraph)
   is_loop(ctree) || error("Cannot determine merge candidates for a node that is not a loop.")
   node = node_index(ctree)
-  sccs = strongly_connected_components(cfg)
-  scc = sccs[findfirst(x -> node in x, sccs)]
+  # TODO: Leverage the control tree when we figure out how to deal with embedded termination regions (which are not part of the SCC).
+  # scc = node_index.(Leaves(ctree))
+  scc = minimal_cyclic_component(cfg, node, backedges(cfg))
   set = Set(scc)
   for v in scc
     for w in outneighbors(cfg, v)
