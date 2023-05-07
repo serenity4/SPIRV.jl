@@ -12,6 +12,7 @@ load_module(file) = load_module(load_module_expr(file))
 @testset "SPIRV.jl" begin
   include("deltagraph.jl");
   include("utilities.jl");
+  include("formats.jl")
   include("modules.jl");
   include("spir_types.jl");
   include("metadata.jl");

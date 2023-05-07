@@ -22,6 +22,9 @@ SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
 SwapStreams = "0b152c4a-7e29-418b-9258-223db38db9d9"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
+[weakdeps]
+Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
+
 [compat]
 AbstractTrees = "0.4"
 Accessors = "0.1"
@@ -38,9 +41,12 @@ SnoopPrecompile = "1"
 SwapStreams = "0.2"
 julia = "1.9"
 
+[extensions]
+SPIRVVulkanExt = "Vulkan"
+
 [extras]
 MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MetaGraphs"]
+test = ["Test", "MetaGraphs", "Vulkan"]
