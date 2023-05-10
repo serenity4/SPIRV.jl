@@ -150,7 +150,7 @@ end
 
 macro target(interp, ex)
   cfg_args = get_signature(ex)
-  :(SPIRVTarget($(esc.(cfg_args)...); interp = $(esc(interp))))
+  :($SPIRVTarget($(esc.(cfg_args)...); interp = $(esc(interp))))
 end
 
 macro target(ex)
