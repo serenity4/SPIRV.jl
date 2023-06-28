@@ -41,7 +41,7 @@ end
 # Constructor adapted from Julia's `NativeInterpreter`.
 function SPIRVInterpreter(
   world::UInt = get_world_counter();
-  inf_params = (@static if VERSION ≥ v"1.9"
+  inf_params = (@static if VERSION ≥ v"1.10"
      InferenceParams(
       aggressive_constant_propagation = false, # XXX: this prevents `Base.getproperty(::Vec{2, Float64}, ::Symbol)` from being inlined for some reason.
       assume_bindings_static = true,

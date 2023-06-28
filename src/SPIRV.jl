@@ -15,6 +15,7 @@ using SwapStreams: SwapStream
 using BitMasks
 using UUIDs: UUID, uuid1
 using SnoopPrecompile
+using Forward
 import Serialization: serialize, deserialize
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
