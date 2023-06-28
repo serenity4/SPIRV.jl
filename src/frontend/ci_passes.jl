@@ -87,6 +87,7 @@ function code_info(code::NewCodeInfo)
     from.inferred,
     from.propagate_inbounds,
     from.has_fcall,
+    from.nospecializeinfer,
     from.inlining,
     from.constprop,
     from.purity,
