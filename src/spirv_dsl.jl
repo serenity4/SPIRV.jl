@@ -13,7 +13,8 @@ end
 
 Bindings() = Bindings(Dictionary())
 
-@forward Bindings.dict (Base.insert!, Base.setindex!, Dictionaries.set!, Base.pairs)
+@forward_interface Bindings field = :dict interface = dict
+@forward_methods Bindings field = :dict Base.insert!(_, i, item) Dictionaries.set!(_, i, item)
 
 Base.merge(x::Bindings, y::Bindings) = Bindings(merge(x.dict, y.dict))
 

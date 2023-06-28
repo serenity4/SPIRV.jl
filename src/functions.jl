@@ -5,7 +5,8 @@ end
 
 Block(id::ResultID) = Block(id, Expression[])
 
-@forward Block.exs (Base.getindex, Base.setindex!, Base.iterate, Base.length, Base.keys, Base.push!, Base.pushfirst!, Base.pop!, Base.popfirst!, Base.firstindex, Base.lastindex, Base.insert!, Base.view)
+@forward_interface Block field = :exs interface = [iteration, indexing]
+@forward_methods Block field = :exs Base.insert!(_, args...) Base.push!(_, ex::Expression) Base.view(_, range)
 
 function termination_instruction(blk::Block)
   ex = blk[end]
@@ -51,7 +52,8 @@ end
   global_vars::Vector{ResultID}
 end
 
-@forward FunctionDefinition.blocks (Base.iterate, Base.length, Base.keys, Base.firstindex, Base.lastindex)
+@forward_interface FunctionDefinition field = :blocks interface = [indexing, iteration]
+@forward_methods FunctionDefinition field = :blocks Base.push!(_, ex::Expression)
 
 Base.getindex(fdef::FunctionDefinition, id::ResultID) = fdef.blocks[id]
 Base.getindex(fdef::FunctionDefinition, idx::Integer) = fdef[fdef.block_ids[idx]]

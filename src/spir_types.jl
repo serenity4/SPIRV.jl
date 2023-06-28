@@ -180,7 +180,7 @@ Base.showerror(io::IO, exc::UnknownType) = print(io, "UnknownType: ", exc.msg)
 
 TypeMap() = TypeMap(Dictionary())
 
-@forward TypeMap.d (Base.haskey, Base.get, Base.get!, Base.iterate, Base.keys, Base.length, Base.insert!)
+@forward_interface TypeMap field = :d interface = dict omit = [getindex, setindex!]
 Base.setindex!(tmap::TypeMap, type::SPIRType, T::DataType) = set!(tmap.d, T, type)
 function Base.merge!(x::TypeMap, y::TypeMap)
   merge!(x.d, y.d)

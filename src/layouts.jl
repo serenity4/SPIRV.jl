@@ -207,8 +207,8 @@ end
 
 TypeMetadata(tmap::TypeMap = TypeMap()) = TypeMetadata(tmap, Dictionary())
 
-@forward TypeMetadata.d (metadata!, has_decoration, decorate!, decorations)
-Base.getindex(tmeta::TypeMetadata, T::DataType) = getindex(tmeta.tmap, T)
+@forward_methods TypeMetadata field = :d metadata!(_, args...) has_decoration(_, args...) decorate!(_, args...) decorations(_, args...)
+@forward_methods TypeMetadata field = :tmap Base.getindex(_, T::DataType)
 
 function TypeMetadata(ir::IR)
   tmeta = TypeMetadata(ir.tmap)

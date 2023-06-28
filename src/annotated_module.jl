@@ -62,7 +62,7 @@ Any desired modifications of annotated modules should be staged and applied via 
   AnnotatedModule(mod::Module, c::InstructionCursor) = new(mod, c)
 end
 
-@forward AnnotatedModule.mod (Base.getindex, Base.lastindex, Base.view)
+@forward_methods AnnotatedModule field = :mod Base.getindex(_, i) Base.lastindex Base.view(_, inds...)
 
 Module(amod::AnnotatedModule) = amod.mod
 

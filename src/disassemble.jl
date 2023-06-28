@@ -66,7 +66,7 @@ struct IndentedIO{T<:IO} <: IO
   indent_level::Int
 end
 
-@forward IndentedIO.io (Base.unsafe_read, Base.eof, Base.get)
+@forward_methods IndentedIO field = :io Base.unsafe_read Base.eof Base.get(_, args...)
 
 indent(io::IO, level) = IndentedIO(io, level)
 indent(io::IndentedIO, level) = indent(io.io, level + io.indent_level)

@@ -26,8 +26,8 @@ The ID counter can also be incremented without notice.
   tmap::TypeMap
 end
 
-@forward IR.metadata (decorate!, metadata!, has_decoration, decorations, set_name!)
-@forward IR.fdefs (Base.iterate,)
+@forward_methods IR field = :metadata decorate!(_, args...) metadata!(_, args...) has_decoration(_, args...) decorations(_, args...) set_name!(_, args...)
+@forward_methods IR field = :fdefs Base.iterate(_, args...)
 
 Base.getindex(ir::IR, i::Int) = collect(ir.fdefs)[i]
 

@@ -14,7 +14,7 @@ struct StackTrace
 end
 StackTrace() = StackTrace(StackFrame[])
 
-@forward StackTrace.frames (Base.push!, Base.pop!, Base.isempty, Base.getindex, Base.lastindex)
+@forward_methods StackTrace field = :frames Base.push!(_, args...) Base.pop!(_, item) Base.isempty Base.getindex(_, key) Base.lastindex
 push(stacktrace::StackTrace, frame::StackFrame) = StackTrace([stacktrace.frames; frame])
 
 Base.getindex(stacktrace::StackTrace, range::UnitRange) = StackTrace(stacktrace.frames[range])

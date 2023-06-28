@@ -38,7 +38,7 @@ function Dictionaries.sortkeys!(bmap::BijectiveMapping)
   sort!(bmap.backward)
 end
 
-@forward BijectiveMapping.forward (Base.pairs, Base.iterate, Base.keys, Base.length)
+@forward_methods BijectiveMapping field = :forward Base.pairs Base.iterate(_, args...) Base.keys Base.length
 
 function Base.show(io::IO, ::MIME"text/plain", bmap::BijectiveMapping)
   isempty(bmap) && return print(io, BijectiveMapping, "({})")

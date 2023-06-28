@@ -148,7 +148,7 @@ end
   ControlFlowGraph(g::G, dfst::SpanningTreeDFS{G}, ec::EdgeClassification{E}, is_reducible::Bool, is_structured::Bool) where {T, G<:AbstractGraph{T}, E<:AbstractEdge} = new{E,T,G}(g, dfst, ec, is_reducible, is_structured)
 end
 
-@forward ControlFlowGraph.g (Graphs.vertices, Graphs.edges, Graphs.add_edge!, Base.eltype, Graphs.edgetype, Graphs.add_vertex!, Graphs.rem_edge!, Graphs.rem_vertex!, Graphs.rem_vertices!, Graphs.inneighbors, Graphs.outneighbors, Graphs.nv, Graphs.ne, dominators)
+@forward_methods ControlFlowGraph field = :g Graphs.vertices Graphs.edges Graphs.add_edge!(_, e) Base.eltype Graphs.edgetype Graphs.add_vertex!(_, v) Graphs.rem_edge!(_, e) Graphs.rem_vertex!(_, v) Graphs.rem_vertices!(_, vs) Graphs.inneighbors(_, v) Graphs.outneighbors(_, v) Graphs.nv Graphs.ne dominators
 
 Graphs.is_directed(::Type{<:ControlFlowGraph}) = true
 

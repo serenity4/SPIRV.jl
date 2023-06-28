@@ -124,7 +124,7 @@ block_ranges(target::SPIRVTarget) = target.block_ranges
 block_index(cfg::Core.Compiler.CFG, i::Integer) = findfirst(>(i), cfg.index)
 basic_block(cfg::Core.Compiler.CFG, i::Integer) = cfg.blocks[block_index(cfg, i)]
 
-@forward SPIRVTarget.cfg (traverse, postdminator)
+@forward_methods SPIRVTarget field = :cfg traverse
 
 get_signature(f::Symbol) = (f,)
 function argtype(arg)

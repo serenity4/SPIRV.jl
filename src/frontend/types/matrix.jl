@@ -34,7 +34,7 @@ nrows(::Type{<:Mat{N}}) where {N} = N
 ncols(::Type{<:Mat{N,M}}) where {N,M} = M
 coltype(::Type{Mat{N,M,T}}) where {N,M,T} = Vec{N,T}
 
-@forward_to_type Mat (nrows, ncols, coltype)
+@forward_methods Mat field = typeof(_) nrows ncols coltype
 
 column(mat::Mat, i::Integer) = CompositeExtract(mat, unsigned_index(i))
 @noinline CompositeExtract(mat::Mat, i::UInt32) = coltype(mat)(mat.cols[i + 1]...)

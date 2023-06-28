@@ -9,7 +9,7 @@ struct ModuleTarget
   idcounter::IDCounter
 end
 
-@forward ModuleTarget.metadata (metadata!, decorations!, decorations, has_decoration, decorate!)
+@forward_methods ModuleTarget field = :metadata metadata!(_, args...) decorations!(_, args...) decorations(_, args...) has_decoration(_, args...) decorate!(_, args...)
 
 ModuleTarget() = ModuleTarget(Dictionary(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), ResultDict(), DebugInfo(), IDCounter(0))
 

@@ -82,7 +82,7 @@ struct Shader
   memory_resources::ResultDict{MemoryResource}
 end
 
-@forward Shader.ir (Module, assemble)
+@forward_methods Shader field = :ir Module assemble
 
 validate(shader::Shader) = validate_shader(shader.ir)
 

@@ -262,7 +262,8 @@ function strip_debug_info!(mod::Module)
 end
 strip_debug_info(mod::Module) = strip_debug_info!(@set mod.instructions = deepcopy(mod.instructions))
 
-@forward Module.instructions (Base.iterate, Base.getindex, Base.setindex!, Base.firstindex, Base.lastindex, Base.length, Base.view)
+@forward_interface Module field = :instructions interface = [indexing, iteration]
+@forward_methods Module field = :instructions Base.view(_, args...)
 
 function Base.getindex(mod::Module, id::ResultID)
   for inst in mod.instructions
