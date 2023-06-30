@@ -1,0 +1,21 @@
+Capability(SPIRV.CapabilityShader)
+MemoryModel(SPIRV.AddressingModelPhysicalStorageBuffer64, SPIRV.MemoryModelGLSL450)
+Nothing = TypeVoid()
+Bool = TypeBool()
+@function f()::Nothing begin
+  entry = Label()
+  Branch(loop)
+  loop = OpLabel()
+  cond = Undef()::Bool
+  LoopMerge(exit, _continue, SPIRV.SelectionControlNone)
+  SelectionMerge(then, SPIRV.SelectionControlNone)
+  BranchConditional(cond, then, _else)
+  then = Label()
+  Branch(_continue)
+  _else = Label()
+  Branch(exit)
+  _continue = Label()
+  Branch(loop)
+  exit = Label()
+  Return()
+end
