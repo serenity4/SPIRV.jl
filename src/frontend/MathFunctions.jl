@@ -11,7 +11,7 @@ using ..SPIRV: AbstractSPIRVArray, U, F
 
 import LinearAlgebra: norm, normalize
 
-export lerp, slerp_2d, angle_2d, rotate_2d, normalize, distance2, distance, norm, compute_roots, saturated_softmax, linearstep, smoothstep, smootherstep
+export lerp, slerp_2d, angle_2d, rotate_2d, normalize, distance2, distance, norm, compute_roots, saturated_softmax, linearstep, smoothstep, smootherstep, remap
 
 lerp(x, y, t) = x * t + (1 - t)y
 
