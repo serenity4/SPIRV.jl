@@ -44,7 +44,7 @@ Reexport = "1"
 ResultTypes = "3"
 SnoopPrecompile = "1"
 SwapStreams = "0.2"
-julia = "1.10"
+julia = "1.9"
 
 [extras]
 MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"

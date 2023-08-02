@@ -69,30 +69,56 @@ function code_info(code::NewCodeInfo)
   ssavaluetypes = from.ssavaluetypes[code.from_ssavalues]
   ssaflags = from.ssaflags[code.from_ssavalues]
 
-  new_code = _CodeInfo(
-    code.insts,
-    codelocs,
-    ssavaluetypes,
-    ssaflags,
-    from.method_for_inference_limit_heuristics,
-    from.linetable,
-    from.slotnames,
-    from.slotflags,
-    from.slottypes,
-    from.rettype,
-    from.parent,
-    from.edges,
-    from.min_world,
-    from.max_world,
-    from.inferred,
-    from.propagate_inbounds,
-    from.has_fcall,
-    from.nospecializeinfer,
-    from.inlining,
-    from.constprop,
-    from.purity,
-    from.inlining_cost,
-  )
+  @static if VERSION < v"1.10-DEV"
+    new_code = _CodeInfo(
+      code.insts,
+      codelocs,
+      ssavaluetypes,
+      ssaflags,
+      from.method_for_inference_limit_heuristics,
+      from.linetable,
+      from.slotnames,
+      from.slotflags,
+      from.slottypes,
+      from.rettype,
+      from.parent,
+      from.edges,
+      from.min_world,
+      from.max_world,
+      from.inferred,
+      from.inlining_cost,
+      from.propagate_inbounds,
+      from.pure,
+      from.has_fcall,
+      from.constprop,
+      from.purity,
+    )
+  else
+    new_code = _CodeInfo(
+      code.insts,
+      codelocs,
+      ssavaluetypes,
+      ssaflags,
+      from.method_for_inference_limit_heuristics,
+      from.linetable,
+      from.slotnames,
+      from.slotflags,
+      from.slottypes,
+      from.rettype,
+      from.parent,
+      from.edges,
+      from.min_world,
+      from.max_world,
+      from.inferred,
+      from.propagate_inbounds,
+      from.has_fcall,
+      from.nospecializeinfer,
+      from.inlining,
+      from.constprop,
+      from.purity,
+      from.inlining_cost,
+    )
+  end
   verify(new_code)
   new_code
 end

@@ -49,7 +49,7 @@ function SPIRVInterpreter(
   else
     InferenceParams()
   end),
-  opt_params = OptimizationParams(inlining = true, inline_cost_threshold = 10000, trust_inference = true),
+  opt_params = OptimizationParams(inlining = true, inline_cost_threshold = 10000),
   method_tables = [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE],
   global_cache = DEFAULT_CI_CACHE)
   SPIRVInterpreter(

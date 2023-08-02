@@ -192,11 +192,11 @@ end
             [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
 
       (; code, ssavaluetypes) = SPIRV.@code_typed store(::Vector{Float64})
-      # There may be a `OpUConvert` + `OpISub` to convert the Int64 to a UInt32 at runtime.
+      # There may be three more `OpUConvert` + `OpISub` to convert Int64s to UInt32s at runtime.
       # On a few recent versions of Julia, this conversion is optimized away.
       # So we just test that the first 5 instructions and last 2 are correct.
-      @test in(length(code), (8, 10)) # 10 is if the conversion is present.
-      @test operation.(code[1:5]) ==
+      @test in(length(code), (8, 14)) # 14 is if the conversions are present.
+      @test filter!(x -> !in(x, (:UConvert, :ISub)), operation.(code))[1:5] ==
             [:AccessChain, :Load, :AccessChain, :Load, :FAdd]
       @test operation.(code[end-2:end-1]) == [:AccessChain, :Store]
     end
@@ -236,7 +236,7 @@ end
 
     # Currently broken because of a Pi node, let's keep it here nonetheless.
     ci = SPIRV.@code_typed debuginfo=:source (() -> 3.0 + 2F + Base.mod(10.0, 3.0))()
-    @test_code ci minlength = 3 maxlength = 3 # 2 intrinsics, 1 return
+    @test_code ci minlength = 1 maxlength = 3 # 2 intrinsics, 1 return (may be constproped)
 
     ci = SPIRV.@code_typed debuginfo=:source all(::Vec{2,Bool})
     @test_code ci minlength = 2 maxlength = 2 # 2 accesses, 1 logical operation, 1 return
