@@ -22,6 +22,7 @@ import Serialization: serialize, deserialize
 using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, MethodInstance, InferenceResult, typeinf, InferenceState,
   retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView,
   WorldRange, OverlayMethodTable
+const CC = Core.Compiler
 using Base.Experimental: @overlay, @MethodTable
 using Base: Fix1, Fix2
 

@@ -128,3 +128,9 @@ end
 function Base.show(io::IO, interp::SPIRVInterpreter)
   print(io, SPIRVInterpreter, '(', interp.inf_params, ", ", interp.opt_params, ')')
 end
+
+function CC.concrete_eval_eligible(interp::SPIRVInterpreter, @nospecialize(f), result::CC.MethodCallResult, arginfo::CC.ArgInfo, sv::CC.InferenceState)
+  neweffects = CC.Effects(result.effects; nonoverlayed=true)
+  result = CC.MethodCallResult(result.rt, result.edgecycle, result.edgelimited, result.edge, neweffects)
+  @invoke CC.concrete_eval_eligible(interp::CC.AbstractInterpreter, f::Any, result::CC.MethodCallResult, arginfo::CC.ArgInfo, sv::CC.InferenceState)
+end

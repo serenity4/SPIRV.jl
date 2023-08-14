@@ -142,10 +142,11 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables
   set_name!(mt, fid, mangled_name(target.mi))
   arg_idx = 0
   gvar_idx = 0
-  for i in 2:target.mi.def.nargs
-    argid = haskey(variables, i - 1) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
-    insert!(tr.args, Core.Argument(i), argid)
-    set_name!(mt, argid, target.code.slotnames[i])
+  for (i, t) in enumerate(target.mi.specTypes.types[2:end])
+    t <: Type && continue
+    argid = haskey(variables, i) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
+    insert!(tr.args, Core.Argument(i + 1), argid)
+    set_name!(mt, argid, target.code.slotnames[i + 1])
   end
 
   try
@@ -168,6 +169,7 @@ function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
   (; mi) = target
 
   for (i, t) in enumerate(mi.specTypes.types[2:end])
+    t <: Type && continue
     type = spir_type(t, tr.tmap; wrap_mutable = true)
     var = get(variables, i, nothing)
     @switch var begin

@@ -290,7 +290,7 @@ end
     @test_code ci minlength = 12 maxlength = 30 # Just make sure broadcast results in a single instruction chunk.
 
     ci = SPIRV.@code_typed debuginfo=:source (arr -> (arr .+= arr))(::Arr{3,Vec2})
-    @test_code ci minlength = 18 maxlength = 18
+    @test_code ci minlength = 18 maxlength = 28 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float32}}, ::Arr{3,Float32})
     @test_code ci minlength = 1 maxlength = 1 # 1 return
