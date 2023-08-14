@@ -51,4 +51,4 @@ MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MetaGraphs"]
+test = ["Test", "MetaGraphs", "Vulkan"]
