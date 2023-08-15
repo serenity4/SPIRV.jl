@@ -80,7 +80,11 @@ function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpr
     cfg = ControlFlowGraph(g)
   catch
     ret = validate(code)
-    iserror(ret) && throw(unwrap_error(ret))
+    if iserror(ret)
+      @error "A validation error occured for the following CodeInfo:"
+      println(sprintc_mime(show, code))
+      throw(unwrap_error(ret))
+    end
     rethrow()
   end
 
