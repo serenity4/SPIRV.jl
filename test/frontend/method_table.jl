@@ -60,4 +60,19 @@ using SPIRV, Test
     @test match.fully_covers
     @test match.method.module === Base
   end
+
+  @testset "Finding all methods to report ambiguities" begin
+    result = Core.Compiler.findall(Tuple{typeof(+), Int64, Int64}, spirv_method_table()).matches
+    @test length(result.matches) == 2
+    @test result.matches[1].method.module === SPIRV
+    @test result.matches[2].method.module === Base
+
+    f = gensym()
+    ft = typeof(@eval function $f end)
+    @eval $f(x, y::Int64) = 1
+    @eval $f(x::Int64, y) = 2
+  
+    result = Core.Compiler.findall(Tuple{ft, Int64, Int64}, spirv_method_table()).matches
+    @test length(result.matches) == 2
+  end
 end;
