@@ -87,9 +87,9 @@ end
   isnan(x) & isnan(y) | x == y
 end
 @override isnan(x::IEEEFloat)    = IsNan(x)
-@noinline IsNan(x::IEEEFloat)    = invoke(isnan, Tuple{AbstractFloat}, x)
+@noinline IsNan(x::IEEEFloat)    = x != x
 @override isfinite(x::IEEEFloat) = !IsInf(x)
-@noinline IsInf(x::IEEEFloat)    = !invoke(isfinite, Tuple{AbstractFloat}, x)
+@noinline IsInf(x::IEEEFloat)    = !isnan(x - x)
 
 ## Conversions.
 
@@ -104,15 +104,33 @@ for to in IEEEFloat_types, from in IEEEFloat_types
   end
 end
 
-@override unsafe_trunc(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = ConvertFToS(T, x)
-@noinline ConvertFToS(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = Base.fptosi(T, x)
 
-@override unsafe_trunc(::Type{T}, x::IEEEFloat) where {T<:BitUnsigned} = ConvertFToU(T, x)
+for Ti in (Int8, Int16, Int32, Int64)
+  for Tf in (Float16, Float32, Float64)
+    @eval @inline @override unsafe_trunc(::Type{$Ti}, x::$Tf) = ConvertFToS($Ti, x)
+    @eval @inline @override trunc(::Type{$Ti}, x::$Tf) = ConvertFToS($Ti, x)
+    @eval @inline @override $Ti(x::$Tf) = ConvertFToS($Ti, x)
+  end
+end
+for Ti in (UInt8, UInt16, UInt32, UInt64)
+  for Tf in (Float16, Float32, Float64)
+    @eval @inline @override unsafe_trunc(::Type{$Ti}, x::$Tf) = ConvertFToU($Ti, x)
+    @eval @inline @override trunc(::Type{$Ti}, x::$Tf) = ConvertFToU($Ti, x)
+    @eval @inline @override $Ti(x::$Tf) = ConvertFToU($Ti, x)
+  end
+end
+@noinline ConvertFToS(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = Base.fptosi(T, x)
 @noinline ConvertFToU(::Type{T}, x::IEEEFloat) where {T<:BitUnsigned} = Base.fptoui(T, x)
 
-@override (::Type{T})(x::BitSigned) where {T<:IEEEFloat} = ConvertSToF(T, x)
+for t1 in (Float16, Float32, Float64)
+  for st in (Int8, Int16, Int32, Int64)
+    @eval @override (::Type{$t1})(x::$st) = ConvertSToF($t1, x)
+  end
+  for ut in (Bool, UInt8, UInt16, UInt32, UInt64)
+    @eval @override (::Type{$t1})(x::$ut) = ConvertUToF($t1, x)
+  end
+end
 @noinline ConvertSToF(to::Type{T}, x::BitSigned) where {T<:IEEEFloat} = Base.sitofp(to, x)
-@override (::Type{T})(x::BitUnsigned) where {T<:IEEEFloat} = ConvertUToF(T, x)
 @noinline ConvertUToF(to::Type{T}, x::BitUnsigned) where {T<:IEEEFloat} = Base.uitofp(to, x)
 
 ### There is no possibility to throw errors in SPIR-V, so replace safe operations with unsafe ones.
@@ -126,11 +144,11 @@ end
 
 for to in BitInteger_types
   constructor = GlobalRef(Core, Symbol(:to, nameof(to))) # toUInt16, toInt64, etc.
-  @eval @inline @override ($constructor(x::BitInteger) = rem(x, $to))
   for from in BitInteger_types
     convert = to <: Signed ? :SConvert : :UConvert
     rem_f = sizeof(to) == sizeof(from) ? :reinterpret : convert
     if sizeof(to) ≠ sizeof(from)
+      @eval @inline @override ($constructor(x::$from) = rem(x, $to))
       @eval @override (rem(x::$from, ::Type{$to}) = $convert($to, x))
       if sizeof(to) < sizeof(from)
         @eval @noinline ($convert(::Type{$to}, x::$from) = Base.trunc_int($to, x))
@@ -144,10 +162,10 @@ for to in BitInteger_types
 end
 
 @override rem(x::T, y::T) where {T<:BitSigned} = SRem(x, y)
-@noinline SRem(x::T, y::T) where {T<:BitSigned} = Base.checked_srem_int(x, y)
+@noinline SRem(x::T, y::T) where {T<:BitSigned} = Base.srem_int(x, y)
 # SPIR-V does not have URem but it looks like SRem can work with unsigned ints.
 @override rem(x::T, y::T) where {T<:BitUnsigned} = SRem(x, y)
-@noinline SRem(x::T, y::T) where {T<:BitUnsigned} = Base.checked_urem_int(x, y)
+@noinline SRem(x::T, y::T) where {T<:BitUnsigned} = Base.urem_int(x, y)
 
 @override Int(x::Ptr) = reinterpret(Int, x)
 @override UInt(x::Ptr) = reinterpret(UInt, x)
@@ -167,6 +185,8 @@ end
 
 @override (==)(x::T, y::T) where {T<:BitInteger}       = IEqual(x, y)
 @override (==)(x::BitInteger, y::BitInteger)           = ==(promote(x, y)...)
+@override (==)(x::BitSigned, y::BitUnsigned)           = ==(promote(x, y)...)
+@override (==)(x::BitUnsigned, y::BitSigned)           = ==(promote(x, y)...)
 @noinline IEqual(x::T, y::T) where {T<:BitInteger}     = Base.eq_int(x, y)
 @override (!=)(x::T, y::T) where {T<:BitInteger}       = INotEqual(x, y)
 @override (!=)(x::BitInteger, y::BitInteger)           = !=(promote(x, y)...)

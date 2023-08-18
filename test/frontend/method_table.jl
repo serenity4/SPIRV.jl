@@ -75,4 +75,31 @@ using SPIRV, Test
     result = Core.Compiler.findall(Tuple{ft, Int64, Int64}, spirv_method_table()).matches
     @test length(result.matches) == 2
   end
+
+  @testset "Abstract invocations" begin
+    f = gensym()
+    ft = typeof(@eval function $f end)
+    @eval $f(x::Int64) = 1
+    @eval $f(x::Float64) = 2
+
+    result = Core.Compiler.findall(Tuple{ft, Real}, spirv_method_table()).matches
+    @test length(result.matches) == 2
+
+    @eval $f(x::Real) = 3
+    result = Core.Compiler.findall(Tuple{ft, Real}, spirv_method_table()).matches
+    @test length(result.matches) == 3
+
+    @eval $f(x::String) = 3
+    result = Core.Compiler.findall(Tuple{ft, Real}, spirv_method_table()).matches
+    @test length(result.matches) == 3
+
+    @eval $f(x::Any) = 3
+    result = Core.Compiler.findall(Tuple{ft, Real}, spirv_method_table()).matches
+    @test length(result.matches) == 3
+    result = Core.Compiler.findall(Tuple{ft, Number}, spirv_method_table()).matches
+    @test length(result.matches) == 4
+
+    (match, _, _) = Core.Compiler.findsup(Tuple{ft, Real}, spirv_method_table())
+    @test isnothing(match)
+  end
 end;

@@ -17,18 +17,24 @@ struct SPIRVTarget
 end
 
 function method_instance(@nospecialize(f), argtypes::Type = Tuple{}, interp::SPIRVInterpreter = SPIRVInterpreter())
-  mis = method_instances(f, argtypes, interp)
-  if length(mis) > 1
-    error("""
-        More than one method matches signature ($f, $argtypes):
+  sig = Base.signature_type(f, argtypes)
+  ret = Core.Compiler.findsup(sig, interp.method_table)
+  if !isnothing(ret)
+    match, _, _ = ret
+    Core.Compiler.specialize_method(match)
+  else
+    mis = method_instances(f, argtypes, interp)
+    if length(mis) > 1
+      error("""
+          More than one method matches signature ($f, $argtypes):
 
-        Matching method instances:
-        $(join(string.(" └─ ", mis), "\n"))
-        """)
-  elseif iszero(length(mis))
-    error("No method matching the signature ($f, $argtypes).")
+          Matching method instances:
+          $(join(string.(" └─ ", mis), "\n"))
+          """)
+    elseif iszero(length(mis))
+      error("No method matching the signature ($f, $argtypes).")
+    end
   end
-  mis[1]
 end
 
 function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; interp::SPIRVInterpreter = SPIRVInterpreter())

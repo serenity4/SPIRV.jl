@@ -29,7 +29,8 @@ end
 # XXX: # `@noinline` does not seem to get applied in SPIRV.@code_typed atan(::Float16, ::Float16), we still go through conversions.
 @noinline Atan2(y::Float16, x::Float16) = Float16(Atan2(Float32(y), Float32(x)))
 
-@override_glsl sqrt(x::IEEEFloat) = Sqrt(x)
+@override_glsl sqrt(x::Float16) = Sqrt(x)
+@override_glsl sqrt(x::Union{Float32, Float64}) = Sqrt(x)
 @noinline Sqrt(x)                 = Base.sqrt_llvm(x)
 
 @override_glsl round(x::IEEEFloat, r::RoundingMode{:ToZero})  = Trunc(x)

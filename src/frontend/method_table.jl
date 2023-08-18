@@ -5,33 +5,29 @@ end
 
 CC.isoverlayed(::NOverlayMethodTable) = true
 
+@static if VERSION ≥ v"1.10.0-DEV.67"
+  const NO_MATCH = CC.nothing
+else
+  const NO_MATCH = CC.missing
+end
+
 function CC.findall(@nospecialize(sig::Type), table::NOverlayMethodTable; limit::Int = -1)
   results = find_matching_methods(sig, table, limit, find_including_ambiguous)
-  limit_exceeded(results) && return results
+  results === NO_MATCH && return results
   results = first.(results) # drop the overlay level information
   matches = foldl((x, y) -> append!(x, y.matches), results; init = CC.MethodMatch[])
+  world = reduce((x, y) -> CC.intersect(x, y.valid_worlds), results; init = WorldRange(typemin(UInt), typemax(UInt)))
   # XXX: Figure out if ambiguity persists after discarding unconsequential ambiguities.
-  world = reduce((x, y) -> intersect_world_ranges(x, y.valid_worlds), results; init = WorldRange(typemin(UInt), typemax(UInt)))
   ambig = any(x -> x.ambig, results)
   overlayed = any(x -> any(y -> isoverlayed(y.method), x.matches), results)
   CC.MethodMatchResult(CC.MethodLookupResult(matches, world, ambig), overlayed)
-end
-
-@static if VERSION ≥ v"1.10.0-DEV.67"
-  limit_exceeded(result) = result === CC.nothing
-else
-  limit_exceeded(result) = result === CC.missing
 end
 
 function find_matching_methods(@nospecialize(sig::Type), table::NOverlayMethodTable, limit::Int, find::F) where {F}
   results = Pair{CC.MethodLookupResult, Int}[]
   for (level, mt) in enumerate([table.tables; nothing])
     result = find(sig, mt, table.world, limit)
-    @static if VERSION ≥ v"1.10.0-DEV.67"
-      result === CC.nothing && return CC.nothing
-    else
-      result === CC.missing && return CC.missing
-    end
+    result === NO_MATCH && return result
     if result.valid_worlds.min_world ≤ table.world ≤ result.valid_worlds.max_world
       push!(results, result => level)
     end
@@ -46,10 +42,9 @@ function find_including_ambiguous(@nospecialize(sig::Type), mt::Union{Nothing,Co
   max_world = Ref(typemax(UInt))
   ambig = Ref(Int32(0))
   ms = Base._methods_by_ftype(sig, mt, limit, world, true, min_world, max_world, ambig)
+  isnothing(ms) && return NO_MATCH
   return CC.MethodLookupResult(ms, WorldRange(min_world[], max_world[]), ambig[] != 0)
 end
-
-intersect_world_ranges(x::WorldRange, y::WorldRange) = WorldRange(max(x.min_world, y.min_world), min(x.max_world, y.max_world))
 
 isoverlayed(x::Method) = isdefined(x, :external_mt)
 
@@ -71,9 +66,10 @@ function overlay_method_matches(results)
   matches
 end
 
-function is_more_specific(x::Method, y::Method)
-  (@ccall jl_type_morespecific(x.sig::Any, y.sig::Any)::Bool) && return true
-  (@ccall jl_type_morespecific(y.sig::Any, x.sig::Any)::Bool) && return false
+is_more_specific(x::Method, y::Method) = is_more_specific(x.sig, y.sig)
+function is_more_specific(@nospecialize(x::Type), @nospecialize(y::Type))
+  (@ccall jl_type_morespecific(x::Any, y::Any)::Bool) && return true
+  (@ccall jl_type_morespecific(y::Any, x::Any)::Bool) && return false
   nothing
 end
 
@@ -103,10 +99,10 @@ end
 
 function CC.findsup(@nospecialize(sig::Type), table::NOverlayMethodTable)
   results = find_matching_methods(sig, table, -1, find_excluding_ambiguous)
-  limit_exceeded(results) && return results
-  isempty(results) && return (CC.nothing, WorldRange(typemin(UInt), typemax(UInt)), false)
+  results === NO_MATCH && return results
+  isempty(results) && return (NO_MATCH, WorldRange(typemin(UInt), typemax(UInt)), false)
   match = select_matching_method(results)
-  isnothing(match) && return (CC.nothing, WorldRange(typemin(UInt), typemax(UInt)), false)
+  isnothing(match) && return (NO_MATCH, WorldRange(typemin(UInt), typemax(UInt)), false)
   (match.match, match.world, match.level < maxoverlay(table))
 end
 
