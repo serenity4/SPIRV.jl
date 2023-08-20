@@ -107,7 +107,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
 end
 
 function get_field_index(composite_type, field::QuoteNode, target::SPIRVTarget)
-  isa(field.value, Symbol) || throw_compilation_error("`Symbol` value expected in `QuoteNode`, got $(repr(node.value))")
+  isa(field.value, Symbol) || throw_compilation_error("`Symbol` value expected in `QuoteNode`, got $(repr(field.value))")
   name = field.value::Symbol
   T = get_type(composite_type, target)
   T <: Union{Arr, Vec, Mat} && name === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden")

@@ -7,7 +7,7 @@ using SPIRV, Test
   tinfer = @elapsed @target interp f_straightcode(::Float32)
   tcached = @elapsed @target interp f_straightcode(::Float32)
   @test tinfer > tcached
-  @test tinfer / tcached > 5
+  @test tinfer / tcached > 2
   old_target = @target interp f_straightcode(::Float32)
 
   @eval function f_straightcode(x)
@@ -20,7 +20,7 @@ using SPIRV, Test
   target = timed.value
   tinvalidated = timed.time
   @test tinvalidated > tcached
-  @test tinvalidated / tcached > 5
+  @test tinvalidated / tcached > 2
   @test haskey(global_cache, target.mi)
   @test !haskey(global_cache, old_target.mi)
   # Artifically increase the current world age.

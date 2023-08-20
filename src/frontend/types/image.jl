@@ -38,11 +38,13 @@ Base.getindex(img::Image, coord::BitInteger, coord2::BitInteger, coords::BitInte
 Base.getindex(img::Image, coords::Vec) = ImageRead(img, coords)
 
 "Read the texel at coordinate `coord` from a one-dimensional image using zero-based indexing."
-Base.setindex!(img::_Image{T}, value::T, coord::BitInteger) where {T} = ImageWrite(img, coord, value)
+Base.setindex!(img::Image, value, coord::BitInteger) = ImageWrite(img, coord, value)
 "Read the texel at the provided coordinates from an image using zero-based indexing."
-Base.setindex!(img::_Image{T}, value::T, coord::BitInteger, coord2::BitInteger, coords::BitInteger...) where {T} = setindex!(img, value, Vec(coord, coord2, coords...))
+Base.setindex!(img::Image, value, coord::BitInteger, coord2::BitInteger, coords::BitInteger...) = setindex!(img, value, Vec(coord, coord2, coords...))
 "Read the texel at the coordinates given by `coord` from an image using zero-based indexing."
-Base.setindex!(img::_Image{T}, value::T, coords::Vec) where {T} = ImageWrite(img, coords, value)
+Base.setindex!(img::_Image{T}, value::T, coords::Vec{<:Any,UInt32}) where {T} = ImageWrite(img, coords, value)
+Base.setindex!(img::_Image{T}, value::T, coords::Vec{N,<:Signed}) where {N,T} = setindex!(img, value, convert(Vec{N,UInt32}, coords))
+Base.setindex!(img::_Image{T}, value, coords::Vec) where {T} = setindex!(img, convert(T, value), coords)
 
 Base.size(image::Image) = ImageQuerySize(image)
 Base.size(image::Image, lod::UInt32) = ImageQuerySizeLod(image, lod)

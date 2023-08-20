@@ -4,6 +4,7 @@ macro override_glsl(ex)
   esc(:(@overlay SPIRV.INTRINSICS_GLSL_METHOD_TABLE @inline $ex))
 end
 
+@override_glsl have_fma(::Type{<:IEEEFloat}) = true
 @override_glsl muladd(x::T, y::T, z::T) where {T<:IEEEFloat} = Fma(x, y, z)
 @override_glsl fma(x::T, y::T, z::T) where {T<:IEEEFloat}    = Fma(x, y, z)
 @noinline Fma(x, y, z)                                       = Base.fma_float(x, y, z)

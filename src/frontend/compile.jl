@@ -104,6 +104,10 @@ error_field(field) = string(Base.text_colors[:cyan], field, Base.text_colors[:de
 
 function Base.showerror(io::IO, err::CompilationError)
   # TODO: Use Base.StackTraces.
+  if isdefined(err, :target)
+    println(io, "An error occurred while compiling a `CodeInfo`.")
+    show_debug_code(io, err.target.code)
+  end
   print(io, "CompilationError")
   print(io, ": ", err.msg, '.')
   (; stacktrace) = err.target.interp.debug
