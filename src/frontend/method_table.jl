@@ -1,6 +1,6 @@
 struct NOverlayMethodTable <: Core.Compiler.MethodTableView
   world::UInt
-  tables::Vector{Core.MethodTable}
+  tables::Vector{MethodTable}
 end
 
 CC.isoverlayed(::NOverlayMethodTable) = true
@@ -12,6 +12,9 @@ else
 end
 
 function CC.findall(@nospecialize(sig::Type), table::NOverlayMethodTable; limit::Int = -1)
+  # match, world, overlayed = CC.findsup(sig, table)
+  # match === NO_MATCH && return match
+  # return CC.MethodMatchResult(CC.MethodLookupResult([match], world, false), overlayed)
   results = find_matching_methods(sig, table, limit, find_including_ambiguous)
   results === NO_MATCH && return results
   results = first.(results) # drop the overlay level information
@@ -35,9 +38,9 @@ function find_matching_methods(@nospecialize(sig::Type), table::NOverlayMethodTa
   results
 end
 
-find_excluding_ambiguous(@nospecialize(sig::Type), mt::Union{Nothing,Core.MethodTable}, world::UInt, limit::Int) = CC._findall(sig, mt, world, limit)
+find_excluding_ambiguous(@nospecialize(sig::Type), mt::Union{Nothing,MethodTable}, world::UInt, limit::Int) = CC._findall(sig, mt, world, limit)
 
-function find_including_ambiguous(@nospecialize(sig::Type), mt::Union{Nothing,Core.MethodTable}, world::UInt, limit::Int)
+function find_including_ambiguous(@nospecialize(sig::Type), mt::Union{Nothing,MethodTable}, world::UInt, limit::Int)
   min_world = Ref(typemin(UInt))
   max_world = Ref(typemax(UInt))
   ambig = Ref(Int32(0))

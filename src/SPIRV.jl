@@ -21,7 +21,7 @@ import Serialization: serialize, deserialize
 
 using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, MethodInstance, InferenceResult, typeinf, InferenceState,
   retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView,
-  WorldRange, OverlayMethodTable
+  WorldRange, MethodTable
 const CC = Core.Compiler
 using Base.Experimental: @overlay, @MethodTable
 using Base: Fix1, Fix2
@@ -79,6 +79,7 @@ include("requirements.jl")
 
 include("frontend/ci_cache.jl")
 include("frontend/method_table.jl")
+# include("frontend/method_selection.jl")
 include("frontend/intrinsics.jl")
 include("frontend/types/abstractarray.jl")
 include("frontend/types/pointer.jl")

@@ -110,6 +110,7 @@ end
       @test ssavaluetypes[1] == Float64
 
       (; code, ssavaluetypes) = SPIRV.@code_typed f_extinst(::Float32)
+      (; code, ssavaluetypes) = SPIRV.@code_typed SPIRV.Sin(::Float32)
       @test operation.(code[1:(end - 1)]) == [:Exp, :Sin, :FMul, :FAdd, :Log, :FAdd]
       @test ssavaluetypes[1:(end - 1)] == fill(Float32, 6)
     end

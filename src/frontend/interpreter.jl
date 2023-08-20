@@ -63,7 +63,7 @@ function SPIRVInterpreter(
   )
 end
 
-SPIRVInterpreter(method_tables::Vector{Core.MethodTable}; world::UInt = get_world_counter(), kwargs...) =
+SPIRVInterpreter(method_tables::Vector{MethodTable}; world::UInt = get_world_counter(), kwargs...) =
   SPIRVInterpreter(world; method_tables, kwargs...)
 
 function invalidate_all!(interp::SPIRVInterpreter = SPIRVInterpreter())
