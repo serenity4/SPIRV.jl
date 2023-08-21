@@ -32,7 +32,7 @@ SPIRVVulkanExt = "Vulkan"
 [compat]
 AbstractTrees = "0.4"
 Accessors = "0.1"
-AutoHashEquals = "0.2"
+AutoHashEquals = "0.2, 1"
 BitMasks = "0.1"
 CEnum = "0.4.1"
 CompileTraces = "1"
