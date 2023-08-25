@@ -87,9 +87,12 @@ end
   isnan(x) & isnan(y) | x == y
 end
 @override isnan(x::IEEEFloat)    = IsNan(x)
-@noinline IsNan(x::IEEEFloat)    = x != x
-@override isfinite(x::IEEEFloat) = !IsInf(x)
-@noinline IsInf(x::IEEEFloat)    = !isnan(x - x)
+@noinline IsNan(x::IEEEFloat)    = invoke(isnan, Tuple{AbstractFloat}, x)
+@override isinf(x::IEEEFloat) = IsInf(x)
+@noinline IsInf(x::IEEEFloat)    = !invoke(isfinite, Tuple{AbstractFloat}, x)
+@override isfinite(x::IEEEFloat) = !isinf(x)
+
+have_fma(T) = false
 
 ## Conversions.
 
@@ -279,3 +282,13 @@ end
 # Miscellaneous Base methods which use intrinsics that don't map well to SPIR-V.
 
 @override copysign(x::T, y::T) where {T <: Union{Float32, Float64}} = ifelse(y < 0, -x, x)
+
+# Math functions using intrinsics directly.
+
+@override function Base.Math.two_mul(x::Float64, y::Float64)
+  if have_fma(Float64)
+      xy = x*y
+      xy, fma(x, y, -xy)
+  end
+  Base.twomul(x,y)
+end

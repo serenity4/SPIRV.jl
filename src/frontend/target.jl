@@ -88,13 +88,27 @@ function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpr
     ret = validate(code)
     if iserror(ret)
       @error "A validation error occured for the following CodeInfo:"
-      println(sprintc_mime(show, code))
+      show_debug_code(code)
       throw(unwrap_error(ret))
     end
     rethrow()
   end
 
   SPIRVTarget(mi, cfg, insts, ranges, code, interp)
+end
+
+function show_debug_code(io::IO, code::CodeInfo)
+  output = sprintc_mime(show, code)
+  if length(code.code) > 400
+    file = tempname()
+    open(file, "w+") do io2
+      println(io2, output)
+    end
+    println(io, "The contents of the associated `CodeInfo` are available at $file")
+  else
+    println(io, "Showing the associated `CodeInfo`:\n\n$output")
+  end
+  println(io)
 end
 
 "Run type inference on the given `MethodInstance`."
