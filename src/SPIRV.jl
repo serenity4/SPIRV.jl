@@ -6,7 +6,7 @@ using MLStyle
 using Graphs
 using Reexport
 using Dictionaries
-using AutoHashEquals
+using StructEquality
 using Accessors
 using ResultTypes: Result
 using AbstractTrees

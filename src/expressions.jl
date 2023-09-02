@@ -3,7 +3,7 @@ A more semantically meaningful kind of instruction, where type information is fu
 
 Semantically, `Expression`s do not express type declarations.
 """
-@auto_hash_equals struct Expression <: AbstractInstruction
+@struct_hash_equal struct Expression <: AbstractInstruction
   op::OpCode
   type::Optional{SPIRType}
   result::Optional{ResultID}

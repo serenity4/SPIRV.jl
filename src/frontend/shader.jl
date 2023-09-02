@@ -1,4 +1,4 @@
-@auto_hash_equals struct ShaderInterface
+@struct_hash_equal struct ShaderInterface
   execution_model::ExecutionModel
   storage_classes::Vector{StorageClass}
   variable_decorations::Dictionary{Int,Decorations}

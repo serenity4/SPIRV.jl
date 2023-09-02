@@ -1,4 +1,4 @@
-@auto_hash_equals struct UseDefChain
+@struct_hash_equal struct UseDefChain
   use::Instruction
   defs::Vector{UseDefChain}
 end

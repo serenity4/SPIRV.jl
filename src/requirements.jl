@@ -1,4 +1,4 @@
-@auto_hash_equals struct FeatureRequirements
+@struct_hash_equal struct FeatureRequirements
   extensions::Vector{String}
   capabilities::Vector{Capability}
 end
@@ -8,7 +8,7 @@ abstract type FeatureSupport end
 """
 Extensions and capabilities supported by a client API.
 """
-@auto_hash_equals struct SupportedFeatures <: FeatureSupport
+@struct_hash_equal struct SupportedFeatures <: FeatureSupport
   extensions::Vector{String}
   capabilities::Vector{Capability}
 end

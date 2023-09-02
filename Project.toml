@@ -6,7 +6,6 @@ version = "0.5.4"
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
-AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
 BitMasks = "a3e06817-fd65-4797-8291-16f435bc2529"
 CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 CompileTraces = "92d184ee-bd0d-43d0-b768-a20943f3d1e3"
@@ -20,6 +19,7 @@ ResultTypes = "08a2b407-ddc3-586a-afd6-c784ad1fffe2"
 SPIRV_Tools_jll = "6ac6d60f-d740-5983-97d7-a4482c0689f4"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
+StructEquality = "6ec83bb0-ed9f-11e9-3b4c-2b04cb4e219c"
 SwapStreams = "0b152c4a-7e29-418b-9258-223db38db9d9"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
@@ -32,7 +32,6 @@ SPIRVVulkanExt = "Vulkan"
 [compat]
 AbstractTrees = "0.4"
 Accessors = "0.1"
-AutoHashEquals = "0.2, 1"
 BitMasks = "0.1"
 CEnum = "0.4.1"
 CompileTraces = "1"
@@ -43,6 +42,7 @@ MLStyle = "^0.4.11"
 Reexport = "1"
 ResultTypes = "3"
 SnoopPrecompile = "1"
+StructEquality = "2"
 SwapStreams = "0.2"
 julia = "1.9"
 
@@ -51,4 +51,4 @@ MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MetaGraphs", "Vulkan"]
+test = ["Test", "MetaGraphs"]

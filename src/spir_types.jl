@@ -45,7 +45,7 @@ function MatrixType(inst::Instruction, eltype::VectorType)
   MatrixType(eltype, last(inst.arguments))
 end
 
-@auto_hash_equals struct ImageType <: SPIRType
+@struct_hash_equal struct ImageType <: SPIRType
   sampled_type::SPIRType
   dim::Dim
   depth::Optional{Bool}
@@ -73,7 +73,7 @@ struct SampledImageType <: SPIRType
   image_type::ImageType
 end
 
-@auto_hash_equals struct Constant
+@struct_hash_equal struct Constant
   value::Any
   type::SPIRType
   is_spec_const::Bool
@@ -124,7 +124,7 @@ end
 PointerType(inst::Instruction, type::SPIRType) = PointerType(first(inst.arguments), type)
 Base.:(≈)(x::PointerType, y::PointerType) = x.storage_class == y.storage_class && x.type ≈ y.type
 
-@auto_hash_equals struct FunctionType <: SPIRType
+@struct_hash_equal struct FunctionType <: SPIRType
   rettype::SPIRType
   argtypes::Vector{SPIRType}
 end
@@ -167,7 +167,7 @@ end
 
 iscomposite(@nospecialize(t::SPIRType)) =  isa(t, StructType) || isa(t, VectorType) || isa(t, MatrixType) || isa(t, ArrayType)
 
-@refbroadcast @auto_hash_equals struct TypeMap
+@refbroadcast @struct_hash_equal struct TypeMap
   d::Dictionary{DataType,SPIRType}
 end
 

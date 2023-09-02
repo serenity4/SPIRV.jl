@@ -39,7 +39,7 @@ function directly_reachable_blocks(blk::Block)
   end
 end
 
-@auto_hash_equals struct FunctionDefinition
+@struct_hash_equal struct FunctionDefinition
   type::FunctionType
   control::FunctionControl
   "Function arguments, after promoting non-local pointer arguments to global variables. Argument types match the function `type`."
