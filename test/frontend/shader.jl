@@ -253,9 +253,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
       features = SUPPORTED_FEATURES,
     )
     shader = Shader(target, interface, VulkanAlignment())
-    # XXX: This shader works fine even though `spirv-val` complains.
-    # So just make sure it complains what we expect it to complain about.
-    @test_throws r"but its merge block .* is not" unwrap(validate(shader))
+    @test unwrap(validate(shader))
 
     function compute_blur_2!(res::Vec3, blur::GaussianBlur, reference, uv)
       res[] = compute_blur_2(blur, reference, uv)
