@@ -279,10 +279,15 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     (isnothing(jinst) || jinst === GlobalRef(Base, :nothing)) && continue
     Meta.isexpr(jinst, :loopinfo) && continue
     Meta.isexpr(jinst, :coverage) && continue
+    core_ssaval = Core.SSAValue(i)
+    if Meta.isexpr(jinst, :boundscheck)
+      # Act as if bounds checking was disabled, emitting a constant instead of the actual condition.
+      insert!(tr.results, core_ssaval, emit!(mt, tr, Constant(jinst.args[1])))
+      continue
+    end
     jtype = ssavaluetypes[i]
     isa(jtype, Core.PartialStruct) && (jtype = jtype.typ)
     isa(jtype, Core.Const) && (jtype = typeof(jtype.val))
-    core_ssaval = Core.SSAValue(i)
     ex = nothing
     try
       @switch jinst begin

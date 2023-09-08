@@ -27,7 +27,7 @@ using Base.Experimental: @overlay, @MethodTable
 using Base: Fix1, Fix2
 
 import SPIRV_Tools_jll
-const spirv_val = SPIRV_Tools_jll.spirv_val(identity)
+const spirv_val = SPIRV_Tools_jll.spirv_val()
 
 const Optional{T} = Union{Nothing,T}
 

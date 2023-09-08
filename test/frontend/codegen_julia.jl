@@ -142,7 +142,7 @@ end
       end
 
       (; code) = SPIRV.@code_typed test_constprop3()
-      @test code[1] == Core.ReturnNode(6.0) broken = VERSION ≥ v"1.10.0-DEV.101"
+      @test code[1] == Core.ReturnNode(6.0)
 
       function test_constprop4()
         x = exp(3.0)

@@ -24,17 +24,14 @@ function CC.findall(@nospecialize(sig::Type), table::NOverlayMethodTable; limit:
       nr = length(result.matches)
       if nr ≥ 1 && result.matches[nr].fully_covers
         # no need to fall back to the internal method table
-        return findall_result(result, true)
+        return result
       end
     else
-      return findall_result(CC.MethodLookupResult([matches; result.matches], WorldRange(min_world, max_world), ambig), !isempty(matches))
+      return CC.MethodLookupResult([matches; result.matches], WorldRange(min_world, max_world), ambig)
     end
     append!(matches, result.matches)
   end
 end
-
-findall_result(matches::Core.Compiler.MethodLookupResult, isoverlayed::Bool) = Core.Compiler.MethodMatchResult(matches, isoverlayed)
-method_lookup_result(res::Core.Compiler.MethodMatchResult) = res.matches
 
 function CC.findsup(@nospecialize(sig::Type), table::NOverlayMethodTable)
   min_world = typemin(UInt)

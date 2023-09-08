@@ -21,11 +21,9 @@ load_module(file) = load_module(load_module_expr(file))
   include("spvasm.jl");
   include("layouts.jl");
   include("serialization.jl");
-  if VERSION ≥ v"1.8"
-    include("passes.jl");
-    include("codegen.jl");
-    include("analysis.jl");
-    include("restructuring.jl");
-    include("frontend.jl");
-  end;
+  include("passes.jl");
+  include("codegen.jl");
+  include("analysis.jl");
+  include("restructuring.jl");
+  include("frontend.jl");
 end;
