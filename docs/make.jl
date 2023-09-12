@@ -6,6 +6,7 @@ makedocs(;
   pages = [
     "Home" => "index.md",
     "Introduction" => "intro.md",
+    "Targeting SPIR-V via LLVM" => "spirv_llvm.md",
     "Features" => "features.md",
     "API" => "api.md",
     "Developer documentation" => "devdocs.md",

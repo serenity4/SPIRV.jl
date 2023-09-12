@@ -3,6 +3,9 @@
   capabilities::Vector{Capability}
 end
 
+"""
+Abstract type expressing SPIR-V which capabilities and extensions are supported.
+"""
 abstract type FeatureSupport end
 
 """
