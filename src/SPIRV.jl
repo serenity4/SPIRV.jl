@@ -48,6 +48,12 @@ include("generated/enum_infos.jl")
 include("generated/instructions.jl")
 include("generated/extinsts.jl")
 
+"""
+Enumerated value representing the type of an instruction.
+See https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_instructions_3 for a list of SPIR-V opcodes (excluding extended instruction sets).
+"""
+OpCode
+
 include("utils.jl")
 include("bijection.jl")
 include("cursor.jl")

@@ -1,6 +1,6 @@
 # Introduction
 
-[SPIR-V](https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.html) defines a binary format for GPU code. It is an intermediate representation (IR), similar in surface to LLVM IR for CPUs. It contains two major subsets, one being used by compute APIs (such as OpenCL and OneAPI), the other being used by graphics APIs (Vulkan and OpenGL, mostly). The two are incompatible with each other, but have enough overlap that they are expressed within the same format.
+[SPIR-V](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html) defines a binary format for GPU code. It is an intermediate representation (IR), similar in surface to LLVM IR for CPUs. It contains two major subsets, one being used by compute APIs (such as OpenCL and OneAPI), the other being used by graphics APIs (Vulkan and OpenGL, mostly). The two are incompatible with each other, but have enough overlap that they are expressed within the same format.
 
 While most GPUs models expose a common vendor-specific assembly-like IR for compute APIs (such as PTX for NVIDIA and GCN for AMD), shaders used by graphics APIs rarely map to any clearly-defined assembly language. Notably, the way graphics shaders are run on the GPU is very often GPU-specific, not only specific to vendors but also to GPU models and architectures.
 

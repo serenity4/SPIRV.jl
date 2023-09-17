@@ -65,6 +65,7 @@ Base.isapprox(mod1::PhysicalModule, mod2::PhysicalModule) =
 function PhysicalModule(file::AbstractString)
   open(io -> read(io, PhysicalModule), file)
 end
+PhysicalModule(bytes::AbstractVector{<:Unsigned}) = PhysicalModule(reinterpret(UInt8, bytes))
 PhysicalModule(bytes::AbstractVector{UInt8}) = read(IOBuffer(bytes), PhysicalModule)
 
 Base.read(io::IO, ::Type{PhysicalModule}) = read(IOBuffer(read(io)), PhysicalModule)
@@ -235,6 +236,9 @@ end
 
 ModuleMetadata() = ModuleMetadata(MAGIC_NUMBER, GENERATOR_MAGIC_NUMBER, SPIRV_VERSION, 0)
 
+"""
+Logical representation of a SPIR-V module.
+"""
 @struct_hash_equal struct Module
   meta::ModuleMetadata
   bound::Int
