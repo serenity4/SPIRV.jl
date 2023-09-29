@@ -20,7 +20,7 @@ jobs:
       - run: julia --color=yes --project -e 'using Pkg;
           Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:serenity4/Graphics"));
           Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:JuliaRegistries/General"));
-          Pkg.develop(path = ".")
+          Pkg.develop(path = ".");
           Pkg.instantiate()'
       - uses: julia-actions/julia-docdeploy@latest
         env:
