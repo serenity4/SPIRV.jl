@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Manipulating SPIR-V binaries · SPIRV.jl</title><meta name="title" content="Manipulating SPIR-V binaries · SPIRV.jl"/><meta property="og:title" content="Manipulating SPIR-V binaries · SPIRV.jl"/><meta property="twitter:title" content="Manipulating SPIR-V binaries · SPIRV.jl"/><meta name="description" content="Documentation for SPIRV.jl."/><meta property="og:description" content="Documentation for SPIRV.jl."/><meta property="twitter:description" content="Documentation for SPIRV.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">SPIRV.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../intro/">Introduction</a></li><li><span class="tocitem">Tutorials</span><ul><li class="is-active"><a class="tocitem" href>Manipulating SPIR-V binaries</a></li></ul></li><li><a class="tocitem" href="../../spirv_llvm/">Targeting SPIR-V via LLVM</a></li><li><a class="tocitem" href="../../features/">Features</a></li><li><a class="tocitem" href="../../api/">API</a></li><li><a class="tocitem" href="../../devdocs/">Developer documentation</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Manipulating SPIR-V binaries</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Manipulating SPIR-V binaries</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/serenity4/SPIRV.jl/blob/main/docs/src/tutorials/manipulating_spirv.jl#L" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Manipulating-SPIR-V-binaries"><a class="docs-heading-anchor" href="#Manipulating-SPIR-V-binaries">Manipulating SPIR-V binaries</a><a id="Manipulating-SPIR-V-binaries-1"></a><a class="docs-heading-anchor-permalink" href="#Manipulating-SPIR-V-binaries" title="Permalink"></a></h1><p>SPIR-V is a binary format. One implication is that introspecting into SPIR-V code requires specialized tools to read and make sense of the data.</p><p>In this package, we provide ways to read binaries from files or <code>IO</code> streams. Depending on how much you want your SPIR-V binaries to be analyzed, we provide a few data structures:</p><ul><li><a href="../../api/#SPIRV.PhysicalModule"><code>PhysicalModule</code></a>, which is a thin wrapper over general the SPIR-V format. Instructions are parsed into <a href="../../api/#SPIRV.PhysicalInstruction"><code>PhysicalInstruction</code></a>s, which encode the <a href="https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_physical_layout_of_a_spir_v_module_and_instruction">most basic structure</a> of a SPIR-V instruction. This data structure is used exclusively for serialization/deserialization purposes, and little can be done with it beyond that.</li><li><a href="../../api/#SPIRV.Module"><code>SPIRV.Module</code></a>, which preserves the general layout of a SPIR-V module and adds more information about its <a href="https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_logical_layout_of_a_module">logical layout</a>. Notably, instructions use the <a href="../../api/#SPIRV.Instruction"><code>Instruction</code></a> data structure which encodes logical information about their semantics (<a href="../../api/#SPIRV.OpCode"><code>SPIRV.OpCode</code></a>), type and result identifiers (<a href="../../api/#SPIRV.ResultID"><code>ResultID</code></a>), and any arguments parsed into Julia types (<code>Float32</code>, <code>Float64</code>, etc). Pretty-printing is provided for <a href="../../api/#SPIRV.Module"><code>SPIRV.Module</code></a>s, which will show the SPIR-V module in colored human-readable text to <code>MIME&quot;text/plain&quot;</code> outputs.</li><li><a href="../../api/#SPIRV.IR"><code>IR</code></a>, which splits a SPIR-V module into many secondary associative data structures, grouped by semantics. This is the best form to inspect logical sections of SPIR-V modules such as functions, types, or constants. It may be constructed by hand or from a <a href="../../api/#SPIRV.Module"><code>SPIRV.Module</code></a>, and is convertible to a <a href="../../api/#SPIRV.Module"><code>SPIRV.Module</code></a> by aggregating all of the logical sections and serializing them into an instruction stream.</li></ul><p>Let&#39;s first start by looking at the first data structure, <a href="../../api/#SPIRV.PhysicalModule"><code>PhysicalModule</code></a>. We will use a tiny vertex shader in SPIR-V form as our binary file.</p><pre><code class="language-julia hljs">using SPIRV, Test
+
+bytes = read(joinpath(@__DIR__, &quot;vert.spv&quot;))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1396-element Vector{UInt8}:
+ 0x03
+ 0x02
+ 0x23
+ 0x07
+ 0x00
+ 0x00
+ 0x01
+ 0x00
+ 0x08
+ 0x00
+    ⋮
+ 0x00
+ 0xfd
+ 0x00
+ 0x01
+ 0x00
+ 0x38
+ 0x00
+ 0x01
+ 0x00</code></pre><pre><code class="language-julia hljs">pmod = PhysicalModule(bytes)
+pmod.instructions</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">78-element Vector{PhysicalInstruction}:
+ PhysicalInstruction(0x0002, 0x0011, nothing, nothing, UInt32[0x00000001])
+ PhysicalInstruction(0x0006, 0x000b, nothing, 0x00000001, UInt32[0x4c534c47, 0x6474732e, 0x3035342e, 0x00000000])
+ PhysicalInstruction(0x0003, 0x000e, nothing, nothing, UInt32[0x00000000, 0x00000001])
+ PhysicalInstruction(0x0009, 0x000f, nothing, nothing, UInt32[0x00000000, 0x00000004, 0x6e69616d, 0x00000000, 0x0000000d, 0x00000012, 0x0000001b, 0x0000001d])
+ PhysicalInstruction(0x0003, 0x0003, nothing, nothing, UInt32[0x00000002, 0x000001c2])
+ PhysicalInstruction(0x0009, 0x0004, nothing, nothing, UInt32[0x415f4c47, 0x735f4252, 0x72617065, 0x5f657461, 0x64616873, 0x6f5f7265, 0x63656a62, 0x00007374])
+ PhysicalInstruction(0x0004, 0x0005, nothing, nothing, UInt32[0x00000004, 0x6e69616d, 0x00000000])
+ PhysicalInstruction(0x0006, 0x0005, nothing, nothing, UInt32[0x0000000b, 0x505f6c67, 0x65567265, 0x78657472, 0x00000000])
+ PhysicalInstruction(0x0006, 0x0006, nothing, nothing, UInt32[0x0000000b, 0x00000000, 0x505f6c67, 0x7469736f, 0x006e6f69])
+ PhysicalInstruction(0x0007, 0x0006, nothing, nothing, UInt32[0x0000000b, 0x00000001, 0x505f6c67, 0x746e696f, 0x657a6953, 0x00000000])
+ ⋮
+ PhysicalInstruction(0x0005, 0x0051, 0x00000006, 0x00000016, UInt32[0x00000013, 0x00000000])
+ PhysicalInstruction(0x0005, 0x0051, 0x00000006, 0x00000017, UInt32[0x00000013, 0x00000001])
+ PhysicalInstruction(0x0007, 0x0050, 0x00000007, 0x00000018, UInt32[0x00000016, 0x00000017, 0x00000014, 0x00000015])
+ PhysicalInstruction(0x0005, 0x0041, 0x00000019, 0x0000001a, UInt32[0x0000000d, 0x0000000f])
+ PhysicalInstruction(0x0003, 0x003e, nothing, nothing, UInt32[0x0000001a, 0x00000018])
+ PhysicalInstruction(0x0004, 0x003d, 0x00000007, 0x0000001e, UInt32[0x0000001d])
+ PhysicalInstruction(0x0003, 0x003e, nothing, nothing, UInt32[0x0000001b, 0x0000001e])
+ PhysicalInstruction(0x0001, 0x00fd, nothing, nothing, UInt32[])
+ PhysicalInstruction(0x0001, 0x0038, nothing, nothing, UInt32[])</code></pre><p>There isn&#39;t much to look at here. We can assemble this module back into a sequence of words:</p><pre><code class="language-julia hljs">words = assemble(pmod)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">349-element Vector{UInt32}:
+ 0x07230203
+ 0x00010000
+ 0x00080008
+ 0x00000023
+ 0x00000000
+ 0x00020011
+ 0x00000001
+ 0x0006000b
+ 0x00000001
+ 0x4c534c47
+          ⋮
+ 0x0004003d
+ 0x00000007
+ 0x0000001e
+ 0x0000001d
+ 0x0003003e
+ 0x0000001b
+ 0x0000001e
+ 0x000100fd
+ 0x00010038</code></pre><p>which is identical to the sequence of bytes we originally had:</p><pre><code class="language-julia hljs">@test reinterpret(UInt8, words) == bytes</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1">Test Passed</span></span></code></pre><p>To see better into our SPIR-V binary, let&#39;s parse it into a <a href="../../api/#SPIRV.Module"><code>SPIRV.Module</code></a> and pretty-print its contents:</p><pre><code class="language-julia hljs">mod = SPIRV.Module(bytes)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SPIR-V
+Version: 1.0
+Generator: 0x00080008
+Schema: 0
+Bound: 35
+
+
+      <span class="sgr96">OpCapability</span>(<span class="sgr38_5" style="color:#ff8700">Shader</span>)
+ <span class="sgr33">%1</span> = <span class="sgr96">OpExtInstImport</span>(<span class="sgr38_5" style="color:#afd787">&quot;GLSL.std.450&quot;</span>)
+      <span class="sgr96">OpMemoryModel</span>(<span class="sgr38_5" style="color:#ff8700">Logical</span>, <span class="sgr38_5" style="color:#ff8700">GLSL450</span>)
+      <span class="sgr96">OpEntryPoint</span>(<span class="sgr38_5" style="color:#ff8700">Vertex</span>, <span class="sgr33">%4</span>, <span class="sgr38_5" style="color:#afd787">&quot;main&quot;</span>, <span class="sgr33">%13</span>, <span class="sgr33">%18</span>, <span class="sgr33">%27</span>, <span class="sgr33">%29</span>)
+      <span class="sgr96">OpSource</span>(<span class="sgr38_5" style="color:#ff8700">GLSL</span>, <span class="sgr38_5" style="color:#afd7ff">0x000001c2</span>)
+      <span class="sgr96">OpSourceExtension</span>(<span class="sgr38_5" style="color:#afd787">&quot;GL_ARB_separate_shader_objects&quot;</span>)
+      <span class="sgr96">OpName</span>(<span class="sgr33">%4</span>, <span class="sgr38_5" style="color:#afd787">&quot;main&quot;</span>)
+      <span class="sgr96">OpName</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#afd787">&quot;gl_PerVertex&quot;</span>)
+      <span class="sgr96">OpMemberName</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#afd787">&quot;gl_Position&quot;</span>)
+      <span class="sgr96">OpMemberName</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#afd787">&quot;gl_PointSize&quot;</span>)
+      <span class="sgr96">OpMemberName</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#afd787">&quot;gl_ClipDistance&quot;</span>)
+      <span class="sgr96">OpMemberName</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000003</span>, <span class="sgr38_5" style="color:#afd787">&quot;gl_CullDistance&quot;</span>)
+      <span class="sgr96">OpName</span>(<span class="sgr33">%13</span>, <span class="sgr38_5" style="color:#afd787">&quot;&quot;</span>)
+      <span class="sgr96">OpName</span>(<span class="sgr33">%18</span>, <span class="sgr38_5" style="color:#afd787">&quot;in_position&quot;</span>)
+      <span class="sgr96">OpName</span>(<span class="sgr33">%27</span>, <span class="sgr38_5" style="color:#afd787">&quot;frag_color&quot;</span>)
+      <span class="sgr96">OpName</span>(<span class="sgr33">%29</span>, <span class="sgr38_5" style="color:#afd787">&quot;in_color&quot;</span>)
+      <span class="sgr96">OpName</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd787">&quot;UniformBufferObject&quot;</span>)
+      <span class="sgr96">OpMemberName</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#afd787">&quot;model&quot;</span>)
+      <span class="sgr96">OpMemberName</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#afd787">&quot;view&quot;</span>)
+      <span class="sgr96">OpMemberName</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#afd787">&quot;proj&quot;</span>)
+      <span class="sgr96">OpName</span>(<span class="sgr33">%34</span>, <span class="sgr38_5" style="color:#afd787">&quot;mvp&quot;</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#ff8700">BuiltIn</span>, <span class="sgr38_5" style="color:#ff8700">Position</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#ff8700">BuiltIn</span>, <span class="sgr38_5" style="color:#ff8700">PointSize</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#ff8700">BuiltIn</span>, <span class="sgr38_5" style="color:#ff8700">ClipDistance</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000003</span>, <span class="sgr38_5" style="color:#ff8700">BuiltIn</span>, <span class="sgr38_5" style="color:#ff8700">CullDistance</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%11</span>, <span class="sgr38_5" style="color:#ff8700">Block</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%18</span>, <span class="sgr38_5" style="color:#ff8700">Location</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%27</span>, <span class="sgr38_5" style="color:#ff8700">Location</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%29</span>, <span class="sgr38_5" style="color:#ff8700">Location</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#ff8700">ColMajor</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#ff8700">Offset</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#ff8700">MatrixStride</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000010</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#ff8700">ColMajor</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#ff8700">Offset</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000040</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#ff8700">MatrixStride</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000010</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#ff8700">ColMajor</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#ff8700">Offset</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000080</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#ff8700">MatrixStride</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000010</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%32</span>, <span class="sgr38_5" style="color:#ff8700">Block</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%34</span>, <span class="sgr38_5" style="color:#ff8700">DescriptorSet</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%34</span>, <span class="sgr38_5" style="color:#ff8700">Binding</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+ <span class="sgr33">%2</span> = <span class="sgr96">OpTypeVoid</span>()
+ <span class="sgr33">%3</span> = <span class="sgr96">OpTypeFunction</span>(<span class="sgr33">%2</span>)
+ <span class="sgr33">%6</span> = <span class="sgr96">OpTypeFloat</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000020</span>)
+ <span class="sgr33">%7</span> = <span class="sgr96">OpTypeVector</span>(<span class="sgr33">%6</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000004</span>)
+ <span class="sgr33">%8</span> = <span class="sgr96">OpTypeInt</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000020</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+ <span class="sgr33">%9</span> = <span class="sgr96">OpConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)<span class="sgr92"><span class="sgr1">::%8</span></span>
+<span class="sgr33">%10</span> = <span class="sgr96">OpTypeArray</span>(<span class="sgr33">%6</span>, <span class="sgr33">%9</span>)
+<span class="sgr33">%11</span> = <span class="sgr96">OpTypeStruct</span>(<span class="sgr33">%7</span>, <span class="sgr33">%6</span>, <span class="sgr33">%10</span>, <span class="sgr33">%10</span>)
+<span class="sgr33">%12</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Output</span>, <span class="sgr33">%11</span>)
+<span class="sgr33">%13</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Output</span>)<span class="sgr92"><span class="sgr1">::%12</span></span>
+<span class="sgr33">%14</span> = <span class="sgr96">OpTypeInt</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000020</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)
+<span class="sgr33">%15</span> = <span class="sgr96">OpConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)<span class="sgr92"><span class="sgr1">::%14</span></span>
+<span class="sgr33">%16</span> = <span class="sgr96">OpTypeVector</span>(<span class="sgr33">%6</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>)
+<span class="sgr33">%17</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>, <span class="sgr33">%16</span>)
+<span class="sgr33">%18</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>)<span class="sgr92"><span class="sgr1">::%17</span></span>
+<span class="sgr33">%20</span> = <span class="sgr96">OpConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
+<span class="sgr33">%21</span> = <span class="sgr96">OpConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x3f800000</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
+<span class="sgr33">%25</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Output</span>, <span class="sgr33">%7</span>)
+<span class="sgr33">%27</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Output</span>)<span class="sgr92"><span class="sgr1">::%25</span></span>
+<span class="sgr33">%28</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>, <span class="sgr33">%7</span>)
+<span class="sgr33">%29</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>)<span class="sgr92"><span class="sgr1">::%28</span></span>
+<span class="sgr33">%31</span> = <span class="sgr96">OpTypeMatrix</span>(<span class="sgr33">%7</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000004</span>)
+<span class="sgr33">%32</span> = <span class="sgr96">OpTypeStruct</span>(<span class="sgr33">%31</span>, <span class="sgr33">%31</span>, <span class="sgr33">%31</span>)
+<span class="sgr33">%33</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Uniform</span>, <span class="sgr33">%32</span>)
+<span class="sgr33">%34</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Uniform</span>)<span class="sgr92"><span class="sgr1">::%33</span></span>
+ <span class="sgr33">%4</span> = <span class="sgr96">OpFunction</span>(<span class="sgr95">None</span>, <span class="sgr33">%3</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+ <span class="sgr33">%5</span> = <span class="sgr96">OpLabel</span>()
+<span class="sgr33">%19</span> = <span class="sgr96">OpLoad</span>(<span class="sgr33">%18</span>)<span class="sgr92"><span class="sgr1">::%16</span></span>
+<span class="sgr33">%22</span> = <span class="sgr96">OpCompositeExtract</span>(<span class="sgr33">%19</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
+<span class="sgr33">%23</span> = <span class="sgr96">OpCompositeExtract</span>(<span class="sgr33">%19</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
+<span class="sgr33">%24</span> = <span class="sgr96">OpCompositeConstruct</span>(<span class="sgr33">%22</span>, <span class="sgr33">%23</span>, <span class="sgr33">%20</span>, <span class="sgr33">%21</span>)<span class="sgr92"><span class="sgr1">::%7</span></span>
+<span class="sgr33">%26</span> = <span class="sgr96">OpAccessChain</span>(<span class="sgr33">%13</span>, <span class="sgr33">%15</span>)<span class="sgr92"><span class="sgr1">::%25</span></span>
+      <span class="sgr96">OpStore</span>(<span class="sgr33">%26</span>, <span class="sgr33">%24</span>)
+<span class="sgr33">%30</span> = <span class="sgr96">OpLoad</span>(<span class="sgr33">%29</span>)<span class="sgr92"><span class="sgr1">::%7</span></span>
+      <span class="sgr96">OpStore</span>(<span class="sgr33">%27</span>, <span class="sgr33">%30</span>)
+      <span class="sgr96">OpReturn</span>()
+      <span class="sgr96">OpFunctionEnd</span>()</code></pre><p>Contents still remain unchanged. Let&#39;s prove that:</p><pre><code class="language-julia hljs">@test assemble(mod) == words</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1">Test Passed</span></span></code></pre><p>Now, let&#39;s go all the way and do some work to understand the contents of this SPIR-V module:</p><pre><code class="language-julia hljs">ir = IR(bytes)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SPIR-V
+Version: 1.0
+Generator: 0x00080008
+Schema: 0
+Bound: 35
+
+
+      <span class="sgr96">OpCapability</span>(<span class="sgr38_5" style="color:#ff8700">ClipDistance</span>)
+      <span class="sgr96">OpCapability</span>(<span class="sgr38_5" style="color:#ff8700">CullDistance</span>)
+ <span class="sgr33">%1</span> = <span class="sgr96">OpExtInstImport</span>(<span class="sgr38_5" style="color:#afd787">&quot;GLSL.std.450&quot;</span>)
+      <span class="sgr96">OpMemoryModel</span>(<span class="sgr38_5" style="color:#ff8700">Logical</span>, <span class="sgr38_5" style="color:#ff8700">GLSL450</span>)
+      <span class="sgr96">OpEntryPoint</span>(<span class="sgr38_5" style="color:#ff8700">Vertex</span>, <span class="sgr33">%main</span>, <span class="sgr38_5" style="color:#afd787">&quot;main&quot;</span>, <span class="sgr33">%</span>, <span class="sgr33">%in_position</span>, <span class="sgr33">%frag_color</span>, <span class="sgr33">%in_color</span>)
+      <span class="sgr96">OpSource</span>(<span class="sgr38_5" style="color:#ff8700">GLSL</span>, <span class="sgr38_5" style="color:#afd7ff">0x000001c2</span>)
+      <span class="sgr96">OpSourceExtension</span>(<span class="sgr38_5" style="color:#afd787">&quot;GL_ARB_separate_shader_objects&quot;</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%gl_PerVertex</span>, <span class="sgr38_5" style="color:#ff8700">Block</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%gl_PerVertex</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#ff8700">BuiltIn</span>, <span class="sgr38_5" style="color:#ff8700">Position</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%gl_PerVertex</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#ff8700">BuiltIn</span>, <span class="sgr38_5" style="color:#ff8700">PointSize</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%gl_PerVertex</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#ff8700">BuiltIn</span>, <span class="sgr38_5" style="color:#ff8700">ClipDistance</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%gl_PerVertex</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000003</span>, <span class="sgr38_5" style="color:#ff8700">BuiltIn</span>, <span class="sgr38_5" style="color:#ff8700">CullDistance</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%in_position</span>, <span class="sgr38_5" style="color:#ff8700">Location</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%frag_color</span>, <span class="sgr38_5" style="color:#ff8700">Location</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%in_color</span>, <span class="sgr38_5" style="color:#ff8700">Location</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#ff8700">Block</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#ff8700">ColMajor</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#ff8700">MatrixStride</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000010</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#ff8700">Offset</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#ff8700">ColMajor</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#ff8700">MatrixStride</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000010</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#ff8700">Offset</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000040</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#ff8700">ColMajor</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#ff8700">MatrixStride</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000010</span>)
+      <span class="sgr96">OpMemberDecorate</span>(<span class="sgr33">%UniformBufferObject</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>, <span class="sgr38_5" style="color:#ff8700">Offset</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000080</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%mvp</span>, <span class="sgr38_5" style="color:#ff8700">Binding</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+      <span class="sgr96">OpDecorate</span>(<span class="sgr33">%mvp</span>, <span class="sgr38_5" style="color:#ff8700">DescriptorSet</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+ <span class="sgr33">%2</span> = <span class="sgr96">OpTypeVoid</span>()
+ <span class="sgr33">%3</span> = <span class="sgr96">OpTypeFunction</span>(<span class="sgr33">%2</span>)
+ <span class="sgr33">%6</span> = <span class="sgr96">OpTypeFloat</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000020</span>)
+ <span class="sgr33">%7</span> = <span class="sgr96">OpTypeVector</span>(<span class="sgr33">%6</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000004</span>)
+ <span class="sgr33">%8</span> = <span class="sgr96">OpTypeInt</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000020</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+ <span class="sgr33">%9</span> = <span class="sgr96">OpConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)<span class="sgr92"><span class="sgr1">::%8</span></span>
+<span class="sgr33">%10</span> = <span class="sgr96">OpTypeArray</span>(<span class="sgr33">%6</span>, <span class="sgr33">%9</span>)
+<span class="sgr33">%gl_PerVertex</span> = <span class="sgr96">OpTypeStruct</span>(<span class="sgr33">%7</span>, <span class="sgr33">%6</span>, <span class="sgr33">%10</span>, <span class="sgr33">%10</span>)
+<span class="sgr33">%12</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Output</span>, <span class="sgr33">%gl_PerVertex</span>)
+<span class="sgr33">%</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Output</span>)<span class="sgr92"><span class="sgr1">::%12</span></span>
+<span class="sgr33">%14</span> = <span class="sgr96">OpTypeInt</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000020</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)
+<span class="sgr33">%15</span> = <span class="sgr96">OpConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)<span class="sgr92"><span class="sgr1">::%14</span></span>
+<span class="sgr33">%16</span> = <span class="sgr96">OpTypeVector</span>(<span class="sgr33">%6</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000002</span>)
+<span class="sgr33">%17</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>, <span class="sgr33">%16</span>)
+<span class="sgr33">%in_position</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>)<span class="sgr92"><span class="sgr1">::%17</span></span>
+<span class="sgr33">%20</span> = <span class="sgr96">OpConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
+<span class="sgr33">%21</span> = <span class="sgr96">OpConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x3f800000</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
+<span class="sgr33">%25</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Output</span>, <span class="sgr33">%7</span>)
+<span class="sgr33">%frag_color</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Output</span>)<span class="sgr92"><span class="sgr1">::%25</span></span>
+<span class="sgr33">%28</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>, <span class="sgr33">%7</span>)
+<span class="sgr33">%in_color</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>)<span class="sgr92"><span class="sgr1">::%28</span></span>
+<span class="sgr33">%31</span> = <span class="sgr96">OpTypeMatrix</span>(<span class="sgr33">%7</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000004</span>)
+<span class="sgr33">%UniformBufferObject</span> = <span class="sgr96">OpTypeStruct</span>(<span class="sgr33">%31</span>, <span class="sgr33">%31</span>, <span class="sgr33">%31</span>)
+<span class="sgr33">%33</span> = <span class="sgr96">OpTypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Uniform</span>, <span class="sgr33">%UniformBufferObject</span>)
+<span class="sgr33">%mvp</span> = <span class="sgr96">OpVariable</span>(<span class="sgr38_5" style="color:#ff8700">Uniform</span>)<span class="sgr92"><span class="sgr1">::%33</span></span>
+ <span class="sgr33">%main</span> = <span class="sgr96">OpFunction</span>(<span class="sgr95">None</span>, <span class="sgr33">%3</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+ <span class="sgr33">%5</span> = <span class="sgr96">OpLabel</span>()
+<span class="sgr33">%19</span> = <span class="sgr96">OpLoad</span>(<span class="sgr33">%in_position</span>)<span class="sgr92"><span class="sgr1">::%16</span></span>
+<span class="sgr33">%22</span> = <span class="sgr96">OpCompositeExtract</span>(<span class="sgr33">%19</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
+<span class="sgr33">%23</span> = <span class="sgr96">OpCompositeExtract</span>(<span class="sgr33">%19</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
+<span class="sgr33">%24</span> = <span class="sgr96">OpCompositeConstruct</span>(<span class="sgr33">%22</span>, <span class="sgr33">%23</span>, <span class="sgr33">%20</span>, <span class="sgr33">%21</span>)<span class="sgr92"><span class="sgr1">::%7</span></span>
+<span class="sgr33">%26</span> = <span class="sgr96">OpAccessChain</span>(<span class="sgr33">%</span>, <span class="sgr33">%15</span>)<span class="sgr92"><span class="sgr1">::%25</span></span>
+      <span class="sgr96">OpStore</span>(<span class="sgr33">%26</span>, <span class="sgr33">%24</span>)
+<span class="sgr33">%30</span> = <span class="sgr96">OpLoad</span>(<span class="sgr33">%in_color</span>)<span class="sgr92"><span class="sgr1">::%7</span></span>
+      <span class="sgr96">OpStore</span>(<span class="sgr33">%frag_color</span>, <span class="sgr33">%30</span>)
+      <span class="sgr96">OpReturn</span>()
+      <span class="sgr96">OpFunctionEnd</span>()</code></pre><p>The IR is still printed as an instruction stream, but that is only for pretty-printing; the data structure itself loses the sequential layout of the module. Pretty-printing first transforms the IR into a <a href="../../api/#SPIRV.Module"><code>SPIRV.Module</code></a>, then uses some of the information stored in the IR to enhance the display. Notice how certain previously numbered variable names were substituted with actual variable names, such as <code>%frag_color</code>.</p><p><strong>This IR data structure is not public</strong>, in the sense that we do not commit to a stable semantically versioned implementation; it has notably been designed in context of the <a href="../../features/#compiler">Julia to SPIR-V compiler</a>, which is still experimental. However, if you want to explore a given SPIR-V module, you can try to make sense of its contents:</p><pre><code class="language-julia hljs">ir.fdefs</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SPIRV.BijectiveMapping with 1 elements:
+  %4 &lt;=&gt; FunctionDefinition (0 arguments, 1 block, 10 expressions)</code></pre><pre><code class="language-julia hljs">ir.constants</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SPIRV.BijectiveMapping with 4 elements:
+   %9 &lt;=&gt; SPIRV.Constant(0x00000001, IntegerType(32, false), false)
+  %15 &lt;=&gt; SPIRV.Constant(0, IntegerType(32, true), false)
+  %20 &lt;=&gt; SPIRV.Constant(0.0f0, FloatType(32), false)
+  %21 &lt;=&gt; SPIRV.Constant(1.0f0, FloatType(32), false)</code></pre><pre><code class="language-julia hljs">ir.types</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SPIRV.BijectiveMapping with 16 elements:
+   %2 &lt;=&gt; VoidType()
+   %3 &lt;=&gt; SPIRV.FunctionType(VoidType(), SPIRType[])
+   %6 &lt;=&gt; FloatType(32)
+   %7 &lt;=&gt; VectorType(FloatType(32), 4)
+   %8 &lt;=&gt; IntegerType(32, false)
+  %10 &lt;=&gt; ArrayType(FloatType(32), SPIRV.Constant(0x00000001, IntegerType(32, false), false))
+  %11 &lt;=&gt; StructType(UUID(&quot;e7ecd5c2-5fcf-11ee-2708-2f017c9ab502&quot;), SPIRType[VectorType(FloatType(32), 4), FloatType(32), ArrayType(FloatType(32), SPIRV.Constant(0x00000001, IntegerType(32, false), false)), ArrayType(FloatType(32), SPIRV.Constant(0x00000001, IntegerType(32, false), false))])
+  %12 &lt;=&gt; PointerType(SPIRV.StorageClassOutput, StructType(UUID(&quot;e7ecd5c2-5fcf-11ee-2708-2f017c9ab502&quot;), SPIRType[VectorType(FloatType(32), 4), FloatType(32), ArrayType(FloatType(32), SPIRV.Constant(0x00000001, IntegerType(32, false), false)), ArrayType(FloatType(32), SPIRV.Constant(0x00000001, IntegerType(32, false), false))]))
+  %14 &lt;=&gt; IntegerType(32, true)
+  %16 &lt;=&gt; VectorType(FloatType(32), 2)
+  %17 &lt;=&gt; PointerType(SPIRV.StorageClassInput, VectorType(FloatType(32), 2))
+  %25 &lt;=&gt; PointerType(SPIRV.StorageClassOutput, VectorType(FloatType(32), 4))
+  %28 &lt;=&gt; PointerType(SPIRV.StorageClassInput, VectorType(FloatType(32), 4))
+  %31 &lt;=&gt; MatrixType(VectorType(FloatType(32), 4), 4, true)
+  %32 &lt;=&gt; StructType(UUID(&quot;e7fa977a-5fcf-11ee-2663-0f64986bf2d3&quot;), SPIRType[MatrixType(VectorType(FloatType(32), 4), 4, true), MatrixType(VectorType(FloatType(32), 4), 4, true), MatrixType(VectorType(FloatType(32), 4), 4, true)])
+  %33 &lt;=&gt; PointerType(SPIRV.StorageClassUniform, StructType(UUID(&quot;e7fa977a-5fcf-11ee-2663-0f64986bf2d3&quot;), SPIRType[MatrixType(VectorType(FloatType(32), 4), 4, true), MatrixType(VectorType(FloatType(32), 4), 4, true), MatrixType(VectorType(FloatType(32), 4), 4, true)]))</code></pre><pre><code class="language-julia hljs">ir.capabilities</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{SPIRV.Capability}:
+ CapabilityClipDistance::Capability = 0x00000020
+ CapabilityCullDistance::Capability = 0x00000021</code></pre><p>Let&#39;s now assemble it into a sequence of words. Note how the regenerated module slightly differs from the original module.</p><pre><code class="language-julia hljs">mod_regenerated = SPIRV.Module(ir)
+
+setdiff(mod, mod_regenerated)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1-element Vector{Instruction}:
+ <span class="sgr96">OpCapability</span>(<span class="sgr38_5" style="color:#ff8700">Shader</span>)</code></pre><pre><code class="language-julia hljs">setdiff(mod_regenerated, mod)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Instruction}:
+ <span class="sgr96">OpCapability</span>(<span class="sgr38_5" style="color:#ff8700">ClipDistance</span>)
+ <span class="sgr96">OpCapability</span>(<span class="sgr38_5" style="color:#ff8700">CullDistance</span>)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../intro/">« Introduction</a><a class="docs-footer-nextpage" href="../../spirv_llvm/">Targeting SPIR-V via LLVM »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.0 on <span class="colophon-date" title="Saturday 30 September 2023 20:28">Saturday 30 September 2023</span>. Using Julia version 1.9.0-rc3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
