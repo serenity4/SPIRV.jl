@@ -2,6 +2,8 @@ using SPIRV, Test
 using SPIRV: @shader, @vertex, @fragment, @compute, @any_hit, @mesh
 using SPIRV.MathFunctions
 
+include("vulkan_driver.jl")
+
 resource(filename) = joinpath(@__DIR__, "resources", filename)
 read_module(file) = read(joinpath(@__DIR__, "modules", file * (last(splitext(file)) == ".jl" ? "" : ".jl")), String)
 load_module_expr(file) = Meta.parse(string("quote; ", read_module(file), "; end")).args[1]
