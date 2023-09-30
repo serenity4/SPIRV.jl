@@ -103,8 +103,13 @@ include("frontend/ci_passes.jl")
 include("frontend/target.jl")
 include("frontend/compile.jl")
 include("frontend/codegen.jl")
-include("frontend/shader_options.jl")
-include("frontend/shader.jl")
+include("frontend/shader/options.jl")
+include("frontend/shader/interface.jl")
+include("frontend/shader/shader.jl")
+include("frontend/shader/analysis.jl")
+include("frontend/shader/source.jl")
+include("frontend/shader/cache.jl")
+include("frontend/shader/api.jl")
 
 include("passes.jl")
 include("spirv_dsl.jl")
@@ -190,6 +195,8 @@ export
   GeometryExecutionOptions,
   TessellationExecutionOptions,
   MeshExecutionOptions,
+  ShaderSpec, ShaderSource,
+  ShaderCompilationCache,
 
   # Layouts.
   LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanAlignment, VulkanLayout, ShaderLayout, TypeMetadata,

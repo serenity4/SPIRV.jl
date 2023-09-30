@@ -1,3 +1,6 @@
+const ENUM_COLOR = 208
+const BITMASK_COLOR = :light_magenta
+
 function emit(io::IO, inst::Instruction)
   if !isnothing(inst.result_id)
     printstyled(io, inst.result_id; color = :yellow)
@@ -35,8 +38,8 @@ end
 
 function emit_argument(io, i, arg, kind, category = kind_to_category[kind])
   @match category begin
-    "ValueEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => ""); color = 208)
-    "BitEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => "", '(' => "", ')' => ""); color = :light_magenta)
+    "ValueEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => ""); color = ENUM_COLOR)
+    "BitEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => "", '(' => "", ')' => ""); color = BITMASK_COLOR)
     "Literal" => @match arg begin
       ::AbstractString => printstyled(io, '"', arg, '"'; color = 150)
       ::OpCodeGLSL => printstyled(io, replace(string(arg), "OpGLSL" => ""); color = 153)

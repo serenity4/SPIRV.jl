@@ -19,6 +19,9 @@ end
 supports_extension(supported::SupportedFeatures, ext) = ext in supported.extensions
 supports_capability(supported::SupportedFeatures, cap) = cap in supported.capabilities
 
+Base.union!(x::SupportedFeatures, y::SupportedFeatures) = SupportedFeatures(union(x.extensions, y.extensions), union(x.capabilities, y.capabilities))
+Base.union(x::SupportedFeatures, y::SupportedFeatures) = foldl(union!, (x, y); init = SupportedFeatures([], []))
+
 struct AllSupported <: FeatureSupport end
 
 supports_extension(::AllSupported, ext) = true
@@ -76,12 +79,21 @@ function FeatureRequirements(instructions, supported::FeatureSupport)
       end
     end
   end
-  implicitly_declared = Capability[]
+  # Add any extensions that are not linked to capabilities but required by them.
+  # XXX: Investigate why this information is not automatically derived.
   for cap in required_caps
-    enum_info = enum_infos[cap]
+    cap == SPIRV.CapabilityMeshShadingEXT && push!(required_exts, "SPV_EXT_mesh_shader")
+  end
+  FeatureRequirements(required_exts, setdiff(required_caps, implicitly_declared_capabilities(required_caps)))
+end
+
+function implicitly_declared_capabilities(capabilities)
+  implicitly_declared = Capability[]
+  for capability in capabilities
+    enum_info = enum_infos[capability]
     union!(implicitly_declared, enum_info.capabilities)
   end
-  FeatureRequirements(required_exts, setdiff(required_caps, implicitly_declared))
+  implicitly_declared
 end
 
 FeatureRequirements(ir::IR, features::FeatureSupport) = FeatureRequirements(Module(ir), features)

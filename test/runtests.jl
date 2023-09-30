@@ -1,4 +1,5 @@
 using SPIRV, Test
+using SPIRV: @shader, @vertex, @fragment, @compute, @any_hit, @mesh
 using SPIRV.MathFunctions
 
 resource(filename) = joinpath(@__DIR__, "resources", filename)

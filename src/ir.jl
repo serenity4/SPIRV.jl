@@ -30,6 +30,7 @@ end
 @forward_methods IR field = :fdefs Base.iterate(_, args...)
 
 Base.getindex(ir::IR, i::Int) = collect(ir.fdefs)[i]
+Base.:(==)(x::IR, y::IR) = Module(x) == Module(y)
 
 IR(source; satisfy_requirements = true, features = AllSupported()) = IR(Module(source); satisfy_requirements, features)
 

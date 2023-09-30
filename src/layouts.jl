@@ -60,7 +60,7 @@ alignment(::NoPadding, ::Type) = 0
 padding(::NoPadding, T, i) = 0
 padding(::NoPadding, ::Type{Vector{T}}) where {T} = 0
 
-struct LayoutInfo
+@struct_hash_equal struct LayoutInfo
   stride::Int
   datasize::Int
   alignment::Int
@@ -69,7 +69,7 @@ end
 
 LayoutInfo(layout::LayoutStrategy, T::Type) = LayoutInfo(stride(layout, T), datasize(layout, T), alignment(layout, T), isstructtype(T) ? dataoffset.(layout, T, 1:fieldcount(T)) : nothing)
 
-struct ExplicitLayout <: LayoutStrategy
+@struct_hash_equal struct ExplicitLayout <: LayoutStrategy
   d::IdDict{DataType,LayoutInfo}
 end
 
@@ -141,7 +141,7 @@ extended_alignment(t::MatrixType) = t.is_column_major ? extended_alignment(t.elt
 """
 Vulkan-compatible layout strategy.
 """
-struct VulkanLayout <: LayoutStrategy
+@struct_hash_equal struct VulkanLayout <: LayoutStrategy
   alignment::VulkanAlignment
   tmap::TypeMap
   storage_classes::Dict{SPIRType,Set{StorageClass}}
@@ -200,7 +200,7 @@ end
 """
 Type metadata meant to be analyzed and modified to generate appropriate decorations.
 """
-struct TypeMetadata
+@struct_hash_equal struct TypeMetadata
   tmap::TypeMap
   d::Dictionary{SPIRType, Metadata}
 end
@@ -269,7 +269,7 @@ VulkanLayout(Ts; alignment = VulkanAlignment(), storage_classes = Dict(), interf
 """
 Shader-compatible layout strategy, where layout information is strictly read from shader decorations.
 """
-struct ShaderLayout <: LayoutStrategy
+@struct_hash_equal struct ShaderLayout <: LayoutStrategy
   tmeta::TypeMetadata
 end
 

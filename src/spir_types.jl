@@ -251,7 +251,7 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
   #TODO: WIP, need to insert an `OpCompositeExtract` for all uses if the type changed.
   promoted_type = promote_to_interface_block(type, storage_class)
   if type ≠ promoted_type
-    error("The provided type must be a struct or an array of structs. The automation of this requirement is a work in progress.")
+    error("The provided type `$type` for storage class `$storage_class` must be a struct or an array of structs. The automation of this requirement is a work in progress.")
   end
 
   if type == promoted_type && !isnothing(tmap) && fill_tmap
