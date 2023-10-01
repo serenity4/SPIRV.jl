@@ -4,11 +4,10 @@ function SPIRV.SupportedFeatures(physical_device::Vk.PhysicalDevice, api_version
   # Retrieve supported extensions.
   extensions = String[]
   for spec in Vk.SPIRV_EXTENSIONS
-    if (isnothing(spec.promoted_to) ||
-       spec.promoted_to ≤ api_version) &&
-       any(ext in device_extensions for ext in spec.enabling_extensions)
-
-      push!(extensions, spec.name)
+    if !isnothing(spec.promoted_to)
+      spec.promoted_to ≤ api_version && push!(extensions, spec.name)
+    else
+      any(ext in device_extensions for ext in spec.enabling_extensions) && push!(extensions, spec.name)
     end
   end
 
