@@ -27,20 +27,20 @@ struct AllSupported <: FeatureSupport end
 supports_extension(::AllSupported, ext) = true
 supports_capability(::AllSupported, cap) = true
 
-function find_supported(extensions, capabilities, supported::FeatureSupport)
+function find_supported(extensions, capabilities, supported::FeatureSupport, required_by)
   i_ext = findfirst(x -> supports_extension(supported, x), extensions)
   i_cap = findfirst(x -> supports_capability(supported, x), capabilities)
   if isnothing(i_ext) && !isempty(extensions)
-    error("At least one of the following extensions is required: $extensions")
+    error("At least one of the following extensions is required for `$required_by`: $extensions")
   end
   if isnothing(i_cap) && !isempty(capabilities)
-    error("At least one of the following capabilities is required: $capabilities")
+    error("At least one of the following capabilities is required for `$required_by`: $capabilities")
   end
   (isnothing(i_ext) ? nothing : extensions[i_ext], isnothing(i_cap) ? nothing : capabilities[i_cap])
 end
 
-function add_requirements!(required_exts, required_caps, supported::FeatureSupport, exts, caps)
-  ext, cap = find_supported(exts, caps, supported)
+function add_requirements!(required_exts, required_caps, supported::FeatureSupport, exts, caps, required_by)
+  ext, cap = find_supported(exts, caps, supported, required_by)
   !isnothing(ext) && push!(required_exts, ext)
   !isnothing(cap) && push!(required_caps, cap)
 end
@@ -51,7 +51,7 @@ function FeatureRequirements(instructions, supported::FeatureSupport)
   all(supports_capability(supported, cap) for cap in required_caps) || error("Certain base capabilities are not supported.")
   for inst in instructions
     inst_info = info(inst)
-    add_requirements!(required_exts, required_caps, supported, inst_info.extensions, inst_info.capabilities)
+    add_requirements!(required_exts, required_caps, supported, inst_info.extensions, inst_info.capabilities, inst)
     for (arg, op_info) in zip(inst.arguments, inst_info.operands)
       cap = @trymatch inst.opcode begin
         &OpTypeFloat => @trymatch Int(arg) begin
@@ -69,12 +69,12 @@ function FeatureRequirements(instructions, supported::FeatureSupport)
       @tryswitch category begin
         @case "ValueEnum"
         enum_info = enum_infos[arg]
-        add_requirements!(required_exts, required_caps, supported, enum_info.extensions, enum_info.capabilities)
+        add_requirements!(required_exts, required_caps, supported, enum_info.extensions, enum_info.capabilities, arg)
 
         @case "BitEnum"
         for flag in enabled_flags(arg)
           enum_info = enum_infos[flag]
-          add_requirements!(required_exts, required_caps, supported, enum_info.extensions, enum_info.capabilities)
+          add_requirements!(required_exts, required_caps, supported, enum_info.extensions, enum_info.capabilities, flag)
         end
       end
     end

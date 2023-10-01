@@ -1,5 +1,11 @@
-const g = JSON3.read(read(joinpath(include_dir, "spirv.core.grammar.json"), String))
-const extinst_glsl = JSON3.read(read(joinpath(include_dir, "extinst.glsl.std.450.grammar.json"), String))
+const core_grammar_file = joinpath(include_dir, "spirv.core.grammar.json")
+const glsl_grammar_file = joinpath(include_dir, "extinst.glsl.std.450.grammar.json")
+
+cp(core_grammar_file, joinpath(@__DIR__, basename(core_grammar_file)); force = true)
+cp(glsl_grammar_file, joinpath(@__DIR__, basename(glsl_grammar_file)); force = true)
+
+const g = JSON3.read(read(joinpath(include_dir, core_grammar_file), String))
+const extinst_glsl = JSON3.read(read(joinpath(include_dir, glsl_grammar_file), String))
 
 const magic_number = parse(UInt32, g[:magic_number])
 const grammar_version = VersionNumber(getindex.(Ref(g), [:major_version, :minor_version, :revision])...)
