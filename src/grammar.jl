@@ -1,3 +1,22 @@
+struct VersionRange
+  "Inclusive lower bound."
+  lower::VersionNumber
+  "Exclusive upper bound."
+  upper::VersionNumber
+end
+
+Base.in(version::VersionNumber, range::VersionRange) = range.lower ≤ version < range.upper || version == typemax(VersionNumber) == range.upper
+Base.show(io::IO, range::VersionRange) = print(io, '[', range.lower, " — ", range.upper, ')')
+
+struct RequiredSupport
+  version::VersionRange
+  extensions::Optional{Vector{String}}
+  capabilities::Optional{Vector{Capability}}
+end
+
+Base.iterate(required::RequiredSupport) = (required, nothing)
+Base.iterate(required::RequiredSupport, ::Nothing) = nothing
+
 struct OperandInfo
   kind::Any
   name::Optional{String}
@@ -7,15 +26,11 @@ end
 struct InstructionInfo
   class::Optional{String}
   operands::Vector{OperandInfo}
-  capabilities::Vector{Capability}
-  extensions::Vector{String}
-  min_version::VersionNumber
+  required::RequiredSupport
 end
 
 struct EnumerantInfo
-  capabilities::Vector{Capability}
-  extensions::Vector{String}
-  min_version::VersionNumber
+  required::Union{RequiredSupport, Vector{RequiredSupport}}
   parameters::Vector{OperandInfo}
 end
 

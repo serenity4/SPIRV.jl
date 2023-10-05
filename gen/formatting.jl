@@ -1,3 +1,5 @@
+margin = 150
+
 function align_block(file; delim = r"=", block_begin = r"@c?enum", block_end = r"^end$")
   lines = readlines(file)
   final_lines = String[]
@@ -40,7 +42,7 @@ function align_block(file; delim = r"=", block_begin = r"@c?enum", block_end = r
   end
 
   # Note: some of these options are overwritten by the SPIRV/.JuliaFormatter
-  format_file(file, margin = 92, align_pair_arrow = true, align_assignment = true, align_struct_field = true, align_conditional = true)
+  format_file(file; margin, align_pair_arrow = true, align_assignment = true, align_struct_field = true, align_conditional = true)
 end
 
 custom_print(io::IO, expr::Expr) = println(io, prettify(expr))
@@ -54,10 +56,10 @@ function format_files()
   @info "Formatting."
 
   # initial formatting
-  format(enum_info_file)
-  format(enum_file)
-  format(inst_file)
-  format(extinst_file)
+  format(enum_info_file; margin)
+  format(enum_file; margin)
+  format(inst_file; margin)
+  format(extinst_file; margin)
 
   # align blocks
   align_block(enum_file)
