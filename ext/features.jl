@@ -51,8 +51,9 @@ function get_required_property_types(api_version::VersionNumber)
     end
   end
   property_types = DataType[]
-  for property in unique(properties)
-    push!(property_types, getproperty(Vk, property.type))
+  for property in properties
+    T = getproperty(Vk, property.type)
+    !in(T, property_types) && push!(property_types, T)
   end
   property_types
 end
