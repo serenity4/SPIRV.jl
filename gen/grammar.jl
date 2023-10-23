@@ -112,19 +112,20 @@ end
 function generate_enum_infos()
   infos = map(enums) do enum
     type = Symbol(enum[:kind])
-    enumerants = generate_enumerant_info(enum[:enumerants])
+    enumerants = generate_enumerant_info(type, enum[:enumerants])
     :($type => EnumInfo($type, Dict($(enumerants...))))
   end
   :(const enum_infos = EnumInfos(Dict($(infos...))))
 end
 
-function generate_enumerant_info(enumerants)
+function generate_enumerant_info(type, enumerants)
   infos = Dict{UInt32,Any}()
   for enumerant in enumerants
     value = enumerant[:value]
     isa(value, String) && (value = parse(UInt32, value))
     info = get!(Dict{Symbol,Any}, infos, value)
     info[:value] = value
+    info[:name] = Symbol(type, enumerant[:enumerant])
     version = min_version(enumerant)
     support = get!(Dict{VersionNumber,Any}, info, :support)
     parameters = map(operand_info, get(Vector{Any}, enumerant, :parameters))
@@ -144,7 +145,7 @@ function generate_enumerant_info(enumerants)
     info[:ranges] = compute_support_requirements(support)
   end
   map(sort!(collect(values(infos)); by = x -> x[:value])) do x
-    :($(x[:value]) => EnumerantInfo($(x[:ranges]), [$(x[:parameters]...)]))
+    :($(x[:name]) * U => EnumerantInfo($(x[:ranges]), [$(x[:parameters]...)]))
   end
 end
 

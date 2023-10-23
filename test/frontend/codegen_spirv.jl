@@ -8,7 +8,6 @@ shader_capabilities = """
   OpCapability(Shader)
 """
 base_extensions = """
-  OpExtension("SPV_KHR_vulkan_memory_model")
 """
 memory_model = "OpMemoryModel(Logical, Vulkan)"
 

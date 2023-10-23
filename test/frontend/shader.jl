@@ -48,7 +48,6 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
         OpCapability(PhysicalStorageBufferAddresses)
         OpCapability(VulkanMemoryModel)
         OpExtension("SPV_EXT_physical_storage_buffer")
-        OpExtension("SPV_KHR_vulkan_memory_model")
         OpMemoryModel(PhysicalStorageBuffer64, Vulkan)
         OpEntryPoint(Vertex, %14, "main", %4)
         OpName(%6, "$(shader!)_Tuple{Vec4}")

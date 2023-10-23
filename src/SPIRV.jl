@@ -32,7 +32,7 @@ const spirv_val = SPIRV_Tools_jll.spirv_val()
 const Optional{T} = Union{Nothing,T}
 
 struct LiteralType{T} end
-Base.:(*)(x::Number, ::Type{LiteralType{T}}) where {T} = T(x)
+Base.:(*)(x, ::Type{LiteralType{T}}) where {T} = T(x)
 
 const U = LiteralType{UInt32}
 const F = LiteralType{Float32}
