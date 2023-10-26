@@ -1,5 +1,5 @@
 using SPIRV, Test
-using SPIRV: @shader, @vertex, @fragment, @compute, @any_hit, @mesh
+using SPIRV: @shader, @compute, @vertex, @fragment, @compute, @any_hit, @mesh
 using SPIRV.MathFunctions
 
 include("vulkan_driver.jl")
