@@ -43,10 +43,16 @@ struct Align7
   mat::Mat4
 end
 
+struct Align8
+  x::Int64
+  y::Float32
+  z::Vec3
+end
+
 primitive type WeirdType 24 end
 WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
 
-align_types = [Align1, Align2, Align3, Align4, Align5, Align6, Align7]
+align_types = [Align1, Align2, Align3, Align4, Align5, Align6, Align7, Align8]
 alltypes = [align_types; WeirdType]
 layout = VulkanLayout(align_types)
 
@@ -122,6 +128,14 @@ layout = VulkanLayout(align_types)
     add_type_layouts!(tmeta, layout)
     test_has_offset(tmeta, Align7, 1, 0)
     test_has_offset(tmeta, Align7, 2, 16)
+
+    @testset "Avoid improper straddling" begin
+      tmeta = TypeMetadata([Align8])
+      add_type_layouts!(tmeta, layout)
+      test_has_offset(tmeta, Align8, 1, 0)
+      test_has_offset(tmeta, Align8, 2, 8)
+      test_has_offset(tmeta, Align8, 3, 16)
+    end
   end
 
   @testset "Array/Matrix layouts" begin

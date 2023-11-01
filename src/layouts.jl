@@ -177,7 +177,13 @@ function dataoffset(layout::VulkanLayout, t::StructType, i::Integer)
   subt = t.members[i]
   req_alignment = alignment(layout, subt)
   prevloc = dataoffset(layout, t, i - 1) + datasize(layout, t.members[i - 1])
-  req_alignment * cld(prevloc, req_alignment)
+  offset = req_alignment * cld(prevloc, req_alignment)
+  !isa(subt, VectorType) && return offset
+  # Prevent vectors from straddling improperly, as defined per the specification.
+  n = datasize(layout, subt)
+  n > 16 && return 16cld(offset, 16)
+  offset % 16 + n > 16 && return 16cld(offset, 16)
+  offset
 end
 alignment(layout::VulkanLayout, t::SPIRType) = alignment(layout.alignment, t, storage_classes(layout, t), isinterface(layout, t))
 
