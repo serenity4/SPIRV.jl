@@ -28,23 +28,30 @@ end
     Align7(1, Mat4(Vec4(1, 2, 3, 4), Vec4(5, 6, 7, 8), Vec4(9, 10, 11, 12), Vec4(13, 14, 15, 16))),
     Mat{2,3,Float32}(Vec2(1, 2), Vec2(3, 4), Vec2(5, 6)),
     Mat{2,5,Float32}(Vec2(1, 2), Vec2(3, 4), Vec2(5, 6), Vec2(7, 8), Vec2(9, 10)),
-    [1 2; 3 4; 5 6],
     ((Ref((4F, 5F, 6F)), (Ref((7F, 8F, 9F)),)),),
     ((Vec3(4, 5, 6), (Vec3(7, 8, 9),)),),
     (1F, 2F, 3F, (Vec3(4, 5, 6), ((Vec3(7, 8, 9), Vec3(10, 11, 12)), 13F), Vec3(14, 15, 16))),
   ]
+  matrices = [
+    [1 2; 3 4; 5 6],
+  ]
   layouts = [
     NativeLayout(),
     NoPadding(),
-    make_row_major(VulkanLayout(typeof.(dataset)), Mat{2,5,Float32}),
+    make_row_major(VulkanLayout(typeof.([dataset; matrices])), Mat{2,5,Float32}),
   ]
   for layout in layouts
     for data in dataset
-      dims = isa(data, Matrix) ? size(data) : nothing
       bytes = serialize(data, layout)
       @test isa(bytes, Vector{UInt8}) && !isempty(bytes)
-      object = isnothing(dims) ? deserialize(typeof(data), bytes, layout) : deserialize(typeof(data), bytes, layout, dims)
+      object = deserialize(typeof(data), bytes, layout)
+      @test recursive_equals(object, data)
+    end
+    for data in matrices
+      bytes = serialize(data, layout)
+      @test isa(bytes, Vector{UInt8}) && !isempty(bytes)
+      object = deserialize(typeof(data), bytes, layout, size(data))
       @test recursive_equals(object, data)
     end
   end
-end
+end;

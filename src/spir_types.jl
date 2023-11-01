@@ -228,7 +228,7 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
         _ => ArrayType(spir_type(Array{eltype,n - 1}, tmap), nothing)
       end
     end
-    ::Type{<:Tuple} => if allequal(fieldtypes(t))
+    ::Type{<:Tuple} => if fieldcount(t) > 1 && allequal(fieldtypes(t))
       ArrayType(spir_type(eltype(t), tmap), Constant(UInt32(fieldcount(t))))
     else
       # Generate structure on the fly.

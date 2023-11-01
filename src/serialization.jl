@@ -2,7 +2,7 @@
 # Deserialization always implicitly uses a `NativeLayout` as target.
 
 concrete_datasize(layout, data) = datasize(layout, typeof(data))
-concrete_datasize(layout, data::Array{T}) where {T} = prod(size(data); init = 1) * stride(layout, T) - (stride(layout, T) - datasize(layout, T))
+concrete_datasize(layout, data::VecOrMat{T}) where {T} = prod(size(data); init = 1) * stride(layout, Vector{T}) - (stride(layout, Vector{T}) - datasize(layout, T))
 
 function serialize(data, layout::LayoutStrategy)
   bytes = UInt8[]
@@ -22,7 +22,7 @@ function serialize(data::Union{T,Array{T}}, layout::NativeLayout) where {T}
     end
     GC.@preserve arr begin
       ptr = pointer(arr)
-      return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), Base.elsize(Array{T}) * n)
+      return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), stride(layout, Vector{T}) * n)
     end
   end
   Base.@invoke serialize(data, layout::LayoutStrategy)
@@ -30,12 +30,17 @@ end
 
 function serialize!(bytes, data::T, layout::LayoutStrategy) where {T}
   isprimitivetype(T) && return serialize_primitive!(bytes, data)
-  for i in 1:fieldcount(T)
+  n = fieldcount(T)
+  iszero(n) && return bytes
+  nb = length(bytes)
+
+  for i in 1:n
     # Add padding, if necessary.
     pad!(bytes, padding(layout, T, i))
     # Recursively serialize fields.
     serialize!(bytes, getfield(data, i), layout)
   end
+  pad!(bytes, datasize(layout, T) - (length(bytes) - nb))
 end
 
 fast_append!(bytes, x::UInt8) = push!(bytes, x)
@@ -64,7 +69,7 @@ function pad!(bytes, amount)
 end
 
 serialize!(bytes, data::Vector{UInt8}, ::LayoutStrategy) = append!(bytes, data)
-function serialize!(bytes, data::Array, layout::LayoutStrategy)
+function serialize!(bytes, data::VecOrMat, layout::LayoutStrategy)
   pad = padding(layout, typeof(data))
   iszero(pad) && isprimitivetype(data) && return append!(bytes, reinterpret(UInt8, data))
   for x in data
@@ -83,7 +88,7 @@ function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Mat}
   if !t.is_column_major
     payload = reinterpret(NTuple{nrows(T), NTuple{ncols(T), eltype(T)}}, [payload])[]
   end
-  s = stride(layout, vectype)
+  s = stride(layout, t)
   padding = s - datasize(layout, vectype)
   for row_or_col in payload
     serialize!(bytes, row_or_col, NoPadding())
@@ -93,9 +98,10 @@ end
 serialize!(bytes, data::Vec, layout::VulkanLayout) = serialize!(bytes, data.data, NoPadding())
 function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Arr}
   t = layout[T]::ArrayType
-  s = stride(layout, t.eltype)
+  s = stride(layout, t)
   padding = s - datasize(layout, t.eltype)
   for el in data
+    n = length(bytes)
     serialize!(bytes, el, layout)
     pad!(bytes, padding)
   end
@@ -114,7 +120,7 @@ function deserialize(::Type{T}, bytes, from::LayoutStrategy) where {T}
 end
 function deserialize(::Type{Vector{T}}, bytes, from::LayoutStrategy, dims = nothing) where {T}
   i = 0
-  s = stride(from, T)
+  s = stride(from, Vector{T})
   size = datasize(from, T)
   n = length(bytes) ÷ s
   !isnothing(dims) && (dims == n || error("The provided vector dimensions differ from the inferred vector size: $dims ≠ $n"))
@@ -130,7 +136,7 @@ end
 deserialize(::Type{<:Matrix}, bytes, from::LayoutStrategy) = error("Matrix dimensions `(nrows, ncols)` must be provided as an extra argument.")
 function deserialize(::Type{Matrix{T}}, bytes, from::LayoutStrategy, (n, m)) where {T}
   i = 0
-  s = stride(from, T)
+  s = stride(from, Vector{T})
   size = datasize(from, T)
   res = Matrix{T}(undef, n, m)
   for j in 1:m
@@ -162,14 +168,14 @@ end
 deserialize(::Type{T}, bytes, from::VulkanLayout) where {T<:Vec} = deserialize(T, bytes, NoPadding())
 function deserialize(T::Type{Arr{N,AT}}, bytes, from::VulkanLayout) where {N,AT}
   t = from[T]::ArrayType
-  s = stride(from, t.eltype)
+  s = stride(from, t)
   size = datasize(from, AT)
   T(ntuple(i -> deserialize(AT, @view(bytes[(1 + (i - 1) * s):((i - 1) * s + size)]), from), N))
 end
 function deserialize(T::Type{Mat{N,M,MT}}, bytes, from::VulkanLayout) where {N,M,MT}
   t = from[T]::MatrixType
   vectype = eltype_major(t)
-  s = stride(from, vectype)
+  s = stride(from, t)
   size = datasize(from, vectype)
 
   t.is_column_major && return @force_construct T ntuple(i -> deserialize(NTuple{N,MT}, @view(bytes[1 + (i - 1) * s:(i - 1) * s + size]), NoPadding()), M)
