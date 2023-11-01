@@ -14,7 +14,15 @@ end
 
 @forward_methods Shader field = :ir Module assemble
 
-validate(shader::Shader) = validate_shader(shader.ir)
+function validate(shader::Shader)
+  flags = String[]
+  (; layout) = Shader
+  if isa(layout, VulkanLayout)
+    layout.alignment.scalar_block_layout && push!(flags, "--scalar-block-layout")
+    layout.alignment.uniform_buffer_standard_layout && push!(flags, "--uniform-buffer-standard-layout")
+  end
+  validate_shader(shader.ir; flags)
+end
 
 function Shader(target::SPIRVTarget, interface::ShaderInterface, layout::Union{VulkanAlignment, LayoutStrategy})
   ir = IR(target, interface)
