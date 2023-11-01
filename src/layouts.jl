@@ -30,8 +30,8 @@ function datasize(layout::NativeLayout, T::DataType)
   isbitstype(T) && return sizeof(T)
   isconcretetype(T) || error("A concrete type is required.")
   @assert isstructtype(T)
-  total_padding = sum(fieldoffset(T, i) - (fieldoffset(T, i - 1) + field_sizeof(fieldtype(T, i - 1))) for i in 2:fieldcount(T); init = 0)
-  sum(sizeof, fieldtypes(T); init = 0) + total_padding
+  total_padding = sum(dataoffset(layout, T, i) - (dataoffset(layout, T, i - 1) + datasize(layout, fieldtype(T, i - 1))) for i in 2:fieldcount(T); init = 0)
+  sum(datasize(layout, subT) for subT in fieldtypes(T); init = 0) + total_padding
 end
 function dataoffset(layout::NativeLayout, T::DataType, i::Int)
   i == 1 && return fieldoffset(T, 1)

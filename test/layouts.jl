@@ -62,6 +62,17 @@ layout = VulkanLayout(align_types)
         end
       end
     end
+
+    @testset "Native layout" begin
+      layout = NativeLayout()
+      M = Base.RefValue{Tuple{Float32, Float32, Float32}}
+      @test ismutabletype(M)
+      @test datasize(layout, M) == 12
+      @test datasize(layout, Tuple{M}) == 12
+      @test datasize(layout, Tuple{Tuple{M}}) == 12
+      @test datasize(layout, Tuple{M,Int64}) == 20
+      @test datasize(layout, Tuple{Tuple{M,Int64},Int64}) == 28
+    end
   end
   @testset "Alignments" begin
     tmeta = TypeMetadata([Align1])
