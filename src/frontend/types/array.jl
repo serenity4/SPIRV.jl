@@ -28,3 +28,8 @@ Base.getindex(arr::Arr, index::Int64, other_index::Int64) = arr[index]
 @noinline CompositeExtract(arr::Arr, index::UInt32) = arr.data[index + 1]
 
 Base.copyto!(dst::Arr{N}, src::Arr{N}) where {N} = (setindex!(dst, src); dst)
+
+# Other utilities
+
+Base.rand(rng::AbstractRNG, sampler::Random.SamplerType{Arr{N,T}}) where {N,T} = Arr{N,T}(rand(rng, NTuple{N,T}))
+Base.rand(rng::AbstractRNG, sampler::Random.SamplerType{Arr{N}}) where {N} = rand(rng, Arr{N,Float32})

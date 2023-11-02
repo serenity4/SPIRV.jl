@@ -16,6 +16,7 @@ using BitMasks
 using UUIDs: UUID, uuid1
 using SnoopPrecompile
 using ForwardMethods
+using Random
 import Serialization: serialize, deserialize
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 

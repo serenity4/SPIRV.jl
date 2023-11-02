@@ -85,6 +85,9 @@ using SPIRV: component_type, texel_type, sampled_type, column
 
     @test Vec2(1.0, 2.0) == Vec2((1.0, 2.0)) == convert(Vec2, (1.0, 2.0))
 
+    @test isa(rand(Vec2), Vec2)
+    @test isa(rand(Vec{3}), Vec3)
+
     @test isa(repr(v), String)
     @test isa(repr(MIME"text/plain"(), v), String)
   end
@@ -117,6 +120,10 @@ using SPIRV: component_type, texel_type, sampled_type, column
     ]
     @test m[2, 2] === 6f0
     @test m[3, 2] === 10f0
+
+    @test isa(rand(Mat{2,3,Float32}), Mat{2,3,Float32})
+    @test isa(rand(Mat{4,5}), Mat{4,5,Float32})
+    @test isa(rand(Mat{4}), Mat4)
 
     @test isa(repr(m), String)
     @test isa(repr(MIME"text/plain"(), m), String)
@@ -158,6 +165,9 @@ using SPIRV: component_type, texel_type, sampled_type, column
     @test all(isone, one(Arr{16,Vec4}))
 
     @test Arr{2,Float32}(1.0, 2.0) == Arr{2,Float32}((1.0, 2.0)) == convert(Arr{2,Float32}, (1.0, 2.0))
+
+    @test isa(rand(Arr{2,Float32}), Arr{2,Float32})
+    @test isa(rand(Arr{10}), Arr{10,Float32})
 
     @test isa(repr(arr), String)
     @test isa(repr(MIME"text/plain"(), arr), String)
