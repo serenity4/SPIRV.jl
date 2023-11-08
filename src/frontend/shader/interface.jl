@@ -24,7 +24,9 @@ function IR(target::SPIRVTarget, interface::ShaderInterface)
   variables = Dictionary{Int,Variable}()
   for (i, sc) in enumerate(interface.storage_classes)
     if sc ≠ StorageClassFunction
-      t = spir_type(target.mi.specTypes.parameters[i + 1], tr.tmap; storage_class = sc)
+      T = target.mi.specTypes.parameters[i + 1]
+      isa(T, Type) && continue
+      t = spir_type(T, tr.tmap; storage_class = sc)
       if sc in (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer)
         decorate!(mt, emit!(mt, tr, t), DecorationBlock)
       end

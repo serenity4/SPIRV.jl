@@ -194,8 +194,10 @@ function Base.getindex(tmap::TypeMap, T::DataType)
   spir_type(T, tmap; fill_tmap = false)
 end
 
+assert_type_nonvoid(t::SPIRType) = !isa(t, VoidType) || error("Bottom type Union{} reached. This suggests that an error was encoutered in the Julia function during its compilation.")
+
 function spir_type(@nospecialize(t::Union{Union, Type{Union{}}}), tmap::Optional{TypeMap} = nothing; kwargs...)
-  t === Union{} && error("Bottom type Union{} reached. This suggests that an error was encoutered in the Julia function during its compilation.")
+  t === Union{} && return VoidType()
   error("Can't get a SPIR-V type for $t; unions are not supported at the moment.")
 end
 

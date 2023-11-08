@@ -156,6 +156,7 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables
   try
     # Fill the SPIR-V function with instructions generated from the target's inferred code.
     emit!(fdef, mt, tr, target)
+    assert_type_nonvoid(fdef.type.rettype)
   catch e
     throw_compilation_error(e, (; target))
   end
@@ -350,6 +351,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
           !isa(jinst, GlobalRef) && insert!(tr.results, core_ssaval, ret)
         end
       end
+      jtype === Union{} && throw_compilation_error("`Union{}` type detected, the code to compile contains an error")
     catch e
       fields = (; jinst, jtype)
       !isnothing(ex) && (fields = (; fields..., ex))
