@@ -2,7 +2,7 @@ using SPIRV, Test
 using SPIRV: serialize, deserialize
 
 recursive_equals(x::T, y::T) where {T} = isprimitivetype(T) ? x == y : all(recursive_equals(getproperty(x, name), getproperty(y, name)) for name in fieldnames(T))
-recursive_equals(x::T, y::T) where {T<:Array} = x == y
+recursive_equals(xs::T, ys::T) where {T<:Array} = all(recursive_equals(x, y) for (x, y) in zip(xs, ys))
 
 function make_row_major(layout::VulkanLayout, T::Type{<:Mat})
   T = Mat{2,5,Float32}
@@ -31,6 +31,7 @@ end
     ((Ref((4F, 5F, 6F)), (Ref((7F, 8F, 9F)),)),),
     ((Vec3(4, 5, 6), (Vec3(7, 8, 9),)),),
     (1F, 2F, 3F, (Vec3(4, 5, 6), ((Vec3(7, 8, 9), Vec3(10, 11, 12)), 13F), Vec3(14, 15, 16))),
+    [Align12((0.1, 0.2, 0.3), (0.4, 0.5, 0.6), 0.7, 0.8)],
   ]
   matrices = [
     [1 2; 3 4; 5 6],

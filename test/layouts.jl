@@ -94,10 +94,17 @@ struct Align11
   y::Float32
 end
 
+struct Align12
+  position::Vec3
+  color::Vec3
+  intensity::Float32
+  attenuation::Float32
+end
+
 primitive type WeirdType 24 end
 WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
 
-align_types = [Align1, Align2, Align3, Align4, Align5, Align6, Align7, Align8, Align9, Align10, Align11]
+align_types = [Align1, Align2, Align3, Align4, Align5, Align6, Align7, Align8, Align9, Align10, Align11, Align12]
 alltypes = [align_types; WeirdType]
 layout = VulkanLayout(align_types)
 
@@ -123,6 +130,10 @@ layout = VulkanLayout(align_types)
       @test datasize(layout, Tuple{Tuple{M}}) == 12
       @test datasize(layout, Tuple{M,Int64}) == 20
       @test datasize(layout, Tuple{Tuple{M,Int64},Int64}) == 28
+
+      @test datasize(layout, Align12) == 32
+      @test stride(layout, Vector{Align12}) == datasize(layout, Align12)
+      @test datasize(layout, [Align12((0.1, 0.2, 0.3), (0.4, 0.5, 0.6), 0.7, 0.8)]) == 32
     end
   end
   @testset "Alignments" begin

@@ -30,7 +30,9 @@ The alternative would be to completely disallow structs which contain mutable fi
 """
 struct NativeLayout <: LayoutStrategy end
 
-Base.stride(layout::NativeLayout, ::Type{<:VecOrMat{T}}) where {T} = ismutabletype(T) ? datasize(layout, T) : Base.elsize(Vector{T})
+datasize(layout::LayoutStrategy, x::VecOrMat) = stride(layout, typeof(x)) * length(x)
+datasize(layout::LayoutStrategy, x) = datasize(layout, typeof(x))
+Base.stride(layout::NativeLayout, ::Type{<:VecOrMat{T}}) where {T} = datasize(layout, T)
 function datasize(layout::NativeLayout, T::DataType)
   isbitstype(T) && return sizeof(T)
   isconcretetype(T) || error("A concrete type is required.")
@@ -167,6 +169,7 @@ isinterface(layout::VulkanLayout, ::SPIRType) = false
 Base.stride(layout::VulkanLayout, T::Type) = stride(layout, layout[T])
 element_stride(layout::VulkanLayout, T::Type) = element_stride(layout, layout[T])
 datasize(layout::VulkanLayout, T::Type) = datasize(layout, layout[T])
+datasize(layout::VulkanLayout, data::Matrix{T}) where {T} = element_stride(layout, T) * length(data)
 dataoffset(layout::VulkanLayout, T::Type, i::Integer) = dataoffset(layout, layout[T], i)
 alignment(layout::VulkanLayout, T::Type) = alignment(layout, layout[T])
 

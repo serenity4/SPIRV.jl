@@ -1,28 +1,19 @@
 # Serialization always implicitly uses a `NativeLayout` as source.
 # Deserialization always implicitly uses a `NativeLayout` as target.
 
-concrete_datasize(layout, data) = datasize(layout, typeof(data))
-concrete_datasize(layout, data::VecOrMat{T}) where {T} = prod(size(data); init = 1) * stride(layout, Vector{T}) - (stride(layout, Vector{T}) - datasize(layout, T))
-
 function serialize(data, layout::LayoutStrategy)
   bytes = UInt8[]
-  sizehint!(bytes, concrete_datasize(layout, data))
+  sizehint!(bytes, datasize(layout, data))
   serialize!(bytes, data, layout)
   bytes
 end
 
 function serialize(data::Union{T,Array{T}}, layout::NativeLayout) where {T}
   if isbitstype(T)
-    if isa(data, T)
-      arr = [data]
-      n = 1
-    else
-      arr = data
-      n = prod(size(arr); init = 1)
-    end
+    arr = isa(data, T) ? [data] : data
     GC.@preserve arr begin
       ptr = pointer(arr)
-      return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), stride(layout, Vector{T}) * n)
+      return unsafe_wrap(Array{UInt8}, Ptr{UInt8}(ptr), datasize(layout, data))
     end
   end
   Base.@invoke serialize(data, layout::LayoutStrategy)
