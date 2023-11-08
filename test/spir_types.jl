@@ -17,7 +17,7 @@ end
 @testset "TypeMap" begin
   tmap = TypeMap()
   @test spir_type(Tuple{Int64,Int64}, tmap) == ArrayType(IntegerType(64, true), Constant(2U))
-  @test spir_type(Tuple{Int64}, tmap) == ArrayType(IntegerType(64, true), Constant(1U))
+  @test isa(spir_type(Tuple{Int64}, tmap), StructType)
   t = spir_type(Tuple{Int64,Float64}, tmap)
   @test isa(t, StructType)
   @test t === spir_type(Tuple{Int64,Float64}, tmap)
@@ -27,7 +27,7 @@ end
   pt = spir_type(Base.RefValue{Tuple{Int64,Float64}}, tmap; wrap_mutable = true)
   ref_t = pt.type
   @test t === only(ref_t.members)
-  @test_throws "Bottom type" spir_type(Union{}, tmap)
+  @test isa(spir_type(Union{}, tmap), OpaqueType)
 end
 
 @testset "Constants" begin

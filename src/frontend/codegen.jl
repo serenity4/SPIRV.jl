@@ -24,7 +24,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         # and for SPIR-V code there is no way to express such checks.
         composite = args[1]
         field_idx = @match args[2] begin
-          node::QuoteNode => get_field_index(composite, node, target)
+          node::QuoteNode => get_field_index(composite, node, tr, target)
           idx::Integer => idx
           idx::Core.SSAValue => throw_compilation_error("dynamic access into tuple or struct members is not supported")
         end
@@ -33,7 +33,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       &setfield! => begin
         composite = args[1]
         field_idx = @match args[2] begin
-          node::QuoteNode => get_field_index(composite, node, target)
+          node::QuoteNode => get_field_index(composite, node, tr, target)
           idx::Core.SSAValue => throw_compilation_error("dynamic access into tuple or struct members is not supported")
           idx::Integer => idx
           field => throw_compilation_error("unknown field type $(typeof(field))")
@@ -42,8 +42,9 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         throw_compilation_error("`setfield!` not supported at the moment")
       end
       &Core.tuple => (OpCompositeConstruct, args) # throw_compilation_error("the function `Core.tuple` is not supported at the moment")
-      ::Function => throw_compilation_error("dynamic dispatch detected for function $f. All call sites must be statically resolved")
-      _ => throw_compilation_error("call to unknown function $f")
+      ::Function && if jtype === Union{} end => throw_compilation_error("unresolved call to function `$f`, indicating a `MethodError`")
+      ::Function => throw_compilation_error("dynamic dispatch detected for function `$f`. All call sites must be statically resolved")
+      _ => throw_compilation_error("call to unknown function `$f`")
     end
     Expr(:invoke, mi, f, args...) => begin
       isa(f, Core.SSAValue) && (f = tr.globalrefs[f])
@@ -106,10 +107,10 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
   (ex, type)
 end
 
-function get_field_index(composite_type, field::QuoteNode, target::SPIRVTarget)
+function get_field_index(composite_type, field::QuoteNode, tr::Translation, target::SPIRVTarget)
   isa(field.value, Symbol) || throw_compilation_error("`Symbol` value expected in `QuoteNode`, got $(repr(field.value))")
   name = field.value::Symbol
-  T = get_type(composite_type, target)
+  T = get_type(composite_type, tr, target)
   T <: Union{Arr, Vec, Mat} && name === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden")
   index = findfirst(==(name), fieldnames(T))
   !isnothing(index) || throw_compilation_error("symbol $(repr(name)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
@@ -124,10 +125,10 @@ function lookup_opcode(fname::Symbol)
   nothing
 end
 
-function get_type(arg, target::SPIRVTarget)
+function get_type(arg, tr::Translation, target::SPIRVTarget)
   @match arg begin
     ::Core.SSAValue => target.code.ssavaluetypes[arg.id]
-    ::Core.Argument => target.mi.specTypes.types[arg.n]
+    ::Core.Argument => tr.argtypes[tr.argmap[arg]]
     _ => throw_compilation_error("cannot extract type from argument $arg")
   end
 end
@@ -148,7 +149,7 @@ function storage_class(arg, mt::ModuleTarget, tr::Translation, fdef::FunctionDef
       if !isnothing(lvar_idx)
         fdef.type.argtypes[lvar_idx]
       else
-        gvar = get(fdef.global_vars, arg.n - 1, nothing)
+        gvar = get(fdef.global_vars, tr.argmap[arg], nothing)
         isnothing(gvar) ? nothing : mt.global_vars[gvar]
       end
     end

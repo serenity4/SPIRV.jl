@@ -3,6 +3,7 @@ struct BijectiveMapping{T1,T2}
   backward::Dictionary{T2,T1}
 end
 
+BijectiveMapping(d::Dictionary{T1,T2}) where {T1,T2} = BijectiveMapping{T1,T2}(d, dictionary(v => k for (k, v) in pairs(d)))
 BijectiveMapping{T1,T2}() where {T1,T2} = BijectiveMapping{T1,T2}(Dictionary(), Dictionary())
 BijectiveMapping() = BijectiveMapping{Any,Any}()
 

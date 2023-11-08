@@ -77,7 +77,8 @@ function shader_decorations(ex::Expr)
   variable_decorations = Dictionary{Int,Decorations}()
   input_location = -1
   output_location = -1
-  for (i, arg) in enumerate(args)
+  i = firstindex(args)
+  for arg in args
     @switch arg begin
       @case :(::$T::$C)
       sc, decs = @match C begin
@@ -117,6 +118,7 @@ function shader_decorations(ex::Expr)
         get!(Decorations, variable_decorations, i).decorate!(DecorationLocation, UInt32(location))
       end
       push!(argtypes, T)
+      i += 1
       @case :(::Type{$_})
       # Pass `Type` arguments through (they will be not be provided as actual arguments but are fine for compile-time computations).
       push!(argtypes, arg.args[1])

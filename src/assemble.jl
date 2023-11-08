@@ -93,10 +93,13 @@ end
 assemble(mod::Module) = assemble(PhysicalModule(mod))
 assemble(ir::IR) = assemble(Module(ir))
 
-Base.read(::Type{Module}, filename::AbstractString) = open(Fix1(read, Module), filename)
+Base.read(::Type{Module}, filename::AbstractString) = open(io -> read(Module, io), filename)
 
 function Base.read(::Type{Module}, io::IO)
   insts = Instruction[]
+
+  # XXX: Skip any header information.
+  # XXX: Handle named variables (e.g. %color instead of %447) to handle IR-disassembled SPIR-V.
 
   while !eof(io)
     result_id = nothing

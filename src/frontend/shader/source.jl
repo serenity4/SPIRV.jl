@@ -32,6 +32,10 @@ end
 
 function ShaderSource(shader::Shader, info::ShaderInfo)
   ret = validate(shader)
-  !iserror(ret) || throw(unwrap_error(ret))
+  if iserror(ret)
+    show_debug_spirv_code(stdout, shader.ir)
+    err = unwrap_error(ret)
+    throw(err)
+  end
   ShaderSource(reinterpret(UInt8, assemble(shader)), info)
 end

@@ -271,7 +271,7 @@ function replace_name(id::ResultID, names)
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", (mod, debug)::Pair{Module,DebugInfo})
-  str = sprintc(disassemble, mod)
+  str = sprint(disassemble, mod; context = IOContext(io))
   lines = split(str, '\n')
   filter!(lines) do line
     !contains(line, "OpName") && !contains(line, "OpMemberName")

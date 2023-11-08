@@ -82,7 +82,7 @@ function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpr
     ret = validate(code)
     if iserror(ret)
       @error "A validation error occured for the following CodeInfo:"
-      show_debug_code(code)
+      show_debug_native_code(stdout, code)
       throw(unwrap_error(ret))
     end
     rethrow()
@@ -91,16 +91,34 @@ function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpr
   SPIRVTarget(mi, cfg, insts, ranges, code, interp)
 end
 
-function show_debug_code(io::IO, code::CodeInfo)
-  output = sprintc_mime(show, code)
+function dump_to_file(code; color = true, ext = nothing)
+  output = color ? sprintc_mime(show, code) : sprint_mime(show, code)
+  file = tempname() * something(ext, "")
+  open(file, "w+") do io
+    println(io, output)
+  end
+  file
+end
+
+function show_debug_native_code(io::IO, code::CodeInfo)
   if length(code.code) > 400
-    file = tempname()
-    open(file, "w+") do io2
-      println(io2, output)
-    end
-    println(io, "The contents of the associated `CodeInfo` are available at $file")
+    file_color = dump_to_file(code)
+    file_no_color = dump_to_file(code; color = false)
+    println(io, "The contents of the associated `CodeInfo` are available at $file_no_color (colored version: $file_color)")
   else
-    println(io, "Showing the associated `CodeInfo`:\n\n$output")
+    println(io, "Showing the associated `CodeInfo`:\n\n", sprint_mime(show, code; context = IOContext(io)))
+  end
+  println(io)
+end
+
+function show_debug_spirv_code(io::IO, ir::IR)
+  output = sprint_mime(show, ir; context = IOContext(io))
+  if count(==('\n'), output) > 400
+    file_color = dump_to_file(ir; ext = ".spvasm")
+    file_no_color = dump_to_file(ir; color = false, ext = ".spvasm")
+    println(io, "The contents of the associated SPIR-V module are available at $file_no_color (colored version: $file_color)")
+  else
+    println(io, "Showing the associated SPIR-V module:\n\n$output")
   end
   println(io)
 end
