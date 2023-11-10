@@ -26,9 +26,11 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
 Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [extensions]
 SPIRVVulkanExt = "Vulkan"
+SPIRVStaticArraysExt = "StaticArrays"
 
 [compat]
 AbstractTrees = "0.4"
@@ -43,6 +45,7 @@ MLStyle = "^0.4.11"
 Reexport = "1"
 ResultTypes = "3"
 SnoopPrecompile = "1"
+StaticArrays = "1"
 StructEquality = "2"
 SwapStreams = "0.2"
 julia = "1.9"
@@ -53,4 +56,4 @@ SwiftShader_jll = "c404ff5a-e271-5628-8eaa-423d39d64c15"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MetaGraphs", "Vulkan", "SwiftShader_jll"]
+test = ["Test", "MetaGraphs", "Vulkan", "SwiftShader_jll", "StaticArrays"]

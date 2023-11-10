@@ -1,5 +1,6 @@
 using SPIRV, Test
 using SPIRV: component_type, texel_type, sampled_type, column
+using StaticArrays
 
 @testset "Array operations" begin
   @testset "Pointers" begin
@@ -303,5 +304,22 @@ using SPIRV: component_type, texel_type, sampled_type, column
 
     @test all(iszero, zero(Arr{16,Vec2}))
     @test all(iszero, zero(Arr{16,Mat3}))
+  end
+
+  @testset "Conversions from/to `SVector` and `SMatrix`" begin
+    @test convert(Vec2, @SVector [1.0, 2.0]) == Vec2(1, 2)
+    @test convert(Vec{2}, @SVector [1.0, 2.0]) == Vec{2,Float64}(1, 2)
+    @test convert(SVector{2,Float32}, Vec(1.0, 2.0)) == @SVector [1f0, 2f0]
+    @test convert(SVector{2}, Vec(1.0, 2.0)) == @SVector [1.0, 2.0]
+
+    @test convert(Mat{2,2,Float32}, @SMatrix [1.0 2.0; 3.0 4.0]) == @mat [1f0 2f0; 3f0 4f0]
+    @test convert(Mat{2,2}, @SMatrix [1.0 2.0; 3.0 4.0]) == @mat [1.0 2.0; 3.0 4.0]
+    @test convert(Mat{2,3,Float32}, @SMatrix [1.0 2.0 3.0; 4.0 5.0 6.0]) == @mat [1f0 2f0 3f0; 4f0 5f0 6f0]
+    @test convert(Mat{2,3}, @SMatrix [1.0 2.0 3.0; 4.0 5.0 6.0]) == @mat [1.0 2.0 3.0; 4.0 5.0 6.0]
+
+    @test convert(Arr{2,Float32}, @SVector [1.0, 2.0]) == Arr{2,Float32}(1, 2)
+    @test convert(SVector{2,Float32}, Arr{2,Float64}(1, 2)) == @SVector [1f0, 2f0]
+    @test convert(Arr{2}, @SVector [1.0, 2.0]) == Arr{2,Float64}(1, 2)
+    @test convert(SVector{2}, Arr{2,Float64}(1, 2)) == @SVector [1.0, 2.0]
   end
 end;
