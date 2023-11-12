@@ -1,42 +1,93 @@
-@auto_hash_equals struct FeatureRequirements
+@struct_hash_equal struct FeatureRequirements
   extensions::Vector{String}
   capabilities::Vector{Capability}
 end
 
+"""
+Abstract type expressing SPIR-V which capabilities and extensions are supported.
+"""
 abstract type FeatureSupport end
 
 """
 Extensions and capabilities supported by a client API.
 """
-@auto_hash_equals struct SupportedFeatures <: FeatureSupport
-  extensions::Vector{String}
-  capabilities::Vector{Capability}
+@struct_hash_equal struct SupportedFeatures <: FeatureSupport
+  extensions::Set{String}
+  capabilities::Set{Capability}
+  "SPIR-V version assumed for the client API."
+  version::VersionNumber
+  function SupportedFeatures(extensions, capabilities, version)
+    capabilities = convert(Set{Capability}, capabilities)
+    new(extensions, union(capabilities, implicitly_declared_capabilities(capabilities)), version)
+  end
 end
 
-supports_extension(supported::SupportedFeatures, ext) = ext in supported.extensions
-supports_capability(supported::SupportedFeatures, cap) = cap in supported.capabilities
+SupportedFeatures(extensions::AbstractVector, capabilities::AbstractVector, version) = SupportedFeatures(Set(extensions), Set(capabilities), version)
+SupportedFeatures(extensions, capabilities) = SupportedFeatures(extensions, capabilities, SPIRV_VERSION)
+
+supports_extension(supported::SupportedFeatures, ext) = in(ext, supported.extensions)
+supports_capability(supported::SupportedFeatures, cap) = in(cap, supported.capabilities)
+assume_version(supported::SupportedFeatures) = supported.version
+
+Base.union!(x::SupportedFeatures, y::SupportedFeatures) = SupportedFeatures(union(x.extensions, y.extensions), union(x.capabilities, y.capabilities))
+Base.union(x::SupportedFeatures, y::SupportedFeatures) = foldl(union!, (x, y); init = SupportedFeatures([], []))
 
 struct AllSupported <: FeatureSupport end
 
 supports_extension(::AllSupported, ext) = true
 supports_capability(::AllSupported, cap) = true
+assume_version(::AllSupported) = typemax(VersionNumber)
 
-function find_supported(extensions, capabilities, supported::FeatureSupport)
-  i_ext = findfirst(x -> supports_extension(supported, x), extensions)
-  i_cap = findfirst(x -> supports_capability(supported, x), capabilities)
-  if isnothing(i_ext) && !isempty(extensions)
-    error("At least one of the following extensions is required: $extensions")
+function find_extension(supported::FeatureSupport, extensions::AbstractVector, required_by; required = true)
+  i = findfirst(x -> supports_extension(supported, x), extensions)
+  if isnothing(i)
+    !required && return missing
+    error("At least one of the following extensions is required for `$required_by`: $extensions")
   end
-  if isnothing(i_cap) && !isempty(capabilities)
-    error("At least one of the following capabilities is required: $capabilities")
-  end
-  (isnothing(i_ext) ? nothing : extensions[i_ext], isnothing(i_cap) ? nothing : capabilities[i_cap])
+  extensions[i]
 end
 
-function add_requirements!(required_exts, required_caps, supported::FeatureSupport, exts, caps)
-  ext, cap = find_supported(exts, caps, supported)
-  !isnothing(ext) && push!(required_exts, ext)
-  !isnothing(cap) && push!(required_caps, cap)
+function find_capability(supported::FeatureSupport, capabilities::AbstractVector, required_by; required = true)
+  i = findfirst(x -> supports_capability(supported, x), capabilities)
+  if isnothing(i)
+    !required && return missing
+    error("At least one of the following capabilities is required for `$required_by`: $capabilities")
+  end
+  capabilities[i]
+end
+
+function find_supported(supported::FeatureSupport, extensions, capabilities, required_by; required = true)
+  extension = isnothing(extensions) ? nothing : find_extension(supported, extensions, required_by; required)
+  capability = isnothing(capabilities) ? nothing : find_capability(supported, capabilities, required_by; required)
+  (extension, capability)
+end
+
+function find_supported(supported::FeatureSupport, support::RequiredSupport, required_by; required = true)
+  version = assume_version(supported)
+  if !in(version, support.version)
+    required && error("SPIR-V version requirements could not be satisfied for $version (required: $(support.version)) for `$required_by`")
+    return nothing
+  end
+  find_supported(supported, support.extensions, support.capabilities, required_by; required)
+end
+
+function find_supported(supported::FeatureSupport, requirements::AbstractVector{RequiredSupport}, required_by)
+  for required in reverse(requirements) # try the last ones first, as they should have lower extension/capability requirements.
+    found = find_supported(supported, required, required_by; required = false)
+    !isnothing(found) && all(!ismissing, found) && return found
+  end
+  # Get the requirements for the latest version to trigger the error.
+  version = assume_version(supported)
+  i = findfirst(x -> in(version, x.version), requirements)
+  isnothing(i) && error("The provided SPIR-V version is not supported by `$required_by` (version: $version, support for versions: $(join(map(x -> x.version), ", ")))")
+  required = requirements[i]
+  find_supported(supported, required, required_by; required = true)
+end
+
+function add_requirements!(required_exts, required_caps, supported::FeatureSupport, requirements, required_by)
+  extension, capability = find_supported(supported, requirements, required_by)
+  !isnothing(extension) && push!(required_exts, extension)
+  !isnothing(capability) && push!(required_caps, capability)
 end
 
 function FeatureRequirements(instructions, supported::FeatureSupport)
@@ -45,7 +96,7 @@ function FeatureRequirements(instructions, supported::FeatureSupport)
   all(supports_capability(supported, cap) for cap in required_caps) || error("Certain base capabilities are not supported.")
   for inst in instructions
     inst_info = info(inst)
-    add_requirements!(required_exts, required_caps, supported, inst_info.extensions, inst_info.capabilities)
+    add_requirements!(required_exts, required_caps, supported, inst_info.required, inst)
     for (arg, op_info) in zip(inst.arguments, inst_info.operands)
       cap = @trymatch inst.opcode begin
         &OpTypeFloat => @trymatch Int(arg) begin
@@ -63,22 +114,33 @@ function FeatureRequirements(instructions, supported::FeatureSupport)
       @tryswitch category begin
         @case "ValueEnum"
         enum_info = enum_infos[arg]
-        add_requirements!(required_exts, required_caps, supported, enum_info.extensions, enum_info.capabilities)
+        add_requirements!(required_exts, required_caps, supported, enum_info.required, arg)
 
         @case "BitEnum"
         for flag in enabled_flags(arg)
           enum_info = enum_infos[flag]
-          add_requirements!(required_exts, required_caps, supported, enum_info.extensions, enum_info.capabilities)
+          add_requirements!(required_exts, required_caps, supported, enum_info.required, flag)
         end
       end
     end
   end
-  implicitly_declared = Capability[]
+  # Add any extensions that are not linked to capabilities but required by them.
+  # XXX: Investigate why this information is not automatically derived.
   for cap in required_caps
-    enum_info = enum_infos[cap]
-    union!(implicitly_declared, enum_info.capabilities)
+    cap == SPIRV.CapabilityMeshShadingEXT && push!(required_exts, "SPV_EXT_mesh_shader")
   end
-  FeatureRequirements(required_exts, setdiff(required_caps, implicitly_declared))
+  FeatureRequirements(required_exts, setdiff(required_caps, implicitly_declared_capabilities(required_caps)))
+end
+
+function implicitly_declared_capabilities(capabilities)
+  implicitly_declared = Capability[]
+  for capability in capabilities
+    enum_info = enum_infos[capability]
+    for required in enum_info.required
+      !isnothing(required.capabilities) && union!(implicitly_declared, required.capabilities)
+    end
+  end
+  implicitly_declared
 end
 
 FeatureRequirements(ir::IR, features::FeatureSupport) = FeatureRequirements(Module(ir), features)

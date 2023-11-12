@@ -1,7 +1,7 @@
 """
 Graph whose vertices and edges remain identical after deletion of other vertices.
 """
-@auto_hash_equals struct DeltaGraph{T} <: AbstractGraph{T}
+@struct_hash_equal struct DeltaGraph{T} <: AbstractGraph{T}
   vertices::Vector{T}
   fadjlist::Vector{Vector{T}}
   badjlist::Vector{Vector{T}}

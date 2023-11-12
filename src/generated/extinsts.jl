@@ -83,382 +83,230 @@
 end
 
 const instruction_infos_glsl = Dict{OpCodeGLSL,InstructionInfo}([
-  OpGLSLRound =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+  OpGLSLRound => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLRoundEven =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLTrunc =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLFAbs =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLSAbs =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLFSign =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLSSign =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLFloor =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLCeil =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLFract =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLRadians => InstructionInfo(
-    nothing,
-    [OperandInfo(IdRef, "'degrees'", nothing)],
-    [],
-    [],
-    v"0.0.0",
-  ),
-  OpGLSLDegrees => InstructionInfo(
-    nothing,
-    [OperandInfo(IdRef, "'radians'", nothing)],
-    [],
-    [],
-    v"0.0.0",
-  ),
-  OpGLSLSin =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLCos =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLTan =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLAsin =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLAcos =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLAtan => InstructionInfo(
-    nothing,
-    [OperandInfo(IdRef, "'y_over_x'", nothing)],
-    [],
-    [],
-    v"0.0.0",
-  ),
-  OpGLSLSinh =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLCosh =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLTanh =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLAsinh =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLAcosh =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLAtanh =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLTrunc => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLFAbs => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLSAbs => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLFSign => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLSSign => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLFloor => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLCeil => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLFract => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLRadians =>
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'degrees'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLDegrees =>
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'radians'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLSin => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLCos => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLTan => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLAsin => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLAcos => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLAtan =>
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'y_over_x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLSinh => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLCosh => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLTanh => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLAsinh => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLAcosh => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLAtanh => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLAtan2 => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'y'", nothing), OperandInfo(IdRef, "'x'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLPow => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
-  OpGLSLExp =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLLog =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLExp2 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLLog2 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
-  OpGLSLSqrt =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+  OpGLSLExp => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLLog => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLExp2 => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLLog2 => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLSqrt => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLInverseSqrt =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLDeterminant =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLMatrixInverse =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLModf => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'i'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLModfStruct =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLFMin => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLUMin => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLSMin => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLFMax => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLUMax => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLSMax => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLFClamp => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'x'", nothing),
-      OperandInfo(IdRef, "'minVal'", nothing),
-      OperandInfo(IdRef, "'maxVal'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'minVal'", nothing), OperandInfo(IdRef, "'maxVal'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLUClamp => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'x'", nothing),
-      OperandInfo(IdRef, "'minVal'", nothing),
-      OperandInfo(IdRef, "'maxVal'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'minVal'", nothing), OperandInfo(IdRef, "'maxVal'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLSClamp => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'x'", nothing),
-      OperandInfo(IdRef, "'minVal'", nothing),
-      OperandInfo(IdRef, "'maxVal'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'minVal'", nothing), OperandInfo(IdRef, "'maxVal'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLFMix => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'x'", nothing),
-      OperandInfo(IdRef, "'y'", nothing),
-      OperandInfo(IdRef, "'a'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing), OperandInfo(IdRef, "'a'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLIMix => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'x'", nothing),
-      OperandInfo(IdRef, "'y'", nothing),
-      OperandInfo(IdRef, "'a'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing), OperandInfo(IdRef, "'a'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLStep => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'edge'", nothing), OperandInfo(IdRef, "'x'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLSmoothStep => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'edge0'", nothing),
-      OperandInfo(IdRef, "'edge1'", nothing),
-      OperandInfo(IdRef, "'x'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'edge0'", nothing), OperandInfo(IdRef, "'edge1'", nothing), OperandInfo(IdRef, "'x'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLFma => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'a'", nothing),
-      OperandInfo(IdRef, "'b'", nothing),
-      OperandInfo(IdRef, "'c'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'a'", nothing), OperandInfo(IdRef, "'b'", nothing), OperandInfo(IdRef, "'c'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLFrexp => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'exp'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLFrexpStruct =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLLdexp => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'exp'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLPackSnorm4x8 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLPackUnorm4x8 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLPackSnorm2x16 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLPackUnorm2x16 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLPackHalf2x16 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], [], [], v"0.0.0"),
-  OpGLSLPackDouble2x32 => InstructionInfo(
-    nothing,
-    [OperandInfo(IdRef, "'v'", nothing)],
-    [CapabilityFloat64],
-    [],
-    v"0.0.0",
-  ),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLPackDouble2x32 =>
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFloat64])),
   OpGLSLUnpackSnorm2x16 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'p'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'p'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLUnpackUnorm2x16 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'p'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'p'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLUnpackHalf2x16 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLUnpackSnorm4x8 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'p'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'p'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLUnpackUnorm4x8 =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'p'", nothing)], [], [], v"0.0.0"),
-  OpGLSLUnpackDouble2x32 => InstructionInfo(
-    nothing,
-    [OperandInfo(IdRef, "'v'", nothing)],
-    [CapabilityFloat64],
-    [],
-    v"0.0.0",
-  ),
-  OpGLSLLength =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'p'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLUnpackDouble2x32 =>
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'v'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFloat64])),
+  OpGLSLLength => InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLDistance => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'p0'", nothing), OperandInfo(IdRef, "'p1'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLCross => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLNormalize =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'x'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLFaceForward => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'N'", nothing),
-      OperandInfo(IdRef, "'I'", nothing),
-      OperandInfo(IdRef, "'Nref'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'N'", nothing), OperandInfo(IdRef, "'I'", nothing), OperandInfo(IdRef, "'Nref'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLReflect => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'I'", nothing), OperandInfo(IdRef, "'N'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLRefract => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'I'", nothing),
-      OperandInfo(IdRef, "'N'", nothing),
-      OperandInfo(IdRef, "'eta'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'I'", nothing), OperandInfo(IdRef, "'N'", nothing), OperandInfo(IdRef, "'eta'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLFindILsb =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'Value'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'Value'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLFindSMsb =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'Value'", nothing)], [], [], v"0.0.0"),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'Value'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
   OpGLSLFindUMsb =>
-    InstructionInfo(nothing, [OperandInfo(IdRef, "'Value'", nothing)], [], [], v"0.0.0"),
-  OpGLSLInterpolateAtCentroid =>
-    InstructionInfo(
-      nothing,
-      [OperandInfo(IdRef, "'interpolant'", nothing)],
-      [CapabilityInterpolationFunction],
-      [],
-      v"0.0.0",
-    ),
+    InstructionInfo(nothing, [OperandInfo(IdRef, "'Value'", nothing)], RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing)),
+  OpGLSLInterpolateAtCentroid => InstructionInfo(
+    nothing,
+    [OperandInfo(IdRef, "'interpolant'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityInterpolationFunction]),
+  ),
   OpGLSLInterpolateAtSample => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'interpolant'", nothing), OperandInfo(IdRef, "'sample'", nothing)],
-    [CapabilityInterpolationFunction],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityInterpolationFunction]),
   ),
   OpGLSLInterpolateAtOffset => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'interpolant'", nothing), OperandInfo(IdRef, "'offset'", nothing)],
-    [CapabilityInterpolationFunction],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityInterpolationFunction]),
   ),
   OpGLSLNMin => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLNMax => InstructionInfo(
     nothing,
     [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'y'", nothing)],
-    [],
-    [],
-    v"0.0.0",
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
   OpGLSLNClamp => InstructionInfo(
     nothing,
-    [
-      OperandInfo(IdRef, "'x'", nothing),
-      OperandInfo(IdRef, "'minVal'", nothing),
-      OperandInfo(IdRef, "'maxVal'", nothing),
-    ],
-    [],
-    [],
-    v"0.0.0",
+    [OperandInfo(IdRef, "'x'", nothing), OperandInfo(IdRef, "'minVal'", nothing), OperandInfo(IdRef, "'maxVal'", nothing)],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
 ])

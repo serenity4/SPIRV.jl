@@ -6,7 +6,7 @@ using MLStyle
 using Graphs
 using Reexport
 using Dictionaries
-using AutoHashEquals
+using StructEquality
 using Accessors
 using ResultTypes: Result
 using AbstractTrees
@@ -16,6 +16,7 @@ using BitMasks
 using UUIDs: UUID, uuid1
 using SnoopPrecompile
 using ForwardMethods
+using Random
 import Serialization: serialize, deserialize
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
@@ -27,12 +28,12 @@ using Base.Experimental: @overlay, @MethodTable
 using Base: Fix1, Fix2
 
 import SPIRV_Tools_jll
-const spirv_val = SPIRV_Tools_jll.spirv_val(identity)
+const spirv_val = SPIRV_Tools_jll.spirv_val()
 
 const Optional{T} = Union{Nothing,T}
 
 struct LiteralType{T} end
-Base.:(*)(x::Number, ::Type{LiteralType{T}}) where {T} = T(x)
+Base.:(*)(x, ::Type{LiteralType{T}}) where {T} = T(x)
 
 const U = LiteralType{UInt32}
 const F = LiteralType{Float32}
@@ -47,6 +48,12 @@ include("grammar.jl")
 include("generated/enum_infos.jl")
 include("generated/instructions.jl")
 include("generated/extinsts.jl")
+
+"""
+Enumerated value representing the type of an instruction.
+See https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_instructions_3 for a list of SPIR-V opcodes (excluding extended instruction sets).
+"""
+OpCode
 
 include("utils.jl")
 include("bijection.jl")
@@ -98,8 +105,13 @@ include("frontend/ci_passes.jl")
 include("frontend/target.jl")
 include("frontend/compile.jl")
 include("frontend/codegen.jl")
-include("frontend/shader_options.jl")
-include("frontend/shader.jl")
+include("frontend/shader/options.jl")
+include("frontend/shader/interface.jl")
+include("frontend/shader/shader.jl")
+include("frontend/shader/analysis.jl")
+include("frontend/shader/source.jl")
+include("frontend/shader/cache.jl")
+include("frontend/shader/api.jl")
 
 include("passes.jl")
 include("spirv_dsl.jl")
@@ -185,6 +197,8 @@ export
   GeometryExecutionOptions,
   TessellationExecutionOptions,
   MeshExecutionOptions,
+  ShaderSpec, ShaderInfo, ShaderSource,
+  ShaderCompilationCache,
 
   # Layouts.
   LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanAlignment, VulkanLayout, ShaderLayout, TypeMetadata,

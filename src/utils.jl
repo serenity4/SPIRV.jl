@@ -122,3 +122,5 @@ end
 macro force_construct(T, ex)
   esc(Expr(:new, T, ex))
 end
+
+propagate_source(__source__, ex) = Expr(:block, LineNumberNode(__source__.line, __source__.file), ex)

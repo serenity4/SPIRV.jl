@@ -1,4 +1,4 @@
-@auto_hash_equals struct AnnotatedFunction
+@struct_hash_equal struct AnnotatedFunction
   range::UnitRange{Int}
   parameters::UnitRange{Int}
   blocks::Vector{UnitRange{Int}}

@@ -1,4 +1,4 @@
-using SPIRV, Test, Graphs, AbstractTrees, AutoHashEquals, MetaGraphs
+using SPIRV, Test, Graphs, AbstractTrees, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
 using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, node_index, cyclic_region, acyclic_region
 using SPIRV: REGION_BLOCK, REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION, REGION_PROPER, REGION_SELF_LOOP, REGION_WHILE_LOOP, REGION_NATURAL_LOOP, REGION_IMPROPER
@@ -89,11 +89,12 @@ end
 
   @testset "Control flow graph" begin
     @testset "Tree utilities" begin
-      @auto_hash_equals struct Tree1
+      struct Tree1
         val::Int
         parent::Union{Tree1,Nothing}
         children::Vector{Tree1}
       end
+      Base.:(==)(a::Tree1, b::Tree1) = a.val == b.val && a.children == b.children && a.parent === b.parent
       Tree1(val, parent = nothing) = Tree1(val, parent, [])
       AbstractTrees.parent(tree::Tree1) = tree.parent
       AbstractTrees.children(tree::Tree1) = tree.children

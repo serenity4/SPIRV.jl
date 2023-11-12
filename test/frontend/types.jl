@@ -1,5 +1,6 @@
 using SPIRV, Test
 using SPIRV: component_type, texel_type, sampled_type, column
+using StaticArrays
 
 @testset "Array operations" begin
   @testset "Pointers" begin
@@ -85,6 +86,9 @@ using SPIRV: component_type, texel_type, sampled_type, column
 
     @test Vec2(1.0, 2.0) == Vec2((1.0, 2.0)) == convert(Vec2, (1.0, 2.0))
 
+    @test isa(rand(Vec2), Vec2)
+    @test isa(rand(Vec{3}), Vec3)
+
     @test isa(repr(v), String)
     @test isa(repr(MIME"text/plain"(), v), String)
   end
@@ -117,6 +121,10 @@ using SPIRV: component_type, texel_type, sampled_type, column
     ]
     @test m[2, 2] === 6f0
     @test m[3, 2] === 10f0
+
+    @test isa(rand(Mat{2,3,Float32}), Mat{2,3,Float32})
+    @test isa(rand(Mat{4,5}), Mat{4,5,Float32})
+    @test isa(rand(Mat{4}), Mat4)
 
     @test isa(repr(m), String)
     @test isa(repr(MIME"text/plain"(), m), String)
@@ -158,6 +166,9 @@ using SPIRV: component_type, texel_type, sampled_type, column
     @test all(isone, one(Arr{16,Vec4}))
 
     @test Arr{2,Float32}(1.0, 2.0) == Arr{2,Float32}((1.0, 2.0)) == convert(Arr{2,Float32}, (1.0, 2.0))
+
+    @test isa(rand(Arr{2,Float32}), Arr{2,Float32})
+    @test isa(rand(Arr{10}), Arr{10,Float32})
 
     @test isa(repr(arr), String)
     @test isa(repr(MIME"text/plain"(), arr), String)
@@ -293,5 +304,22 @@ using SPIRV: component_type, texel_type, sampled_type, column
 
     @test all(iszero, zero(Arr{16,Vec2}))
     @test all(iszero, zero(Arr{16,Mat3}))
+  end
+
+  @testset "Conversions from/to `SVector` and `SMatrix`" begin
+    @test convert(Vec2, @SVector [1.0, 2.0]) == Vec2(1, 2)
+    @test convert(Vec{2}, @SVector [1.0, 2.0]) == Vec{2,Float64}(1, 2)
+    @test convert(SVector{2,Float32}, Vec(1.0, 2.0)) == @SVector [1f0, 2f0]
+    @test convert(SVector{2}, Vec(1.0, 2.0)) == @SVector [1.0, 2.0]
+
+    @test convert(Mat{2,2,Float32}, @SMatrix [1.0 2.0; 3.0 4.0]) == @mat [1f0 2f0; 3f0 4f0]
+    @test convert(Mat{2,2}, @SMatrix [1.0 2.0; 3.0 4.0]) == @mat [1.0 2.0; 3.0 4.0]
+    @test convert(Mat{2,3,Float32}, @SMatrix [1.0 2.0 3.0; 4.0 5.0 6.0]) == @mat [1f0 2f0 3f0; 4f0 5f0 6f0]
+    @test convert(Mat{2,3}, @SMatrix [1.0 2.0 3.0; 4.0 5.0 6.0]) == @mat [1.0 2.0 3.0; 4.0 5.0 6.0]
+
+    @test convert(Arr{2,Float32}, @SVector [1.0, 2.0]) == Arr{2,Float32}(1, 2)
+    @test convert(SVector{2,Float32}, Arr{2,Float64}(1, 2)) == @SVector [1f0, 2f0]
+    @test convert(Arr{2}, @SVector [1.0, 2.0]) == Arr{2,Float64}(1, 2)
+    @test convert(SVector{2}, Arr{2,Float64}(1, 2)) == @SVector [1.0, 2.0]
   end
 end;

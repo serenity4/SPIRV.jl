@@ -7,7 +7,7 @@ using SPIRV, Test, Graphs
     @test !in(SPIRV.CapabilityVulkanMemoryModel, ir.capabilities)
 
     SPIRV.satisfy_requirements!(ir, AllSupported())
-    @test in("SPV_KHR_vulkan_memory_model", ir.extensions)
+    @test !in("SPV_KHR_vulkan_memory_model", ir.extensions)
     @test in(SPIRV.CapabilityVulkanMemoryModel, ir.capabilities)
   end
 

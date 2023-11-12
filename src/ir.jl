@@ -30,6 +30,9 @@ end
 @forward_methods IR field = :fdefs Base.iterate(_, args...)
 
 Base.getindex(ir::IR, i::Int) = collect(ir.fdefs)[i]
+Base.:(==)(x::IR, y::IR) = Module(x) == Module(y)
+
+IR(source; satisfy_requirements = true, features = AllSupported()) = IR(Module(source); satisfy_requirements, features)
 
 function IR(; ir_meta::ModuleMetadata = ModuleMetadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
   IR(ir_meta, [], [], BijectiveMapping(), addressing_model, memory_model, ResultDict(), ResultDict(),
@@ -268,7 +271,7 @@ function replace_name(id::ResultID, names)
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", (mod, debug)::Pair{Module,DebugInfo})
-  str = sprintc(disassemble, mod)
+  str = sprint(disassemble, mod; context = IOContext(io))
   lines = split(str, '\n')
   filter!(lines) do line
     !contains(line, "OpName") && !contains(line, "OpMemberName")

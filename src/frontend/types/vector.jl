@@ -249,3 +249,8 @@ Base.all(x::Vec{<:Any,Bool}) = All(x)
 import LinearAlgebra: cross
 
 cross(x::Vec{2}, y::Vec{2}) = x.x * y.y - x.y * y.x
+
+# Other utilities
+
+Base.rand(rng::AbstractRNG, sampler::Random.SamplerType{Vec{N,T}}) where {N,T} = Vec{N,T}(rand(rng, NTuple{N,T}))
+Base.rand(rng::AbstractRNG, sampler::Random.SamplerType{Vec{N}}) where {N} = rand(rng, Vec{N,Float32})

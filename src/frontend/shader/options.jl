@@ -57,7 +57,7 @@ function ShaderExecutionOptions(model::ExecutionModel)
   model == ExecutionModelGeometry && return GeometryExecutionOptions()
   model == ExecutionModelGLCompute && return ComputeExecutionOptions()
   model in (ExecutionModelTessellationControl, ExecutionModelTessellationEvaluation) && return TessellationExecutionOptions()
-  model == ExecutionModelMeshNV && return MeshExecutionOptions()
+  model in (ExecutionModelMeshNV, ExecutionModelMeshEXT) && return MeshExecutionOptions()
   CommonExecutionOptions()
 end
 
@@ -179,6 +179,6 @@ function validate(options::ShaderExecutionOptions, execution_model::ExecutionMod
     execution_model === ExecutionModelTessellationEvaluation && check_value(options, :output_patch_size, (nothing,))
     return validate_options_type(options, execution_model, TessellationExecutionOptions)
   end
-  execution_model == ExecutionModelMeshNV && return validate_options_type(options, execution_model, MeshExecutionOptions)
+  execution_model in (ExecutionModelMeshNV, ExecutionModelMeshEXT) && return validate_options_type(options, execution_model, MeshExecutionOptions)
   validate_options_type(options, execution_model, CommonExecutionOptions)
 end

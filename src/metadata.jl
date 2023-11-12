@@ -29,16 +29,24 @@ mutable struct Decorations
 end
 
 function Base.hash(decs::Decorations, h::UInt)
-  for field in propertynames(Decorations)
-    isdefined(decs, field) && (h += hash(getproperty(decs, field)))
+  for dec in decs.defined
+    h ⊻= extract((_, value) -> hash(value), decs, dec)
   end
   h
 end
-Base.:(==)(x::Decorations, y::Decorations) = hash(x) == hash(y)
+
+function Base.:(==)(x::Decorations, y::Decorations)
+  x.defined == y.defined || return false
+  for dec in x.defined
+    extract((dec, value) -> y[dec] == value, x, dec) || return false
+  end
+  true
+end
 
 Decorations(dec::Decoration, args...) = Decorations().decorate!(dec, args...)
 
 Base.getproperty(decs::Decorations, symbol::Symbol) = symbol === :decorate! ? decorate!(decs) : getfield(decs, symbol)
+Base.getindex(decs::Decorations, dec::Decoration) = extract((dec, value) -> value, decs, dec)
 
 function decorate!(decs::Decorations)
   function _decorate!(dec::Decoration, args...)
@@ -96,7 +104,7 @@ end
 
 function Base.merge!(x::Decorations, y::Decorations)
   for dec in y.defined
-    extract(x.decorate!, y, dec)
+    extract((dec, value) -> isnothing(value) ? x.decorate!(dec) : x.decorate!(dec, value), y, dec)
   end
   x
 end
@@ -111,12 +119,10 @@ end
 
 function Base.show(io::IO, decs::Decorations)
   print(io, Decorations, '(')
-  extract_args(dec) = nothing
-  extract_args(dec, value) = value
   for (i, dec) in enumerate(sort(collect(decs.defined)))
     i > 1 && print(io, ", ")
     print(io, dec)
-    value = extract(extract_args, decs, dec)
+    value = decs[dec]
     !isnothing(value) && print(io, " = ", value)
   end
   print(io, ')')
@@ -135,7 +141,7 @@ end
 
 function extract(f, decs::Decorations, dec::Decoration)
   nargs_max = length(enum_infos[Decoration].enumerants[UInt32(dec)].parameters)
-  iszero(nargs_max) && return f(dec)
+  iszero(nargs_max) && return f(dec, nothing)
   @match dec begin
     &DecorationSpecId               => f(dec, decs.spec_id)
     &DecorationArrayStride          => f(dec, decs.array_stride)
@@ -168,7 +174,7 @@ end
 
 function instruction(decs::Decorations, dec::Decoration, member_index::Optional{UInt32} = nothing)
   op = isnothing(member_index) ? OpDecorate : OpMemberDecorate
-  inst = extract((dec, args...) -> @inst(op(dec, args...)), decs, dec)
+  inst = extract((dec, value) -> isnothing(value) ? @inst(op(dec)) : @inst(op(dec, value)), decs, dec)
   isnothing(inst) && return
   !isnothing(member_index) && pushfirst!(inst.arguments, member_index)
   inst

@@ -11,7 +11,7 @@ It can also be assembled to a binary format, usually to be saved on disk or to b
 An `IR` structure is also available to reason about a given SPIR-V module globally, and not just as a stream of instructions.
 This form is suited for introspection and modification. It can then be converted back to a SPIR-V module. Note that a module converted to an IR which is converted back to a module will not be identical, even if no modification was made to the IR; the ordering of certain instructions (such as debugging instructions) may not be the same, although there will be no change of semantics.
 
-## Julia to SPIR-V compiler
+## [Julia to SPIR-V compiler](@id compiler)
 
 This library contains an experimental Julia to SPIR-V compiler, which only supports Vulkan-flavored SPIR-V. From a SPIR-V perspective, this is a Julia frontend, and from a Julia perspective, this is a SPIR-V backend (as opposed to the traditional LLVM backend used to execute CPU code).
 

@@ -6,7 +6,9 @@ end
 NewCodeInfo(from::CodeInfo) = NewCodeInfo(from, Any[], Int[])
 
 function should_remove_instruction(inst, i, cfg)
+  # Strip any `:meta` expression, as we don't read anything from them.
   Meta.isexpr(inst, :meta) && return true
+  # Remove basic blocks consisting of a lone `nothing` statement.
   if inst === nothing
     bb = basic_block(cfg, i)
     isempty(bb.preds) && length(bb.stmts) == 1 && return true
@@ -66,7 +68,7 @@ function code_info(code::NewCodeInfo)
   # Must be updated if new instructions may be added.
   # XXX: Consider editing code locations to reflect modifications.
   codelocs = from.codelocs[code.from_ssavalues]
-  ssavaluetypes = from.ssavaluetypes[code.from_ssavalues]
+  ssavaluetypes = isa(from.ssavaluetypes, Vector{Any}) ? from.ssavaluetypes[code.from_ssavalues] : from.ssavaluetypes
   ssaflags = from.ssaflags[code.from_ssavalues]
 
   @static if VERSION < v"1.10-DEV"

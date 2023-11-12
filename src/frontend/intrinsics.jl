@@ -248,6 +248,38 @@ IDiv(x::T, y::T) where {T<:BitUnsigned} = UDiv(x, y)
 @override flipsign(x::T, y::T) where {T<:BitSigned} = Select(y ≥ 0, x, -x)
 @override flipsign(x::BitSigned, y::BitSigned) = flipsign(promote(x, y)...) % typeof(x)
 
+## Counting operations.
+## These have to be emulated, as they don't exist in SPIR-V.
+## XXX: The emulations are simple but slow.
+## Another approach using global tables may prove more efficient.
+## See "Software emulation" section of https://en.wikipedia.org/wiki/Find_first_set.
+## XXX: Can we remove the wrapping into `Int`? 64-bit operations are slow on the GPU.
+
+function trailing_zeros_emulated(x::Integer) # alias `cttz`
+  iszero(x) && return 8sizeof(x) % typeof(x)
+  t = one(x)
+  r = zero(x)
+  while iszero(x & t)
+    t <<= one(t)
+    r += one(r)
+  end
+  r
+end
+@override trailing_zeros(x::Integer) = Int(trailing_zeros_emulated(x))
+
+function leading_zeros_emulated(x::Integer) # alias `ctlz`
+  w = sizeof(x) % typeof(x)
+  iszero(x) && return w
+  t = one(x) << (w - one(w))
+  r = zero(x)
+  while iszero(x & t)
+    t >>= one(t)
+    r += one(r)
+  end
+  r
+end
+@override leading_zeros(x::Integer) = Int(leading_zeros_emulated(x))
+
 # Booleans.
 
 @override (!)(x::Bool)           = LogicalNot(x)

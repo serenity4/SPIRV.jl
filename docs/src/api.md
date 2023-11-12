@@ -10,3 +10,9 @@
 Modules = [SPIRV]
 Private = false
 ```
+
+```@docs
+SPIRV.Module
+SPIRV.REGION_BLOCK
+SPIRV.OpCode
+```

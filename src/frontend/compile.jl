@@ -21,6 +21,8 @@ function set_name!(mt::ModuleTarget, id::ResultID, name::Symbol)
 end
 
 struct Translation
+  argtypes::Vector{Any}
+  argmap::BijectiveMapping{Int64, Core.Argument}
   args::Dictionary{Core.Argument,ResultID}
   "Result IDs for basic blocks from Julia IR."
   bbs::BijectiveMapping{Int,ResultID}
@@ -36,8 +38,15 @@ struct Translation
   globalrefs::Dictionary{Core.SSAValue,GlobalRef}
 end
 
-Translation(tmap, types) = Translation(Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), tmap, types, Dictionary())
-Translation() = Translation(TypeMap(), Dictionary())
+function Translation(target::SPIRVTarget)
+  spectypes = collect(target.mi.specTypes.types)
+  kept_args = findall(T -> !(T <: Base.Callable), spectypes)
+  argtypes = spectypes[kept_args]
+  argmap = BijectiveMapping(Dictionary(eachindex(kept_args), Core.Argument.(kept_args)))
+  Translation(argtypes, argmap)
+end
+Translation() = Translation([], BijectiveMapping())
+Translation(argtypes, argmap) = Translation(argtypes, argmap, Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), TypeMap(), Dictionary(), Dictionary())
 
 ResultID(arg::Core.Argument, tr::Translation) = tr.args[arg]
 ResultID(bb::Int, tr::Translation) = tr.bbs[bb]
@@ -47,7 +56,7 @@ function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}), args...; i
   compile(SPIRVTarget(f, argtypes; interp), args...)
 end
 
-compile(target::SPIRVTarget, args...) = compile!(ModuleTarget(), Translation(), target, args...)
+compile(target::SPIRVTarget, args...) = compile!(ModuleTarget(), Translation(target), target, args...)
 
 function compile!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables::Dictionary{Int,Variable} = Dictionary{Int,Variable}())
   # TODO: restructure CFG
@@ -79,15 +88,16 @@ mutable struct CompilationError <: Exception
   msg::String
   target::SPIRVTarget
   jinst::Any
+  jinst_index::Int64
   jtype::Type
   ex::Expression
-  CompilationError(msg::AbstractString) = (err = new(); err.msg = msg; err)
+  CompilationError(msg::AbstractString) = (err = new(); err.msg = msg; err.jinst_index = 0; err)
 end
 
 function throw_compilation_error(exc::Exception, fields::NamedTuple, msg = "the following method instance could not be compiled to SPIR-V")
   if isa(exc, CompilationError)
     for (prop, val) in pairs(fields)
-      setproperty!(exc, prop, val)
+      (!isdefined(exc, prop) || (prop === :jinst_index && iszero(exc.jinst_index))) && setproperty!(exc, prop, val)
     end
     rethrow()
   else
@@ -106,7 +116,7 @@ function Base.showerror(io::IO, err::CompilationError)
   # TODO: Use Base.StackTraces.
   if isdefined(err, :target)
     println(io, "An error occurred while compiling a `CodeInfo`.")
-    show_debug_code(io, err.target.code)
+    show_debug_native_code(io, err.target.code)
   end
   print(io, "CompilationError")
   print(io, ": ", err.msg, '.')
@@ -123,7 +133,7 @@ function Base.showerror(io::IO, err::CompilationError)
   frame = last(stacktrace)
   frame.code.rettype == Union{} && length(frame.code.code) < 100 && println(io, "\n\n", frame.code)
   if isdefined(err, :jinst)
-    print(io, "\n\n", error_field("Julia instruction"), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
+    print(io, "\n\n", error_field("Julia instruction" * (!iszero(err.jinst_index) ? " at index %$(err.jinst_index)" : "")), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
   end
   if isdefined(err, :ex)
     print(io, "\n\n", error_field("Wrapped SPIR-V expression"))
@@ -146,16 +156,16 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables
   set_name!(mt, fid, mangled_name(target.mi))
   arg_idx = 0
   gvar_idx = 0
-  for (i, t) in enumerate(target.mi.specTypes.types[2:end])
-    t <: Type && continue
+  for (i, argument) in pairs(tr.argmap)
     argid = haskey(variables, i) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
-    insert!(tr.args, Core.Argument(i + 1), argid)
-    set_name!(mt, argid, target.code.slotnames[i + 1])
+    insert!(tr.args, argument, argid)
+    set_name!(mt, argid, target.code.slotnames[argument.n])
   end
 
   try
     # Fill the SPIR-V function with instructions generated from the target's inferred code.
     emit!(fdef, mt, tr, target)
+    assert_type_known(fdef.type.rettype)
   catch e
     throw_compilation_error(e, (; target))
   end
@@ -172,17 +182,16 @@ function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
   global_vars = ResultID[]
   (; mi) = target
 
-  for (i, t) in enumerate(mi.specTypes.types[2:end])
-    t <: Type && continue
-    type = spir_type(t, tr.tmap; wrap_mutable = true)
+  for (i, T) in enumerate(tr.argtypes)
+    t = spir_type(T, tr.tmap; wrap_mutable = true)
     var = get(variables, i, nothing)
     @switch var begin
       @case ::Nothing
-      push!(argtypes, type)
+      push!(argtypes, t)
       @case ::Variable
       @switch var.storage_class begin
         @case &StorageClassFunction
-        push!(argtypes, type)
+        push!(argtypes, t)
         @case ::StorageClass
         push!(global_vars, emit!(mt, tr, var))
       end
@@ -279,10 +288,15 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     (isnothing(jinst) || jinst === GlobalRef(Base, :nothing)) && continue
     Meta.isexpr(jinst, :loopinfo) && continue
     Meta.isexpr(jinst, :coverage) && continue
+    core_ssaval = Core.SSAValue(i)
+    if Meta.isexpr(jinst, :boundscheck)
+      # Act as if bounds checking was disabled, emitting a constant instead of the actual condition.
+      insert!(tr.results, core_ssaval, emit!(mt, tr, Constant(jinst.args[1])))
+      continue
+    end
     jtype = ssavaluetypes[i]
     isa(jtype, Core.PartialStruct) && (jtype = jtype.typ)
     isa(jtype, Core.Const) && (jtype = typeof(jtype.val))
-    core_ssaval = Core.SSAValue(i)
     ex = nothing
     try
       @switch jinst begin
@@ -345,8 +359,9 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
           !isa(jinst, GlobalRef) && insert!(tr.results, core_ssaval, ret)
         end
       end
+      jtype === Union{} && throw_compilation_error("`Union{}` type detected: the code to compile contains an error")
     catch e
-      fields = (; jinst, jtype)
+      fields = (; jinst, jinst_index = i, jtype)
       !isnothing(ex) && (fields = (; fields..., ex))
       throw_compilation_error(e, fields)
     end

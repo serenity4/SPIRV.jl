@@ -1,5 +1,8 @@
 using SPIRV, Test
+using SPIRV: @shader, @compute, @vertex, @fragment, @compute, @any_hit, @mesh
 using SPIRV.MathFunctions
+
+include("vulkan_driver.jl")
 
 resource(filename) = joinpath(@__DIR__, "resources", filename)
 read_module(file) = read(joinpath(@__DIR__, "modules", file * (last(splitext(file)) == ".jl" ? "" : ".jl")), String)
@@ -21,11 +24,9 @@ load_module(file) = load_module(load_module_expr(file))
   include("spvasm.jl");
   include("layouts.jl");
   include("serialization.jl");
-  if VERSION ≥ v"1.8"
-    include("passes.jl");
-    include("codegen.jl");
-    include("analysis.jl");
-    include("restructuring.jl");
-    include("frontend.jl");
-  end;
+  include("passes.jl");
+  include("codegen.jl");
+  include("analysis.jl");
+  include("restructuring.jl");
+  include("frontend.jl");
 end;

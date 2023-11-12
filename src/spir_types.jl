@@ -45,7 +45,7 @@ function MatrixType(inst::Instruction, eltype::VectorType)
   MatrixType(eltype, last(inst.arguments))
 end
 
-@auto_hash_equals struct ImageType <: SPIRType
+@struct_hash_equal struct ImageType <: SPIRType
   sampled_type::SPIRType
   dim::Dim
   depth::Optional{Bool}
@@ -73,7 +73,7 @@ struct SampledImageType <: SPIRType
   image_type::ImageType
 end
 
-@auto_hash_equals struct Constant
+@struct_hash_equal struct Constant
   value::Any
   type::SPIRType
   is_spec_const::Bool
@@ -124,7 +124,7 @@ end
 PointerType(inst::Instruction, type::SPIRType) = PointerType(first(inst.arguments), type)
 Base.:(≈)(x::PointerType, y::PointerType) = x.storage_class == y.storage_class && x.type ≈ y.type
 
-@auto_hash_equals struct FunctionType <: SPIRType
+@struct_hash_equal struct FunctionType <: SPIRType
   rettype::SPIRType
   argtypes::Vector{SPIRType}
 end
@@ -167,7 +167,7 @@ end
 
 iscomposite(@nospecialize(t::SPIRType)) =  isa(t, StructType) || isa(t, VectorType) || isa(t, MatrixType) || isa(t, ArrayType)
 
-@refbroadcast @auto_hash_equals struct TypeMap
+@refbroadcast @struct_hash_equal struct TypeMap
   d::Dictionary{DataType,SPIRType}
 end
 
@@ -194,8 +194,10 @@ function Base.getindex(tmap::TypeMap, T::DataType)
   spir_type(T, tmap; fill_tmap = false)
 end
 
+assert_type_known(t::SPIRType) = !isa(t, OpaqueType) || error("Unknown type `$(t.name)` reached. This suggests that an error was encoutered in the Julia function during its compilation.")
+
 function spir_type(@nospecialize(t::Union{Union, Type{Union{}}}), tmap::Optional{TypeMap} = nothing; kwargs...)
-  t === Union{} && error("Bottom type Union{} reached. This suggests that an error was encoutered in the Julia function during its compilation.")
+  t === Union{} && return OpaqueType(Symbol("Union{}"))
   error("Can't get a SPIR-V type for $t; unions are not supported at the moment.")
 end
 
@@ -228,7 +230,7 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
         _ => ArrayType(spir_type(Array{eltype,n - 1}, tmap), nothing)
       end
     end
-    ::Type{<:Tuple} => if allequal(fieldtypes(t))
+    ::Type{<:Tuple} => if fieldcount(t) > 1 && allequal(fieldtypes(t))
       ArrayType(spir_type(eltype(t), tmap), Constant(UInt32(fieldcount(t))))
     else
       # Generate structure on the fly.
@@ -251,7 +253,7 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
   #TODO: WIP, need to insert an `OpCompositeExtract` for all uses if the type changed.
   promoted_type = promote_to_interface_block(type, storage_class)
   if type ≠ promoted_type
-    error("The provided type must be a struct or an array of structs. The automation of this requirement is a work in progress.")
+    error("The provided type `$type` for storage class `$storage_class` must be a struct or an array of structs. The automation of this requirement is a work in progress.")
   end
 
   if type == promoted_type && !isnothing(tmap) && fill_tmap

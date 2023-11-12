@@ -19,6 +19,9 @@ function (::AddMergeHeaders)(fdef::FunctionDefinition)
   ctree_global = ControlTree(cfg)
   back_edges = backedges(cfg)
   traversed = falses(nv(cfg))
+  merge_blocks = Set{ResultID}()
+  continue_targets = Set{ResultID}()
+  node_to_id(node) = fdef[node].id
   for ctree in PreOrderDFS(ctree_global)
     is_block(ctree) && continue
     v = node_index(ctree)
@@ -30,16 +33,21 @@ function (::AddMergeHeaders)(fdef::FunctionDefinition)
       @case GuardBy(is_loop)
       local_back_edges = filter!(in(back_edges), [Edge(u, v) for u in inneighbors(cfg, v)])
       length(local_back_edges) > 1 && throw_compilation_error("there is more than one backedge to a loop")
-      vcont = src(only(local_back_edges))
+      ncont = node_to_id(src(only(local_back_edges)))
 
-      vmerge = merge_candidate(ctree, cfg)
-      header = @ex OpLoopMerge(fdef[vmerge].id, fdef[vcont].id, LoopControlNone)
+      nmerge = node_to_id(merge_candidate(ctree, cfg))
+      header = @ex OpLoopMerge(nmerge, ncont, LoopControlNone)
+      push!(merge_blocks, nmerge)
+      push!(continue_targets, ncont)
       insert!(blk, lastindex(blk), header)
 
       @case GuardBy(is_selection)
-      vmerge = merge_candidate(ctree, cfg)
-      header = @ex OpSelectionMerge(fdef[vmerge].id, SelectionControlNone)
-      insert!(blk, lastindex(blk), header)
+      bs = node_to_id.(node_index.(@view ctree.children[2:end]))
+      if all(!in(b, merge_blocks) && !in(b, continue_targets) for b in bs)
+        vmerge = merge_candidate(ctree, cfg)
+        header = @ex OpSelectionMerge(fdef[vmerge].id, SelectionControlNone)
+        insert!(blk, lastindex(blk), header)
+      end
     end
   end
 end

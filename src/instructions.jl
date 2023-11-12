@@ -11,7 +11,7 @@ result_id(inst::AbstractInstruction) = inst.result_id
 """
 SPIR-V instruction in binary format.
 """
-@auto_hash_equals struct PhysicalInstruction <: AbstractInstruction
+@struct_hash_equal struct PhysicalInstruction <: AbstractInstruction
   word_count::UInt16
   opcode::UInt16
   type_id::Optional{Word}
@@ -22,7 +22,7 @@ end
 """
 Parsed SPIR-V instruction. It represents an instruction of the form `%result_id = %opcode(%arguments...)::%type_id`.
 """
-@auto_hash_equals struct Instruction <: AbstractInstruction
+@struct_hash_equal struct Instruction <: AbstractInstruction
   opcode::OpCode
   type_id::Optional{ResultID}
   result_id::Optional{ResultID}

@@ -67,10 +67,11 @@ function validate(ir::IR)
   validate(Module(ir))
 end
 
-function validate_shader(ir::IR)
+function validate_shader(ir::IR; flags = [])
   !isempty(ir.entry_points) || error("At least one entry point must be defined.")
   mod = Module(ir)
   ret = validate_types(mod)
   iserror(ret) && return ret
-  validate_khronos(mod; flags = ["--target-env", "vulkan1.3"])
+  union!(flags, ["--target-env", "vulkan1.3"])
+  validate_khronos(mod; flags)
 end

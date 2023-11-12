@@ -49,7 +49,7 @@ operand_kinds(args...) = getproperty.(operand_infos(args...), :kind)
 SPIR-V module, as a series of headers followed by a stream of instructions.
 The header embeds two magic numbers, one for the module itself and one for the tool that generated it (e.g. [glslang](https://github.com/KhronosGroup/glslang)). It also contains the version of the specification applicable to the module, the maximum ID number and an optional instruction schema.
 """
-@auto_hash_equals struct PhysicalModule
+@struct_hash_equal struct PhysicalModule
   magic_number::Word
   generator_magic_number::Word
   version::Word
@@ -65,6 +65,7 @@ Base.isapprox(mod1::PhysicalModule, mod2::PhysicalModule) =
 function PhysicalModule(file::AbstractString)
   open(io -> read(io, PhysicalModule), file)
 end
+PhysicalModule(bytes::AbstractVector{<:Unsigned}) = PhysicalModule(reinterpret(UInt8, bytes))
 PhysicalModule(bytes::AbstractVector{UInt8}) = read(IOBuffer(bytes), PhysicalModule)
 
 Base.read(io::IO, ::Type{PhysicalModule}) = read(IOBuffer(read(io)), PhysicalModule)
@@ -235,7 +236,10 @@ end
 
 ModuleMetadata() = ModuleMetadata(MAGIC_NUMBER, GENERATOR_MAGIC_NUMBER, SPIRV_VERSION, 0)
 
-@auto_hash_equals struct Module
+"""
+Logical representation of a SPIR-V module.
+"""
+@struct_hash_equal struct Module
   meta::ModuleMetadata
   bound::Int
   instructions::Vector{Instruction}

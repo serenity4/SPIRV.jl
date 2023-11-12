@@ -3,1422 +3,2073 @@ const enum_infos = EnumInfos(
     ImageOperands => EnumInfo(
       ImageOperands,
       Dict(
-        0x00000000 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000001 => EnumerantInfo([CapabilityShader], [], v"0.0.0", [OperandInfo(IdRef, nothing, nothing)]),
-        0x00000002 => EnumerantInfo([], [], v"0.0.0", [OperandInfo(IdRef, nothing, nothing)]),
-        0x00000004 => EnumerantInfo([], [], v"0.0.0", [OperandInfo(IdRef, nothing, nothing), OperandInfo(IdRef, nothing, nothing)]),
-        0x00000008 => EnumerantInfo([], [], v"0.0.0", [OperandInfo(IdRef, nothing, nothing)]),
-        0x00000010 => EnumerantInfo([CapabilityImageGatherExtended], [], v"0.0.0", [OperandInfo(IdRef, nothing, nothing)]),
-        0x00000020 => EnumerantInfo([CapabilityImageGatherExtended], [], v"0.0.0", [OperandInfo(IdRef, nothing, nothing)]),
-        0x00000040 => EnumerantInfo([], [], v"0.0.0", [OperandInfo(IdRef, nothing, nothing)]),
-        0x00000080 => EnumerantInfo([CapabilityMinLod], [], v"0.0.0", [OperandInfo(IdRef, nothing, nothing)]),
-        0x00000100 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", [OperandInfo(IdScope, nothing, nothing)]),
-        0x00000100 =>
-          EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", [OperandInfo(IdScope, nothing, nothing)]),
-        0x00000200 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", [OperandInfo(IdScope, nothing, nothing)]),
-        0x00000200 =>
-          EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", [OperandInfo(IdScope, nothing, nothing)]),
-        0x00000400 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", []),
-        0x00000400 => EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
-        0x00000800 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", []),
-        0x00000800 => EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
-        0x00001000 => EnumerantInfo([], [], v"1.4.0", []),
-        0x00002000 => EnumerantInfo([], [], v"1.4.0", []),
-        0x00004000 => EnumerantInfo([], [], v"1.6.0", []),
-        0x00010000 => EnumerantInfo([], [], v"0.0.0", [OperandInfo(IdRef, nothing, nothing)]),
+        ImageOperandsNone * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        ImageOperandsBias * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), [OperandInfo(IdRef, nothing, nothing)]),
+        ImageOperandsLod * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), [OperandInfo(IdRef, nothing, nothing)]),
+        ImageOperandsGrad * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
+          [OperandInfo(IdRef, nothing, nothing), OperandInfo(IdRef, nothing, nothing)],
+        ),
+        ImageOperandsConstOffset * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), [OperandInfo(IdRef, nothing, nothing)]),
+        ImageOperandsOffset * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityImageGatherExtended]),
+          [OperandInfo(IdRef, nothing, nothing)],
+        ),
+        ImageOperandsConstOffsets * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityImageGatherExtended]),
+          [OperandInfo(IdRef, nothing, nothing)],
+        ),
+        ImageOperandsSample * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), [OperandInfo(IdRef, nothing, nothing)]),
+        ImageOperandsMinLod * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMinLod]), [OperandInfo(IdRef, nothing, nothing)]),
+        ImageOperandsMakeTexelAvailableKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]),
+          [OperandInfo(IdScope, nothing, nothing)],
+        ),
+        ImageOperandsMakeTexelVisibleKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]),
+          [OperandInfo(IdScope, nothing, nothing)],
+        ),
+        ImageOperandsNonPrivateTexelKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]), []),
+        ImageOperandsVolatileTexelKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]), []),
+        ImageOperandsSignExtend * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, nothing), []),
+        ImageOperandsZeroExtend * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, nothing), []),
+        ImageOperandsNontemporal * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, nothing), []),
+        ImageOperandsOffsets * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), [OperandInfo(IdRef, nothing, nothing)]),
       ),
     ),
     FPFastMathMode => EnumInfo(
       FPFastMathMode,
       Dict(
-        0x00000000 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000001 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000002 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000004 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000008 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000010 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00010000 => EnumerantInfo([CapabilityFPFastMathModeINTEL], [], v"0.0.0", []),
-        0x00020000 => EnumerantInfo([CapabilityFPFastMathModeINTEL], [], v"0.0.0", []),
+        FPFastMathModeNone * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FPFastMathModeNotNaN * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FPFastMathModeNotInf * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FPFastMathModeNSZ * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FPFastMathModeAllowRecip * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FPFastMathModeFast * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FPFastMathModeAllowContractFastINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPFastMathModeINTEL]), []),
+        FPFastMathModeAllowReassocINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPFastMathModeINTEL]), []),
       ),
     ),
     SelectionControl => EnumInfo(
       SelectionControl,
       Dict(
-        0x00000000 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000001 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000002 => EnumerantInfo([], [], v"0.0.0", []),
+        SelectionControlNone * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        SelectionControlFlatten * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        SelectionControlDontFlatten * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
       ),
     ),
     LoopControl => EnumInfo(
       LoopControl,
       Dict(
-        0x00000000 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000001 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000002 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000004 => EnumerantInfo([], [], v"1.1.0", []),
-        0x00000008 => EnumerantInfo([], [], v"1.1.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00000010 => EnumerantInfo([], [], v"1.4.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00000020 => EnumerantInfo([], [], v"1.4.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00000040 => EnumerantInfo([], [], v"1.4.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00000080 => EnumerantInfo([], [], v"1.4.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00000100 => EnumerantInfo([], [], v"1.4.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00010000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00020000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00040000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00080000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00100000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00200000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00400000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00800000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", []),
-        0x01000000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x02000000 => EnumerantInfo([CapabilityFPGALoopControlsINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
+        LoopControlNone * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        LoopControlUnroll * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        LoopControlDontUnroll * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        LoopControlDependencyInfinite * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, nothing), []),
+        LoopControlDependencyLength * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, nothing), [OperandInfo(LiteralInteger, nothing, nothing)]),
+        LoopControlMinIterations * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, nothing), [OperandInfo(LiteralInteger, nothing, nothing)]),
+        LoopControlMaxIterations * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, nothing), [OperandInfo(LiteralInteger, nothing, nothing)]),
+        LoopControlIterationMultiple * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, nothing), [OperandInfo(LiteralInteger, nothing, nothing)]),
+        LoopControlPeelCount * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, nothing), [OperandInfo(LiteralInteger, nothing, nothing)]),
+        LoopControlPartialCount * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, nothing), [OperandInfo(LiteralInteger, nothing, nothing)]),
+        LoopControlInitiationIntervalINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]),
+          [OperandInfo(LiteralInteger, nothing, nothing)],
+        ),
+        LoopControlMaxConcurrencyINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]),
+          [OperandInfo(LiteralInteger, nothing, nothing)],
+        ),
+        LoopControlDependencyArrayINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]),
+          [OperandInfo(LiteralInteger, nothing, nothing)],
+        ),
+        LoopControlPipelineEnableINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]),
+          [OperandInfo(LiteralInteger, nothing, nothing)],
+        ),
+        LoopControlLoopCoalesceINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]),
+          [OperandInfo(LiteralInteger, nothing, nothing)],
+        ),
+        LoopControlMaxInterleavingINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]),
+          [OperandInfo(LiteralInteger, nothing, nothing)],
+        ),
+        LoopControlSpeculatedIterationsINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]),
+          [OperandInfo(LiteralInteger, nothing, nothing)],
+        ),
+        LoopControlNoFusionINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]), []),
+        LoopControlLoopCountINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]),
+          [OperandInfo(LiteralInteger, nothing, nothing)],
+        ),
+        LoopControlMaxReinvocationDelayINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGALoopControlsINTEL]),
+          [OperandInfo(LiteralInteger, nothing, nothing)],
+        ),
       ),
     ),
     FunctionControl => EnumInfo(
       FunctionControl,
       Dict(
-        0x00000000 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000001 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000002 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000004 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000008 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00010000 => EnumerantInfo([CapabilityOptNoneINTEL], [], v"0.0.0", []),
+        FunctionControlNone * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FunctionControlInline * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FunctionControlDontInline * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FunctionControlPure * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FunctionControlConst * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FunctionControlOptNoneINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityOptNoneINTEL]), []),
       ),
     ),
     MemorySemantics => EnumInfo(
       MemorySemantics,
       Dict(
-        0x00000000 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000000 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000002 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000004 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000008 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000010 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000040 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        0x00000080 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000100 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000200 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000400 => EnumerantInfo([CapabilityAtomicStorage], [], v"0.0.0", []),
-        0x00000800 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00001000 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", []),
-        0x00001000 => EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
-        0x00002000 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", []),
-        0x00002000 => EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
-        0x00004000 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", []),
-        0x00004000 => EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
-        0x00008000 => EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
+        MemorySemanticsNone * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemorySemanticsAcquire * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemorySemanticsRelease * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemorySemanticsAcquireRelease * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemorySemanticsSequentiallyConsistent * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemorySemanticsUniformMemory * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        MemorySemanticsSubgroupMemory * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemorySemanticsWorkgroupMemory * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemorySemanticsCrossWorkgroupMemory * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemorySemanticsAtomicCounterMemory * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityAtomicStorage]), []),
+        MemorySemanticsImageMemory * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemorySemanticsOutputMemoryKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]), []),
+        MemorySemanticsMakeAvailableKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]), []),
+        MemorySemanticsMakeVisibleKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]), []),
+        MemorySemanticsVolatile * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), ["SPV_KHR_vulkan_memory_model"], [CapabilityVulkanMemoryModel]), []),
       ),
     ),
     MemoryAccess => EnumInfo(
       MemoryAccess,
       Dict(
-        0x00000000 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000001 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000002 => EnumerantInfo([], [], v"0.0.0", [OperandInfo(LiteralInteger, nothing, nothing)]),
-        0x00000004 => EnumerantInfo([], [], v"0.0.0", []),
-        0x00000008 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", [OperandInfo(IdScope, nothing, nothing)]),
-        0x00000008 =>
-          EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", [OperandInfo(IdScope, nothing, nothing)]),
-        0x00000010 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", [OperandInfo(IdScope, nothing, nothing)]),
-        0x00000010 =>
-          EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", [OperandInfo(IdScope, nothing, nothing)]),
-        0x00000020 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", []),
-        0x00000020 => EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
-        0x00010000 => EnumerantInfo(
-          [CapabilityMemoryAccessAliasingINTEL],
-          ["SPV_INTEL_memory_access_aliasing"],
-          v"0.0.0",
+        MemoryAccessNone * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemoryAccessVolatile * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemoryAccessAligned * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), [OperandInfo(LiteralInteger, nothing, nothing)]),
+        MemoryAccessNontemporal * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        MemoryAccessMakePointerAvailableKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]),
+          [OperandInfo(IdScope, nothing, nothing)],
+        ),
+        MemoryAccessMakePointerVisibleKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]),
+          [OperandInfo(IdScope, nothing, nothing)],
+        ),
+        MemoryAccessNonPrivatePointerKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]), []),
+        MemoryAccessAliasScopeINTELMask * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_memory_access_aliasing"], [CapabilityMemoryAccessAliasingINTEL]),
           [OperandInfo(IdRef, nothing, nothing)],
         ),
-        0x00020000 => EnumerantInfo(
-          [CapabilityMemoryAccessAliasingINTEL],
-          ["SPV_INTEL_memory_access_aliasing"],
-          v"0.0.0",
+        MemoryAccessNoAliasINTELMask * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_memory_access_aliasing"], [CapabilityMemoryAccessAliasingINTEL]),
           [OperandInfo(IdRef, nothing, nothing)],
         ),
       ),
     ),
     KernelProfilingInfo => EnumInfo(
       KernelProfilingInfo,
-      Dict(0x00000000 => EnumerantInfo([], [], v"0.0.0", []), 0x00000001 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", [])),
+      Dict(
+        KernelProfilingInfoNone * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        KernelProfilingInfoCmdExecTime * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+      ),
     ),
     RayFlags => EnumInfo(
       RayFlags,
       Dict(
-        0x00000000 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        0x00000001 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        0x00000002 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        0x00000004 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        0x00000008 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        0x00000010 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        0x00000020 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        0x00000040 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        0x00000080 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        0x00000100 => EnumerantInfo([CapabilityRayTraversalPrimitiveCullingKHR], [], v"0.0.0", []),
-        0x00000200 => EnumerantInfo([CapabilityRayTraversalPrimitiveCullingKHR], [], v"0.0.0", []),
-        0x00000400 => EnumerantInfo([CapabilityRayTracingOpacityMicromapEXT], [], v"0.0.0", []),
+        RayFlagsNoneKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR, CapabilityRayTracingKHR]), []),
+        RayFlagsOpaqueKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR, CapabilityRayTracingKHR]), []),
+        RayFlagsNoOpaqueKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR, CapabilityRayTracingKHR]), []),
+        RayFlagsTerminateOnFirstHitKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR, CapabilityRayTracingKHR]), []),
+        RayFlagsSkipClosestHitShaderKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR, CapabilityRayTracingKHR]), []),
+        RayFlagsCullBackFacingTrianglesKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR, CapabilityRayTracingKHR]), []),
+        RayFlagsCullFrontFacingTrianglesKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR, CapabilityRayTracingKHR]), []),
+        RayFlagsCullOpaqueKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR, CapabilityRayTracingKHR]), []),
+        RayFlagsCullNoOpaqueKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR, CapabilityRayTracingKHR]), []),
+        RayFlagsSkipTrianglesKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTraversalPrimitiveCullingKHR]), []),
+        RayFlagsSkipAABBsKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTraversalPrimitiveCullingKHR]), []),
+        RayFlagsForceOpacityMicromap2StateEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTracingOpacityMicromapEXT]), []),
       ),
     ),
     FragmentShadingRate => EnumInfo(
       FragmentShadingRate,
       Dict(
-        0x00000001 => EnumerantInfo([CapabilityFragmentShadingRateKHR], [], v"0.0.0", []),
-        0x00000002 => EnumerantInfo([CapabilityFragmentShadingRateKHR], [], v"0.0.0", []),
-        0x00000004 => EnumerantInfo([CapabilityFragmentShadingRateKHR], [], v"0.0.0", []),
-        0x00000008 => EnumerantInfo([CapabilityFragmentShadingRateKHR], [], v"0.0.0", []),
+        FragmentShadingRateVertical2Pixels * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFragmentShadingRateKHR]), []),
+        FragmentShadingRateVertical4Pixels * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFragmentShadingRateKHR]), []),
+        FragmentShadingRateHorizontal2Pixels * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFragmentShadingRateKHR]), []),
+        FragmentShadingRateHorizontal4Pixels * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFragmentShadingRateKHR]), []),
       ),
     ),
     SourceLanguage => EnumInfo(
       SourceLanguage,
       Dict(
-        0 => EnumerantInfo([], [], v"0.0.0", []),
-        1 => EnumerantInfo([], [], v"0.0.0", []),
-        2 => EnumerantInfo([], [], v"0.0.0", []),
-        3 => EnumerantInfo([], [], v"0.0.0", []),
-        4 => EnumerantInfo([], [], v"0.0.0", []),
-        5 => EnumerantInfo([], [], v"0.0.0", []),
-        6 => EnumerantInfo([], [], v"0.0.0", []),
-        7 => EnumerantInfo([], [], v"0.0.0", []),
+        SourceLanguageUnknown * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        SourceLanguageESSL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        SourceLanguageGLSL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        SourceLanguageOpenCL_C * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        SourceLanguageOpenCL_CPP * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        SourceLanguageHLSL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        SourceLanguageCPP_for_OpenCL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        SourceLanguageSYCL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
       ),
     ),
     ExecutionModel => EnumInfo(
       ExecutionModel,
       Dict(
-        0 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        5267 => EnumerantInfo([CapabilityMeshShadingNV], [], v"0.0.0", []),
-        5268 => EnumerantInfo([CapabilityMeshShadingNV], [], v"0.0.0", []),
-        5313 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5313 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5314 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5314 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5315 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5315 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5316 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5316 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5317 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5317 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5318 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5318 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], [], v"0.0.0", []),
-        5364 => EnumerantInfo([CapabilityMeshShadingEXT], [], v"0.0.0", []),
-        5365 => EnumerantInfo([CapabilityMeshShadingEXT], [], v"0.0.0", []),
+        ExecutionModelVertex * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModelTessellationControl * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModelTessellationEvaluation * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModelGeometry * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        ExecutionModelFragment * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModelGLCompute * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModelKernel * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ExecutionModelTaskNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMeshShadingNV]), []),
+        ExecutionModelMeshNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMeshShadingNV]), []),
+        ExecutionModelRayGenerationKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTracingNV, CapabilityRayTracingKHR]), []),
+        ExecutionModelIntersectionKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTracingNV, CapabilityRayTracingKHR]), []),
+        ExecutionModelAnyHitKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTracingNV, CapabilityRayTracingKHR]), []),
+        ExecutionModelClosestHitKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTracingNV, CapabilityRayTracingKHR]), []),
+        ExecutionModelMissKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTracingNV, CapabilityRayTracingKHR]), []),
+        ExecutionModelCallableKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTracingNV, CapabilityRayTracingKHR]), []),
+        ExecutionModelTaskEXT * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMeshShadingEXT]), []),
+        ExecutionModelMeshEXT * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMeshShadingEXT]), []),
       ),
     ),
     AddressingModel => EnumInfo(
       AddressingModel,
       Dict(
-        0 => EnumerantInfo([], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityAddresses], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityAddresses], [], v"0.0.0", []),
-        5348 => EnumerantInfo(
-          [CapabilityPhysicalStorageBufferAddresses],
-          ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"],
-          v"1.5.0",
+        AddressingModelLogical * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        AddressingModelPhysical32 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityAddresses]), []),
+        AddressingModelPhysical64 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityAddresses]), []),
+        AddressingModelPhysicalStorageBuffer64EXT * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"1.5.0", v"∞"),
+            ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"],
+            [CapabilityPhysicalStorageBufferAddresses],
+          ),
           [],
         ),
-        5348 => EnumerantInfo([CapabilityPhysicalStorageBufferAddresses], ["SPV_EXT_physical_storage_buffer"], v"1.5.0", []),
       ),
     ),
     MemoryModel => EnumInfo(
       MemoryModel,
       Dict(
-        0 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", []),
-        3 => EnumerantInfo([CapabilityVulkanMemoryModel], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
+        MemoryModelSimple * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        MemoryModelGLSL450 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        MemoryModelOpenCL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        MemoryModelVulkanKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]), []),
       ),
     ),
     ExecutionMode => EnumInfo(
       ExecutionMode,
       Dict(
-        0 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Number of <<Invocation,invocations>>'", nothing)]),
-        1 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        7 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        8 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        9 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        10 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        11 => EnumerantInfo([CapabilityTransformFeedback], [], v"0.0.0", []),
-        12 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        14 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        15 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        16 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        17 => EnumerantInfo(
-          [],
-          [],
-          v"0.0.0",
+        ExecutionModeInvocations * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]),
+          [OperandInfo(LiteralInteger, "'Number of <<Invocation,invocations>>'", nothing)],
+        ),
+        ExecutionModeSpacingEqual * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModeSpacingFractionalEven * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModeSpacingFractionalOdd * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModeVertexOrderCw * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModeVertexOrderCcw * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModePixelCenterInteger * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModeOriginUpperLeft * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModeOriginLowerLeft * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModeEarlyFragmentTests * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModePointMode * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModeXfb * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTransformFeedback]), []),
+        ExecutionModeDepthReplacing * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModeDepthGreater * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModeDepthLess * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModeDepthUnchanged * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ExecutionModeLocalSize * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
           [
             OperandInfo(LiteralInteger, "'x size'", nothing),
             OperandInfo(LiteralInteger, "'y size'", nothing),
             OperandInfo(LiteralInteger, "'z size'", nothing),
           ],
         ),
-        18 => EnumerantInfo(
-          [CapabilityKernel],
-          [],
-          v"0.0.0",
+        ExecutionModeLocalSizeHint * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]),
           [
             OperandInfo(LiteralInteger, "'x size'", nothing),
             OperandInfo(LiteralInteger, "'y size'", nothing),
             OperandInfo(LiteralInteger, "'z size'", nothing),
           ],
         ),
-        19 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        20 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        21 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        22 => EnumerantInfo([CapabilityGeometry, CapabilityTessellation], [], v"0.0.0", []),
-        23 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        24 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        25 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        26 => EnumerantInfo(
-          [CapabilityGeometry, CapabilityTessellation, CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
-          [],
-          v"0.0.0",
+        ExecutionModeInputPoints * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        ExecutionModeInputLines * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        ExecutionModeInputLinesAdjacency * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        ExecutionModeTriangles * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry, CapabilityTessellation]), []),
+        ExecutionModeInputTrianglesAdjacency * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        ExecutionModeQuads * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModeIsolines * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        ExecutionModeOutputVertices * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            nothing,
+            [CapabilityGeometry, CapabilityTessellation, CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
+          ),
           [OperandInfo(LiteralInteger, "'Vertex count'", nothing)],
         ),
-        27 => EnumerantInfo([CapabilityGeometry, CapabilityMeshShadingNV, CapabilityMeshShadingEXT], [], v"0.0.0", []),
-        28 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        29 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        30 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Vector type'", nothing)]),
-        31 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        33 => EnumerantInfo([CapabilityKernel], [], v"1.1.0", []),
-        34 => EnumerantInfo([CapabilityKernel], [], v"1.1.0", []),
-        35 => EnumerantInfo([CapabilitySubgroupDispatch], [], v"1.1.0", [OperandInfo(LiteralInteger, "'Subgroup Size'", nothing)]),
-        36 => EnumerantInfo([CapabilitySubgroupDispatch], [], v"1.1.0", [OperandInfo(LiteralInteger, "'Subgroups Per Workgroup'", nothing)]),
-        37 => EnumerantInfo([CapabilitySubgroupDispatch], [], v"1.2.0", [OperandInfo(IdRef, "'Subgroups Per Workgroup'", nothing)]),
-        38 => EnumerantInfo(
+        ExecutionModeOutputPoints * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry, CapabilityMeshShadingNV, CapabilityMeshShadingEXT]),
           [],
-          [],
-          v"1.2.0",
+        ),
+        ExecutionModeOutputLineStrip * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        ExecutionModeOutputTriangleStrip * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        ExecutionModeVecTypeHint * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]),
+          [OperandInfo(LiteralInteger, "'Vector type'", nothing)],
+        ),
+        ExecutionModeContractionOff * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ExecutionModeInitializer * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ExecutionModeFinalizer * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ExecutionModeSubgroupSize * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, [CapabilitySubgroupDispatch]),
+          [OperandInfo(LiteralInteger, "'Subgroup Size'", nothing)],
+        ),
+        ExecutionModeSubgroupsPerWorkgroup * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, [CapabilitySubgroupDispatch]),
+          [OperandInfo(LiteralInteger, "'Subgroups Per Workgroup'", nothing)],
+        ),
+        ExecutionModeSubgroupsPerWorkgroupId * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.2.0", v"∞"), nothing, [CapabilitySubgroupDispatch]),
+          [OperandInfo(IdRef, "'Subgroups Per Workgroup'", nothing)],
+        ),
+        ExecutionModeLocalSizeId * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.2.0", v"∞"), nothing, nothing),
           [OperandInfo(IdRef, "'x size'", nothing), OperandInfo(IdRef, "'y size'", nothing), OperandInfo(IdRef, "'z size'", nothing)],
         ),
-        39 => EnumerantInfo(
-          [CapabilityKernel],
-          [],
-          v"1.2.0",
+        ExecutionModeLocalSizeHintId * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.2.0", v"∞"), nothing, [CapabilityKernel]),
           [OperandInfo(IdRef, "'x size hint'", nothing), OperandInfo(IdRef, "'y size hint'", nothing), OperandInfo(IdRef, "'z size hint'", nothing)],
         ),
-        4421 => EnumerantInfo([CapabilityShader], ["SPV_KHR_subgroup_uniform_control_flow"], v"0.0.0", []),
-        4446 => EnumerantInfo([CapabilitySampleMaskPostDepthCoverage], ["SPV_KHR_post_depth_coverage"], v"0.0.0", []),
-        4459 => EnumerantInfo(
-          [CapabilityDenormPreserve],
-          ["SPV_KHR_float_controls"],
-          v"1.4.0",
+        ExecutionModeSubgroupUniformControlFlowKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_subgroup_uniform_control_flow"], [CapabilityShader]), []),
+        ExecutionModePostDepthCoverage * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_post_depth_coverage"], [CapabilitySampleMaskPostDepthCoverage]),
+          [],
+        ),
+        ExecutionModeDenormPreserve * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], [CapabilityDenormPreserve]),
           [OperandInfo(LiteralInteger, "'Target Width'", nothing)],
         ),
-        4460 => EnumerantInfo(
-          [CapabilityDenormFlushToZero],
-          ["SPV_KHR_float_controls"],
-          v"1.4.0",
+        ExecutionModeDenormFlushToZero * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], [CapabilityDenormFlushToZero]),
           [OperandInfo(LiteralInteger, "'Target Width'", nothing)],
         ),
-        4461 => EnumerantInfo(
-          [CapabilitySignedZeroInfNanPreserve],
-          ["SPV_KHR_float_controls"],
-          v"1.4.0",
+        ExecutionModeSignedZeroInfNanPreserve * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], [CapabilitySignedZeroInfNanPreserve]),
           [OperandInfo(LiteralInteger, "'Target Width'", nothing)],
         ),
-        4462 => EnumerantInfo(
-          [CapabilityRoundingModeRTE],
-          ["SPV_KHR_float_controls"],
-          v"1.4.0",
+        ExecutionModeRoundingModeRTE * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], [CapabilityRoundingModeRTE]),
           [OperandInfo(LiteralInteger, "'Target Width'", nothing)],
         ),
-        4463 => EnumerantInfo(
-          [CapabilityRoundingModeRTZ],
-          ["SPV_KHR_float_controls"],
-          v"1.4.0",
+        ExecutionModeRoundingModeRTZ * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], [CapabilityRoundingModeRTZ]),
           [OperandInfo(LiteralInteger, "'Target Width'", nothing)],
         ),
-        5017 => EnumerantInfo([CapabilityShader], ["SPV_AMD_shader_early_and_late_fragment_tests"], v"0.0.0", []),
-        5027 => EnumerantInfo([CapabilityStencilExportEXT], ["SPV_EXT_shader_stencil_export"], v"0.0.0", []),
-        5079 => EnumerantInfo(
-          [CapabilityStencilExportEXT],
-          ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
-          v"0.0.0",
+        ExecutionModeEarlyAndLateFragmentTestsAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_early_and_late_fragment_tests"], [CapabilityShader]), []),
+        ExecutionModeStencilRefReplacingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_stencil_export"], [CapabilityStencilExportEXT]), []),
+        ExecutionModeStencilRefUnchangedFrontAMD * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
+            [CapabilityStencilExportEXT],
+          ),
           [],
         ),
-        5080 => EnumerantInfo(
-          [CapabilityStencilExportEXT],
-          ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
-          v"0.0.0",
+        ExecutionModeStencilRefGreaterFrontAMD * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
+            [CapabilityStencilExportEXT],
+          ),
           [],
         ),
-        5081 => EnumerantInfo(
-          [CapabilityStencilExportEXT],
-          ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
-          v"0.0.0",
+        ExecutionModeStencilRefLessFrontAMD * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
+            [CapabilityStencilExportEXT],
+          ),
           [],
         ),
-        5082 => EnumerantInfo(
-          [CapabilityStencilExportEXT],
-          ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
-          v"0.0.0",
+        ExecutionModeStencilRefUnchangedBackAMD * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
+            [CapabilityStencilExportEXT],
+          ),
           [],
         ),
-        5083 => EnumerantInfo(
-          [CapabilityStencilExportEXT],
-          ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
-          v"0.0.0",
+        ExecutionModeStencilRefGreaterBackAMD * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
+            [CapabilityStencilExportEXT],
+          ),
           [],
         ),
-        5084 => EnumerantInfo(
-          [CapabilityStencilExportEXT],
-          ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
-          v"0.0.0",
+        ExecutionModeStencilRefLessBackAMD * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_AMD_shader_early_and_late_fragment_tests", "SPV_EXT_shader_stencil_export"],
+            [CapabilityStencilExportEXT],
+          ),
           [],
         ),
-        5269 => EnumerantInfo([CapabilityMeshShadingNV, CapabilityMeshShadingEXT], ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5269 => EnumerantInfo([CapabilityMeshShadingNV, CapabilityMeshShadingEXT], ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5270 => EnumerantInfo(
-          [CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
-          ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"],
-          v"0.0.0",
+        ExecutionModeOutputLinesEXT * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"],
+            [CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
+          ),
+          [],
+        ),
+        ExecutionModeOutputPrimitivesEXT * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"],
+            [CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
+          ),
           [OperandInfo(LiteralInteger, "'Primitive count'", nothing)],
         ),
-        5270 => EnumerantInfo(
-          [CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
-          ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"],
-          v"0.0.0",
-          [OperandInfo(LiteralInteger, "'Primitive count'", nothing)],
+        ExecutionModeDerivativeGroupQuadsNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_compute_shader_derivatives"], [CapabilityComputeDerivativeGroupQuadsNV]),
+          [],
         ),
-        5289 => EnumerantInfo([CapabilityComputeDerivativeGroupQuadsNV], ["SPV_NV_compute_shader_derivatives"], v"0.0.0", []),
-        5290 => EnumerantInfo([CapabilityComputeDerivativeGroupLinearNV], ["SPV_NV_compute_shader_derivatives"], v"0.0.0", []),
-        5298 => EnumerantInfo([CapabilityMeshShadingNV, CapabilityMeshShadingEXT], ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5298 => EnumerantInfo([CapabilityMeshShadingNV, CapabilityMeshShadingEXT], ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5366 => EnumerantInfo([CapabilityFragmentShaderPixelInterlockEXT], ["SPV_EXT_fragment_shader_interlock"], v"0.0.0", []),
-        5367 => EnumerantInfo([CapabilityFragmentShaderPixelInterlockEXT], ["SPV_EXT_fragment_shader_interlock"], v"0.0.0", []),
-        5368 => EnumerantInfo([CapabilityFragmentShaderSampleInterlockEXT], ["SPV_EXT_fragment_shader_interlock"], v"0.0.0", []),
-        5369 => EnumerantInfo([CapabilityFragmentShaderSampleInterlockEXT], ["SPV_EXT_fragment_shader_interlock"], v"0.0.0", []),
-        5370 => EnumerantInfo([CapabilityFragmentShaderShadingRateInterlockEXT], ["SPV_EXT_fragment_shader_interlock"], v"0.0.0", []),
-        5371 => EnumerantInfo([CapabilityFragmentShaderShadingRateInterlockEXT], ["SPV_EXT_fragment_shader_interlock"], v"0.0.0", []),
-        5618 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Size'", nothing)]),
-        5620 => EnumerantInfo([CapabilityRoundToInfinityINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Target Width'", nothing)]),
-        5621 => EnumerantInfo([CapabilityRoundToInfinityINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Target Width'", nothing)]),
-        5622 => EnumerantInfo([CapabilityRoundToInfinityINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Target Width'", nothing)]),
-        5623 => EnumerantInfo([CapabilityRoundToInfinityINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Target Width'", nothing)]),
-        5893 => EnumerantInfo(
-          [CapabilityKernelAttributesINTEL],
-          ["SPV_INTEL_kernel_attributes"],
-          v"0.0.0",
+        ExecutionModeDerivativeGroupLinearNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_compute_shader_derivatives"], [CapabilityComputeDerivativeGroupLinearNV]),
+          [],
+        ),
+        ExecutionModeOutputTrianglesEXT * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"],
+            [CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
+          ),
+          [],
+        ),
+        ExecutionModePixelInterlockOrderedEXT * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_shader_interlock"], [CapabilityFragmentShaderPixelInterlockEXT]),
+          [],
+        ),
+        ExecutionModePixelInterlockUnorderedEXT * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_shader_interlock"], [CapabilityFragmentShaderPixelInterlockEXT]),
+          [],
+        ),
+        ExecutionModeSampleInterlockOrderedEXT * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_shader_interlock"], [CapabilityFragmentShaderSampleInterlockEXT]),
+          [],
+        ),
+        ExecutionModeSampleInterlockUnorderedEXT * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_shader_interlock"], [CapabilityFragmentShaderSampleInterlockEXT]),
+          [],
+        ),
+        ExecutionModeShadingRateInterlockOrderedEXT * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_shader_interlock"], [CapabilityFragmentShaderShadingRateInterlockEXT]),
+          [],
+        ),
+        ExecutionModeShadingRateInterlockUnorderedEXT * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_shader_interlock"], [CapabilityFragmentShaderShadingRateInterlockEXT]),
+          [],
+        ),
+        ExecutionModeSharedLocalMemorySizeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]),
+          [OperandInfo(LiteralInteger, "'Size'", nothing)],
+        ),
+        ExecutionModeRoundingModeRTPINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRoundToInfinityINTEL]),
+          [OperandInfo(LiteralInteger, "'Target Width'", nothing)],
+        ),
+        ExecutionModeRoundingModeRTNINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRoundToInfinityINTEL]),
+          [OperandInfo(LiteralInteger, "'Target Width'", nothing)],
+        ),
+        ExecutionModeFloatingPointModeALTINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRoundToInfinityINTEL]),
+          [OperandInfo(LiteralInteger, "'Target Width'", nothing)],
+        ),
+        ExecutionModeFloatingPointModeIEEEINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRoundToInfinityINTEL]),
+          [OperandInfo(LiteralInteger, "'Target Width'", nothing)],
+        ),
+        ExecutionModeMaxWorkgroupSizeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_kernel_attributes"], [CapabilityKernelAttributesINTEL]),
           [
             OperandInfo(LiteralInteger, "'max_x_size'", nothing),
             OperandInfo(LiteralInteger, "'max_y_size'", nothing),
             OperandInfo(LiteralInteger, "'max_z_size'", nothing),
           ],
         ),
-        5894 => EnumerantInfo(
-          [CapabilityKernelAttributesINTEL],
-          ["SPV_INTEL_kernel_attributes"],
-          v"0.0.0",
+        ExecutionModeMaxWorkDimINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_kernel_attributes"], [CapabilityKernelAttributesINTEL]),
           [OperandInfo(LiteralInteger, "'max_dimensions'", nothing)],
         ),
-        5895 => EnumerantInfo([CapabilityKernelAttributesINTEL], ["SPV_INTEL_kernel_attributes"], v"0.0.0", []),
-        5896 => EnumerantInfo(
-          [CapabilityFPGAKernelAttributesINTEL],
-          ["SPV_INTEL_kernel_attributes"],
-          v"0.0.0",
+        ExecutionModeNoGlobalOffsetINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_kernel_attributes"], [CapabilityKernelAttributesINTEL]), []),
+        ExecutionModeNumSIMDWorkitemsINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_kernel_attributes"], [CapabilityFPGAKernelAttributesINTEL]),
           [OperandInfo(LiteralInteger, "'vector_width'", nothing)],
         ),
-        5903 => EnumerantInfo([CapabilityFPGAKernelAttributesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'target_fmax'", nothing)]),
-        6154 => EnumerantInfo([CapabilityFPGAKernelAttributesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'StallFreeReturn'", nothing)]),
-        6417 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Barrier Count'", nothing)]),
+        ExecutionModeSchedulerTargetFmaxMhzINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAKernelAttributesINTEL]),
+          [OperandInfo(LiteralInteger, "'target_fmax'", nothing)],
+        ),
+        ExecutionModeStreamingInterfaceINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAKernelAttributesINTEL]),
+          [OperandInfo(LiteralInteger, "'StallFreeReturn'", nothing)],
+        ),
+        ExecutionModeNamedBarrierCountINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]),
+          [OperandInfo(LiteralInteger, "'Barrier Count'", nothing)],
+        ),
       ),
     ),
     StorageClass => EnumInfo(
       StorageClass,
       Dict(
-        0 => EnumerantInfo([], [], v"0.0.0", []),
-        1 => EnumerantInfo([], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        4 => EnumerantInfo([], [], v"0.0.0", []),
-        5 => EnumerantInfo([], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityShader, CapabilityVectorComputeINTEL], [], v"0.0.0", []),
-        7 => EnumerantInfo([], [], v"0.0.0", []),
-        8 => EnumerantInfo([CapabilityGenericPointer], [], v"0.0.0", []),
-        9 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        10 => EnumerantInfo([CapabilityAtomicStorage], [], v"0.0.0", []),
-        11 => EnumerantInfo([], [], v"0.0.0", []),
-        12 => EnumerantInfo([CapabilityShader], ["SPV_KHR_storage_buffer_storage_class", "SPV_KHR_variable_pointers"], v"1.3.0", []),
-        5328 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5328 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5329 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5329 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5338 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5338 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5339 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5339 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5342 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5342 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5343 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5343 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5349 => EnumerantInfo(
-          [CapabilityPhysicalStorageBufferAddresses],
-          ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"],
-          v"1.5.0",
+        StorageClassUniformConstant * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        StorageClassInput * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        StorageClassUniform * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        StorageClassOutput * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        StorageClassWorkgroup * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        StorageClassCrossWorkgroup * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        StorageClassPrivate * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader, CapabilityVectorComputeINTEL]), []),
+        StorageClassFunction * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        StorageClassGeneric * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGenericPointer]), []),
+        StorageClassPushConstant * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        StorageClassAtomicCounter * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityAtomicStorage]), []),
+        StorageClassImage * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        StorageClassStorageBuffer * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_storage_buffer_storage_class", "SPV_KHR_variable_pointers"], [CapabilityShader]),
           [],
         ),
-        5349 => EnumerantInfo([CapabilityPhysicalStorageBufferAddresses], ["SPV_EXT_physical_storage_buffer"], v"1.5.0", []),
-        5385 => EnumerantInfo([CapabilityShaderInvocationReorderNV], [], v"0.0.0", []),
-        5402 => EnumerantInfo([CapabilityMeshShadingEXT], ["SPV_EXT_mesh_shader"], v"1.4.0", []),
-        5605 => EnumerantInfo([CapabilityFunctionPointersINTEL], ["SPV_INTEL_function_pointers"], v"0.0.0", []),
-        5936 => EnumerantInfo([CapabilityUSMStorageClassesINTEL], ["SPV_INTEL_usm_storage_classes"], v"0.0.0", []),
-        5937 => EnumerantInfo([CapabilityUSMStorageClassesINTEL], ["SPV_INTEL_usm_storage_classes"], v"0.0.0", []),
+        StorageClassCallableDataKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        StorageClassIncomingCallableDataKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        StorageClassRayPayloadKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        StorageClassHitAttributeKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        StorageClassIncomingRayPayloadKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        StorageClassShaderRecordBufferKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        StorageClassPhysicalStorageBufferEXT * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"1.5.0", v"∞"),
+            ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"],
+            [CapabilityPhysicalStorageBufferAddresses],
+          ),
+          [],
+        ),
+        StorageClassHitObjectAttributeNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShaderInvocationReorderNV]), []),
+        StorageClassTaskPayloadWorkgroupEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_EXT_mesh_shader"], [CapabilityMeshShadingEXT]), []),
+        StorageClassCodeSectionINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_function_pointers"], [CapabilityFunctionPointersINTEL]), []),
+        StorageClassDeviceOnlyINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_usm_storage_classes"], [CapabilityUSMStorageClassesINTEL]), []),
+        StorageClassHostOnlyINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_usm_storage_classes"], [CapabilityUSMStorageClassesINTEL]), []),
       ),
     ),
     Dim => EnumInfo(
       Dim,
       Dict(
-        0 => EnumerantInfo([CapabilitySampled1D, CapabilityImage1D], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityShader, CapabilityKernel, CapabilityImageMSArray], [], v"0.0.0", []),
-        2 => EnumerantInfo([], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityShader, CapabilityImageCubeArray], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilitySampledRect, CapabilityImageRect], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilitySampledBuffer, CapabilityImageBuffer], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityInputAttachment], [], v"0.0.0", []),
+        Dim1D * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampled1D, CapabilityImage1D]), []),
+        Dim2D * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader, CapabilityKernel, CapabilityImageMSArray]), []),
+        Dim3D * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        DimCube * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader, CapabilityImageCubeArray]), []),
+        DimRect * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampledRect, CapabilityImageRect]), []),
+        DimBuffer * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampledBuffer, CapabilityImageBuffer]), []),
+        DimSubpassData * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityInputAttachment]), []),
       ),
     ),
     SamplerAddressingMode => EnumInfo(
       SamplerAddressingMode,
       Dict(
-        0 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
+        SamplerAddressingModeNone * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        SamplerAddressingModeClampToEdge * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        SamplerAddressingModeClamp * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        SamplerAddressingModeRepeat * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        SamplerAddressingModeRepeatMirrored * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
       ),
     ),
     SamplerFilterMode => EnumInfo(
       SamplerFilterMode,
-      Dict(0 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []), 1 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", [])),
+      Dict(
+        SamplerFilterModeNearest * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        SamplerFilterModeLinear * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+      ),
     ),
     ImageFormat => EnumInfo(
       ImageFormat,
       Dict(
-        0 => EnumerantInfo([], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        7 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        8 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        9 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        10 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        11 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        12 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        13 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        14 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        15 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        16 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        17 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        18 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        19 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        20 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        21 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        22 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        23 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        24 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        25 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        26 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        27 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        28 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        29 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        30 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        31 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        32 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        33 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        34 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        35 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        36 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        37 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        38 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        39 => EnumerantInfo([CapabilityStorageImageExtendedFormats], [], v"0.0.0", []),
-        40 => EnumerantInfo([CapabilityInt64ImageEXT], [], v"0.0.0", []),
-        41 => EnumerantInfo([CapabilityInt64ImageEXT], [], v"0.0.0", []),
+        ImageFormatUnknown * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        ImageFormatRgba32f * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRgba16f * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatR32f * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRgba8 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRgba8Snorm * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRg32f * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg16f * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR11fG11fB10f * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR16f * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRgba16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRgb10A2 * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg8 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR8 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRgba16Snorm * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg16Snorm * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg8Snorm * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR16Snorm * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR8Snorm * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRgba32i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRgba16i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRgba8i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatR32i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRg32i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg16i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg8i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR16i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR8i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRgba32ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRgba16ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRgba8ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatR32ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        ImageFormatRgb10a2ui * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg32ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg16ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatRg8ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR16ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR8ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityStorageImageExtendedFormats]), []),
+        ImageFormatR64ui * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityInt64ImageEXT]), []),
+        ImageFormatR64i * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityInt64ImageEXT]), []),
       ),
     ),
     ImageChannelOrder => EnumInfo(
       ImageChannelOrder,
       Dict(
-        0 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        7 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        8 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        9 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        10 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        11 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        12 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        13 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        14 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        15 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        16 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        17 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        18 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        19 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
+        ImageChannelOrderR * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderA * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderRG * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderRA * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderRGB * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderRGBA * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderBGRA * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderARGB * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderIntensity * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderLuminance * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderRx * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderRGx * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderRGBx * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderDepth * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderDepthStencil * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrdersRGB * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrdersRGBx * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrdersRGBA * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrdersBGRA * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelOrderABGR * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
       ),
     ),
     ImageChannelDataType => EnumInfo(
       ImageChannelDataType,
       Dict(
-        0 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        7 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        8 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        9 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        10 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        11 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        12 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        13 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        14 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        15 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        16 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
+        ImageChannelDataTypeSnormInt8 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeSnormInt16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnormInt8 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnormInt16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnormShort565 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnormShort555 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnormInt101010 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeSignedInt8 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeSignedInt16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeSignedInt32 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnsignedInt8 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnsignedInt16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnsignedInt32 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeHalfFloat * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeFloat * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnormInt24 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        ImageChannelDataTypeUnormInt101010_2 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
       ),
     ),
     FPRoundingMode => EnumInfo(
       FPRoundingMode,
       Dict(
-        0 => EnumerantInfo([], [], v"0.0.0", []),
-        1 => EnumerantInfo([], [], v"0.0.0", []),
-        2 => EnumerantInfo([], [], v"0.0.0", []),
-        3 => EnumerantInfo([], [], v"0.0.0", []),
+        FPRoundingModeRTE * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FPRoundingModeRTZ * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FPRoundingModeRTP * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        FPRoundingModeRTN * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
       ),
     ),
     FPDenormMode => EnumInfo(
       FPDenormMode,
       Dict(
-        0 => EnumerantInfo([CapabilityFunctionFloatControlINTEL], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityFunctionFloatControlINTEL], [], v"0.0.0", []),
+        FPDenormModePreserve * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFunctionFloatControlINTEL]), []),
+        FPDenormModeFlushToZero * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFunctionFloatControlINTEL]), []),
       ),
     ),
     QuantizationModes => EnumInfo(
       QuantizationModes,
       Dict(
-        0 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        7 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
+        QuantizationModesTRN * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        QuantizationModesTRN_ZERO * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        QuantizationModesRND * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        QuantizationModesRND_ZERO * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        QuantizationModesRND_INF * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        QuantizationModesRND_MIN_INF * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        QuantizationModesRND_CONV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        QuantizationModesRND_CONV_ODD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
       ),
     ),
     FPOperationMode => EnumInfo(
       FPOperationMode,
       Dict(
-        0 => EnumerantInfo([CapabilityFunctionFloatControlINTEL], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityFunctionFloatControlINTEL], [], v"0.0.0", []),
+        FPOperationModeIEEE * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFunctionFloatControlINTEL]), []),
+        FPOperationModeALT * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFunctionFloatControlINTEL]), []),
       ),
     ),
     OverflowModes => EnumInfo(
       OverflowModes,
       Dict(
-        0 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityArbitraryPrecisionFixedPointINTEL], [], v"0.0.0", []),
+        OverflowModesWRAP * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        OverflowModesSAT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        OverflowModesSAT_ZERO * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
+        OverflowModesSAT_SYM * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityArbitraryPrecisionFixedPointINTEL]), []),
       ),
     ),
     LinkageType => EnumInfo(
       LinkageType,
       Dict(
-        0 => EnumerantInfo([CapabilityLinkage], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityLinkage], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityLinkage], ["SPV_KHR_linkonce_odr"], v"0.0.0", []),
+        LinkageTypeExport * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityLinkage]), []),
+        LinkageTypeImport * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityLinkage]), []),
+        LinkageTypeLinkOnceODR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_linkonce_odr"], [CapabilityLinkage]), []),
       ),
     ),
     AccessQualifier => EnumInfo(
       AccessQualifier,
       Dict(
-        0 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
+        AccessQualifierReadOnly * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        AccessQualifierWriteOnly * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        AccessQualifierReadWrite * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
       ),
     ),
     FunctionParameterAttribute => EnumInfo(
       FunctionParameterAttribute,
       Dict(
-        0 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        7 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        5940 => EnumerantInfo([CapabilityRuntimeAlignedAttributeINTEL], [], v"0.0.0", []),
+        FunctionParameterAttributeZext * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        FunctionParameterAttributeSext * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        FunctionParameterAttributeByVal * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        FunctionParameterAttributeSret * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        FunctionParameterAttributeNoAlias * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        FunctionParameterAttributeNoCapture * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        FunctionParameterAttributeNoWrite * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        FunctionParameterAttributeNoReadWrite * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        FunctionParameterAttributeRuntimeAlignedINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRuntimeAlignedAttributeINTEL]), []),
       ),
     ),
     Decoration => EnumInfo(
       Decoration,
       Dict(
-        0 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        1 => EnumerantInfo(
-          [CapabilityShader, CapabilityKernel],
-          [],
-          v"0.0.0",
+        DecorationRelaxedPrecision * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationSpecId * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader, CapabilityKernel]),
           [OperandInfo(LiteralInteger, "'Specialization Constant ID'", nothing)],
         ),
-        2 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityMatrix], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityMatrix], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityShader], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Array Stride'", nothing)]),
-        7 => EnumerantInfo([CapabilityMatrix], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Matrix Stride'", nothing)]),
-        8 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        9 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        10 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        11 => EnumerantInfo([], [], v"0.0.0", [OperandInfo(BuiltIn, nothing, nothing)]),
-        13 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        14 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        15 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        16 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        17 => EnumerantInfo([CapabilitySampleRateShading], [], v"0.0.0", []),
-        18 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        19 => EnumerantInfo([], [], v"0.0.0", []),
-        20 => EnumerantInfo([], [], v"0.0.0", []),
-        21 => EnumerantInfo([], [], v"0.0.0", []),
-        22 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        23 => EnumerantInfo([], [], v"0.0.0", []),
-        24 => EnumerantInfo([], [], v"0.0.0", []),
-        25 => EnumerantInfo([], [], v"0.0.0", []),
-        26 => EnumerantInfo([CapabilityShader, CapabilityUniformDecoration], [], v"0.0.0", []),
-        27 => EnumerantInfo([CapabilityShader, CapabilityUniformDecoration], [], v"1.4.0", [OperandInfo(IdScope, "'Execution'", nothing)]),
-        28 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        29 => EnumerantInfo([CapabilityGeometryStreams], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Stream Number'", nothing)]),
-        30 => EnumerantInfo([CapabilityShader], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Location'", nothing)]),
-        31 => EnumerantInfo([CapabilityShader], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Component'", nothing)]),
-        32 => EnumerantInfo([CapabilityShader], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Index'", nothing)]),
-        33 => EnumerantInfo([CapabilityShader], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Binding Point'", nothing)]),
-        34 => EnumerantInfo([CapabilityShader], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Descriptor Set'", nothing)]),
-        35 => EnumerantInfo([CapabilityShader], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Byte Offset'", nothing)]),
-        36 => EnumerantInfo([CapabilityTransformFeedback], [], v"0.0.0", [OperandInfo(LiteralInteger, "'XFB Buffer Number'", nothing)]),
-        37 => EnumerantInfo([CapabilityTransformFeedback], [], v"0.0.0", [OperandInfo(LiteralInteger, "'XFB Stride'", nothing)]),
-        38 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", [OperandInfo(FunctionParameterAttribute, "'Function Parameter Attribute'", nothing)]),
-        39 => EnumerantInfo([], [], v"0.0.0", [OperandInfo(FPRoundingMode, "'Floating-Point Rounding Mode'", nothing)]),
-        40 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", [OperandInfo(FPFastMathMode, "'Fast-Math Mode'", nothing)]),
-        41 => EnumerantInfo(
-          [CapabilityLinkage],
-          [],
-          v"0.0.0",
+        DecorationBlock * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationBufferBlock * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationRowMajor * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMatrix]), []),
+        DecorationColMajor * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMatrix]), []),
+        DecorationArrayStride * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]),
+          [OperandInfo(LiteralInteger, "'Array Stride'", nothing)],
+        ),
+        DecorationMatrixStride * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMatrix]),
+          [OperandInfo(LiteralInteger, "'Matrix Stride'", nothing)],
+        ),
+        DecorationGLSLShared * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationGLSLPacked * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationCPacked * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        DecorationBuiltIn * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), [OperandInfo(BuiltIn, nothing, nothing)]),
+        DecorationNoPerspective * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationFlat * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationPatch * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        DecorationCentroid * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationSample * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampleRateShading]), []),
+        DecorationInvariant * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationRestrict * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        DecorationAliased * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        DecorationVolatile * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        DecorationConstant * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        DecorationCoherent * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        DecorationNonWritable * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        DecorationNonReadable * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        DecorationUniform * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader, CapabilityUniformDecoration]), []),
+        DecorationUniformId * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, [CapabilityShader, CapabilityUniformDecoration]),
+          [OperandInfo(IdScope, "'Execution'", nothing)],
+        ),
+        DecorationSaturatedConversion * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        DecorationStream * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometryStreams]),
+          [OperandInfo(LiteralInteger, "'Stream Number'", nothing)],
+        ),
+        DecorationLocation * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]),
+          [OperandInfo(LiteralInteger, "'Location'", nothing)],
+        ),
+        DecorationComponent * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]),
+          [OperandInfo(LiteralInteger, "'Component'", nothing)],
+        ),
+        DecorationIndex * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]),
+          [OperandInfo(LiteralInteger, "'Index'", nothing)],
+        ),
+        DecorationBinding * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]),
+          [OperandInfo(LiteralInteger, "'Binding Point'", nothing)],
+        ),
+        DecorationDescriptorSet * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]),
+          [OperandInfo(LiteralInteger, "'Descriptor Set'", nothing)],
+        ),
+        DecorationOffset * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]),
+          [OperandInfo(LiteralInteger, "'Byte Offset'", nothing)],
+        ),
+        DecorationXfbBuffer * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTransformFeedback]),
+          [OperandInfo(LiteralInteger, "'XFB Buffer Number'", nothing)],
+        ),
+        DecorationXfbStride * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTransformFeedback]),
+          [OperandInfo(LiteralInteger, "'XFB Stride'", nothing)],
+        ),
+        DecorationFuncParamAttr * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]),
+          [OperandInfo(FunctionParameterAttribute, "'Function Parameter Attribute'", nothing)],
+        ),
+        DecorationFPRoundingMode * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
+          [OperandInfo(FPRoundingMode, "'Floating-Point Rounding Mode'", nothing)],
+        ),
+        DecorationFPFastMathMode * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]),
+          [OperandInfo(FPFastMathMode, "'Fast-Math Mode'", nothing)],
+        ),
+        DecorationLinkageAttributes * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityLinkage]),
           [OperandInfo(LiteralString, "'Name'", nothing), OperandInfo(LinkageType, "'Linkage Type'", nothing)],
         ),
-        42 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        43 => EnumerantInfo([CapabilityInputAttachment], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Attachment Index'", nothing)]),
-        44 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Alignment'", nothing)]),
-        45 => EnumerantInfo([CapabilityAddresses], [], v"1.1.0", [OperandInfo(LiteralInteger, "'Max Byte Offset'", nothing)]),
-        46 => EnumerantInfo([CapabilityKernel], [], v"1.2.0", [OperandInfo(IdRef, "'Alignment'", nothing)]),
-        47 => EnumerantInfo([CapabilityAddresses], [], v"1.2.0", [OperandInfo(IdRef, "'Max Byte Offset'", nothing)]),
-        4469 => EnumerantInfo([], ["SPV_KHR_no_integer_wrap_decoration"], v"1.4.0", []),
-        4470 => EnumerantInfo([], ["SPV_KHR_no_integer_wrap_decoration"], v"1.4.0", []),
-        4999 => EnumerantInfo([], ["SPV_AMD_shader_explicit_vertex_parameter"], v"0.0.0", []),
-        5248 => EnumerantInfo([CapabilitySampleMaskOverrideCoverageNV], ["SPV_NV_sample_mask_override_coverage"], v"0.0.0", []),
-        5250 => EnumerantInfo([CapabilityGeometryShaderPassthroughNV], ["SPV_NV_geometry_shader_passthrough"], v"0.0.0", []),
-        5252 => EnumerantInfo([CapabilityShaderViewportMaskNV], [], v"0.0.0", []),
-        5256 => EnumerantInfo(
-          [CapabilityShaderStereoViewNV],
-          ["SPV_NV_stereo_view_rendering"],
-          v"0.0.0",
+        DecorationNoContraction * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        DecorationInputAttachmentIndex * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityInputAttachment]),
+          [OperandInfo(LiteralInteger, "'Attachment Index'", nothing)],
+        ),
+        DecorationAlignment * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]),
+          [OperandInfo(LiteralInteger, "'Alignment'", nothing)],
+        ),
+        DecorationMaxByteOffset * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, [CapabilityAddresses]),
+          [OperandInfo(LiteralInteger, "'Max Byte Offset'", nothing)],
+        ),
+        DecorationAlignmentId * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.2.0", v"∞"), nothing, [CapabilityKernel]), [OperandInfo(IdRef, "'Alignment'", nothing)]),
+        DecorationMaxByteOffsetId * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.2.0", v"∞"), nothing, [CapabilityAddresses]),
+          [OperandInfo(IdRef, "'Max Byte Offset'", nothing)],
+        ),
+        DecorationNoSignedWrap * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_no_integer_wrap_decoration"], nothing), []),
+        DecorationNoUnsignedWrap * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_no_integer_wrap_decoration"], nothing), []),
+        DecorationExplicitInterpAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_explicit_vertex_parameter"], nothing), []),
+        DecorationOverrideCoverageNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_sample_mask_override_coverage"], [CapabilitySampleMaskOverrideCoverageNV]),
+          [],
+        ),
+        DecorationPassthroughNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_geometry_shader_passthrough"], [CapabilityGeometryShaderPassthroughNV]),
+          [],
+        ),
+        DecorationViewportRelativeNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShaderViewportMaskNV]), []),
+        DecorationSecondaryViewportRelativeNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_stereo_view_rendering"], [CapabilityShaderStereoViewNV]),
           [OperandInfo(LiteralInteger, "'Offset'", nothing)],
         ),
-        5271 => EnumerantInfo([CapabilityMeshShadingNV, CapabilityMeshShadingEXT], ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5271 => EnumerantInfo([CapabilityMeshShadingNV, CapabilityMeshShadingEXT], ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5272 => EnumerantInfo([CapabilityMeshShadingNV], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5273 => EnumerantInfo([CapabilityMeshShadingNV, CapabilityMeshShadingEXT], ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5285 => EnumerantInfo(
-          [CapabilityFragmentBarycentricNV, CapabilityFragmentBarycentricKHR],
-          ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"],
-          v"0.0.0",
+        DecorationPerPrimitiveEXT * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"],
+            [CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
+          ),
           [],
         ),
-        5285 => EnumerantInfo(
-          [CapabilityFragmentBarycentricNV, CapabilityFragmentBarycentricKHR],
-          ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"],
-          v"0.0.0",
+        DecorationPerViewNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityMeshShadingNV]), []),
+        DecorationPerTaskNV * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"],
+            [CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
+          ),
           [],
         ),
-        5300 => EnumerantInfo([CapabilityShaderNonUniform], [], v"1.5.0", []),
-        5300 => EnumerantInfo([CapabilityShaderNonUniform], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5355 => EnumerantInfo(
-          [CapabilityPhysicalStorageBufferAddresses],
-          ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"],
-          v"1.5.0",
+        DecorationPerVertexNV * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"],
+            [CapabilityFragmentBarycentricNV, CapabilityFragmentBarycentricKHR],
+          ),
           [],
         ),
-        5355 => EnumerantInfo([CapabilityPhysicalStorageBufferAddresses], ["SPV_EXT_physical_storage_buffer"], v"1.5.0", []),
-        5356 => EnumerantInfo(
-          [CapabilityPhysicalStorageBufferAddresses],
-          ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"],
-          v"1.5.0",
+        DecorationNonUniformEXT * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityShaderNonUniform]), []),
+        DecorationRestrictPointerEXT * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"1.5.0", v"∞"),
+            ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"],
+            [CapabilityPhysicalStorageBufferAddresses],
+          ),
           [],
         ),
-        5356 => EnumerantInfo([CapabilityPhysicalStorageBufferAddresses], ["SPV_EXT_physical_storage_buffer"], v"1.5.0", []),
-        5386 => EnumerantInfo([CapabilityShaderInvocationReorderNV], [], v"0.0.0", []),
-        5398 => EnumerantInfo([CapabilityBindlessTextureNV], [], v"0.0.0", []),
-        5399 => EnumerantInfo([CapabilityBindlessTextureNV], [], v"0.0.0", []),
-        5400 => EnumerantInfo([CapabilityBindlessTextureNV], [], v"0.0.0", []),
-        5401 => EnumerantInfo([CapabilityBindlessTextureNV], [], v"0.0.0", []),
-        5599 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'N'", nothing)]),
-        5602 => EnumerantInfo([CapabilityIndirectReferencesINTEL], ["SPV_INTEL_function_pointers"], v"0.0.0", []),
-        5607 => EnumerantInfo([CapabilityAsmINTEL], [], v"0.0.0", [OperandInfo(LiteralString, "'Register'", nothing)]),
-        5608 => EnumerantInfo([CapabilityAsmINTEL], [], v"0.0.0", []),
-        5624 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", []),
-        5625 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Kind'", nothing)]),
-        5626 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", []),
-        5627 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", []),
-        5628 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Offset'", nothing)]),
-        5634 => EnumerantInfo([], [], v"1.4.0", [OperandInfo(IdRef, "'Counter Buffer'", nothing)]),
-        5634 => EnumerantInfo([], ["SPV_GOOGLE_hlsl_functionality1"], v"0.0.0", [OperandInfo(IdRef, "'Counter Buffer'", nothing)]),
-        5635 => EnumerantInfo([], [], v"1.4.0", [OperandInfo(LiteralString, "'Semantic'", nothing)]),
-        5635 => EnumerantInfo([], ["SPV_GOOGLE_hlsl_functionality1"], v"0.0.0", [OperandInfo(LiteralString, "'Semantic'", nothing)]),
-        5636 => EnumerantInfo([], ["SPV_GOOGLE_user_type"], v"0.0.0", [OperandInfo(LiteralString, "'User Type'", nothing)]),
-        5822 => EnumerantInfo(
-          [CapabilityFunctionFloatControlINTEL],
+        DecorationAliasedPointerEXT * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"1.5.0", v"∞"),
+            ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"],
+            [CapabilityPhysicalStorageBufferAddresses],
+          ),
           [],
-          v"0.0.0",
+        ),
+        DecorationHitObjectShaderRecordBufferNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShaderInvocationReorderNV]), []),
+        DecorationBindlessSamplerNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityBindlessTextureNV]), []),
+        DecorationBindlessImageNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityBindlessTextureNV]), []),
+        DecorationBoundSamplerNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityBindlessTextureNV]), []),
+        DecorationBoundImageNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityBindlessTextureNV]), []),
+        DecorationSIMTCallINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]),
+          [OperandInfo(LiteralInteger, "'N'", nothing)],
+        ),
+        DecorationReferencedIndirectlyINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_function_pointers"], [CapabilityIndirectReferencesINTEL]), []),
+        DecorationClobberINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityAsmINTEL]),
+          [OperandInfo(LiteralString, "'Register'", nothing)],
+        ),
+        DecorationSideEffectsINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityAsmINTEL]), []),
+        DecorationVectorComputeVariableINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]), []),
+        DecorationFuncParamIOKindINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]),
+          [OperandInfo(LiteralInteger, "'Kind'", nothing)],
+        ),
+        DecorationVectorComputeFunctionINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]), []),
+        DecorationStackCallINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]), []),
+        DecorationGlobalVariableOffsetINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]),
+          [OperandInfo(LiteralInteger, "'Offset'", nothing)],
+        ),
+        DecorationHlslCounterBufferGOOGLE * U => EnumerantInfo(
+          [
+            RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_GOOGLE_hlsl_functionality1"], nothing),
+            RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, nothing),
+          ],
+          [OperandInfo(IdRef, "'Counter Buffer'", nothing)],
+        ),
+        DecorationHlslSemanticGOOGLE * U => EnumerantInfo(
+          [
+            RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_GOOGLE_hlsl_functionality1"], nothing),
+            RequiredSupport(VersionRange(v"1.4.0", v"∞"), nothing, nothing),
+          ],
+          [OperandInfo(LiteralString, "'Semantic'", nothing)],
+        ),
+        DecorationUserTypeGOOGLE * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_GOOGLE_user_type"], nothing),
+          [OperandInfo(LiteralString, "'User Type'", nothing)],
+        ),
+        DecorationFunctionRoundingModeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFunctionFloatControlINTEL]),
           [OperandInfo(LiteralInteger, "'Target Width'", nothing), OperandInfo(FPRoundingMode, "'FP Rounding Mode'", nothing)],
         ),
-        5823 => EnumerantInfo(
-          [CapabilityFunctionFloatControlINTEL],
-          [],
-          v"0.0.0",
+        DecorationFunctionDenormModeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFunctionFloatControlINTEL]),
           [OperandInfo(LiteralInteger, "'Target Width'", nothing), OperandInfo(FPDenormMode, "'FP Denorm Mode'", nothing)],
         ),
-        5825 => EnumerantInfo([CapabilityFPGAMemoryAttributesINTEL], ["SPV_INTEL_fpga_memory_attributes"], v"0.0.0", []),
-        5826 => EnumerantInfo(
-          [CapabilityFPGAMemoryAttributesINTEL],
-          ["SPV_INTEL_fpga_memory_attributes"],
-          v"0.0.0",
+        DecorationRegisterINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
+          [],
+        ),
+        DecorationMemoryINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
           [OperandInfo(LiteralString, "'Memory Type'", nothing)],
         ),
-        5827 => EnumerantInfo(
-          [CapabilityFPGAMemoryAttributesINTEL],
-          ["SPV_INTEL_fpga_memory_attributes"],
-          v"0.0.0",
+        DecorationNumbanksINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
           [OperandInfo(LiteralInteger, "'Banks'", nothing)],
         ),
-        5828 => EnumerantInfo(
-          [CapabilityFPGAMemoryAttributesINTEL],
-          ["SPV_INTEL_fpga_memory_attributes"],
-          v"0.0.0",
+        DecorationBankwidthINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
           [OperandInfo(LiteralInteger, "'Bank Width'", nothing)],
         ),
-        5829 => EnumerantInfo(
-          [CapabilityFPGAMemoryAttributesINTEL],
-          ["SPV_INTEL_fpga_memory_attributes"],
-          v"0.0.0",
+        DecorationMaxPrivateCopiesINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
           [OperandInfo(LiteralInteger, "'Maximum Copies'", nothing)],
         ),
-        5830 => EnumerantInfo([CapabilityFPGAMemoryAttributesINTEL], ["SPV_INTEL_fpga_memory_attributes"], v"0.0.0", []),
-        5831 => EnumerantInfo([CapabilityFPGAMemoryAttributesINTEL], ["SPV_INTEL_fpga_memory_attributes"], v"0.0.0", []),
-        5832 => EnumerantInfo(
-          [CapabilityFPGAMemoryAttributesINTEL],
-          ["SPV_INTEL_fpga_memory_attributes"],
-          v"0.0.0",
+        DecorationSinglepumpINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
+          [],
+        ),
+        DecorationDoublepumpINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
+          [],
+        ),
+        DecorationMaxReplicatesINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
           [OperandInfo(LiteralInteger, "'Maximum Replicates'", nothing)],
         ),
-        5833 => EnumerantInfo([CapabilityFPGAMemoryAttributesINTEL], ["SPV_INTEL_fpga_memory_attributes"], v"0.0.0", []),
-        5834 => EnumerantInfo(
-          [CapabilityFPGAMemoryAttributesINTEL],
-          ["SPV_INTEL_fpga_memory_attributes"],
-          v"0.0.0",
+        DecorationSimpleDualPortINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
+          [],
+        ),
+        DecorationMergeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
           [OperandInfo(LiteralString, "'Merge Key'", nothing), OperandInfo(LiteralString, "'Merge Type'", nothing)],
         ),
-        5835 => EnumerantInfo(
-          [CapabilityFPGAMemoryAttributesINTEL],
-          ["SPV_INTEL_fpga_memory_attributes"],
-          v"0.0.0",
+        DecorationBankBitsINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
           [OperandInfo(LiteralInteger, "'Bank Bits'", "*")],
         ),
-        5836 => EnumerantInfo(
-          [CapabilityFPGAMemoryAttributesINTEL],
-          ["SPV_INTEL_fpga_memory_attributes"],
-          v"0.0.0",
+        DecorationForcePow2DepthINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], [CapabilityFPGAMemoryAttributesINTEL]),
           [OperandInfo(LiteralInteger, "'Force Key'", nothing)],
         ),
-        5899 => EnumerantInfo([CapabilityFPGAMemoryAccessesINTEL], [], v"0.0.0", []),
-        5900 => EnumerantInfo([CapabilityFPGAMemoryAccessesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Cache Size in bytes'", nothing)]),
-        5901 => EnumerantInfo([CapabilityFPGAMemoryAccessesINTEL], [], v"0.0.0", []),
-        5902 =>
-          EnumerantInfo([CapabilityFPGAMemoryAccessesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Prefetcher Size in bytes'", nothing)]),
-        5905 => EnumerantInfo([CapabilityFPGAClusterAttributesINTEL], [], v"0.0.0", []),
-        5907 => EnumerantInfo([CapabilityLoopFuseINTEL], [], v"0.0.0", []),
-        5909 => EnumerantInfo(
-          [CapabilityFPGADSPControlINTEL],
-          [],
-          v"0.0.0",
+        DecorationBurstCoalesceINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAMemoryAccessesINTEL]), []),
+        DecorationCacheSizeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAMemoryAccessesINTEL]),
+          [OperandInfo(LiteralInteger, "'Cache Size in bytes'", nothing)],
+        ),
+        DecorationDontStaticallyCoalesceINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAMemoryAccessesINTEL]), []),
+        DecorationPrefetchINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAMemoryAccessesINTEL]),
+          [OperandInfo(LiteralInteger, "'Prefetcher Size in bytes'", nothing)],
+        ),
+        DecorationStallEnableINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAClusterAttributesINTEL]), []),
+        DecorationFuseLoopsInFunctionINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityLoopFuseINTEL]), []),
+        DecorationMathOpDSPModeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGADSPControlINTEL]),
           [OperandInfo(LiteralInteger, "'Mode'", nothing), OperandInfo(LiteralInteger, "'Propagate'", nothing)],
         ),
-        5914 => EnumerantInfo([CapabilityMemoryAccessAliasingINTEL], [], v"0.0.0", [OperandInfo(IdRef, "'Aliasing Scopes List'", nothing)]),
-        5915 => EnumerantInfo([CapabilityMemoryAccessAliasingINTEL], [], v"0.0.0", [OperandInfo(IdRef, "'Aliasing Scopes List'", nothing)]),
-        5917 =>
-          EnumerantInfo([CapabilityFPGAInvocationPipeliningAttributesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Cycles'", nothing)]),
-        5918 => EnumerantInfo(
-          [CapabilityFPGAInvocationPipeliningAttributesINTEL],
-          [],
-          v"0.0.0",
+        DecorationAliasScopeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMemoryAccessAliasingINTEL]),
+          [OperandInfo(IdRef, "'Aliasing Scopes List'", nothing)],
+        ),
+        DecorationNoAliasINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMemoryAccessAliasingINTEL]),
+          [OperandInfo(IdRef, "'Aliasing Scopes List'", nothing)],
+        ),
+        DecorationInitiationIntervalINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAInvocationPipeliningAttributesINTEL]),
+          [OperandInfo(LiteralInteger, "'Cycles'", nothing)],
+        ),
+        DecorationMaxConcurrencyINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAInvocationPipeliningAttributesINTEL]),
           [OperandInfo(LiteralInteger, "'Invocations'", nothing)],
         ),
-        5919 =>
-          EnumerantInfo([CapabilityFPGAInvocationPipeliningAttributesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Enable'", nothing)]),
-        5921 => EnumerantInfo([CapabilityFPGABufferLocationINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Buffer Location ID'", nothing)]),
-        5944 => EnumerantInfo([CapabilityIOPipesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'IO Pipe ID'", nothing)]),
-        6080 => EnumerantInfo(
-          [CapabilityFunctionFloatControlINTEL],
-          [],
-          v"0.0.0",
+        DecorationPipelineEnableINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAInvocationPipeliningAttributesINTEL]),
+          [OperandInfo(LiteralInteger, "'Enable'", nothing)],
+        ),
+        DecorationBufferLocationINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGABufferLocationINTEL]),
+          [OperandInfo(LiteralInteger, "'Buffer Location ID'", nothing)],
+        ),
+        DecorationIOPipeStorageINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityIOPipesINTEL]),
+          [OperandInfo(LiteralInteger, "'IO Pipe ID'", nothing)],
+        ),
+        DecorationFunctionFloatingPointModeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFunctionFloatControlINTEL]),
           [OperandInfo(LiteralInteger, "'Target Width'", nothing), OperandInfo(FPOperationMode, "'FP Operation Mode'", nothing)],
         ),
-        6085 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", []),
-        6087 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", []),
-        6140 => EnumerantInfo([CapabilityVectorComputeINTEL], [], v"0.0.0", []),
-        6175 => EnumerantInfo([CapabilityFPGAArgumentInterfacesINTEL], [], v"0.0.0", []),
-        6176 => EnumerantInfo([CapabilityFPGAArgumentInterfacesINTEL], [], v"0.0.0", []),
-        6177 => EnumerantInfo([CapabilityFPGAArgumentInterfacesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'AddressWidth'", nothing)]),
-        6178 => EnumerantInfo([CapabilityFPGAArgumentInterfacesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'DataWidth'", nothing)]),
-        6179 => EnumerantInfo([CapabilityFPGAArgumentInterfacesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Latency'", nothing)]),
-        6180 => EnumerantInfo([CapabilityFPGAArgumentInterfacesINTEL], [], v"0.0.0", [OperandInfo(AccessQualifier, "'ReadWriteMode'", nothing)]),
-        6181 => EnumerantInfo([CapabilityFPGAArgumentInterfacesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'MaxBurstCount'", nothing)]),
-        6182 => EnumerantInfo([CapabilityFPGAArgumentInterfacesINTEL], [], v"0.0.0", [OperandInfo(LiteralInteger, "'Waitrequest'", nothing)]),
-        6183 => EnumerantInfo([CapabilityFPGAArgumentInterfacesINTEL], [], v"0.0.0", []),
+        DecorationSingleElementVectorINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]), []),
+        DecorationVectorComputeCallableFunctionINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]), []),
+        DecorationMediaBlockIOINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityVectorComputeINTEL]), []),
+        DecorationConduitKernelArgumentINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAArgumentInterfacesINTEL]), []),
+        DecorationRegisterMapKernelArgumentINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAArgumentInterfacesINTEL]), []),
+        DecorationMMHostInterfaceAddressWidthINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAArgumentInterfacesINTEL]),
+          [OperandInfo(LiteralInteger, "'AddressWidth'", nothing)],
+        ),
+        DecorationMMHostInterfaceDataWidthINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAArgumentInterfacesINTEL]),
+          [OperandInfo(LiteralInteger, "'DataWidth'", nothing)],
+        ),
+        DecorationMMHostInterfaceLatencyINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAArgumentInterfacesINTEL]),
+          [OperandInfo(LiteralInteger, "'Latency'", nothing)],
+        ),
+        DecorationMMHostInterfaceReadWriteModeINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAArgumentInterfacesINTEL]),
+          [OperandInfo(AccessQualifier, "'ReadWriteMode'", nothing)],
+        ),
+        DecorationMMHostInterfaceMaxBurstINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAArgumentInterfacesINTEL]),
+          [OperandInfo(LiteralInteger, "'MaxBurstCount'", nothing)],
+        ),
+        DecorationMMHostInterfaceWaitRequestINTEL * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAArgumentInterfacesINTEL]),
+          [OperandInfo(LiteralInteger, "'Waitrequest'", nothing)],
+        ),
+        DecorationStableKernelArgumentINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityFPGAArgumentInterfacesINTEL]), []),
       ),
     ),
     BuiltIn => EnumInfo(
       BuiltIn,
       Dict(
-        0 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityClipDistance], [], v"0.0.0", []),
-        4 => EnumerantInfo([CapabilityCullDistance], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        6 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        7 => EnumerantInfo(
-          [
-            CapabilityGeometry,
-            CapabilityTessellation,
-            CapabilityRayTracingNV,
-            CapabilityRayTracingKHR,
-            CapabilityMeshShadingNV,
-            CapabilityMeshShadingEXT,
-          ],
-          [],
-          v"0.0.0",
-          [],
-        ),
-        8 => EnumerantInfo([CapabilityGeometry, CapabilityTessellation], [], v"0.0.0", []),
-        9 => EnumerantInfo(
-          [CapabilityGeometry, CapabilityShaderLayer, CapabilityShaderViewportIndexLayerEXT, CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
-          [],
-          v"0.0.0",
+        BuiltInPosition * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInPointSize * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInClipDistance * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityClipDistance]), []),
+        BuiltInCullDistance * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityCullDistance]), []),
+        BuiltInVertexId * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInInstanceId * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInPrimitiveId * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            nothing,
+            [
+              CapabilityGeometry,
+              CapabilityTessellation,
+              CapabilityRayTracingNV,
+              CapabilityRayTracingKHR,
+              CapabilityMeshShadingNV,
+              CapabilityMeshShadingEXT,
+            ],
+          ),
           [],
         ),
-        10 => EnumerantInfo(
-          [
-            CapabilityMultiViewport,
-            CapabilityShaderViewportIndex,
-            CapabilityShaderViewportIndexLayerEXT,
-            CapabilityMeshShadingNV,
-            CapabilityMeshShadingEXT,
-          ],
-          [],
-          v"0.0.0",
+        BuiltInInvocationId * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry, CapabilityTessellation]), []),
+        BuiltInLayer * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            nothing,
+            [CapabilityGeometry, CapabilityShaderLayer, CapabilityShaderViewportIndexLayerEXT, CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
+          ),
           [],
         ),
-        11 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        12 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        13 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        14 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        15 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        16 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        17 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        18 => EnumerantInfo([CapabilitySampleRateShading], [], v"0.0.0", []),
-        19 => EnumerantInfo([CapabilitySampleRateShading], [], v"0.0.0", []),
-        20 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        22 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        23 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        24 => EnumerantInfo([], [], v"0.0.0", []),
-        25 => EnumerantInfo([], [], v"0.0.0", []),
-        26 => EnumerantInfo([], [], v"0.0.0", []),
-        27 => EnumerantInfo([], [], v"0.0.0", []),
-        28 => EnumerantInfo([], [], v"0.0.0", []),
-        29 => EnumerantInfo([], [], v"0.0.0", []),
-        30 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        31 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        32 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        33 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        34 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        36 => EnumerantInfo([CapabilityKernel, CapabilityGroupNonUniform, CapabilitySubgroupBallotKHR], [], v"0.0.0", []),
-        37 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        38 => EnumerantInfo([CapabilityKernel, CapabilityGroupNonUniform], [], v"0.0.0", []),
-        39 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        40 => EnumerantInfo([CapabilityKernel, CapabilityGroupNonUniform], [], v"0.0.0", []),
-        41 => EnumerantInfo([CapabilityKernel, CapabilityGroupNonUniform, CapabilitySubgroupBallotKHR], [], v"0.0.0", []),
-        42 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        43 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        4160 => EnumerantInfo([CapabilityCoreBuiltinsARM], [], v"0.0.0", []),
-        4161 => EnumerantInfo([CapabilityCoreBuiltinsARM], [], v"0.0.0", []),
-        4162 => EnumerantInfo([CapabilityCoreBuiltinsARM], [], v"0.0.0", []),
-        4163 => EnumerantInfo([CapabilityCoreBuiltinsARM], [], v"0.0.0", []),
-        4164 => EnumerantInfo([CapabilityCoreBuiltinsARM], [], v"0.0.0", []),
-        4416 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], [], v"1.3.0", []),
-        4416 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], ["SPV_KHR_shader_ballot"], v"1.3.0", []),
-        4417 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], [], v"1.3.0", []),
-        4417 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], ["SPV_KHR_shader_ballot"], v"1.3.0", []),
-        4418 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], [], v"1.3.0", []),
-        4418 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], ["SPV_KHR_shader_ballot"], v"1.3.0", []),
-        4419 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], [], v"1.3.0", []),
-        4419 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], ["SPV_KHR_shader_ballot"], v"1.3.0", []),
-        4420 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], [], v"1.3.0", []),
-        4420 => EnumerantInfo([CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot], ["SPV_KHR_shader_ballot"], v"1.3.0", []),
-        4424 => EnumerantInfo([CapabilityDrawParameters], ["SPV_KHR_shader_draw_parameters"], v"1.3.0", []),
-        4425 => EnumerantInfo([CapabilityDrawParameters], ["SPV_KHR_shader_draw_parameters"], v"1.3.0", []),
-        4426 => EnumerantInfo(
-          [CapabilityDrawParameters, CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
-          ["SPV_KHR_shader_draw_parameters", "SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"],
-          v"1.3.0",
+        BuiltInViewportIndex * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            nothing,
+            [
+              CapabilityMultiViewport,
+              CapabilityShaderViewportIndex,
+              CapabilityShaderViewportIndexLayerEXT,
+              CapabilityMeshShadingNV,
+              CapabilityMeshShadingEXT,
+            ],
+          ),
           [],
         ),
-        4432 => EnumerantInfo([CapabilityFragmentShadingRateKHR], ["SPV_KHR_fragment_shading_rate"], v"0.0.0", []),
-        4438 => EnumerantInfo([CapabilityDeviceGroup], ["SPV_KHR_device_group"], v"1.3.0", []),
-        4440 => EnumerantInfo([CapabilityMultiView], ["SPV_KHR_multiview"], v"1.3.0", []),
-        4444 => EnumerantInfo([CapabilityFragmentShadingRateKHR], ["SPV_KHR_fragment_shading_rate"], v"0.0.0", []),
-        4992 => EnumerantInfo([], ["SPV_AMD_shader_explicit_vertex_parameter"], v"0.0.0", []),
-        4993 => EnumerantInfo([], ["SPV_AMD_shader_explicit_vertex_parameter"], v"0.0.0", []),
-        4994 => EnumerantInfo([], ["SPV_AMD_shader_explicit_vertex_parameter"], v"0.0.0", []),
-        4995 => EnumerantInfo([], ["SPV_AMD_shader_explicit_vertex_parameter"], v"0.0.0", []),
-        4996 => EnumerantInfo([], ["SPV_AMD_shader_explicit_vertex_parameter"], v"0.0.0", []),
-        4997 => EnumerantInfo([], ["SPV_AMD_shader_explicit_vertex_parameter"], v"0.0.0", []),
-        4998 => EnumerantInfo([], ["SPV_AMD_shader_explicit_vertex_parameter"], v"0.0.0", []),
-        5014 => EnumerantInfo([CapabilityStencilExportEXT], ["SPV_EXT_shader_stencil_export"], v"0.0.0", []),
-        5253 => EnumerantInfo(
-          [CapabilityShaderViewportMaskNV, CapabilityMeshShadingNV],
-          ["SPV_NV_viewport_array2", "SPV_NV_mesh_shader"],
-          v"0.0.0",
+        BuiltInTessLevelOuter * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        BuiltInTessLevelInner * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        BuiltInTessCoord * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        BuiltInPatchVertices * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        BuiltInFragCoord * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInPointCoord * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInFrontFacing * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInSampleId * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampleRateShading]), []),
+        BuiltInSamplePosition * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampleRateShading]), []),
+        BuiltInSampleMask * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInFragDepth * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInHelperInvocation * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInNumWorkgroups * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        BuiltInWorkgroupSize * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        BuiltInWorkgroupId * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        BuiltInLocalInvocationId * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        BuiltInGlobalInvocationId * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        BuiltInLocalInvocationIndex * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        BuiltInWorkDim * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        BuiltInGlobalSize * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        BuiltInEnqueuedWorkgroupSize * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        BuiltInGlobalOffset * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        BuiltInGlobalLinearId * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        BuiltInSubgroupSize * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel, CapabilityGroupNonUniform, CapabilitySubgroupBallotKHR]),
           [],
         ),
-        5257 => EnumerantInfo([CapabilityShaderStereoViewNV], ["SPV_NV_stereo_view_rendering"], v"0.0.0", []),
-        5258 => EnumerantInfo([CapabilityShaderStereoViewNV], ["SPV_NV_stereo_view_rendering"], v"0.0.0", []),
-        5261 => EnumerantInfo(
-          [CapabilityPerViewAttributesNV, CapabilityMeshShadingNV],
-          ["SPV_NVX_multiview_per_view_attributes", "SPV_NV_mesh_shader"],
-          v"0.0.0",
+        BuiltInSubgroupMaxSize * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        BuiltInNumSubgroups * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel, CapabilityGroupNonUniform]), []),
+        BuiltInNumEnqueuedSubgroups * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        BuiltInSubgroupId * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel, CapabilityGroupNonUniform]), []),
+        BuiltInSubgroupLocalInvocationId * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel, CapabilityGroupNonUniform, CapabilitySubgroupBallotKHR]),
           [],
         ),
-        5262 => EnumerantInfo(
-          [CapabilityPerViewAttributesNV, CapabilityMeshShadingNV],
-          ["SPV_NVX_multiview_per_view_attributes", "SPV_NV_mesh_shader"],
-          v"0.0.0",
+        BuiltInVertexIndex * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInInstanceIndex * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        BuiltInCoreIDARM * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityCoreBuiltinsARM]), []),
+        BuiltInCoreCountARM * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityCoreBuiltinsARM]), []),
+        BuiltInCoreMaxIDARM * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityCoreBuiltinsARM]), []),
+        BuiltInWarpIDARM * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityCoreBuiltinsARM]), []),
+        BuiltInWarpMaxIDARM * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityCoreBuiltinsARM]), []),
+        BuiltInSubgroupEqMaskKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot]),
           [],
         ),
-        5264 => EnumerantInfo([CapabilityFragmentFullyCoveredEXT], ["SPV_EXT_fragment_fully_covered"], v"0.0.0", []),
-        5274 => EnumerantInfo([CapabilityMeshShadingNV], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5275 => EnumerantInfo([CapabilityMeshShadingNV], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5276 => EnumerantInfo([CapabilityMeshShadingNV], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5277 => EnumerantInfo([CapabilityMeshShadingNV], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5278 => EnumerantInfo([CapabilityMeshShadingNV], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5279 => EnumerantInfo([CapabilityMeshShadingNV], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5280 => EnumerantInfo([CapabilityMeshShadingNV], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5281 => EnumerantInfo([CapabilityMeshShadingNV], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5286 => EnumerantInfo(
-          [CapabilityFragmentBarycentricNV, CapabilityFragmentBarycentricKHR],
-          ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"],
-          v"0.0.0",
+        BuiltInSubgroupGeMaskKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot]),
           [],
         ),
-        5286 => EnumerantInfo(
-          [CapabilityFragmentBarycentricNV, CapabilityFragmentBarycentricKHR],
-          ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"],
-          v"0.0.0",
+        BuiltInSubgroupGtMaskKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot]),
           [],
         ),
-        5287 => EnumerantInfo(
-          [CapabilityFragmentBarycentricNV, CapabilityFragmentBarycentricKHR],
-          ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"],
-          v"0.0.0",
+        BuiltInSubgroupLeMaskKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot]),
           [],
         ),
-        5287 => EnumerantInfo(
-          [CapabilityFragmentBarycentricNV, CapabilityFragmentBarycentricKHR],
-          ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"],
-          v"0.0.0",
+        BuiltInSubgroupLtMaskKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilitySubgroupBallotKHR, CapabilityGroupNonUniformBallot]),
           [],
         ),
-        5292 => EnumerantInfo(
-          [CapabilityFragmentDensityEXT, CapabilityShadingRateNV],
-          ["SPV_EXT_fragment_invocation_density", "SPV_NV_shading_rate"],
-          v"0.0.0",
+        BuiltInBaseVertex * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_shader_draw_parameters"], [CapabilityDrawParameters]), []),
+        BuiltInBaseInstance * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_shader_draw_parameters"], [CapabilityDrawParameters]), []),
+        BuiltInDrawIndex * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"1.3.0", v"∞"),
+            ["SPV_KHR_shader_draw_parameters", "SPV_NV_mesh_shader", "SPV_EXT_mesh_shader"],
+            [CapabilityDrawParameters, CapabilityMeshShadingNV, CapabilityMeshShadingEXT],
+          ),
           [],
         ),
-        5292 => EnumerantInfo(
-          [CapabilityShadingRateNV, CapabilityFragmentDensityEXT],
-          ["SPV_NV_shading_rate", "SPV_EXT_fragment_invocation_density"],
-          v"0.0.0",
+        BuiltInPrimitiveShadingRateKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_fragment_shading_rate"], [CapabilityFragmentShadingRateKHR]), []),
+        BuiltInDeviceIndex * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_device_group"], [CapabilityDeviceGroup]), []),
+        BuiltInViewIndex * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_multiview"], [CapabilityMultiView]), []),
+        BuiltInShadingRateKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_fragment_shading_rate"], [CapabilityFragmentShadingRateKHR]), []),
+        BuiltInBaryCoordNoPerspAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_explicit_vertex_parameter"], nothing), []),
+        BuiltInBaryCoordNoPerspCentroidAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_explicit_vertex_parameter"], nothing), []),
+        BuiltInBaryCoordNoPerspSampleAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_explicit_vertex_parameter"], nothing), []),
+        BuiltInBaryCoordSmoothAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_explicit_vertex_parameter"], nothing), []),
+        BuiltInBaryCoordSmoothCentroidAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_explicit_vertex_parameter"], nothing), []),
+        BuiltInBaryCoordSmoothSampleAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_explicit_vertex_parameter"], nothing), []),
+        BuiltInBaryCoordPullModelAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_explicit_vertex_parameter"], nothing), []),
+        BuiltInFragStencilRefEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_stencil_export"], [CapabilityStencilExportEXT]), []),
+        BuiltInViewportMaskNV * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_viewport_array2", "SPV_NV_mesh_shader"],
+            [CapabilityShaderViewportMaskNV, CapabilityMeshShadingNV],
+          ),
           [],
         ),
-        5293 => EnumerantInfo(
-          [CapabilityFragmentDensityEXT, CapabilityShadingRateNV],
-          ["SPV_EXT_fragment_invocation_density", "SPV_NV_shading_rate"],
-          v"0.0.0",
+        BuiltInSecondaryPositionNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_stereo_view_rendering"], [CapabilityShaderStereoViewNV]), []),
+        BuiltInSecondaryViewportMaskNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_stereo_view_rendering"], [CapabilityShaderStereoViewNV]), []),
+        BuiltInPositionPerViewNV * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NVX_multiview_per_view_attributes", "SPV_NV_mesh_shader"],
+            [CapabilityPerViewAttributesNV, CapabilityMeshShadingNV],
+          ),
           [],
         ),
-        5293 => EnumerantInfo(
-          [CapabilityShadingRateNV, CapabilityFragmentDensityEXT],
-          ["SPV_NV_shading_rate", "SPV_EXT_fragment_invocation_density"],
-          v"0.0.0",
+        BuiltInViewportMaskPerViewNV * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NVX_multiview_per_view_attributes", "SPV_NV_mesh_shader"],
+            [CapabilityPerViewAttributesNV, CapabilityMeshShadingNV],
+          ),
           [],
         ),
-        5294 => EnumerantInfo([CapabilityMeshShadingEXT], ["SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5295 => EnumerantInfo([CapabilityMeshShadingEXT], ["SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5296 => EnumerantInfo([CapabilityMeshShadingEXT], ["SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5299 => EnumerantInfo([CapabilityMeshShadingEXT], ["SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5319 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5319 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5320 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5320 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5321 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5321 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5322 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5322 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5323 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5323 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5324 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5324 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5325 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5325 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5326 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5326 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5327 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5327 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5330 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5330 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5331 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5331 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5332 => EnumerantInfo([CapabilityRayTracingNV], ["SPV_NV_ray_tracing"], v"0.0.0", []),
-        5333 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5333 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5334 => EnumerantInfo([CapabilityRayTracingMotionBlurNV], ["SPV_NV_ray_tracing_motion_blur"], v"0.0.0", []),
-        5351 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5351 => EnumerantInfo([CapabilityRayTracingNV, CapabilityRayTracingKHR], ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5352 => EnumerantInfo([CapabilityRayTracingKHR], ["SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5374 => EnumerantInfo([CapabilityShaderSMBuiltinsNV], ["SPV_NV_shader_sm_builtins"], v"0.0.0", []),
-        5375 => EnumerantInfo([CapabilityShaderSMBuiltinsNV], ["SPV_NV_shader_sm_builtins"], v"0.0.0", []),
-        5376 => EnumerantInfo([CapabilityShaderSMBuiltinsNV], ["SPV_NV_shader_sm_builtins"], v"0.0.0", []),
-        5377 => EnumerantInfo([CapabilityShaderSMBuiltinsNV], ["SPV_NV_shader_sm_builtins"], v"0.0.0", []),
-        6021 => EnumerantInfo([CapabilityRayCullMaskKHR], ["SPV_KHR_ray_cull_mask"], v"0.0.0", []),
+        BuiltInFullyCoveredEXT * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_fully_covered"], [CapabilityFragmentFullyCoveredEXT]),
+          [],
+        ),
+        BuiltInTaskCountNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityMeshShadingNV]), []),
+        BuiltInPrimitiveCountNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityMeshShadingNV]), []),
+        BuiltInPrimitiveIndicesNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityMeshShadingNV]), []),
+        BuiltInClipDistancePerViewNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityMeshShadingNV]), []),
+        BuiltInCullDistancePerViewNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityMeshShadingNV]), []),
+        BuiltInLayerPerViewNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityMeshShadingNV]), []),
+        BuiltInMeshViewCountNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityMeshShadingNV]), []),
+        BuiltInMeshViewIndicesNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityMeshShadingNV]), []),
+        BuiltInBaryCoordNV * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"],
+            [CapabilityFragmentBarycentricNV, CapabilityFragmentBarycentricKHR],
+          ),
+          [],
+        ),
+        BuiltInBaryCoordNoPerspNV * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"],
+            [CapabilityFragmentBarycentricNV, CapabilityFragmentBarycentricKHR],
+          ),
+          [],
+        ),
+        BuiltInFragmentSizeNV * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_EXT_fragment_invocation_density", "SPV_NV_shading_rate"],
+            [CapabilityFragmentDensityEXT, CapabilityShadingRateNV],
+          ),
+          [],
+        ),
+        BuiltInInvocationsPerPixelNV * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_EXT_fragment_invocation_density", "SPV_NV_shading_rate"],
+            [CapabilityFragmentDensityEXT, CapabilityShadingRateNV],
+          ),
+          [],
+        ),
+        BuiltInPrimitivePointIndicesEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_mesh_shader"], [CapabilityMeshShadingEXT]), []),
+        BuiltInPrimitiveLineIndicesEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_mesh_shader"], [CapabilityMeshShadingEXT]), []),
+        BuiltInPrimitiveTriangleIndicesEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_mesh_shader"], [CapabilityMeshShadingEXT]), []),
+        BuiltInCullPrimitiveEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_mesh_shader"], [CapabilityMeshShadingEXT]), []),
+        BuiltInLaunchIdKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInLaunchSizeKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInWorldRayOriginKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInWorldRayDirectionKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInObjectRayOriginKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInObjectRayDirectionKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInRayTminKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInRayTmaxKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInInstanceCustomIndexKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInObjectToWorldKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInWorldToObjectKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInHitTNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_ray_tracing"], [CapabilityRayTracingNV]), []),
+        BuiltInHitKindKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInCurrentRayTimeNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_ray_tracing_motion_blur"], [CapabilityRayTracingMotionBlurNV]),
+          [],
+        ),
+        BuiltInIncomingRayFlagsKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"],
+            [CapabilityRayTracingNV, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        BuiltInRayGeometryIndexKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_ray_tracing"], [CapabilityRayTracingKHR]), []),
+        BuiltInWarpsPerSMNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_sm_builtins"], [CapabilityShaderSMBuiltinsNV]), []),
+        BuiltInSMCountNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_sm_builtins"], [CapabilityShaderSMBuiltinsNV]), []),
+        BuiltInWarpIDNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_sm_builtins"], [CapabilityShaderSMBuiltinsNV]), []),
+        BuiltInSMIDNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_sm_builtins"], [CapabilityShaderSMBuiltinsNV]), []),
+        BuiltInCullMaskKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_ray_cull_mask"], [CapabilityRayCullMaskKHR]), []),
       ),
     ),
     Scope => EnumInfo(
       Scope,
       Dict(
-        0 => EnumerantInfo([], [], v"0.0.0", []),
-        1 => EnumerantInfo([], [], v"0.0.0", []),
-        2 => EnumerantInfo([], [], v"0.0.0", []),
-        3 => EnumerantInfo([], [], v"0.0.0", []),
-        4 => EnumerantInfo([], [], v"0.0.0", []),
-        5 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", []),
-        5 => EnumerantInfo([CapabilityVulkanMemoryModel], [], v"1.5.0", []),
-        6 => EnumerantInfo([CapabilityRayTracingKHR], [], v"0.0.0", []),
+        ScopeCrossDevice * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        ScopeDevice * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        ScopeWorkgroup * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        ScopeSubgroup * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        ScopeInvocation * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        ScopeQueueFamilyKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityVulkanMemoryModel]), []),
+        ScopeShaderCallKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayTracingKHR]), []),
       ),
     ),
     GroupOperation => EnumInfo(
       GroupOperation,
       Dict(
-        0 => EnumerantInfo([CapabilityKernel, CapabilityGroupNonUniformArithmetic, CapabilityGroupNonUniformBallot], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityKernel, CapabilityGroupNonUniformArithmetic, CapabilityGroupNonUniformBallot], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityKernel, CapabilityGroupNonUniformArithmetic, CapabilityGroupNonUniformBallot], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityGroupNonUniformClustered], [], v"1.3.0", []),
-        6 => EnumerantInfo([CapabilityGroupNonUniformPartitionedNV], ["SPV_NV_shader_subgroup_partitioned"], v"0.0.0", []),
-        7 => EnumerantInfo([CapabilityGroupNonUniformPartitionedNV], ["SPV_NV_shader_subgroup_partitioned"], v"0.0.0", []),
-        8 => EnumerantInfo([CapabilityGroupNonUniformPartitionedNV], ["SPV_NV_shader_subgroup_partitioned"], v"0.0.0", []),
+        GroupOperationReduce * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            nothing,
+            [CapabilityKernel, CapabilityGroupNonUniformArithmetic, CapabilityGroupNonUniformBallot],
+          ),
+          [],
+        ),
+        GroupOperationInclusiveScan * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            nothing,
+            [CapabilityKernel, CapabilityGroupNonUniformArithmetic, CapabilityGroupNonUniformBallot],
+          ),
+          [],
+        ),
+        GroupOperationExclusiveScan * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            nothing,
+            [CapabilityKernel, CapabilityGroupNonUniformArithmetic, CapabilityGroupNonUniformBallot],
+          ),
+          [],
+        ),
+        GroupOperationClusteredReduce * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilityGroupNonUniformClustered]), []),
+        GroupOperationPartitionedReduceNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_subgroup_partitioned"], [CapabilityGroupNonUniformPartitionedNV]),
+          [],
+        ),
+        GroupOperationPartitionedInclusiveScanNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_subgroup_partitioned"], [CapabilityGroupNonUniformPartitionedNV]),
+          [],
+        ),
+        GroupOperationPartitionedExclusiveScanNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_subgroup_partitioned"], [CapabilityGroupNonUniformPartitionedNV]),
+          [],
+        ),
       ),
     ),
     KernelEnqueueFlags => EnumInfo(
       KernelEnqueueFlags,
       Dict(
-        0 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
+        KernelEnqueueFlagsNoWait * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        KernelEnqueueFlagsWaitKernel * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        KernelEnqueueFlagsWaitWorkGroup * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
       ),
     ),
     Capability => EnumInfo(
       Capability,
       Dict(
-        0 => EnumerantInfo([], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityMatrix], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        3 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        4 => EnumerantInfo([], [], v"0.0.0", []),
-        5 => EnumerantInfo([], [], v"0.0.0", []),
-        6 => EnumerantInfo([], [], v"0.0.0", []),
-        7 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        8 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        9 => EnumerantInfo([], [], v"0.0.0", []),
-        10 => EnumerantInfo([], [], v"0.0.0", []),
-        11 => EnumerantInfo([], [], v"0.0.0", []),
-        12 => EnumerantInfo([CapabilityInt64], [], v"0.0.0", []),
-        13 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        14 => EnumerantInfo([CapabilityImageBasic], [], v"0.0.0", []),
-        15 => EnumerantInfo([CapabilityImageBasic], [], v"0.0.0", []),
-        17 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        18 => EnumerantInfo([], ["SPV_AMD_shader_ballot"], v"0.0.0", []),
-        19 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        20 => EnumerantInfo([CapabilityKernel], [], v"0.0.0", []),
-        21 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        22 => EnumerantInfo([], [], v"0.0.0", []),
-        23 => EnumerantInfo([CapabilityTessellation], [], v"0.0.0", []),
-        24 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        25 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        27 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        28 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        29 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        30 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        31 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        32 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        33 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        34 => EnumerantInfo([CapabilitySampledCubeArray], [], v"0.0.0", []),
-        35 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        36 => EnumerantInfo([CapabilitySampledRect], [], v"0.0.0", []),
-        37 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        38 => EnumerantInfo([CapabilityAddresses], [], v"0.0.0", []),
-        39 => EnumerantInfo([], [], v"0.0.0", []),
-        40 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        41 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        42 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        43 => EnumerantInfo([], [], v"0.0.0", []),
-        44 => EnumerantInfo([CapabilitySampled1D], [], v"0.0.0", []),
-        45 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        46 => EnumerantInfo([], [], v"0.0.0", []),
-        47 => EnumerantInfo([CapabilitySampledBuffer], [], v"0.0.0", []),
-        48 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        49 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        50 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        51 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        52 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        53 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        54 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        55 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        56 => EnumerantInfo([CapabilityShader], [], v"0.0.0", []),
-        57 => EnumerantInfo([CapabilityGeometry], [], v"0.0.0", []),
-        58 => EnumerantInfo([CapabilityDeviceEnqueue], [], v"1.1.0", []),
-        59 => EnumerantInfo([CapabilityKernel], [], v"1.1.0", []),
-        60 => EnumerantInfo([CapabilityPipes], [], v"1.1.0", []),
-        61 => EnumerantInfo([], [], v"1.3.0", []),
-        62 => EnumerantInfo([CapabilityGroupNonUniform], [], v"1.3.0", []),
-        63 => EnumerantInfo([CapabilityGroupNonUniform], [], v"1.3.0", []),
-        64 => EnumerantInfo([CapabilityGroupNonUniform], [], v"1.3.0", []),
-        65 => EnumerantInfo([CapabilityGroupNonUniform], [], v"1.3.0", []),
-        66 => EnumerantInfo([CapabilityGroupNonUniform], [], v"1.3.0", []),
-        67 => EnumerantInfo([CapabilityGroupNonUniform], [], v"1.3.0", []),
-        68 => EnumerantInfo([CapabilityGroupNonUniform], [], v"1.3.0", []),
-        69 => EnumerantInfo([], [], v"1.5.0", []),
-        70 => EnumerantInfo([], [], v"1.5.0", []),
-        71 => EnumerantInfo([], [], v"1.6.0", []),
-        4165 => EnumerantInfo([], ["SPV_ARM_core_builtins"], v"0.0.0", []),
-        4422 => EnumerantInfo([CapabilityShader], ["SPV_KHR_fragment_shading_rate"], v"0.0.0", []),
-        4423 => EnumerantInfo([], ["SPV_KHR_shader_ballot"], v"0.0.0", []),
-        4427 => EnumerantInfo([CapabilityShader], ["SPV_KHR_shader_draw_parameters"], v"1.3.0", []),
-        4428 => EnumerantInfo([CapabilityShader], ["SPV_KHR_workgroup_memory_explicit_layout"], v"0.0.0", []),
-        4429 => EnumerantInfo([CapabilityWorkgroupMemoryExplicitLayoutKHR], ["SPV_KHR_workgroup_memory_explicit_layout"], v"0.0.0", []),
-        4430 => EnumerantInfo([CapabilityShader], ["SPV_KHR_workgroup_memory_explicit_layout"], v"0.0.0", []),
-        4431 => EnumerantInfo([], ["SPV_KHR_subgroup_vote"], v"0.0.0", []),
-        4433 => EnumerantInfo([], ["SPV_KHR_16bit_storage"], v"1.3.0", []),
-        4433 => EnumerantInfo([], ["SPV_KHR_16bit_storage"], v"1.3.0", []),
-        4434 => EnumerantInfo([CapabilityStorageBuffer16BitAccess, CapabilityStorageUniformBufferBlock16], ["SPV_KHR_16bit_storage"], v"1.3.0", []),
-        4434 => EnumerantInfo([CapabilityStorageBuffer16BitAccess, CapabilityStorageUniformBufferBlock16], ["SPV_KHR_16bit_storage"], v"1.3.0", []),
-        4435 => EnumerantInfo([], ["SPV_KHR_16bit_storage"], v"1.3.0", []),
-        4436 => EnumerantInfo([], ["SPV_KHR_16bit_storage"], v"1.3.0", []),
-        4437 => EnumerantInfo([], ["SPV_KHR_device_group"], v"1.3.0", []),
-        4439 => EnumerantInfo([CapabilityShader], ["SPV_KHR_multiview"], v"1.3.0", []),
-        4441 => EnumerantInfo([CapabilityShader], ["SPV_KHR_variable_pointers"], v"1.3.0", []),
-        4442 => EnumerantInfo([CapabilityVariablePointersStorageBuffer], ["SPV_KHR_variable_pointers"], v"1.3.0", []),
-        4445 => EnumerantInfo([], ["SPV_KHR_shader_atomic_counter_ops"], v"0.0.0", []),
-        4447 => EnumerantInfo([], ["SPV_KHR_post_depth_coverage"], v"0.0.0", []),
-        4448 => EnumerantInfo([], ["SPV_KHR_8bit_storage"], v"1.5.0", []),
-        4449 => EnumerantInfo([CapabilityStorageBuffer8BitAccess], ["SPV_KHR_8bit_storage"], v"1.5.0", []),
-        4450 => EnumerantInfo([], ["SPV_KHR_8bit_storage"], v"1.5.0", []),
-        4464 => EnumerantInfo([], ["SPV_KHR_float_controls"], v"1.4.0", []),
-        4465 => EnumerantInfo([], ["SPV_KHR_float_controls"], v"1.4.0", []),
-        4466 => EnumerantInfo([], ["SPV_KHR_float_controls"], v"1.4.0", []),
-        4467 => EnumerantInfo([], ["SPV_KHR_float_controls"], v"1.4.0", []),
-        4468 => EnumerantInfo([], ["SPV_KHR_float_controls"], v"1.4.0", []),
-        4471 => EnumerantInfo([CapabilityShader], ["SPV_KHR_ray_query"], v"0.0.0", []),
-        4472 => EnumerantInfo([CapabilityShader], ["SPV_KHR_ray_query"], v"0.0.0", []),
-        4478 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], ["SPV_KHR_ray_query", "SPV_KHR_ray_tracing"], v"0.0.0", []),
-        4479 => EnumerantInfo([CapabilityShader], ["SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5008 => EnumerantInfo([CapabilityShader], ["SPV_AMD_gpu_shader_half_float_fetch"], v"0.0.0", []),
-        5009 => EnumerantInfo([CapabilityShader], ["SPV_AMD_texture_gather_bias_lod"], v"0.0.0", []),
-        5010 => EnumerantInfo([CapabilityShader], ["SPV_AMD_shader_fragment_mask"], v"0.0.0", []),
-        5013 => EnumerantInfo([CapabilityShader], ["SPV_EXT_shader_stencil_export"], v"0.0.0", []),
-        5015 => EnumerantInfo([CapabilityShader], ["SPV_AMD_shader_image_load_store_lod"], v"0.0.0", []),
-        5016 => EnumerantInfo([CapabilityShader], ["SPV_EXT_shader_image_int64"], v"0.0.0", []),
-        5055 => EnumerantInfo([], ["SPV_KHR_shader_clock"], v"0.0.0", []),
-        5249 => EnumerantInfo([CapabilitySampleRateShading], ["SPV_NV_sample_mask_override_coverage"], v"0.0.0", []),
-        5251 => EnumerantInfo([CapabilityGeometry], ["SPV_NV_geometry_shader_passthrough"], v"0.0.0", []),
-        5254 => EnumerantInfo([CapabilityMultiViewport], ["SPV_EXT_shader_viewport_index_layer"], v"0.0.0", []),
-        5254 => EnumerantInfo([CapabilityMultiViewport], ["SPV_NV_viewport_array2"], v"0.0.0", []),
-        5255 => EnumerantInfo([CapabilityShaderViewportIndexLayerNV], ["SPV_NV_viewport_array2"], v"0.0.0", []),
-        5259 => EnumerantInfo([CapabilityShaderViewportMaskNV], ["SPV_NV_stereo_view_rendering"], v"0.0.0", []),
-        5260 => EnumerantInfo([CapabilityMultiView], ["SPV_NVX_multiview_per_view_attributes"], v"0.0.0", []),
-        5265 => EnumerantInfo([CapabilityShader], ["SPV_EXT_fragment_fully_covered"], v"0.0.0", []),
-        5266 => EnumerantInfo([CapabilityShader], ["SPV_NV_mesh_shader"], v"0.0.0", []),
-        5282 => EnumerantInfo([], ["SPV_NV_shader_image_footprint"], v"0.0.0", []),
-        5283 => EnumerantInfo([CapabilityShader], ["SPV_EXT_mesh_shader"], v"0.0.0", []),
-        5284 => EnumerantInfo([], ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"], v"0.0.0", []),
-        5284 => EnumerantInfo([], ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"], v"0.0.0", []),
-        5288 => EnumerantInfo([], ["SPV_NV_compute_shader_derivatives"], v"0.0.0", []),
-        5291 => EnumerantInfo([CapabilityShader], ["SPV_EXT_fragment_invocation_density", "SPV_NV_shading_rate"], v"0.0.0", []),
-        5291 => EnumerantInfo([CapabilityShader], ["SPV_NV_shading_rate", "SPV_EXT_fragment_invocation_density"], v"0.0.0", []),
-        5297 => EnumerantInfo([], ["SPV_NV_shader_subgroup_partitioned"], v"0.0.0", []),
-        5301 => EnumerantInfo([CapabilityShader], [], v"1.5.0", []),
-        5301 => EnumerantInfo([CapabilityShader], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5302 => EnumerantInfo([CapabilityShader], [], v"1.5.0", []),
-        5302 => EnumerantInfo([CapabilityShader], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5303 => EnumerantInfo([CapabilityInputAttachment], [], v"1.5.0", []),
-        5303 => EnumerantInfo([CapabilityInputAttachment], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5304 => EnumerantInfo([CapabilitySampledBuffer], [], v"1.5.0", []),
-        5304 => EnumerantInfo([CapabilitySampledBuffer], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5305 => EnumerantInfo([CapabilityImageBuffer], [], v"1.5.0", []),
-        5305 => EnumerantInfo([CapabilityImageBuffer], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5306 => EnumerantInfo([CapabilityShaderNonUniform], [], v"1.5.0", []),
-        5306 => EnumerantInfo([CapabilityShaderNonUniform], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5307 => EnumerantInfo([CapabilityShaderNonUniform], [], v"1.5.0", []),
-        5307 => EnumerantInfo([CapabilityShaderNonUniform], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5308 => EnumerantInfo([CapabilityShaderNonUniform], [], v"1.5.0", []),
-        5308 => EnumerantInfo([CapabilityShaderNonUniform], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5309 => EnumerantInfo([CapabilityShaderNonUniform], [], v"1.5.0", []),
-        5309 => EnumerantInfo([CapabilityShaderNonUniform], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5310 => EnumerantInfo([CapabilityInputAttachment, CapabilityShaderNonUniform], [], v"1.5.0", []),
-        5310 => EnumerantInfo([CapabilityInputAttachment, CapabilityShaderNonUniform], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5311 => EnumerantInfo([CapabilitySampledBuffer, CapabilityShaderNonUniform], [], v"1.5.0", []),
-        5311 => EnumerantInfo([CapabilitySampledBuffer, CapabilityShaderNonUniform], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5312 => EnumerantInfo([CapabilityImageBuffer, CapabilityShaderNonUniform], [], v"1.5.0", []),
-        5312 => EnumerantInfo([CapabilityImageBuffer, CapabilityShaderNonUniform], ["SPV_EXT_descriptor_indexing"], v"1.5.0", []),
-        5340 => EnumerantInfo([CapabilityShader], ["SPV_NV_ray_tracing"], v"0.0.0", []),
-        5341 => EnumerantInfo([CapabilityShader], ["SPV_NV_ray_tracing_motion_blur"], v"0.0.0", []),
-        5345 => EnumerantInfo([], [], v"1.5.0", []),
-        5345 => EnumerantInfo([], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
-        5346 => EnumerantInfo([], [], v"1.5.0", []),
-        5346 => EnumerantInfo([], ["SPV_KHR_vulkan_memory_model"], v"1.5.0", []),
-        5347 => EnumerantInfo([CapabilityShader], ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"], v"1.5.0", []),
-        5347 => EnumerantInfo([CapabilityShader], ["SPV_EXT_physical_storage_buffer"], v"1.5.0", []),
-        5350 => EnumerantInfo([], ["SPV_NV_compute_shader_derivatives"], v"0.0.0", []),
-        5353 => EnumerantInfo([CapabilityShader], ["SPV_KHR_ray_tracing"], v"0.0.0", []),
-        5357 => EnumerantInfo([CapabilityShader], ["SPV_NV_cooperative_matrix"], v"0.0.0", []),
-        5363 => EnumerantInfo([CapabilityShader], ["SPV_EXT_fragment_shader_interlock"], v"0.0.0", []),
-        5372 => EnumerantInfo([CapabilityShader], ["SPV_EXT_fragment_shader_interlock"], v"0.0.0", []),
-        5373 => EnumerantInfo([CapabilityShader], ["SPV_NV_shader_sm_builtins"], v"0.0.0", []),
-        5378 => EnumerantInfo([CapabilityShader], ["SPV_EXT_fragment_shader_interlock"], v"0.0.0", []),
-        5379 => EnumerantInfo([CapabilityShader], [], v"1.6.0", []),
-        5379 => EnumerantInfo([CapabilityShader], ["SPV_EXT_demote_to_helper_invocation"], v"1.6.0", []),
-        5381 => EnumerantInfo([CapabilityRayQueryKHR, CapabilityRayTracingKHR], ["SPV_EXT_opacity_micromap"], v"0.0.0", []),
-        5383 => EnumerantInfo([CapabilityRayTracingKHR], ["SPV_NV_shader_invocation_reorder"], v"0.0.0", []),
-        5390 => EnumerantInfo([], ["SPV_NV_bindless_texture"], v"0.0.0", []),
-        5568 => EnumerantInfo([], ["SPV_INTEL_subgroups"], v"0.0.0", []),
-        5569 => EnumerantInfo([], ["SPV_INTEL_subgroups"], v"0.0.0", []),
-        5570 => EnumerantInfo([], ["SPV_INTEL_subgroups"], v"0.0.0", []),
-        5579 => EnumerantInfo([], ["SPV_INTEL_media_block_io"], v"0.0.0", []),
-        5582 => EnumerantInfo([], ["SPV_INTEL_float_controls2"], v"0.0.0", []),
-        5583 => EnumerantInfo([], ["SPV_INTEL_float_controls2"], v"0.0.0", []),
-        5584 => EnumerantInfo([CapabilityShader], ["SPV_INTEL_shader_integer_functions2"], v"0.0.0", []),
-        5603 => EnumerantInfo([], ["SPV_INTEL_function_pointers"], v"0.0.0", []),
-        5604 => EnumerantInfo([], ["SPV_INTEL_function_pointers"], v"0.0.0", []),
-        5606 => EnumerantInfo([], ["SPV_INTEL_inline_assembly"], v"0.0.0", []),
-        5612 => EnumerantInfo([], ["SPV_EXT_shader_atomic_float_min_max"], v"0.0.0", []),
-        5613 => EnumerantInfo([], ["SPV_EXT_shader_atomic_float_min_max"], v"0.0.0", []),
-        5616 => EnumerantInfo([], ["SPV_EXT_shader_atomic_float_min_max"], v"0.0.0", []),
-        5617 => EnumerantInfo([CapabilityVectorAnyINTEL], ["SPV_INTEL_vector_compute"], v"0.0.0", []),
-        5619 => EnumerantInfo([], ["SPV_INTEL_vector_compute"], v"0.0.0", []),
-        5629 => EnumerantInfo([], ["SPV_KHR_expect_assume"], v"0.0.0", []),
-        5696 => EnumerantInfo([], ["SPV_INTEL_device_side_avc_motion_estimation"], v"0.0.0", []),
-        5697 => EnumerantInfo([], ["SPV_INTEL_device_side_avc_motion_estimation"], v"0.0.0", []),
-        5698 => EnumerantInfo([], ["SPV_INTEL_device_side_avc_motion_estimation"], v"0.0.0", []),
-        5817 => EnumerantInfo([], ["SPV_INTEL_variable_length_array"], v"0.0.0", []),
-        5821 => EnumerantInfo([], ["SPV_INTEL_float_controls2"], v"0.0.0", []),
-        5824 => EnumerantInfo([], ["SPV_INTEL_fpga_memory_attributes"], v"0.0.0", []),
-        5837 => EnumerantInfo([CapabilityKernel], ["SPV_INTEL_fp_fast_math_mode"], v"0.0.0", []),
-        5844 => EnumerantInfo([], ["SPV_INTEL_arbitrary_precision_integers"], v"0.0.0", []),
-        5845 => EnumerantInfo([], ["SPV_INTEL_arbitrary_precision_floating_point"], v"0.0.0", []),
-        5886 => EnumerantInfo([], ["SPV_INTEL_unstructured_loop_controls"], v"0.0.0", []),
-        5888 => EnumerantInfo([], ["SPV_INTEL_fpga_loop_controls"], v"0.0.0", []),
-        5892 => EnumerantInfo([], ["SPV_INTEL_kernel_attributes"], v"0.0.0", []),
-        5897 => EnumerantInfo([], ["SPV_INTEL_kernel_attributes"], v"0.0.0", []),
-        5898 => EnumerantInfo([], ["SPV_INTEL_fpga_memory_accesses"], v"0.0.0", []),
-        5904 => EnumerantInfo([], ["SPV_INTEL_fpga_cluster_attributes"], v"0.0.0", []),
-        5906 => EnumerantInfo([], ["SPV_INTEL_loop_fuse"], v"0.0.0", []),
-        5908 => EnumerantInfo([], ["SPV_INTEL_fpga_dsp_control"], v"0.0.0", []),
-        5910 => EnumerantInfo([], ["SPV_INTEL_memory_access_aliasing"], v"0.0.0", []),
-        5916 => EnumerantInfo([], ["SPV_INTEL_fpga_invocation_pipelining_attributes"], v"0.0.0", []),
-        5920 => EnumerantInfo([], ["SPV_INTEL_fpga_buffer_location"], v"0.0.0", []),
-        5922 => EnumerantInfo([], ["SPV_INTEL_arbitrary_precision_fixed_point"], v"0.0.0", []),
-        5935 => EnumerantInfo([], ["SPV_INTEL_usm_storage_classes"], v"0.0.0", []),
-        5939 => EnumerantInfo([], ["SPV_INTEL_runtime_aligned"], v"0.0.0", []),
-        5943 => EnumerantInfo([], ["SPV_INTEL_io_pipes"], v"0.0.0", []),
-        5945 => EnumerantInfo([], ["SPV_INTEL_blocking_pipes"], v"0.0.0", []),
-        5948 => EnumerantInfo([], ["SPV_INTEL_fpga_reg"], v"0.0.0", []),
-        6016 => EnumerantInfo([], [], v"1.6.0", []),
-        6016 => EnumerantInfo([], ["SPV_KHR_integer_dot_product"], v"1.6.0", []),
-        6017 => EnumerantInfo([CapabilityInt8], [], v"1.6.0", []),
-        6017 => EnumerantInfo([CapabilityInt8], ["SPV_KHR_integer_dot_product"], v"1.6.0", []),
-        6018 => EnumerantInfo([], [], v"1.6.0", []),
-        6018 => EnumerantInfo([], ["SPV_KHR_integer_dot_product"], v"1.6.0", []),
-        6019 => EnumerantInfo([], [], v"1.6.0", []),
-        6019 => EnumerantInfo([], ["SPV_KHR_integer_dot_product"], v"1.6.0", []),
-        6020 => EnumerantInfo([], ["SPV_KHR_ray_cull_mask"], v"0.0.0", []),
-        6025 => EnumerantInfo([], ["SPV_KHR_bit_instructions"], v"0.0.0", []),
-        6026 => EnumerantInfo([CapabilityGroupNonUniform], ["SPV_KHR_subgroup_rotate"], v"0.0.0", []),
-        6033 => EnumerantInfo([], ["SPV_EXT_shader_atomic_float_add"], v"0.0.0", []),
-        6034 => EnumerantInfo([], ["SPV_EXT_shader_atomic_float_add"], v"0.0.0", []),
-        6089 => EnumerantInfo([], ["SPV_INTEL_long_constant_composite"], v"0.0.0", []),
-        6094 => EnumerantInfo([], ["SPV_INTEL_optnone"], v"0.0.0", []),
-        6095 => EnumerantInfo([], ["SPV_EXT_shader_atomic_float16_add"], v"0.0.0", []),
-        6114 => EnumerantInfo([], ["SPV_INTEL_debug_module"], v"0.0.0", []),
-        6141 => EnumerantInfo([], ["SPV_INTEL_split_barrier"], v"0.0.0", []),
-        6174 => EnumerantInfo([], ["SPV_INTEL_fpga_argument_interfaces"], v"0.0.0", []),
-        6400 => EnumerantInfo([], ["SPV_KHR_uniform_group_instructions"], v"0.0.0", []),
+        CapabilityMatrix * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityShader * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityMatrix]), []),
+        CapabilityGeometry * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityTessellation * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityAddresses * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityLinkage * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityKernel * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityVector16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        CapabilityFloat16Buffer * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        CapabilityFloat16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityFloat64 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityInt64 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityInt64Atomics * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityInt64]), []),
+        CapabilityImageBasic * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        CapabilityImageReadWrite * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityImageBasic]), []),
+        CapabilityImageMipmap * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityImageBasic]), []),
+        CapabilityPipes * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        CapabilityGroups * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_ballot"], nothing), []),
+        CapabilityDeviceEnqueue * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        CapabilityLiteralSampler * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityKernel]), []),
+        CapabilityAtomicStorage * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityInt16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityTessellationPointSize * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityTessellation]), []),
+        CapabilityGeometryPointSize * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        CapabilityImageGatherExtended * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityStorageImageMultisample * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityUniformBufferArrayDynamicIndexing * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilitySampledImageArrayDynamicIndexing * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityStorageBufferArrayDynamicIndexing * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityStorageImageArrayDynamicIndexing * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityClipDistance * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityCullDistance * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityImageCubeArray * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampledCubeArray]), []),
+        CapabilitySampleRateShading * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityImageRect * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampledRect]), []),
+        CapabilitySampledRect * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityGenericPointer * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityAddresses]), []),
+        CapabilityInt8 * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityInputAttachment * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilitySparseResidency * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityMinLod * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilitySampled1D * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityImage1D * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampled1D]), []),
+        CapabilitySampledCubeArray * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilitySampledBuffer * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing), []),
+        CapabilityImageBuffer * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilitySampledBuffer]), []),
+        CapabilityImageMSArray * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityStorageImageExtendedFormats * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityImageQuery * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityDerivativeControl * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityInterpolationFunction * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityTransformFeedback * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityGeometryStreams * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        CapabilityStorageImageReadWithoutFormat * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityStorageImageWriteWithoutFormat * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityMultiViewport * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGeometry]), []),
+        CapabilitySubgroupDispatch * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, [CapabilityDeviceEnqueue]), []),
+        CapabilityNamedBarrier * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, [CapabilityKernel]), []),
+        CapabilityPipeStorage * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.1.0", v"∞"), nothing, [CapabilityPipes]), []),
+        CapabilityGroupNonUniform * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, nothing), []),
+        CapabilityGroupNonUniformVote * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilityGroupNonUniform]), []),
+        CapabilityGroupNonUniformArithmetic * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilityGroupNonUniform]), []),
+        CapabilityGroupNonUniformBallot * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilityGroupNonUniform]), []),
+        CapabilityGroupNonUniformShuffle * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilityGroupNonUniform]), []),
+        CapabilityGroupNonUniformShuffleRelative * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilityGroupNonUniform]), []),
+        CapabilityGroupNonUniformClustered * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilityGroupNonUniform]), []),
+        CapabilityGroupNonUniformQuad * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), nothing, [CapabilityGroupNonUniform]), []),
+        CapabilityShaderLayer * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, nothing), []),
+        CapabilityShaderViewportIndex * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, nothing), []),
+        CapabilityUniformDecoration * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, nothing), []),
+        CapabilityCoreBuiltinsARM * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_ARM_core_builtins"], nothing), []),
+        CapabilityFragmentShadingRateKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_fragment_shading_rate"], [CapabilityShader]), []),
+        CapabilitySubgroupBallotKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_shader_ballot"], nothing), []),
+        CapabilityDrawParameters * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_shader_draw_parameters"], [CapabilityShader]), []),
+        CapabilityWorkgroupMemoryExplicitLayoutKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_workgroup_memory_explicit_layout"], [CapabilityShader]), []),
+        CapabilityWorkgroupMemoryExplicitLayout8BitAccessKHR * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_workgroup_memory_explicit_layout"], [CapabilityWorkgroupMemoryExplicitLayoutKHR]),
+          [],
+        ),
+        CapabilityWorkgroupMemoryExplicitLayout16BitAccessKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_workgroup_memory_explicit_layout"], [CapabilityShader]), []),
+        CapabilitySubgroupVoteKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_subgroup_vote"], nothing), []),
+        CapabilityStorageUniformBufferBlock16 * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_16bit_storage"], nothing), []),
+        CapabilityStorageUniform16 * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"1.3.0", v"∞"),
+            ["SPV_KHR_16bit_storage"],
+            [CapabilityStorageBuffer16BitAccess, CapabilityStorageUniformBufferBlock16],
+          ),
+          [],
+        ),
+        CapabilityStoragePushConstant16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_16bit_storage"], nothing), []),
+        CapabilityStorageInputOutput16 * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_16bit_storage"], nothing), []),
+        CapabilityDeviceGroup * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_device_group"], nothing), []),
+        CapabilityMultiView * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_multiview"], [CapabilityShader]), []),
+        CapabilityVariablePointersStorageBuffer * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_variable_pointers"], [CapabilityShader]), []),
+        CapabilityVariablePointers * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.3.0", v"∞"), ["SPV_KHR_variable_pointers"], [CapabilityVariablePointersStorageBuffer]),
+          [],
+        ),
+        CapabilityAtomicStorageOps * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_shader_atomic_counter_ops"], nothing), []),
+        CapabilitySampleMaskPostDepthCoverage * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_post_depth_coverage"], nothing), []),
+        CapabilityStorageBuffer8BitAccess * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), ["SPV_KHR_8bit_storage"], nothing), []),
+        CapabilityUniformAndStorageBuffer8BitAccess * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), ["SPV_KHR_8bit_storage"], [CapabilityStorageBuffer8BitAccess]), []),
+        CapabilityStoragePushConstant8 * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), ["SPV_KHR_8bit_storage"], nothing), []),
+        CapabilityDenormPreserve * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], nothing), []),
+        CapabilityDenormFlushToZero * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], nothing), []),
+        CapabilitySignedZeroInfNanPreserve * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], nothing), []),
+        CapabilityRoundingModeRTE * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], nothing), []),
+        CapabilityRoundingModeRTZ * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_KHR_float_controls"], nothing), []),
+        CapabilityRayQueryProvisionalKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_ray_query"], [CapabilityShader]), []),
+        CapabilityRayQueryKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_ray_query"], [CapabilityShader]), []),
+        CapabilityRayTraversalPrimitiveCullingKHR * U => EnumerantInfo(
+          RequiredSupport(
+            VersionRange(v"0.0.0", v"∞"),
+            ["SPV_KHR_ray_query", "SPV_KHR_ray_tracing"],
+            [CapabilityRayQueryKHR, CapabilityRayTracingKHR],
+          ),
+          [],
+        ),
+        CapabilityRayTracingKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_ray_tracing"], [CapabilityShader]), []),
+        CapabilityFloat16ImageAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_gpu_shader_half_float_fetch"], [CapabilityShader]), []),
+        CapabilityImageGatherBiasLodAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_texture_gather_bias_lod"], [CapabilityShader]), []),
+        CapabilityFragmentMaskAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_fragment_mask"], [CapabilityShader]), []),
+        CapabilityStencilExportEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_stencil_export"], [CapabilityShader]), []),
+        CapabilityImageReadWriteLodAMD * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_AMD_shader_image_load_store_lod"], [CapabilityShader]), []),
+        CapabilityInt64ImageEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_image_int64"], [CapabilityShader]), []),
+        CapabilityShaderClockKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_shader_clock"], nothing), []),
+        CapabilitySampleMaskOverrideCoverageNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_sample_mask_override_coverage"], [CapabilitySampleRateShading]),
+          [],
+        ),
+        CapabilityGeometryShaderPassthroughNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_geometry_shader_passthrough"], [CapabilityGeometry]), []),
+        CapabilityShaderViewportIndexLayerNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_viewport_index_layer", "SPV_NV_viewport_array2"], [CapabilityMultiViewport]),
+          [],
+        ),
+        CapabilityShaderViewportMaskNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_viewport_array2"], [CapabilityShaderViewportIndexLayerNV]), []),
+        CapabilityShaderStereoViewNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_stereo_view_rendering"], [CapabilityShaderViewportMaskNV]), []),
+        CapabilityPerViewAttributesNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NVX_multiview_per_view_attributes"], [CapabilityMultiView]), []),
+        CapabilityFragmentFullyCoveredEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_fully_covered"], [CapabilityShader]), []),
+        CapabilityMeshShadingNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_mesh_shader"], [CapabilityShader]), []),
+        CapabilityImageFootprintNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_image_footprint"], nothing), []),
+        CapabilityMeshShadingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_mesh_shader"], [CapabilityShader]), []),
+        CapabilityFragmentBarycentricNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_fragment_shader_barycentric", "SPV_KHR_fragment_shader_barycentric"], nothing),
+          [],
+        ),
+        CapabilityComputeDerivativeGroupQuadsNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_compute_shader_derivatives"], nothing), []),
+        CapabilityShadingRateNV * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_invocation_density", "SPV_NV_shading_rate"], [CapabilityShader]),
+          [],
+        ),
+        CapabilityGroupNonUniformPartitionedNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_subgroup_partitioned"], nothing), []),
+        CapabilityShaderNonUniformEXT * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityRuntimeDescriptorArrayEXT * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityInputAttachmentArrayDynamicIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityInputAttachment]), []),
+        CapabilityUniformTexelBufferArrayDynamicIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilitySampledBuffer]), []),
+        CapabilityStorageTexelBufferArrayDynamicIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityImageBuffer]), []),
+        CapabilityUniformBufferArrayNonUniformIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityShaderNonUniform]), []),
+        CapabilitySampledImageArrayNonUniformIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityShaderNonUniform]), []),
+        CapabilityStorageBufferArrayNonUniformIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityShaderNonUniform]), []),
+        CapabilityStorageImageArrayNonUniformIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityShaderNonUniform]), []),
+        CapabilityInputAttachmentArrayNonUniformIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityInputAttachment, CapabilityShaderNonUniform]), []),
+        CapabilityUniformTexelBufferArrayNonUniformIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilitySampledBuffer, CapabilityShaderNonUniform]), []),
+        CapabilityStorageTexelBufferArrayNonUniformIndexingEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, [CapabilityImageBuffer, CapabilityShaderNonUniform]), []),
+        CapabilityRayTracingNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_ray_tracing"], [CapabilityShader]), []),
+        CapabilityRayTracingMotionBlurNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_ray_tracing_motion_blur"], [CapabilityShader]), []),
+        CapabilityVulkanMemoryModelKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, nothing), []),
+        CapabilityVulkanMemoryModelDeviceScopeKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.5.0", v"∞"), nothing, nothing), []),
+        CapabilityPhysicalStorageBufferAddressesEXT * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"1.5.0", v"∞"), ["SPV_EXT_physical_storage_buffer", "SPV_KHR_physical_storage_buffer"], [CapabilityShader]),
+          [],
+        ),
+        CapabilityComputeDerivativeGroupLinearNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_compute_shader_derivatives"], nothing), []),
+        CapabilityRayTracingProvisionalKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_ray_tracing"], [CapabilityShader]), []),
+        CapabilityCooperativeMatrixNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_cooperative_matrix"], [CapabilityShader]), []),
+        CapabilityFragmentShaderSampleInterlockEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_shader_interlock"], [CapabilityShader]), []),
+        CapabilityFragmentShaderShadingRateInterlockEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_shader_interlock"], [CapabilityShader]), []),
+        CapabilityShaderSMBuiltinsNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_sm_builtins"], [CapabilityShader]), []),
+        CapabilityFragmentShaderPixelInterlockEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_fragment_shader_interlock"], [CapabilityShader]), []),
+        CapabilityDemoteToHelperInvocationEXT * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityShader]), []),
+        CapabilityRayTracingOpacityMicromapEXT * U => EnumerantInfo(
+          RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_opacity_micromap"], [CapabilityRayQueryKHR, CapabilityRayTracingKHR]),
+          [],
+        ),
+        CapabilityShaderInvocationReorderNV * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_shader_invocation_reorder"], [CapabilityRayTracingKHR]), []),
+        CapabilityBindlessTextureNV * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_bindless_texture"], nothing), []),
+        CapabilitySubgroupShuffleINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_subgroups"], nothing), []),
+        CapabilitySubgroupBufferBlockIOINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_subgroups"], nothing), []),
+        CapabilitySubgroupImageBlockIOINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_subgroups"], nothing), []),
+        CapabilitySubgroupImageMediaBlockIOINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_media_block_io"], nothing), []),
+        CapabilityRoundToInfinityINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_float_controls2"], nothing), []),
+        CapabilityFloatingPointModeINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_float_controls2"], nothing), []),
+        CapabilityIntegerFunctions2INTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_shader_integer_functions2"], [CapabilityShader]), []),
+        CapabilityFunctionPointersINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_function_pointers"], nothing), []),
+        CapabilityIndirectReferencesINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_function_pointers"], nothing), []),
+        CapabilityAsmINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_inline_assembly"], nothing), []),
+        CapabilityAtomicFloat32MinMaxEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_atomic_float_min_max"], nothing), []),
+        CapabilityAtomicFloat64MinMaxEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_atomic_float_min_max"], nothing), []),
+        CapabilityAtomicFloat16MinMaxEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_atomic_float_min_max"], nothing), []),
+        CapabilityVectorComputeINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_vector_compute"], [CapabilityVectorAnyINTEL]), []),
+        CapabilityVectorAnyINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_vector_compute"], nothing), []),
+        CapabilityExpectAssumeKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_expect_assume"], nothing), []),
+        CapabilitySubgroupAvcMotionEstimationINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_device_side_avc_motion_estimation"], nothing), []),
+        CapabilitySubgroupAvcMotionEstimationIntraINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_device_side_avc_motion_estimation"], nothing), []),
+        CapabilitySubgroupAvcMotionEstimationChromaINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_device_side_avc_motion_estimation"], nothing), []),
+        CapabilityVariableLengthArrayINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_variable_length_array"], nothing), []),
+        CapabilityFunctionFloatControlINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_float_controls2"], nothing), []),
+        CapabilityFPGAMemoryAttributesINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_attributes"], nothing), []),
+        CapabilityFPFastMathModeINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fp_fast_math_mode"], [CapabilityKernel]), []),
+        CapabilityArbitraryPrecisionIntegersINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_arbitrary_precision_integers"], nothing), []),
+        CapabilityArbitraryPrecisionFloatingPointINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_arbitrary_precision_floating_point"], nothing), []),
+        CapabilityUnstructuredLoopControlsINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_unstructured_loop_controls"], nothing), []),
+        CapabilityFPGALoopControlsINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_loop_controls"], nothing), []),
+        CapabilityKernelAttributesINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_kernel_attributes"], nothing), []),
+        CapabilityFPGAKernelAttributesINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_kernel_attributes"], nothing), []),
+        CapabilityFPGAMemoryAccessesINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_memory_accesses"], nothing), []),
+        CapabilityFPGAClusterAttributesINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_cluster_attributes"], nothing), []),
+        CapabilityLoopFuseINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_loop_fuse"], nothing), []),
+        CapabilityFPGADSPControlINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_dsp_control"], nothing), []),
+        CapabilityMemoryAccessAliasingINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_memory_access_aliasing"], nothing), []),
+        CapabilityFPGAInvocationPipeliningAttributesINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_invocation_pipelining_attributes"], nothing), []),
+        CapabilityFPGABufferLocationINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_buffer_location"], nothing), []),
+        CapabilityArbitraryPrecisionFixedPointINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_arbitrary_precision_fixed_point"], nothing), []),
+        CapabilityUSMStorageClassesINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_usm_storage_classes"], nothing), []),
+        CapabilityRuntimeAlignedAttributeINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_runtime_aligned"], nothing), []),
+        CapabilityIOPipesINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_io_pipes"], nothing), []),
+        CapabilityBlockingPipesINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_blocking_pipes"], nothing), []),
+        CapabilityFPGARegINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_reg"], nothing), []),
+        CapabilityDotProductInputAllKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, nothing), []),
+        CapabilityDotProductInput4x8BitKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityInt8]), []),
+        CapabilityDotProductInput4x8BitPackedKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, nothing), []),
+        CapabilityDotProductKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, nothing), []),
+        CapabilityRayCullMaskKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_ray_cull_mask"], nothing), []),
+        CapabilityBitInstructions * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_bit_instructions"], nothing), []),
+        CapabilityGroupNonUniformRotateKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_subgroup_rotate"], [CapabilityGroupNonUniform]), []),
+        CapabilityAtomicFloat32AddEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_atomic_float_add"], nothing), []),
+        CapabilityAtomicFloat64AddEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_atomic_float_add"], nothing), []),
+        CapabilityLongConstantCompositeINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_long_constant_composite"], nothing), []),
+        CapabilityOptNoneINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_optnone"], nothing), []),
+        CapabilityAtomicFloat16AddEXT * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_EXT_shader_atomic_float16_add"], nothing), []),
+        CapabilityDebugInfoModuleINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_debug_module"], nothing), []),
+        CapabilitySplitBarrierINTEL * U => EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_split_barrier"], nothing), []),
+        CapabilityFPGAArgumentInterfacesINTEL * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_INTEL_fpga_argument_interfaces"], nothing), []),
+        CapabilityGroupUniformArithmeticKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_KHR_uniform_group_instructions"], nothing), []),
       ),
     ),
     RayQueryIntersection => EnumInfo(
       RayQueryIntersection,
-      Dict(0 => EnumerantInfo([CapabilityRayQueryKHR], [], v"0.0.0", []), 1 => EnumerantInfo([CapabilityRayQueryKHR], [], v"0.0.0", [])),
+      Dict(
+        RayQueryIntersectionRayQueryCandidateIntersectionKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR]), []),
+        RayQueryIntersectionRayQueryCommittedIntersectionKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR]), []),
+      ),
     ),
     RayQueryCommittedIntersectionType => EnumInfo(
       RayQueryCommittedIntersectionType,
       Dict(
-        0 => EnumerantInfo([CapabilityRayQueryKHR], [], v"0.0.0", []),
-        1 => EnumerantInfo([CapabilityRayQueryKHR], [], v"0.0.0", []),
-        2 => EnumerantInfo([CapabilityRayQueryKHR], [], v"0.0.0", []),
+        RayQueryCommittedIntersectionTypeRayQueryCommittedIntersectionNoneKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR]), []),
+        RayQueryCommittedIntersectionTypeRayQueryCommittedIntersectionTriangleKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR]), []),
+        RayQueryCommittedIntersectionTypeRayQueryCommittedIntersectionGeneratedKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR]), []),
       ),
     ),
     RayQueryCandidateIntersectionType => EnumInfo(
       RayQueryCandidateIntersectionType,
-      Dict(0 => EnumerantInfo([CapabilityRayQueryKHR], [], v"0.0.0", []), 1 => EnumerantInfo([CapabilityRayQueryKHR], [], v"0.0.0", [])),
+      Dict(
+        RayQueryCandidateIntersectionTypeRayQueryCandidateIntersectionTriangleKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR]), []),
+        RayQueryCandidateIntersectionTypeRayQueryCandidateIntersectionAABBKHR * U =>
+          EnumerantInfo(RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityRayQueryKHR]), []),
+      ),
     ),
     PackedVectorFormat => EnumInfo(
       PackedVectorFormat,
-      Dict(0 => EnumerantInfo([], [], v"1.6.0", []), 0 => EnumerantInfo([], ["SPV_KHR_integer_dot_product"], v"1.6.0", [])),
+      Dict(PackedVectorFormatPackedVectorFormat4x8BitKHR * U => EnumerantInfo(RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, nothing), [])),
     ),
   ),
 )

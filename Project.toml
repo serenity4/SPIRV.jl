@@ -1,12 +1,11 @@
 name = "SPIRV"
 uuid = "84138a67-b342-4d33-8200-33cfcca52eb2"
 authors = ["Cédric Belmant"]
-version = "0.5.4"
+version = "0.5.9"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
-AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
 BitMasks = "a3e06817-fd65-4797-8291-16f435bc2529"
 CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 CompileTraces = "92d184ee-bd0d-43d0-b768-a20943f3d1e3"
@@ -15,26 +14,29 @@ ForwardMethods = "5fe2550f-d27e-4649-9aea-fdf9a83a1aa9"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 ResultTypes = "08a2b407-ddc3-586a-afd6-c784ad1fffe2"
 SPIRV_Tools_jll = "6ac6d60f-d740-5983-97d7-a4482c0689f4"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
+StructEquality = "6ec83bb0-ed9f-11e9-3b4c-2b04cb4e219c"
 SwapStreams = "0b152c4a-7e29-418b-9258-223db38db9d9"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
 Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [extensions]
 SPIRVVulkanExt = "Vulkan"
+SPIRVStaticArraysExt = "StaticArrays"
 
 [compat]
 AbstractTrees = "0.4"
 Accessors = "0.1"
-AutoHashEquals = "0.2, 1"
 BitMasks = "0.1"
-CEnum = "0.4.1"
+CEnum = "0.4.1, 0.5"
 CompileTraces = "1"
 Dictionaries = "0.3"
 ForwardMethods = "1"
@@ -43,12 +45,15 @@ MLStyle = "^0.4.11"
 Reexport = "1"
 ResultTypes = "3"
 SnoopPrecompile = "1"
+StaticArrays = "1"
+StructEquality = "2"
 SwapStreams = "0.2"
 julia = "1.9"
 
 [extras]
 MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
+SwiftShader_jll = "c404ff5a-e271-5628-8eaa-423d39d64c15"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MetaGraphs", "Vulkan"]
+test = ["Test", "MetaGraphs", "Vulkan", "SwiftShader_jll", "StaticArrays"]

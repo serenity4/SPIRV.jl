@@ -49,3 +49,9 @@ Base.one(T::Type{<:Mat}) = T(ntuple(Returns(one(coltype(T))), ncols(T))...)
 @noinline AccessChain(m::Mat, index::UInt32, second_index::UInt32) = AccessChain(m, index + second_index * UInt32(nrows(m)))
 
 Base.copyto!(dst::Mat{N,M}, src::Mat{N,M}) where {N,M} = (setindex!(dst, src); dst)
+
+# Other utilities
+
+Base.rand(rng::AbstractRNG, sampler::Random.SamplerType{Mat{N,M,T}}) where {N,M,T} = @force_construct Mat{N,M,T} rand(rng, NTuple{M,NTuple{N,T}})
+Base.rand(rng::AbstractRNG, sampler::Random.SamplerType{Mat{N,M}}) where {N,M} = rand(rng, Mat{N,M,Float32})
+Base.rand(rng::AbstractRNG, sampler::Random.SamplerType{Mat{N}}) where {N} = rand(rng, Mat{N,N})
