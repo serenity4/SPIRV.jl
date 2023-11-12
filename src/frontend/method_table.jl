@@ -23,7 +23,7 @@ function CC.findall(@nospecialize(sig::Type), table::NOverlayMethodTable; limit:
   # XXX: Figure out if ambiguity persists after discarding unconsequential ambiguities.
   ambig = any(x -> x.ambig, results)
   overlayed = any(x -> any(y -> isoverlayed(y.method), x.matches), results)
-  CC.MethodMatchResult(CC.MethodLookupResult(matches, world, ambig), overlayed)
+  CC.MethodLookupResult(matches, world, ambig)
 end
 
 function find_matching_methods(@nospecialize(sig::Type), table::NOverlayMethodTable, limit::Int, find::F) where {F}
@@ -50,8 +50,6 @@ function find_including_ambiguous(@nospecialize(sig::Type), mt::Union{Nothing,Me
 end
 
 isoverlayed(x::Method) = isdefined(x, :external_mt)
-
-method_lookup_result(res::CC.MethodMatchResult) = res.matches
 
 struct OverlayMethodMatch
   match::CC.MethodMatch

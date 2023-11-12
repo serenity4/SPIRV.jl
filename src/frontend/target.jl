@@ -45,7 +45,7 @@ end
 function method_instances(@nospecialize(f), @nospecialize(t), interp::SPIRVInterpreter)
   sig = Base.signature_type(f, t)
   ret = Core.Compiler.findall(sig, interp.method_table, limit = -1)
-  (; matches) = method_lookup_result(ret)
+  (; matches) = ret
   map(Core.Compiler.specialize_method, matches)
 end
 
