@@ -23,6 +23,7 @@ load_module(file) = load_module(load_module_expr(file))
   include("ir.jl");
   include("spvasm.jl");
   include("layouts.jl");
+  include("frontend/types.jl");
   include("serialization.jl");
   include("passes.jl");
   include("codegen.jl");

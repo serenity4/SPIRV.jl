@@ -1,11 +1,14 @@
 module SPIRVStaticArraysExt
 
 using SPIRV
+using SPIRV: @override
+using SPIRV.MathFunctions
+import LinearAlgebra: norm, normalize
 using StaticArrays
 
 for N in 2:4
   @eval Base.convert(::Type{Vec{$N,T}}, x::SVector{$N}) where {T} = Vec{$N,T}(x.data)
-  @eval Base.convert(::Type{<:SVector{$N,T}}, x::Vec{$N}) where {T} = SVector{$N,T}(x.data)
+  @eval Base.convert(::Type{<:SVector{$N,T}}, x::Vec{$N}) where {T} = SVector{$N,T}(ntuple(i -> x[i], $N))
   @eval Base.convert(::Type{Vec{$N}}, x::SVector{$N}) = Vec(x.data)
   @eval Base.convert(::Type{<:SVector{$N}}, x::Vec{$N}) = SVector{$N}(x.data)
   for M in 2:4
@@ -20,5 +23,8 @@ Base.convert(::Type{Arr{N,T}}, x::SVector{N}) where {N,T} = Arr{N,T}(x.data)
 Base.convert(::Type{<:SVector{N,T}}, x::Arr{N}) where {N,T} = SVector{N,T}(x.data)
 Base.convert(::Type{Arr{N}}, x::SVector{N}) where {N} = Arr(x.data)
 Base.convert(::Type{<:SVector{N}}, x::Arr{N}) where {N} = SVector{N}(x.data)
+
+@override normalize(x::StaticVector) = ifelse(iszero(x), x, x / norm(x))
+@override norm(x::StaticVector) = distance(x, zero(x))
 
 end

@@ -46,40 +46,37 @@ end
 """
     AccessChain(v::Pointer{<:Vector}, index)
 
-Get a [`Pointer`](@ref) to the array element of `v` located at `index` using an indexing scheme that depends on the signedness of `index`:
-- An unsigned index will use 0-based indexing.
-- A signed index will use 1-based indexing, but will be explicitly converted to an 0-based unsigned index.
-
+Get a [`Pointer`](@ref) to the array element of `v` located at `index` (using 1-based indexing).
 """
 function AccessChain end
 
 @inline AccessChain(v, i::Integer, indices::Integer...) = AccessChain(v, unsigned_index(i), unsigned_index.(indices)...)
 @noinline AccessChain(v, i::UInt32, indices::UInt32...) = foldl((x, y) -> AccessChain(x, y), (i, indices...); init = v)
 
-@noinline function AccessChain(ptr::Pointer{V}, offset::UInt32) where {T,V<:Vector{T}}
+@noinline function AccessChain(ptr::Pointer{V}, index::UInt32) where {T,V<:Vector{T}}
   (; parent) = ptr
-  isa(parent, V) && return AccessChain(parent, offset)
+  isa(parent, V) && return AccessChain(parent, index)
   @assert isa(parent, UInt64)
   if ismutabletype(T)
     # The array element is an object pointer.
     # Get the object pointer and not a pointer to the array location.
-    objptr = unsafe_load(Ptr{UInt64}(parent), 1 + offset)
+    objptr = unsafe_load(Ptr{UInt64}(parent), index)
     return Pointer{T}(objptr, objptr)
   end
-  new_addr = ptr.addr + offset * Base.elsize(V)
+  new_addr = ptr.addr + (index - one(index)) * Base.elsize(V)
   Pointer{T}(new_addr, new_addr)
 end
 
 # `ptr` must point to a mutable object.
-@noinline AccessChain(ptr::Pointer, offset::UInt32) = AccessChain(ptr[], offset)
+@noinline AccessChain(ptr::Pointer, index::UInt32) = AccessChain(ptr[], index)
 
 # Here, a mutable object `mut` is implicitly treated as a `Pointer` itself, although it is not one.
-@noinline function AccessChain(mut, offset::UInt32)
+@noinline function AccessChain(mut, index::UInt32)
   @assert ismutable(mut)
   T = eltype(mut)
   @assert isconcretetype(T)
-  @boundscheck 0 ≤ offset ≤ length(mut) - 1 || throw(BoundsError(mut, offset))
-  # We need to retrieve a memory address directly pointing at the element at `mut.data[1 + offset]`.
+  @boundscheck 1 ≤ index ≤ length(mut) || throw(BoundsError(mut, index))
+  # We need to retrieve a memory address directly pointing at the element at `mut.data[index]`.
   # Depending on whether elements are mutable objects or not, they may be themselves pointers and
   # we have to deal with the extra indirection.
   if !ismutabletype(T)
@@ -88,12 +85,12 @@ end
     GC.@preserve mut begin
       addr = Ptr{T}(pointer_from_objref(mut))
       stride = Base.elsize(Vector{T})
-      Pointer(addr + offset * stride, mut)
+      Pointer(addr + (index - one(index)) * stride, mut)
     end
   else
     # `T` is mutable, so the contents of elements of `mut` are 8-byte pointers to other objects (`jl_value_t*`).
     # In that case, return the address of the individual object.
-    mut_element = mut.data[1 + offset]
+    mut_element = mut.data[index]
     addr = Ptr{T}(pointer_from_objref(mut_element))
     Pointer(addr, mut_element)
   end
@@ -118,7 +115,7 @@ end
     @load address::T
     @load address[index]::T
 
-Load a value of type `T`, either directly (if no index is specified) or at `index - 1` elements from `address`.
+Load a value of type `T`, either directly (if no index is specified) or at `offset = index - 1` elements from `address`.
 `address` should be a device address, i.e. a `UInt64` value representing the address of a physical storage buffer.
 
 !!! note

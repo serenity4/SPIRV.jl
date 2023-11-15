@@ -1,15 +1,3 @@
-abstract type FunctionPass end
-
-function (pass!::FunctionPass)(ir::IR)
-  for fdef in ir.fdefs
-    new_function!(pass!, fdef)
-    pass!(fdef)
-  end
-  ir
-end
-
-new_function!(pass::FunctionPass, fdef::FunctionDefinition) = pass
-
 struct AddMergeHeaders <: FunctionPass end
 
 add_merge_headers!(ir::IR) = AddMergeHeaders()(ir)
@@ -268,7 +256,6 @@ struct RestructureLoopHeaderConditionals <: FunctionPass
   idcounter::IDCounter
 end
 RestructureLoopHeaderConditionals(ir::IR) = RestructureLoopHeaderConditionals(ir.idcounter)
-new_function!(pass!::RestructureLoopHeaderConditionals, fdef::FunctionDefinition) = nothing
 
 restructure_loop_header_conditionals!(ir::IR) = RestructureLoopHeaderConditionals(ir)(ir)
 

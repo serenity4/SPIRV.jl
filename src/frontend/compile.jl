@@ -82,6 +82,7 @@ function IR(mt::ModuleTarget, tr::Translation)
   ir.tmap = tr.tmap
   ir.metadata = mt.metadata
   fill_phi_branches!(ir)
+  remap_dynamic_1based_indices!(ir)
 end
 
 mutable struct CompilationError <: Exception

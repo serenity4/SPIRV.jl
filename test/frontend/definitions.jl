@@ -70,11 +70,13 @@ function step_euler(agent::BoidAgent, forces::Vec2, Δt)
   BoidAgent(new_position, new_velocity, mass)
 end
 
-wrap_around(position::Vec2) = mod.(position .+ 1F, 2F) .- 1F
+wrap_around(position::Vec2) = Base.mod.(position .+ 1F, 2F) .- 1F
 
 @testset "Definitions" begin
   image = SampledImage(IT(zeros(32, 32)))
   blur = GaussianBlur(1.0, 1.0)
   @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec3)
   @test compute_blur_2(blur, image, zero(Vec2)) == zero(Vec3)
+  agent = BoidAgent(zero(Vec2), one(Vec2), 1.0)
+  @test isa(step_euler(agent, rand(Vec2), rand(Float32)), BoidAgent)
 end;

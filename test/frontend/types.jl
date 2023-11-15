@@ -17,8 +17,8 @@ using StaticArrays
     ptr[] = Vec2(3, 4)
     @test ptr[] == Vec2(3, 4)
     ptr = Pointer(Arr(Vec2(1, 2), Vec2(3, 4)))
-    @test ptr[0U, 1U] == 2
-    @test ptr[1U, 0U] == 3
+    @test ptr[1, 2] == 2
+    @test ptr[2, 1] == 3
 
     @testset "Array pointers" begin
       # Immutable elements.
@@ -146,9 +146,9 @@ using StaticArrays
     @test arr == arr2 == arrz
     arr[1] = 42.0
     @test arr[2] ≠ 42.0
-    @test firstindex(arr) === 0U
-    @test lastindex(arr) === 3U
-    @test eachindex(arr) === 0U:3U
+    @test firstindex(arr) === 1U
+    @test lastindex(arr) === 4U
+    @test eachindex(arr) === 1U:4U
 
     # `Arr` with mutable contents.
     arr = Arr(Vec2(1, 2), Vec2(3, 4))
@@ -178,13 +178,13 @@ using StaticArrays
     img = image_type(SPIRV.ImageFormatRgba32f, SPIRV.Dim2D, 0, false, false, 1)(zeros(Vec4, 32, 32))
 
     @test texel_type(img) === Vec4
-    @test img[0] == zero(Vec4)
-    @test img[0, 0] == zero(Vec4)
-    @test img[31, 31] == zero(Vec4)
-    @test_throws BoundsError img[32, 31] == zero(Vec4)
+    @test img[1] == zero(Vec4)
+    @test img[1, 1] == zero(Vec4)
+    @test img[32, 32] == zero(Vec4)
+    @test_throws BoundsError img[33, 32]
 
-    img[0] = one(Vec4)
-    @test img[0] == one(Vec4)
+    img[1] = one(Vec4)
+    @test img[1] == one(Vec4)
     img[4, 4] = one(Vec4)
     @test img[4, 4] == one(Vec4)
 
@@ -249,7 +249,7 @@ using StaticArrays
     @test typeof(bc) == typeof(arr)
     @test bc == 3 .* one(Arr{3,Float32})
     arr = one(Arr{3,Vec2})
-    bc = getindex.(arr .+ Ref(Vec2(1, 2)), 1U)
+    bc = getindex.(arr .+ Ref(Vec2(1, 2)), 2)
     @test typeof(bc) == Arr{3,Float32}
     @test bc == 3 .* one(Arr{3,Float32})
     arr = Arr(1, 2, 3)

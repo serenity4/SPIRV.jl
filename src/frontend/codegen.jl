@@ -28,7 +28,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
           idx::Integer => idx
           idx::Core.SSAValue => throw_compilation_error("dynamic access into tuple or struct members is not supported")
         end
-        (OpCompositeExtract, (composite, UInt32(field_idx - 1)))
+        (OpCompositeExtract, (composite, field_idx))
       end
       &setfield! => begin
         composite = args[1]
@@ -78,10 +78,15 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
 
   args = collect(args)
 
-  if opcode == OpAccessChain
+  if opcode in (OpCompositeExtract, OpVectorShuffle, OpAccessChain)
     for (i, arg) in enumerate(args)
-      # Force literal in `getindex` to be 32-bit
-      isa(arg, Int) && (args[i] = UInt32(arg))
+      if isa(arg, Integer)
+        # Turn literal 1-based indexing into 0-based literal indexing.
+        # Constant indices in OpAccessChain will later show up as ResultIDs, which will be remapped by `remap_dynamic_1based_indices!`.
+        opcode ≠ OpAccessChain && (arg -= 1U)
+        # Force literal to be 32-bit.
+        args[i] = UInt32(arg)
+      end
     end
   end
 

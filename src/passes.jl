@@ -1,3 +1,16 @@
+abstract type FunctionPass end
+
+function (pass!::FunctionPass)(ir::IR)
+  for fdef in ir.fdefs
+    new_function!(pass!, fdef)
+    pass!(ir, fdef)
+  end
+  ir
+end
+
+new_function!(pass::FunctionPass, fdef::FunctionDefinition) = pass
+(pass!::FunctionPass)(ir::IR, fdef::FunctionDefinition) = pass!(fdef)
+
 """
 Add `Aligned` memory access operands to `Load` instructions that use a pointer associated with a physical storage buffer.
 Which alignment will be used will depend on the provided `LayoutStrategy`.
@@ -66,7 +79,7 @@ argtypes(fdef::FunctionDefinition) = fdef.type.argtypes
 SPIR-V requires all branching nodes to give a result, while Julia does not if the Phi instructions
 will never get used if coming from branches that are not covered.
 We can make use of OpUndef to provide a value, producing it in the incoming nodes
-just before branching to the node which defines an phi instructions.
+just before branching to the node which defines a Phi instruction.
 """
 function fill_phi_branches!(ir::IR)
   for fdef in ir.fdefs
@@ -87,4 +100,52 @@ function fill_phi_branches!(ir::IR)
     end
   end
   ir
+end
+
+"""
+Remap indices from 1-based to 0-based for indexing instructions.
+
+Indexing instructions include those whose opcode is:
+- `VectorExtractDynamic`
+- `AccessChain`
+- `InBoundsAccessChain`
+"""
+struct RemapDynamic1BasedIndices <: FunctionPass end
+
+remap_dynamic_1based_indices!(ir::IR) = RemapDynamic1BasedIndices()(ir)
+
+function index_arguments(ex::Expression)
+  n = lastindex(ex)
+  @match ex.op begin
+    &OpVectorExtractDynamic || &OpAccessChain || &OpInBoundsAccessChain || &OpPtrAccessChain || &OpInBoundsPtrAccessChain => 2:n
+    &OpImageRead && if ex.type.dim ≠ DimSubpassData end || &OpImageWrite || &OpImageFetch || &OpImageSparseFetch || &OpImageSparseRead => 2:2
+    &OpImageTexelPointer => 2:3
+    _ => 1:0
+  end
+end
+
+function (::RemapDynamic1BasedIndices)(ir::IR, fdef::FunctionDefinition)
+  for blk in fdef
+    insert = Pair{Int,Expression}[]
+    for ex in blk
+      if ex.op in (OpVectorExtractDynamic, OpAccessChain, OpInBoundsAccessChain)
+        indices = index_arguments(ex)
+        for i in indices
+          arg = ex[i]
+          if isa(arg, ResultID)
+            j = findfirst(x -> x === ex, blk)
+            get!(() -> next!(ir.idcounter), ir.types, IntegerType(32, false))
+            one = get!(() -> next!(ir.idcounter), ir.constants, Constant(1U))
+            ret = next!(ir.idcounter)
+            decrement = @ex ret = OpISub(arg, one)::IntegerType(32, false)
+            push!(insert, j => decrement)
+            ex[i] = ret
+          end
+        end
+      end
+    end
+    for (i, ex) in reverse(insert)
+      insert!(blk.exs, i, ex)
+    end
+  end
 end

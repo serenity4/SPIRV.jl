@@ -152,8 +152,7 @@ end
 
       (; code) = SPIRV.@code_typed test_constprop4()
       @test !isempty(code)
-      # Constant propagation has been disabled in Core.Compiler for overlaid methods.
-      # @test code[1] == Core.ReturnNode(426.08553692318765)
+      @test code[1] == Core.ReturnNode(426.08553692318765)
 
       function test_constprop5()
         y = exp(2F)
@@ -163,7 +162,7 @@ end
 
       (; code) = SPIRV.@code_typed test_constprop5()
       @test !isempty(code)
-      # @test code[1] == Core.ReturnNode(8.704899f0)
+      @test code[1] == Core.ReturnNode(8.704899f0)
     end
   end
 
@@ -183,20 +182,20 @@ end
 
       (; code, ssavaluetypes) = SPIRV.@code_typed store(v1)
       @test operation.(code[1:(end - 1)]) ==
-            [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
+            [:UConvert, :AccessChain, :Load, :UConvert, :AccessChain, :Load, :FAdd, :UConvert, :AccessChain, :Store]
     end
 
     @testset "Arrays" begin
       (; code, ssavaluetypes) = SPIRV.@code_typed store(::Arr{3, Float64})
       @test operation.(code[1:(end - 1)]) ==
-            [:UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :AccessChain, :Store]
+            [:UConvert, :AccessChain, :Load, :UConvert, :AccessChain, :Load, :FAdd, :UConvert, :AccessChain, :Store]
 
       (; code, ssavaluetypes) = SPIRV.@code_typed store(::Vector{Float64})
       # There may be three more `OpUConvert` + `OpISub` to convert Int64s to UInt32s at runtime.
       # On a few recent versions of Julia, this conversion is optimized away.
       # So we just test that the first 5 instructions and last 2 are correct.
-      @test in(length(code), (8, 14)) # 14 is if the conversions are present.
-      @test filter!(x -> !in(x, (:UConvert, :ISub)), operation.(code))[1:5] ==
+      @test in(length(code), (8, 11)) # 11 is if the conversions are present.
+      @test filter!(x -> !in(x, (:UConvert,)), operation.(code))[1:5] ==
             [:AccessChain, :Load, :AccessChain, :Load, :FAdd]
       @test operation.(code[end-2:end-1]) == [:AccessChain, :Store]
     end
@@ -204,8 +203,7 @@ end
     @testset "Matrix" begin
       (; code, ssavaluetypes) = SPIRV.@code_typed store(::Mat{4, 4, Float64})
       @test operation.(code[1:(end - 1)]) ==
-            [:UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Load, :UConvert, :ISub, :UConvert,
-        :ISub, :AccessChain, :Load, :FAdd, :UConvert, :ISub, :UConvert, :ISub, :AccessChain, :Store]
+            [:UConvert, :UConvert, :AccessChain, :Load, :UConvert, :UConvert, :AccessChain, :Load, :FAdd, :UConvert, :UConvert, :AccessChain, :Store]
     end
 
     @testset "Image" begin

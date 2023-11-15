@@ -57,15 +57,15 @@ Base.size(image::Image, lod::Integer) = size(image, convert(UInt32, lod))
 @noinline ImageQuerySizeLod(image::Image{<:Any,Dim3D}, lod)::Vec{3,UInt32} = Vec{3,UInt32}(size(image.data)...)
 
 @noinline function ImageRead(img::Image{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,T}, coord::Union{Vec{<:Any,<:BitInteger},BitInteger})::T where {T}
-  isa(coord, Integer) && return img.data[coord + 1]
-  img.data[CartesianIndex((coord .+ 1)...)]
+  isa(coord, Integer) && return img.data[coord]
+  img.data[CartesianIndex(coord...)]
 end
 
 @noinline function ImageWrite(img::_Image{T}, coord::Union{Vec{<:Any,<:BitInteger},BitInteger}, texel::T) where {T}
   if isa(coord, Integer)
-    img.data[coord + 1] = texel
+    img.data[coord] = texel
   else
-    img.data[CartesianIndex((coord .+ 1)...)] = texel
+    img.data[CartesianIndex(coord...)] = texel
   end
   nothing
 end

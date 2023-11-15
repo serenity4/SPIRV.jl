@@ -289,4 +289,6 @@ function Base.show(io::IO, mime::MIME"text/plain", ir::IR)
   show(io, mime, mod => ir.debug)
 end
 
-Base.isapprox(ir::IR, mod::Module) = Module(ir) ≈ mod
+Base.isapprox(ir::IR, mod::Module; kwargs...) = isapprox(Module(ir), mod; kwargs...)
+Base.isapprox(mod::Module, ir::IR; kwargs...) = isapprox(ir, mod; kwargs...)
+Base.isapprox(x::IR, y::IR; kwargs...) = isapprox(Module(x), Module(y); kwargs...)

@@ -37,7 +37,7 @@ coltype(::Type{Mat{N,M,T}}) where {N,M,T} = Vec{N,T}
 @forward_methods Mat field = typeof(_) nrows ncols coltype
 
 column(mat::Mat, i::Integer) = CompositeExtract(mat, unsigned_index(i))
-@noinline CompositeExtract(mat::Mat, i::UInt32) = coltype(mat)(mat.cols[i + 1]...)
+@noinline CompositeExtract(mat::Mat, i::UInt32) = coltype(mat)(mat.cols[i]...)
 columns(mat::Mat) = ntuple_uint32(i -> column(mat, i), ncols(mat))
 
 Base.length(::Type{<:Mat{N,M}}) where {N,M} = N * M
@@ -45,8 +45,8 @@ Base.size(T::Type{<:Mat{N,M}}) where {N,M} = (N, M)
 Base.zero(T::Type{<:Mat}) = T(ntuple(Returns(zero(coltype(T))), ncols(T))...)
 Base.one(T::Type{<:Mat}) = T(ntuple(Returns(one(coltype(T))), ncols(T))...)
 
-@noinline CompositeExtract(m::Mat, i::UInt32, j::UInt32) = m.cols[j + 1][i + 1]
-@noinline AccessChain(m::Mat, index::UInt32, second_index::UInt32) = AccessChain(m, index + second_index * UInt32(nrows(m)))
+@noinline CompositeExtract(m::Mat, i::UInt32, j::UInt32) = m.cols[j][i]
+@noinline AccessChain(m::Mat, index::UInt32, second_index::UInt32) = AccessChain(m, index + (second_index - 1U) * UInt32(nrows(m)))
 
 Base.copyto!(dst::Mat{N,M}, src::Mat{N,M}) where {N,M} = (setindex!(dst, src); dst)
 

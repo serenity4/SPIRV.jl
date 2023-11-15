@@ -250,11 +250,12 @@ Module(mod::PhysicalModule) =
 Module(source) = Module(PhysicalModule(source))
 Module(meta::ModuleMetadata, insts::AbstractVector{Instruction}, bound = compute_id_bound(insts)) = Module(meta, bound, insts)
 
-function Base.isapprox(mod1::Module, mod2::Module; compare_debug_info = false)
+function Base.isapprox(mod1::Module, mod2::Module; compare_debug_info = false, renumber = false)
   if !compare_debug_info
     mod1 = strip_debug_info(mod1)
     mod2 = strip_debug_info(mod2)
   end
+  renumber && ((mod1, mod2) = (renumber_ssa(mod1), renumber_ssa(mod2)))
   mod1.meta == mod2.meta && mod1.bound == mod2.bound && Set(mod1.instructions) == Set(mod2.instructions)
 end
 

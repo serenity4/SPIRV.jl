@@ -14,8 +14,7 @@ abstract type AbstractSPIRVArray{T,D} <: AbstractArray{T,D} end
 
 const Scalar = Union{Bool,BitInteger,IEEEFloat}
 
-unsigned_index(x::UInt32) = x
-unsigned_index(x::Signed) = x*U - 1U
+unsigned_index(x::Integer) = convert(UInt32, x)
 
 Base.getindex(arr::AbstractSPIRVArray, indices::Integer...) = Load(AccessChain(arr, unsigned_index.(indices)...))
 Base.setindex!(arr::AbstractSPIRVArray, value, indices...) = setindex!(arr, convert(eltype(arr), value), indices...)
@@ -26,7 +25,7 @@ Base.setindex!(arr1::AbstractSPIRVArray, arr2::AbstractSPIRVArray) = Store(arr1,
 @override setindex!(v::Vector{T}, value::T, index::Integer) where {T} = Store(AccessChain(v, unsigned_index(index)), value)
 
 Base.eltype(::Type{<:AbstractSPIRVArray{T}}) where {T} = T
-Base.firstindex(T::Type{<:AbstractSPIRVArray}, d = 1) = 0U
+Base.firstindex(T::Type{<:AbstractSPIRVArray}, d = 1) = 1U
 Base.lastindex(T::Type{<:AbstractSPIRVArray}, d) = unsigned_index(size(T)[d])
 Base.lastindex(T::Type{<:AbstractSPIRVArray}) = unsigned_index(prod(size(T)))
 Base.eachindex(T::Type{<:AbstractSPIRVArray}) = firstindex(T):lastindex(T)
@@ -65,16 +64,16 @@ Similar to `ntuple`, except that `f` is provided with a 0-based `UInt32` index i
 """
 @inline function ntuple_uint32(f::F, n::Integer) where F
   t = n == 0  ? () :
-      n == 1  ? (f(0U),) :
-      n == 2  ? (f(0U), f(1U)) :
-      n == 3  ? (f(0U), f(1U), f(2U)) :
-      n == 4  ? (f(0U), f(1U), f(2U), f(3U)) :
-      n == 5  ? (f(0U), f(1U), f(2U), f(3U), f(4U)) :
-      n == 6  ? (f(0U), f(1U), f(2U), f(3U), f(4U), f(5U)) :
-      n == 7  ? (f(0U), f(1U), f(2U), f(3U), f(4U), f(5U), f(6U)) :
-      n == 8  ? (f(0U), f(1U), f(2U), f(3U), f(4U), f(5U), f(6U), f(7U)) :
-      n == 9  ? (f(0U), f(1U), f(2U), f(3U), f(4U), f(5U), f(6U), f(7U), f(8U)) :
-      n == 10 ? (f(0U), f(1U), f(2U), f(3U), f(4U), f(5U), f(6U), f(7U), f(8U), f(9U)) :
+      n == 1  ? (f(1U),) :
+      n == 2  ? (f(1U), f(2U)) :
+      n == 3  ? (f(1U), f(2U), f(3U)) :
+      n == 4  ? (f(1U), f(2U), f(3U), f(4U)) :
+      n == 5  ? (f(1U), f(2U), f(3U), f(4U), f(5U)) :
+      n == 6  ? (f(1U), f(2U), f(3U), f(4U), f(5U), f(6U)) :
+      n == 7  ? (f(1U), f(2U), f(3U), f(4U), f(5U), f(6U), f(7U)) :
+      n == 8  ? (f(1U), f(2U), f(3U), f(4U), f(5U), f(6U), f(7U), f(8U)) :
+      n == 9  ? (f(1U), f(2U), f(3U), f(4U), f(5U), f(6U), f(7U), f(8U), f(9U)) :
+      n == 10 ? (f(1U), f(2U), f(3U), f(4U), f(5U), f(6U), f(7U), f(8U), f(9U), f(10U)) :
       _ntuple_uint32(f, n)
   return t
 end

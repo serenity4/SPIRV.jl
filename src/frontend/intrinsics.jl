@@ -10,7 +10,7 @@ consists of one or more calls to declared intrinsic functions (see [`@intrinsic`
 The method will always be inlined.
 """
 macro override(ex)
-  esc(:(@overlay SPIRV.INTRINSICS_METHOD_TABLE @inline $ex))
+  esc(:(SPIRV.@overlay SPIRV.INTRINSICS_METHOD_TABLE @inline $ex))
 end
 
 using Base:

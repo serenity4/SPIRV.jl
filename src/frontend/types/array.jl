@@ -25,7 +25,7 @@ Base.convert(T::Type{<:Arr}, x::Scalar) = T(ntuple(Returns(x), length(T)))
 Base.convert(T::Type{<:Arr}, t::Tuple) = T(t)
 Base.getindex(arr::Arr, index::Int64, other_index::Int64) = arr[index]
 
-@noinline CompositeExtract(arr::Arr, index::UInt32) = arr.data[index + 1]
+@noinline CompositeExtract(arr::Arr, index::UInt32) = arr.data[index]
 
 Base.copyto!(dst::Arr{N}, src::Arr{N}) where {N} = (setindex!(dst, src); dst)
 

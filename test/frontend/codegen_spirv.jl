@@ -238,7 +238,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
   end
 
   @testset "Broadcasting" begin
-    broadcast_test!(v, arr, image) = v .= image(Vec2(1, 2)).rgb .* v .* arr[0U] .* 2f0
+    broadcast_test!(v, arr, image) = v .= image(Vec2(1, 2)).rgb .* v .* arr[1U] .* 2f0
 
     v = Vec3(1, 2, 3)
     image = SampledImage(IT(zeros(32, 32)))
@@ -393,7 +393,6 @@ SUPPORTED_FEATURES = SupportedFeatures(
     end
 
     @testset "Loops" begin
-      # Loops are not supported yet.
       ir = @compile SUPPORTED_FEATURES interp compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
       # TODO: We should not have to do this by hand.
       push!(ir.capabilities, SPIRV.CapabilityVariablePointers)

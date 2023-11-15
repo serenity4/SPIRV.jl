@@ -87,6 +87,7 @@ function generate_ir(ex::Expr)
         isline(st) && continue
         @tryswitch st begin
           @case :($(x::Symbol) = $inst)
+          x === :_ && continue
           !in(x, local_bindings[f]) || throw(ArgumentError("Invalid redefinition of local binding '$x'"))
           push!(local_bindings[f], x)
         end
@@ -147,11 +148,13 @@ function generate_ir(ex::Expr)
         @tryswitch st begin
           @case :($(x::Symbol) = $f($(args...))::$T)
           new_args = map(x -> isa(x, Symbol) ? scoped_ids[x] : x, args)
-          block.args[j] = :($(scoped_ids[x]) = $f($(new_args...))::$(global_ids[T]))
+          scoped_x = x === :_ ? next!(counter) : scoped_ids[x]
+          block.args[j] = :($scoped_x = $f($(new_args...))::$(global_ids[T]))
 
           @case :($(x::Symbol) = $f($(args...)))
           new_args = map(x -> isa(x, Symbol) ? scoped_ids[x] : x, args)
-          block.args[j] = :($(scoped_ids[x]) = $f($(new_args...)))
+          scoped_x = x === :_ ? next!(counter) : scoped_ids[x]
+          block.args[j] = :($scoped_x = $f($(new_args...)))
 
           @case :($f($(args...))::$T)
           new_args = map(x -> isa(x, Symbol) ? scoped_ids[x] : x, args)
@@ -231,7 +234,7 @@ function generate_ir(ex::Expr)
 end
 
 macro spv_ir(ex)
-  generate_ir(ex)
+  propagate_source(__source__, generate_ir(ex))
 end
 
 function generate_module(ex)

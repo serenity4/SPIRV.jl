@@ -6,7 +6,7 @@ end
 Block(id::ResultID) = Block(id, Expression[])
 
 @forward_interface Block field = :exs interface = [iteration, indexing]
-@forward_methods Block field = :exs Base.insert!(_, args...) Base.push!(_, ex::Expression) Base.view(_, range)
+@forward_methods Block field = :exs Base.insert!(_, args...) Base.push!(_, ex::Expression) Base.view(_, range) Base.keys(_)
 
 function termination_instruction(blk::Block)
   ex = blk[end]

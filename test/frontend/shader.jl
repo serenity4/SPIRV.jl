@@ -58,14 +58,16 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
    %4 = OpVariable(Output)::%3
    %5 = OpTypeFunction(%1)
    %8 = OpTypeInt(0x00000020, 0x00000000)
-   %9 = OpConstant(0x00000003)::%8
+   %9 = OpConstant(0x00000004)::%8
   %11 = OpConstant(0x3f800000)::%1
   %12 = OpTypeVoid()
   %13 = OpTypeFunction(%12)
-  %17 = OpTypePointer(Output, %1)
+  %17 = OpConstant(0x00000001)::%8
+  %19 = OpTypePointer(Output, %1)
    %6 = OpFunction(None, %5)::%1
    %7 = OpLabel()
-  %10 = OpAccessChain(%4, %9)::%17
+  %18 = OpISub(%9, %17)::%8
+  %10 = OpAccessChain(%4, %18)::%19
         OpStore(%10, %11)
         OpReturnValue(%11)
         OpFunctionEnd()
