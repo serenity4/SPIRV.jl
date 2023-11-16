@@ -1,27 +1,4 @@
-@MethodTable INTRINSICS_METHOD_TABLE
-
-"""
-Declare a new method as part of the intrinsics method table.
-
-This new method declaration should override a method from `Base`,
-typically one that would call core intrinsics. Its body typically
-consists of one or more calls to declared intrinsic functions (see [`@intrinsic`](@ref)).
-
-The method will always be inlined.
-"""
-macro override(ex)
-  esc(:(SPIRV.@overlay SPIRV.INTRINSICS_METHOD_TABLE @inline $ex))
-end
-
-using Base:
-  IEEEFloat,
-  BitSigned, BitSigned_types,
-  BitUnsigned, BitUnsigned_types,
-  BitInteger, BitInteger_types
-
-const IEEEFloat_types = (Float16, Float32, Float64)
-
-const SmallFloat = Union{Float16,Float32}
+const FloatScalarOrVec = Union{IEEEFloat, Vec{<:Any,IEEEFloat}}
 
 # Definition of intrinsics and redirection (overrides) of Base methods to use these intrinsics.
 # Intrinsic definitions need not be applicable only to supported types. Any signature
@@ -35,24 +12,24 @@ const SmallFloat = Union{Float16,Float32}
 
 ## Arithmetic operations.
 
-@override (-)(x::IEEEFloat)                     = FNegate(x)
+@override (-)(x::FloatScalarOrVec)                     = FNegate(x)
 @noinline FNegate(x::T) where {T<:IEEEFloat}    = Base.neg_float(x)
-@override (+)(x::T, y::T) where {T<:IEEEFloat}  = FAdd(x, y)
+@override (+)(x::T, y::T) where {T<:FloatScalarOrVec}  = FAdd(x, y)
 @noinline FAdd(x::T, y::T) where {T<:IEEEFloat} = Base.add_float(x, y)
-@override (*)(x::T, y::T) where {T<:IEEEFloat}  = FMul(x, y)
+@override (*)(x::T, y::T) where {T<:FloatScalarOrVec}  = FMul(x, y)
 @noinline FMul(x::T, y::T) where {T<:IEEEFloat} = Base.mul_float(x, y)
-@override (-)(x::T, y::T) where {T<:IEEEFloat}  = FSub(x, y)
+@override (-)(x::T, y::T) where {T<:FloatScalarOrVec}  = FSub(x, y)
 @noinline FSub(x::T, y::T) where {T<:IEEEFloat} = Base.sub_float(x, y)
-@override (/)(x::T, y::T) where {T<:IEEEFloat}  = FDiv(x, y)
+@override (/)(x::T, y::T) where {T<:FloatScalarOrVec}  = FDiv(x, y)
 @noinline FDiv(x::T, y::T) where {T<:IEEEFloat} = Base.div_float(x, y)
-@override rem(x::T, y::T) where {T<:IEEEFloat}  = FRem(x, y)
+@override rem(x::T, y::T) where {T<:FloatScalarOrVec}  = FRem(x, y)
 @noinline FRem(x::T, y::T) where {T<:IEEEFloat} = @static if VERSION < v"1.10.0-DEV.101"
   Base.rem_float(x, y)::T
 else
   copysign(Base.rem_internal(abs(x), abs(y)), x)::T
 end
 
-@override mod(x::T, y::T) where {T<:IEEEFloat}  = FMod(x, y)
+@override mod(x::T, y::T) where {T<:FloatScalarOrVec} = FMod(x, y)
 @noinline function FMod(x::T, y::T) where {T<:IEEEFloat}
   r = rem(x, y)
   if r == 0

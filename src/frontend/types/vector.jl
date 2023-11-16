@@ -22,6 +22,8 @@ const Vec4 = Vec{4,Float32}
   Expr(:new, Vec{N,T}, :data)
 end)
 
+# AbstractArray interface.
+
 Base.length(::Type{<:Vec{N}}) where {N} = N
 Base.size(T::Type{<:Vec}) = (length(T),)
 Base.axes(T::Type{<:Vec}) = (Base.OneTo(length(T)),)
@@ -29,16 +31,46 @@ Base.zero(T::Type{<:Vec}) = T(ntuple(Returns(zero(eltype(T))), length(T)))
 Base.one(T::Type{<:Vec}) = T(ntuple(Returns(one(eltype(T))), length(T)))
 Base.promote_rule(::Type{Vec{N,T1}}, ::Type{Vec{N,T2}}) where {N,T1,T2} = Vec{N,promote_type(T1, T2)}
 Base.promote_rule(S::Type{<:Scalar}, ::Type{Vec{N,T}}) where {N,T} = Vec{N,promote_type(T, S)}
+
+# Conversions.
+
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:IEEEFloat}) where {N,T<:IEEEFloat} = FConvert(Vec{N,T}, v)
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:BitSigned}) where {N,T<:BitSigned} = SConvert(Vec{N,T}, v)
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:BitUnsigned}) where {N,T<:BitUnsigned} = UConvert(Vec{N,T}, v)
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:BitSigned}) where {N,T<:IEEEFloat} = ConvertSToF(Vec{N,T}, v)
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:BitUnsigned}) where {N,T<:IEEEFloat} = ConvertUToF(Vec{N,T}, v)
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:IEEEFloat}) where {N,T<:BitSigned} = ConvertFToS(Vec{N,T}, v)
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:IEEEFloat}) where {N,T<:BitUnsigned} = ConvertFToU(Vec{N,T}, v)
 Base.convert(::Type{Vec{N,T1}}, v::Vec{N,T2}) where {N,T1,T2} = Vec{N,T1}(ntuple_uint32(i -> convert(T1, @inbounds v[i]), N)...)
+
+## No-op conversions.
 Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T} = v
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T<:Union{IEEEFloat}} = v
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T<:Union{BitSigned}} = v
+Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T<:Union{BitUnsigned}} = v
+
 Base.convert(T::Type{<:Vec}, x::Scalar) = T(ntuple(Returns(x), length(T)))
 Base.convert(T::Type{<:Vec}, t::Tuple) = T(t)
 # For some reason, the default display on `AbstractArray` really wants to treat one-dimensional vectors as two-dimensional...
 Base.getindex(v::Vec, index::Int64, other_index::Int64) = v[index]
 
+@noinline FConvert(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline SConvert(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline UConvert(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline ConvertSToF(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline ConvertUToF(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline ConvertFToS(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline ConvertFToU(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+convert_vec(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = Vec{N,T}(ntuple_uint32(i -> convert(T, @inbounds v[i]), N)...)
+
 @noinline CompositeExtract(v::Vec, index::UInt32) = v.data[index]
 
-Base.copyto!(dst::Vec{N}, src::Vec{N}) where {N} = (setindex!(dst, src); dst)
+# Accessors.
+
+Base.propertynames(::Type{<:Vec{1}}) = (:x,)
+Base.propertynames(::Type{<:Vec{2}}) = (:x, :y)
+Base.propertynames(::Type{<:Vec{3}}) = (:x, :y, :z, :r, :g, :b)
+Base.propertynames(::Type{<:Vec{4}}) = (:x, :y, :z, :w, :r, :g, :b, :a)
 
 function Base.getproperty(v::Vec, prop::Symbol)
   prop === :data && return getfield(v, :data)
@@ -121,6 +153,10 @@ end
   v
 end
 
+# Mutation.
+
+Base.copyto!(dst::Vec{N}, src::Vec{N}) where {N} = (setindex!(dst, src); dst)
+
 function setslice!(v::Vec, value, indices...)
   ntuple(i -> setindex!(v, value[i], indices[i]), length(indices))
   value
@@ -196,15 +232,20 @@ function Base.setproperty!(v::Vec, prop::Symbol, val)
   error("type $(typeof(v)) has no field $prop")
 end
 
-Base.propertynames(::Type{<:Vec{1}}) = (:x,)
-Base.propertynames(::Type{<:Vec{2}}) = (:x, :y)
-Base.propertynames(::Type{<:Vec{3}}) = (:x, :y, :z, :r, :g, :b)
-Base.propertynames(::Type{<:Vec{4}}) = (:x, :y, :z, :w, :r, :g, :b, :a)
+# Math operations.
 
-# Define binary vector operations.
+import LinearAlgebra: cross
+
+cross(x::Vec{2}, y::Vec{2}) = x.x * y.y - x.y * y.x
+
+## Binary vector operations.
 for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, :Mod))
   # Define FAdd, IMul, etc. for vectors of matching type.
   opF, opI = Symbol.((:F, :I), op)
+
+  @eval Base.$f(x::Vec{N,T}, y::Vec{N,T}) where {N,T<:IEEEFloat} = $opF(x, y)
+  @eval Base.$f(x::Vec{N,T}, y::Vec{N,T}) where {N,T<:BitInteger} = $opI(x, y)
+  @eval Base.$f(x::Vec{N}, y::Vec{N}) where {N} = $f(promote(x, y)...)
 
   for (opX, XT) in zip((opF, opI), (:IEEEFloat, :BitInteger))
     @eval @noinline $opX(v1::T, v2::T) where {T<:Vec{<:Any,<:$XT}} = vectorize($f, v1, v2)
@@ -221,12 +262,7 @@ end
 @eval Atan2(v1::Vec{N}, v2::Vec{N}) where {N} = Atan2(promote(v1, v2)...)
 @eval Base.broadcasted(::typeof(atan), v1::T, v2::T) where {T<:Vec{<:Any,<:SmallFloat}} = Atan2(v1, v2)
 
-# Define arithmetic operations on vectors.
-for f in (:+, :-)
-  @eval Base.$f(v1::Vec{N}, v2::Vec{N}) where {N} = broadcast($f, v1, v2)
-end
-
-# Define unary vector operations.
+## Unary vector operations.
 for (f, op) in zip((:ceil, :exp), (:Ceil, :Exp))
   @eval @noinline $op(v::Vec) = vectorize($f, v)
   @eval Base.broadcasted(::typeof($f), v::Vec) = $op(v)
@@ -236,6 +272,8 @@ end
 vectorize(op, v1::T, v2::T) where {T<:Vec} = Vec(op.(v1.data, v2.data))
 vectorize(op, v::T, x::Scalar) where {T<:Vec} = Vec(op.(v.data, x))
 vectorize(op, v::T) where {T<:Vec} = Vec(op.(v.data))
+
+# Vector utilities.
 
 Base.:(==)(x::T, y::T) where {T<:Vec} = all(x .== y)
 Base.:(==)(x::Vec{N}, y::Vec{N}) where {N} = (==)(promote(x, y)...)
@@ -247,10 +285,6 @@ Base.all(x::Vec{<:Any,Bool}) = All(x)
 @noinline All(x::Vec{<:Any,Bool}) = all(x.data)
 
 # Mathematical operators.
-
-import LinearAlgebra: cross
-
-cross(x::Vec{2}, y::Vec{2}) = x.x * y.y - x.y * y.x
 
 # Other utilities
 

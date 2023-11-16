@@ -25,7 +25,14 @@ using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, Me
   WorldRange, OverlayMethodTable
 const CC = Core.Compiler
 using Base.Experimental: @overlay, @MethodTable
-using Base: Fix1, Fix2
+using Base: Fix1, Fix2,
+            IEEEFloat,
+            BitSigned, BitSigned_types,
+            BitUnsigned, BitUnsigned_types,
+            BitInteger, BitInteger_types
+
+const IEEEFloat_types = (Float16, Float32, Float64)
+const SmallFloat = Union{Float16,Float32}
 
 import SPIRV_Tools_jll
 const spirv_val = SPIRV_Tools_jll.spirv_val()
@@ -81,7 +88,7 @@ include("analysis/control_flow.jl")
 
 include("frontend/ci_cache.jl")
 include("frontend/method_table.jl")
-include("frontend/intrinsics.jl")
+include("frontend/overlay.jl")
 include("frontend/types/abstractarray.jl")
 include("frontend/types/pointer.jl")
 include("frontend/types/vector.jl")
@@ -90,10 +97,11 @@ include("frontend/types/array.jl")
 include("frontend/types/image.jl")
 include("frontend/types/broadcast.jl")
 include("frontend/types/base/ranges.jl")
+include("frontend/intrinsics.jl")
+include("frontend/intrinsics_glsl.jl")
 include("frontend/MathFunctions.jl")
 include("layouts.jl")
 include("serialization.jl")
-include("frontend/intrinsics_glsl.jl")
 include("frontend/interpreter.jl")
 include("frontend/ci_passes.jl")
 include("frontend/target.jl")

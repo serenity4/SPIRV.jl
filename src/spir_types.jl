@@ -201,12 +201,15 @@ function spir_type(@nospecialize(t::Union{Union, Type{Union{}}}), tmap::Optional
   error("Can't get a SPIR-V type for $t; unions are not supported at the moment.")
 end
 
+remap_type(@nospecialize(t::DataType)) = t
+
 """
 Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is provided.
 
 If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
 """
 function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing; wrap_mutable = false, storage_class = nothing, fill_tmap = true)
+  t = remap_type(t)
   wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, spir_type(t, tmap))
   !isnothing(tmap) && isnothing(storage_class) && haskey(tmap, t) && return tmap[t]
   type = @match t begin

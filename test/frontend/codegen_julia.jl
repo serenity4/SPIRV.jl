@@ -243,7 +243,7 @@ end
     @test_code ci minlength = 13 maxlength = 13 # 4 accesses, 2 logical operators, 1 vector construction, 1 logical operator, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec{2,Int32}, ::Vec{2,Float32})
-    @test_code ci minlength = 20 maxlength = 20 # A bunch of promotion/conversion operations.
+    @test_code ci minlength = 14 maxlength = 14 # A bunch of promotion/conversion operations.
 
     ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec2, ::Vec3)
     @test_code ci minlength = 1 maxlength = 1 # 1 return (false)
@@ -295,6 +295,15 @@ end
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float64}}, ::Arr{3,Float32})
     @test_code ci minlength = 11 maxlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Vec2}, ::Vec{2,Float16})
+    @test_code ci minlength = 2 maxlength = 2 # 1 FConvert on vectors, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Vec2}, ::Vec{2,UInt32})
+    @test_code ci minlength = 2 maxlength = 2 # 1 ConvertUToF on vectors, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source +(::Vec2, ::Vec{2,Float16})
+    @test_code ci minlength = 3 maxlength = 3 # 1 FConvert, 1 FAdd, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source lerp(::Vec2, ::Vec2, ::Float32)
     @test_code ci minlength = 7 maxlength = 17 # A bunch of math operations, code length is variable due to the possibility of constructing intermediate vectors.
