@@ -240,10 +240,10 @@ end
     @test_code ci minlength = 2 maxlength = 2 # 2 accesses, 1 logical operation, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec2, ::Vec2)
-    @test_code ci minlength = 13 maxlength = 13 # 4 accesses, 2 logical operators, 1 vector construction, 1 logical operator, 1 return
+    @test_code ci minlength = 3 maxlength = 3 # 1 vector operation, 1 logical operation, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec{2,Int32}, ::Vec{2,Float32})
-    @test_code ci minlength = 14 maxlength = 14 # A bunch of promotion/conversion operations.
+    @test_code ci minlength = 4 maxlength = 4 # 1 vector conversion + the above
 
     ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec2, ::Vec3)
     @test_code ci minlength = 1 maxlength = 1 # 1 return (false)
@@ -333,6 +333,20 @@ end
     @test_code ci minlength = 100 maxlength = 400 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source step_euler(::BoidAgent, ::Vec2, ::Float32)
-    @test_code ci minlength = 50 maxlength = 70 spirv_chunk = false # Assumes that `wrap_around` is inlined, otherwise should be fewer lines.
+    @test_code ci minlength = 44 maxlength = 70 spirv_chunk = false # Assumes that `wrap_around` is inlined, otherwise should be fewer lines.
+
+    @testset "Static arrays integration" begin
+      ci = SPIRV.@code_typed debuginfo=:source convert(::Type{SVector{2,Float32}}, ::Vec2)
+      @test_code ci minlength = 2 maxlength = 2 spirv_chunk = false
+
+      ci = SPIRV.@code_typed debuginfo=:source (==)(::SVector{2,Float32}, ::SVector{2,Float32})
+      @test_code ci minlength = 4 maxlength = 8 spirv_chunk = false # at least 2 convert_native, 1 FOrdEqual and 1 return (there can also be 4 `nothing`s at the beginning)
+
+      ci = SPIRV.@code_typed debuginfo=:source (==)(::SVector{2,Float32}, ::SVector{2,Float16})
+      @test_code ci minlength = 5 maxlength = 9 spirv_chunk = false # same with 1 more conversion
+
+      ci = SPIRV.@code_typed debuginfo=:source (==)(::SVector{2,Float32}, ::Vec2)
+      @test_code ci minlength = 6 maxlength = 6 spirv_chunk = false # 3 convert_native, 1 vector operation, 1 logical operation, 1 return
+    end
   end
 end;

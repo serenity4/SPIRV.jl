@@ -12,6 +12,7 @@ Vec(components::Scalar...) = Vec(promote(components...)...)
 Vec(components::T...) where {T<:Scalar} = Vec{length(components),T}(components...)
 Vec(components::Tuple) = Vec(components...)
 Vec{T}(components...) where {T<:Scalar} = Vec{length(components),T}(convert.(T, components)...)
+Vec(v::Vec) = v
 
 const Vec2 = Vec{2,Float32}
 const Vec3 = Vec{3,Float32}
@@ -246,6 +247,8 @@ for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, 
   @eval Base.$f(x::Vec{N,T}, y::Vec{N,T}) where {N,T<:IEEEFloat} = $opF(x, y)
   @eval Base.$f(x::Vec{N,T}, y::Vec{N,T}) where {N,T<:BitInteger} = $opI(x, y)
   @eval Base.$f(x::Vec{N}, y::Vec{N}) where {N} = $f(promote(x, y)...)
+  @eval Base.$f(x::Vec, y::AbstractVector) = $f(promote(x, y)...)
+  @eval Base.$f(x::AbstractVector, y::Vec) = $f(promote(x, y)...)
 
   for (opX, XT) in zip((opF, opI), (:IEEEFloat, :BitInteger))
     @eval @noinline $opX(v1::T, v2::T) where {T<:Vec{<:Any,<:$XT}} = vectorize($f, v1, v2)
@@ -275,9 +278,15 @@ vectorize(op, v::T) where {T<:Vec} = Vec(op.(v.data))
 
 # Vector utilities.
 
-Base.:(==)(x::T, y::T) where {T<:Vec} = all(x .== y)
+Base.:(==)(x::T, y::T) where {T<:Vec} = All(equal(x, y))
 Base.:(==)(x::Vec{N}, y::Vec{N}) where {N} = (==)(promote(x, y)...)
-Base.:(==)(x::Vec, y::Vec) = false
+Base.:(==)(::Vec, ::Vec) = false
+Base.:(==)(x::Vec, y::AbstractVector) = (==)(promote(x, y)...)
+Base.:(==)(x::AbstractVector, y::Vec) = (==)(promote(x, y)...)
+equal(x::T, y::T) where {VT<:BitInteger,T<:Vec{<:Any,VT}} = IEqual(x, y)
+@noinline IEqual(x, y) = x .== y
+equal(x::T, y::T) where {VT<:IEEEFloat,T<:Vec{<:Any,VT}} = FOrdEqual(x, y)
+@noinline FOrdEqual(x, y) = x .== y
 
 Base.any(x::Vec{<:Any,Bool}) = Any(x)
 @noinline Any(x::Vec{<:Any,Bool}) = any(x.data)

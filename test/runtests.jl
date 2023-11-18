@@ -1,6 +1,7 @@
 using SPIRV, Test
 using SPIRV: @shader, @compute, @vertex, @fragment, @compute, @any_hit, @mesh
 using SPIRV.MathFunctions
+using StaticArrays
 
 include("vulkan_driver.jl")
 

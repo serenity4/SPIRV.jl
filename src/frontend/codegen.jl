@@ -263,5 +263,6 @@ function literals_to_const!(args, mt::ModuleTarget, tr::Translation, opcode)
 end
 
 function emit_new!(mt::ModuleTarget, tr::Translation, interp::SPIRVInterpreter, mi::MethodInstance, fdef::FunctionDefinition, variables)
-  emit!(mt, Translation(tr.tmap, tr.types), SPIRVTarget(mi, interp), variables)
+  target = SPIRVTarget(mi, interp)
+  emit!(mt, Translation(target, tr.tmap, tr.types), target, variables)
 end

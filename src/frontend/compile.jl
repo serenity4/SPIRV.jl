@@ -38,15 +38,16 @@ struct Translation
   globalrefs::Dictionary{Core.SSAValue,GlobalRef}
 end
 
-function Translation(target::SPIRVTarget)
+function Translation(target::SPIRVTarget, tmap, types)
   spectypes = collect(target.mi.specTypes.types)
   kept_args = findall(T -> !(T <: Base.Callable), spectypes)
   argtypes = spectypes[kept_args]
   argmap = BijectiveMapping(Dictionary(eachindex(kept_args), Core.Argument.(kept_args)))
-  Translation(argtypes, argmap)
+  Translation(argtypes, argmap, tmap, types)
 end
-Translation() = Translation([], BijectiveMapping())
-Translation(argtypes, argmap) = Translation(argtypes, argmap, Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), TypeMap(), Dictionary(), Dictionary())
+Translation(target::SPIRVTarget) = Translation(target, TypeMap(), Dictionary())
+Translation() = Translation([], BijectiveMapping(), TypeMap(), Dictionary())
+Translation(argtypes, argmap, tmap, types) = Translation(argtypes, argmap, Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), tmap, types, Dictionary())
 
 ResultID(arg::Core.Argument, tr::Translation) = tr.args[arg]
 ResultID(bb::Int, tr::Translation) = tr.bbs[bb]
@@ -293,6 +294,16 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     if Meta.isexpr(jinst, :boundscheck)
       # Act as if bounds checking was disabled, emitting a constant instead of the actual condition.
       insert!(tr.results, core_ssaval, emit!(mt, tr, Constant(jinst.args[1])))
+      continue
+    end
+    if Meta.isexpr(jinst, :invoke) && begin
+        mi = jinst.args[1]
+        isa(mi, MethodInstance) && mi.def.name === :convert_native
+      end
+      # Ignore conversions that only occur in a native code generation context
+      # such as Vec <-> SVector conversions.
+      x = jinst.args[4]
+      insert!(tr.results, core_ssaval, ResultID(x, tr))
       continue
     end
     jtype = ssavaluetypes[i]

@@ -272,7 +272,7 @@ using StaticArrays
     @test ceil.(v .* 0.3F .+ exp.(v)) == Vec2(4, 8)
     v .+= v
     @test v == Vec2(2, 4)
-    @test [1, 2] .+ Vec2(2, 4) == Vec2(3, 6)
+    @test (1, 2) .+ Vec2(2, 4) == Vec2(3, 6)
 
     # TODO: Add support for the following broadcast operations:
     # ::Arr{1000,Float32} .+ ::Float32 # using a loop

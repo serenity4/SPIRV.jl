@@ -10,6 +10,7 @@ Arr(components...) = Arr(promote(components...)...)
 Arr(components::T...) where {T} = Arr{length(components),T}(components...)
 Arr(components::Tuple) = Arr(components...)
 Arr{T}(components...) where {T} = Arr{length(components),T}(convert.(T, components)...)
+Arr(arr::Arr) = arr
 
 @noinline (@generated CompositeConstruct(::Type{Arr{N,T}}, data::T...) where {N,T} = Expr(:new, Arr{N,T}, :data))
 

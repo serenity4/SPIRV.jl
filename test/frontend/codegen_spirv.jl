@@ -415,4 +415,26 @@ SUPPORTED_FEATURES = SupportedFeatures(
     @test unwrap(validate(@compile (x -> trunc(UInt32, x))(::Float32)))
     @test_throws "Memory accesses with PhysicalStorageBuffer must use Aligned" unwrap(validate(@compile (x -> @store x::Int32 = Int32(0))(::UInt64)))
   end
+
+  @testset "StaticArrays built-in support" begin
+    ir = @compile +(::SVector{2,Float32}, ::SVector{2,Float32})
+    expected = @spv_ir begin
+      Float32 = TypeFloat(32)
+      Vec2 = TypeVector(Float32, 2U)
+      Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
+      @function var"+_Tuple{SVector{2,Float32},SVector{2,Float32}}"(x::Vec2Ptr, y::Vec2Ptr)::Vec2 begin
+        b1 = Label()
+        _x = Load(x)::Vec2
+        _y = Load(y)::Vec2
+        ret = FAdd(_x, _y)::Vec2
+        ReturnValue(ret)
+      end
+    end
+    @test unwrap(validate(ir))
+    @test ir ≈ expected
+
+    SPIRV.@code_typed debuginfo=:source +(::SVector{2,Float16}, ::SVector{2,Float32})
+    ir = @compile +(::SVector{2,Float16}, ::SVector{2,Float32})
+    @test unwrap(validate(ir))
+  end
 end;
