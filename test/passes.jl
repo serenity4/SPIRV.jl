@@ -1,5 +1,5 @@
 using SPIRV, Test, Accessors
-using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!
+using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!
 
 @testset "Passes" begin
   @testset "SSA renumbering" begin
@@ -114,5 +114,37 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
       @test unwrap(validate(expected))
       @test ir ≈ expected renumber = true
     end
+  end
+
+  @testset "Dynamic index to literal" begin
+    ir = @spv_ir begin
+      Float32 = TypeFloat(32)
+      UInt32 = TypeInt(32, false)
+      Vec2 = TypeVector(Float32, 2)
+      index = Constant(0U)::UInt32
+      @function f(x::Vec2)::Float32 begin
+        _ = Label()
+        ret = CompositeExtract(x, index)::Float32
+        ReturnValue(ret)
+      end
+    end
+    # The validator will take the index value to be the result ID, and not its constant value.
+    @test_throws "out of bounds" unwrap(validate(ir))
+
+    expected = @spv_ir begin
+      Float32 = TypeFloat(32)
+      UInt32 = TypeInt(32, false)
+      Vec2 = TypeVector(Float32, 2)
+      index = Constant(0U)::UInt32
+      @function f(x::Vec2)::Float32 begin
+        _ = Label()
+        ret = CompositeExtract(x, 0U)::Float32
+        ReturnValue(ret)
+      end
+    end
+
+    composite_extract_dynamic_to_literal!(ir)
+    @test ir == expected
+    @test unwrap(validate(ir))
   end
 end;

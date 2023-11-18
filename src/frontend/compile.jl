@@ -84,6 +84,8 @@ function IR(mt::ModuleTarget, tr::Translation)
   ir.metadata = mt.metadata
   fill_phi_branches!(ir)
   remap_dynamic_1based_indices!(ir)
+  # TODO: Enable when constant propagation has been run (at least for `UConvert`s/`ISub`s).
+  # composite_extract_dynamic_to_literal!(ir)
 end
 
 mutable struct CompilationError <: Exception
