@@ -7,7 +7,7 @@ function emit(io::IO, inst::Instruction)
     print(io, " = ")
   end
 
-  printstyled(io, inst.opcode; color = :light_cyan)
+  printstyled(io, replace(string(inst.opcode), r"^Op" => ""); color = :light_cyan)
 
   print(io, '(')
 
