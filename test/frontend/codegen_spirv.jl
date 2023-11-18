@@ -1,11 +1,11 @@
 using SPIRV, Test
 
 base_capabilities = """
-  OpCapability(VulkanMemoryModel)
+  Capability(VulkanMemoryModel)
 """
 shader_capabilities = """
   $base_capabilities
-  OpCapability(Shader)
+  Capability(Shader)
 """
 base_extensions = """
 """
@@ -46,24 +46,24 @@ SUPPORTED_FEATURES = SupportedFeatures(
         $base_capabilities
         $base_extensions
         $memory_model
-   %1 = OpTypeFloat(0x00000020)
-   %2 = OpTypeVector(%1, 0x00000004)
-   %3 = OpTypePointer(Function, %2)
-   %4 = OpTypeFunction(%2, %3)
-  %13 = OpConstant(0x3f800000)::%1
-   %5 = OpFunction(None, %4)::%2
-   %6 = OpFunctionParameter()::%3
-   %7 = OpLabel()
-  %12 = OpVariable(Function)::%3
-   %8 = OpLoad(%6)::%2
-   %9 = OpCompositeExtract(%8, 0x00000000)::%1
-  %10 = OpLoad(%6)::%2
-  %11 = OpCompositeExtract(%10, 0x00000001)::%1
-  %14 = OpCompositeConstruct(%9, %11, %13, %13)::%2
-        OpStore(%12, %14)
-  %15 = OpLoad(%12)::%2
-        OpReturnValue(%15)
-        OpFunctionEnd()
+   %1 = TypeFloat(0x00000020)
+   %2 = TypeVector(%1, 0x00000004)
+   %3 = TypePointer(Function, %2)
+   %4 = TypeFunction(%2, %3)
+  %13 = Constant(0x3f800000)::%1
+   %5 = Function(None, %4)::%2
+   %6 = FunctionParameter()::%3
+   %7 = Label()
+  %12 = Variable(Function)::%3
+   %8 = Load(%6)::%2
+   %9 = CompositeExtract(%8, 0x00000000)::%1
+  %10 = Load(%6)::%2
+  %11 = CompositeExtract(%10, 0x00000001)::%1
+  %14 = CompositeConstruct(%9, %11, %13, %13)::%2
+        Store(%12, %14)
+  %15 = Load(%12)::%2
+        ReturnValue(%15)
+        FunctionEnd()
       """
     )
 
@@ -80,17 +80,17 @@ SUPPORTED_FEATURES = SupportedFeatures(
         $base_capabilities
         $base_extensions
         $memory_model
-   %1 = OpTypeBool()
-   %2 = OpTypeInt(0x00000020, 0x00000001)
-   %3 = OpTypeStruct(%1, %2)
-   %4 = OpTypeFunction(%3, %1, %2)
-   %5 = OpFunction(None, %4)::%3
-   %6 = OpFunctionParameter()::%1
-   %7 = OpFunctionParameter()::%2
-   %8 = OpLabel()
-   %9 = OpCompositeConstruct(%6, %7)::%3
-        OpReturnValue(%9)
-        OpFunctionEnd()
+   %1 = TypeBool()
+   %2 = TypeInt(0x00000020, 0x00000001)
+   %3 = TypeStruct(%1, %2)
+   %4 = TypeFunction(%3, %1, %2)
+   %5 = Function(None, %4)::%3
+   %6 = FunctionParameter()::%1
+   %7 = FunctionParameter()::%2
+   %8 = Label()
+   %9 = CompositeConstruct(%6, %7)::%3
+        ReturnValue(%9)
+        FunctionEnd()
       """
     )
 
@@ -116,29 +116,29 @@ SUPPORTED_FEATURES = SupportedFeatures(
         $shader_capabilities
         $base_extensions
         $memory_model
-   %1 = OpTypeFloat(0x00000020)
-   %2 = OpTypeVector(%1, 0x00000004)
-   %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
-   %4 = OpTypeSampledImage(%3)
-   %5 = OpTypeFunction(%2, %4)
-  %10 = OpTypeVector(%1, 0x00000002)
-  %11 = OpTypePointer(Function, %10)
-  %12 = OpConstant(0x40400000)::%1
-  %13 = OpConstant(0x40800000)::%1
-  %16 = OpTypePointer(Function, %2)
-   %6 = OpFunction(None, %5)::%2
-   %7 = OpFunctionParameter()::%4
-   %8 = OpLabel()
-   %9 = OpVariable(Function)::%11
-  %15 = OpVariable(Function)::%16
-  %14 = OpCompositeConstruct(%12, %13)::%10
-        OpStore(%9, %14)
-  %17 = OpLoad(%9)::%10
-  %18 = OpImageSampleImplicitLod(%7, %17)::%2
-        OpStore(%15, %18)
-  %19 = OpLoad(%15)::%2
-        OpReturnValue(%19)
-        OpFunctionEnd()
+   %1 = TypeFloat(0x00000020)
+   %2 = TypeVector(%1, 0x00000004)
+   %3 = TypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
+   %4 = TypeSampledImage(%3)
+   %5 = TypeFunction(%2, %4)
+  %10 = TypeVector(%1, 0x00000002)
+  %11 = TypePointer(Function, %10)
+  %12 = Constant(0x40400000)::%1
+  %13 = Constant(0x40800000)::%1
+  %16 = TypePointer(Function, %2)
+   %6 = Function(None, %5)::%2
+   %7 = FunctionParameter()::%4
+   %8 = Label()
+   %9 = Variable(Function)::%11
+  %15 = Variable(Function)::%16
+  %14 = CompositeConstruct(%12, %13)::%10
+        Store(%9, %14)
+  %17 = Load(%9)::%10
+  %18 = ImageSampleImplicitLod(%7, %17)::%2
+        Store(%15, %18)
+  %19 = Load(%15)::%2
+        ReturnValue(%19)
+        FunctionEnd()
       """
     )
 
@@ -155,32 +155,32 @@ SUPPORTED_FEATURES = SupportedFeatures(
         $shader_capabilities
         $base_extensions
         $memory_model
-   %1 = OpTypeFloat(0x00000020)
-   %2 = OpTypeVector(%1, 0x00000004)
-   %3 = OpTypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
-   %4 = OpTypeSampler()
-   %5 = OpTypeFunction(%2, %3, %4)
-  %12 = OpTypeVector(%1, 0x00000002)
-  %13 = OpTypePointer(Function, %12)
-  %14 = OpConstant(0x40400000)::%1
-  %15 = OpConstant(0x40800000)::%1
-  %18 = OpTypePointer(Function, %2)
-  %22 = OpTypeSampledImage(%3)
-   %6 = OpFunction(None, %5)::%2
-   %7 = OpFunctionParameter()::%3
-   %8 = OpFunctionParameter()::%4
-   %9 = OpLabel()
-  %11 = OpVariable(Function)::%13
-  %17 = OpVariable(Function)::%18
-  %10 = OpSampledImage(%7, %8)::%22
-  %16 = OpCompositeConstruct(%14, %15)::%12
-        OpStore(%11, %16)
-  %19 = OpLoad(%11)::%12
-  %20 = OpImageSampleImplicitLod(%10, %19)::%2
-        OpStore(%17, %20)
-  %21 = OpLoad(%17)::%2
-        OpReturnValue(%21)
-        OpFunctionEnd()
+   %1 = TypeFloat(0x00000020)
+   %2 = TypeVector(%1, 0x00000004)
+   %3 = TypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
+   %4 = TypeSampler()
+   %5 = TypeFunction(%2, %3, %4)
+  %12 = TypeVector(%1, 0x00000002)
+  %13 = TypePointer(Function, %12)
+  %14 = Constant(0x40400000)::%1
+  %15 = Constant(0x40800000)::%1
+  %18 = TypePointer(Function, %2)
+  %22 = TypeSampledImage(%3)
+   %6 = Function(None, %5)::%2
+   %7 = FunctionParameter()::%3
+   %8 = FunctionParameter()::%4
+   %9 = Label()
+  %11 = Variable(Function)::%13
+  %17 = Variable(Function)::%18
+  %10 = SampledImage(%7, %8)::%22
+  %16 = CompositeConstruct(%14, %15)::%12
+        Store(%11, %16)
+  %19 = Load(%11)::%12
+  %20 = ImageSampleImplicitLod(%10, %19)::%2
+        Store(%17, %20)
+  %21 = Load(%17)::%2
+        ReturnValue(%21)
+        FunctionEnd()
       """
     )
   end
@@ -192,20 +192,20 @@ SUPPORTED_FEATURES = SupportedFeatures(
       SPIRV.Module,
         """
         $base_capabilities
-        OpCapability(Float64)
+        Capability(Float64)
         $base_extensions
-   %8 = OpExtInstImport("GLSL.std.450")
+   %8 = ExtInstImport("GLSL.std.450")
         $memory_model
-   %1 = OpTypeFloat(0x00000040)
-   %2 = OpTypeFunction(%1, %1, %1, %1)
-   %3 = OpFunction(None, %2)::%1
-   %4 = OpFunctionParameter()::%1
-   %5 = OpFunctionParameter()::%1
-   %6 = OpFunctionParameter()::%1
-   %7 = OpLabel()
-   %9 = OpExtInst(%8, FClamp, %4, %5, %6)::%1
-        OpReturnValue(%9)
-        OpFunctionEnd()
+   %1 = TypeFloat(0x00000040)
+   %2 = TypeFunction(%1, %1, %1, %1)
+   %3 = Function(None, %2)::%1
+   %4 = FunctionParameter()::%1
+   %5 = FunctionParameter()::%1
+   %6 = FunctionParameter()::%1
+   %7 = Label()
+   %9 = ExtInst(%8, FClamp, %4, %5, %6)::%1
+        ReturnValue(%9)
+        FunctionEnd()
     """,
     )
 
@@ -216,23 +216,23 @@ SUPPORTED_FEATURES = SupportedFeatures(
         """
         $base_capabilities
         $base_extensions
-   %6 = OpExtInstImport("GLSL.std.450")
+   %6 = ExtInstImport("GLSL.std.450")
         $memory_model
-   %1 = OpTypeFloat(0x00000020)
-   %2 = OpTypeFunction(%1, %1)
-   %9 = OpConstant(0x40400000)::%1
-  %11 = OpConstant(0x3f800000)::%1
-   %3 = OpFunction(None, %2)::%1
-   %4 = OpFunctionParameter()::%1
-   %5 = OpLabel()
-   %7 = OpExtInst(%6, Exp, %4)::%1
-   %8 = OpExtInst(%6, Sin, %4)::%1
-  %10 = OpFMul(%9, %8)::%1
-  %12 = OpFAdd(%11, %10)::%1
-  %13 = OpExtInst(%6, Log, %12)::%1
-  %14 = OpFAdd(%13, %7)::%1
-        OpReturnValue(%14)
-        OpFunctionEnd()
+   %1 = TypeFloat(0x00000020)
+   %2 = TypeFunction(%1, %1)
+   %9 = Constant(0x40400000)::%1
+  %11 = Constant(0x3f800000)::%1
+   %3 = Function(None, %2)::%1
+   %4 = FunctionParameter()::%1
+   %5 = Label()
+   %7 = ExtInst(%6, Exp, %4)::%1
+   %8 = ExtInst(%6, Sin, %4)::%1
+  %10 = FMul(%9, %8)::%1
+  %12 = FAdd(%11, %10)::%1
+  %13 = ExtInst(%6, Log, %12)::%1
+  %14 = FAdd(%13, %7)::%1
+        ReturnValue(%14)
+        FunctionEnd()
     """,
     )
   end
@@ -259,18 +259,18 @@ SUPPORTED_FEATURES = SupportedFeatures(
           $base_capabilities
           $base_extensions
           $memory_model
-     %1 = OpTypeFloat(0x00000020)
-     %2 = OpTypeFunction(%1, %1)
-     %6 = OpConstant(0x3f800000)::%1
+     %1 = TypeFloat(0x00000020)
+     %2 = TypeFunction(%1, %1)
+     %6 = Constant(0x3f800000)::%1
      # Constant literals are not interpreted as floating point values.
      # Doing so would require the knowledge of types, expressed in the IR.
-     %8 = OpConstant(0x40400000)::%1
-     %3 = OpFunction(None, %2)::%1
-     %4 = OpFunctionParameter()::%1
-     %5 = OpLabel()
-     %7 = OpFAdd(%4, %6)::%1
-     %9 = OpFMul(%8, %7)::%1
-    %10 = OpFMul(%9, %9)::%1
+     %8 = Constant(0x40400000)::%1
+     %3 = Function(None, %2)::%1
+     %4 = FunctionParameter()::%1
+     %5 = Label()
+     %7 = FAdd(%4, %6)::%1
+     %9 = FMul(%8, %7)::%1
+    %10 = FMul(%9, %9)::%1
             OpReturnValue(%10)
             OpFunctionEnd()
     """,
@@ -282,23 +282,23 @@ SUPPORTED_FEATURES = SupportedFeatures(
         SPIRV.Module,
           """
           $base_capabilities
-          OpCapability(Float64)
+          Capability(Float64)
           $base_extensions
           $memory_model
-     %1 = OpTypeFloat(0x00000040)
-     %2 = OpTypeFunction(%1, %1, %1, %1)
-     %12 = OpTypeBool()
-     %3 = OpFunction(None, %2)::%1
-     %4 = OpFunctionParameter()::%1
-     %5 = OpFunctionParameter()::%1
-     %6 = OpFunctionParameter()::%1
-     %7 = OpLabel()
-     %8 = OpFOrdLessThan(%6, %4)::%12
-     %9 = OpFOrdLessThan(%4, %5)::%12
-     %10 = OpSelect(%9, %5, %4)::%1
-     %11 = OpSelect(%8, %6, %10)::%1
-          OpReturnValue(%11)
-          OpFunctionEnd()
+     %1 = TypeFloat(0x00000040)
+     %2 = TypeFunction(%1, %1, %1, %1)
+    %12 = TypeBool()
+     %3 = Function(None, %2)::%1
+     %4 = FunctionParameter()::%1
+     %5 = FunctionParameter()::%1
+     %6 = FunctionParameter()::%1
+     %7 = Label()
+     %8 = FOrdLessThan(%6, %4)::%12
+     %9 = FOrdLessThan(%4, %5)::%12
+    %10 = Select(%9, %5, %4)::%1
+    %11 = Select(%8, %6, %10)::%1
+          ReturnValue(%11)
+          FunctionEnd()
       """,
       )
     end
@@ -314,23 +314,23 @@ SUPPORTED_FEATURES = SupportedFeatures(
           $base_capabilities
           $base_extensions
           $memory_model
-     %1 = OpTypeFloat(0x00000020)
-     %2 = OpTypeFunction(%1, %1)
-     %8 = OpConstant(0x00000000)::%1
-    %10 = OpConstant(0x3f800000)::%1
-    %13 = OpTypeBool()
-     %3 = OpFunction(None, %2)::%1
-     %4 = OpFunctionParameter()::%1
-     %5 = OpLabel()
-     %9 = OpFOrdLessThan(%8, %4)::%13
-          OpBranchConditional(%9, %6, %7)
-     %6 = OpLabel()
-    %11 = OpFAdd(%4, %10)::%1
-          OpReturnValue(%11)
-     %7 = OpLabel()
-    %12 = OpFSub(%4, %10)::%1
-          OpReturnValue(%12)
-          OpFunctionEnd()
+     %1 = TypeFloat(0x00000020)
+     %2 = TypeFunction(%1, %1)
+     %8 = Constant(0x00000000)::%1
+    %10 = Constant(0x3f800000)::%1
+    %13 = TypeBool()
+     %3 = Function(None, %2)::%1
+     %4 = FunctionParameter()::%1
+     %5 = Label()
+     %9 = FOrdLessThan(%8, %4)::%13
+          BranchConditional(%9, %6, %7)
+     %6 = Label()
+    %11 = FAdd(%4, %10)::%1
+          ReturnValue(%11)
+     %7 = Label()
+    %12 = FSub(%4, %10)::%1
+          ReturnValue(%12)
+          FunctionEnd()
         """,
       )
       function f_branches(x)
@@ -353,41 +353,41 @@ SUPPORTED_FEATURES = SupportedFeatures(
           """
           $base_capabilities
           $base_extensions
-    %13 = OpExtInstImport("GLSL.std.450")
+    %13 = ExtInstImport("GLSL.std.450")
           $memory_model
-     %1 = OpTypeFloat(0x00000020)
-     %2 = OpTypeFunction(%1, %1)
-    %14 = OpConstant(0x00000000)::%1
-    %15 = OpConstant(0x3f800000)::%1
-    %25 = OpTypeBool()
-     %3 = OpFunction(None, %2)::%1
-     %4 = OpFunctionParameter()::%1
-     %5 = OpLabel()
-    %16 = OpExtInst(%13, FClamp, %4, %14, %15)::%1
-    %17 = OpFOrdEqual(%16, %14)::%25
-          OpBranchConditional(%17, %6, %9)
-     %6 = OpLabel()
-    %18 = OpFMul(%4, %4)::%1
-    %19 = OpFOrdLessThan(%15, %18)::%25
-          OpBranchConditional(%19, %7, %8)
-     %7 = OpLabel()
-          OpReturnValue(%18)
-     %8 = OpLabel()
-    %20 = OpFAdd(%4, %18)::%1
-          OpBranch(%10)
-     %9 = OpLabel()
-    %21 = OpFSub(%4, %15)::%1
-          OpBranch(%10)
-    %10 = OpLabel()
-    %22 = OpPhi(%20 => %8, %21 => %9)::%1
-    %23 = OpFOrdLessThan(%22, %14)::%25
-          OpBranchConditional(%23, %11, %12)
-    %11 = OpLabel()
-          OpReturnValue(%16)
-    %12 = OpLabel()
-    %24 = OpFAdd(%22, %16)::%1
-          OpReturnValue(%24)
-          OpFunctionEnd()
+     %1 = TypeFloat(0x00000020)
+     %2 = TypeFunction(%1, %1)
+    %14 = Constant(0x00000000)::%1
+    %15 = Constant(0x3f800000)::%1
+    %25 = TypeBool()
+     %3 = Function(None, %2)::%1
+     %4 = FunctionParameter()::%1
+     %5 = Label()
+    %16 = ExtInst(%13, FClamp, %4, %14, %15)::%1
+    %17 = FOrdEqual(%16, %14)::%25
+          BranchConditional(%17, %6, %9)
+     %6 = Label()
+    %18 = FMul(%4, %4)::%1
+    %19 = FOrdLessThan(%15, %18)::%25
+          BranchConditional(%19, %7, %8)
+     %7 = Label()
+          ReturnValue(%18)
+     %8 = Label()
+    %20 = FAdd(%4, %18)::%1
+          Branch(%10)
+     %9 = Label()
+    %21 = FSub(%4, %15)::%1
+          Branch(%10)
+    %10 = Label()
+    %22 = Phi(%20 => %8, %21 => %9)::%1
+    %23 = FOrdLessThan(%22, %14)::%25
+          BranchConditional(%23, %11, %12)
+    %11 = Label()
+          ReturnValue(%16)
+    %12 = Label()
+    %24 = FAdd(%22, %16)::%1
+          ReturnValue(%24)
+          FunctionEnd()
         """
       )
     end

@@ -1,5 +1,5 @@
 using SPIRV, Test, Accessors
-using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!
+using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!, propagate_constants!
 
 @testset "Passes" begin
   @testset "SSA renumbering" begin
@@ -146,5 +146,45 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
     composite_extract_dynamic_to_literal!(ir)
     @test ir == expected
     @test unwrap(validate(ir))
+  end
+
+  @testset "Constant propagation" begin
+    ir = @spv_ir begin
+      Float32 = TypeFloat(32)
+      UInt32 = TypeInt(32, false)
+      Int16 = TypeInt(16, true)
+      Vec2 = TypeVector(Float32, 2)
+      index = Constant(1U)::UInt32
+      one_int16 = Constant(Int16(1))::Int16
+      @function f(x::Vec2)::Float32 begin
+        _ = Label()
+        one = UConvert(one_int16)::UInt32
+        i = ISub(index, one)::UInt32
+        ret = CompositeExtract(x, i)::Float32
+        ReturnValue(ret)
+      end
+    end
+    propagate_constants!(ir)
+    expected = @spv_ir begin
+      Float32 = TypeFloat(32)
+      UInt32 = TypeInt(32, false)
+      Int16 = TypeInt(16, true)
+      Vec2 = TypeVector(Float32, 2)
+      index = Constant(1U)::UInt32
+      one_int16 = Constant(Int16(1))::Int16
+      # XXX: The const-proped result is inserted after function types,
+      # which is impossible to express given the current DSL. That should be addressed some time.
+      ft = TypeFunction(Float32, Vec2)
+      result = Constant(0U)::UInt32
+      f = Function(SPIRV.FunctionControlNone, ft)
+      x = FunctionParameter()::Vec2
+      _ = Label()
+      ret = CompositeExtract(x, result)::Float32
+      ReturnValue(ret)
+      FunctionEnd()
+    end
+    @test ir ≈ expected renumber = true
+    propagate_constants!(ir)
+    @test ir ≈ expected renumber = true
   end
 end;

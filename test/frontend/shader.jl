@@ -45,37 +45,37 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
     @test mod == parse(
       SPIRV.Module,
         """
-        OpCapability(PhysicalStorageBufferAddresses)
-        OpCapability(VulkanMemoryModel)
-        OpExtension("SPV_EXT_physical_storage_buffer")
-        OpMemoryModel(PhysicalStorageBuffer64, Vulkan)
-        OpEntryPoint(Vertex, %14, "main", %4)
-        OpName(%6, "$shader!(::Vec4)")
-        OpName(%4, "color")
-   %1 = OpTypeFloat(0x00000020)
-   %2 = OpTypeVector(%1, 0x00000004)
-   %3 = OpTypePointer(Output, %2)
-   %4 = OpVariable(Output)::%3
-   %5 = OpTypeFunction(%1)
-   %8 = OpTypeInt(0x00000020, 0x00000000)
-   %9 = OpConstant(0x00000004)::%8
-  %11 = OpConstant(0x3f800000)::%1
-  %12 = OpTypeVoid()
-  %13 = OpTypeFunction(%12)
-  %17 = OpConstant(0x00000001)::%8
-  %19 = OpTypePointer(Output, %1)
-   %6 = OpFunction(None, %5)::%1
-   %7 = OpLabel()
-  %18 = OpISub(%9, %17)::%8
-  %10 = OpAccessChain(%4, %18)::%19
-        OpStore(%10, %11)
-        OpReturnValue(%11)
-        OpFunctionEnd()
-  %14 = OpFunction(None, %13)::%12
-  %15 = OpLabel()
-  %16 = OpFunctionCall(%6)::%1
-        OpReturn()
-        OpFunctionEnd()
+        Capability(PhysicalStorageBufferAddresses)
+        Capability(VulkanMemoryModel)
+        Extension("SPV_EXT_physical_storage_buffer")
+        MemoryModel(PhysicalStorageBuffer64, Vulkan)
+        EntryPoint(Vertex, %14, "main", %4)
+        Name(%6, "$shader!(::Vec4)")
+        Name(%4, "color")
+   %1 = TypeFloat(0x00000020)
+   %2 = TypeVector(%1, 0x00000004)
+   %3 = TypePointer(Output, %2)
+   %4 = Variable(Output)::%3
+   %5 = TypeFunction(%1)
+   %8 = TypeInt(0x00000020, 0x00000000)
+   %9 = Constant(0x00000004)::%8
+  %11 = Constant(0x3f800000)::%1
+  %12 = TypeVoid()
+  %13 = TypeFunction(%12)
+  %17 = Constant(0x00000001)::%8
+  %19 = Constant(0x00000003)::%8
+  %20 = TypePointer(Output, %1)
+   %6 = Function(None, %5)::%1
+   %7 = Label()
+  %10 = AccessChain(%4, %19)::%20
+        Store(%10, %11)
+        ReturnValue(%11)
+        FunctionEnd()
+  %14 = Function(None, %13)::%12
+  %15 = Label()
+  %16 = FunctionCall(%6)::%1
+        Return()
+        FunctionEnd()
   """,
     )
     # Make sure the absence of Location decoration raises an error.

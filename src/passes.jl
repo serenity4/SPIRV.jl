@@ -176,3 +176,123 @@ function (::CompositeExtractDynamicToLiteral)(ir::IR, fdef::FunctionDefinition)
   end
   ir
 end
+
+struct ConstantPropatation <: FunctionPass end
+
+propagate_constants!(ir::IR) = ConstantPropatation()(ir)
+
+function (::ConstantPropatation)(ir::IR, fdef::FunctionDefinition)
+  replacements = Dictionary{ResultID, ResultID}()
+  for blk in fdef
+    for ex in blk
+      if is_constprop_eligible(ex, ir, replacements)
+        args = map(ex.args) do x
+          !isa(x, ResultID) && return x
+          c = ir.constants[get(replacements, x, x)]
+          c.value
+        end
+        f = intrinsic_function(ex, ir)
+        ret = f(args...)
+        result = Constant(ret)
+        insert!(replacements, ex.result, get!(() -> next!(ir.idcounter), ir.constants, result))
+      end
+    end
+  end
+  replace_results!(ir, fdef, replacements)
+end
+
+function replace_results!(ir::IR, fdef::FunctionDefinition, replacements::Dictionary{ResultID,ResultID})
+  for blk in fdef
+    block_deletions = Int[]
+    for (i, ex) in enumerate(blk)
+      for (j, arg) in enumerate(ex)
+        isa(arg, ResultID) || continue
+        replacement = get(replacements, arg, nothing)
+        isnothing(replacement) && continue
+        ex[j] = replacement
+      end
+      isnothing(ex.result) && continue
+      haskey(replacements, ex.result) && push!(block_deletions, i)
+    end
+    for (; result) in blk[block_deletions]
+      haskey(ir.debug.names, result) && delete!(ir.debug.names, result)
+      haskey(ir.metadata, result) && delete!(ir.metadata, result)
+    end
+    splice!(blk.exs, block_deletions)
+  end
+  fdef
+end
+
+PROPAGATED_INTRINSICS = Set([
+  OpISub,
+  OpUConvert,
+])
+
+function intrinsic_function(opcode::OpCode)
+  opname = last(split(repr(opcode), '.'))
+  fname = Symbol(replace(opname, r"^(?:Op|OpGLSL)" => ""))
+  !isdefined(@__MODULE__, fname) && return nothing
+  f = getproperty(@__MODULE__, fname)
+end
+
+function intrinsic_function(ex::Expression, ir::IR)
+  f = intrinsic_function(ex.op)
+  @match ex.op begin
+    &OpUConvert || &OpSConvert || &OpFConvert => begin
+      T = builtin_type(ir, ex.type)
+      x -> f(T, x)
+    end
+    _ => f
+  end
+end
+
+function is_constprop_eligible(ex::Expression, ir::IR, replacements)
+  !in(ex.op, PROPAGATED_INTRINSICS::Set{OpCode}) && return false
+  isnothing(ex.result) && return false
+  all(x -> !isa(x, ResultID) || haskey(ir.constants, get(replacements, x, x)), ex)
+end
+
+
+error_no_builtin_type_known(t) = error("No built-in Julia type is known for `$t`")
+function builtin_type end
+
+builtin_type(ir::IR, t::SPIRType) = builtin_type(t)
+function builtin_type(ir::IR, t::StructType)
+  for (T, t′) in pairs(ir.tmap.d)
+    t′ == t && return T
+  end
+  error_no_builtin_type_known(t)
+end
+
+function builtin_type(t::IntegerType)
+  if t.signed
+    @match t.width begin
+      8 => Int8
+      16 => Int16
+      32 => Int32
+      64 => Int64
+      _ => error_no_builtin_type_known(t)
+    end
+  else
+    @match t.width begin
+      8 => UInt8
+      16 => UInt16
+      32 => UInt32
+      64 => UInt64
+      _ => error_no_builtin_type_known(t)
+    end
+  end
+end
+
+builtin_type(t::FloatType) = @match t.width begin
+  16 => Float16
+  32 => Float32
+  64 => Float64
+  _ => error_no_builtin_type_known(t)
+end
+
+builtin_type(::BooleanType) = Bool
+builtin_type(ir::IR, t::VectorType) = Vec{t.eltype,builtin_type(t.eltype)}
+builtin_type(ir::IR, t::MatrixType) = t.is_column_major ? Mat{t.eltype.n, t.n, builtin_type(t.eltype.eltype)} : Mat{t.n, t.eltype.n, builtin_type(t.eltype.eltype)}
+builtin_type(ir::IR, t::ArrayType) = isnothing(t.size) ? Vector{builtin_type(ir, t.eltype)} : Arr{t.size.value, builtin_type(t.eltype)}
+builtin_type(ir::IR, t::PointerType) = Pointer{builtin_type(ir, t.type)}

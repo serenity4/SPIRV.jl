@@ -127,6 +127,7 @@ function Base.read(::Type{Module}, io::IO)
       ex = replace(ex, " => " => " ")
     end
     opcode, rest = match(r"([a-zA-Z\d]+)\(?\s*(.*|$)", ex)
+    !startswith(opcode, "Op") && (opcode = "Op" * opcode)
     opcode = getproperty(@__MODULE__, Symbol(opcode))::OpCode
     !isempty(rest) && append!(operands, split(rest, ' '))
     op_infos = copy(operand_infos(opcode, false))
