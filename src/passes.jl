@@ -150,6 +150,10 @@ function (::RemapDynamic1BasedIndices)(ir::IR, fdef::FunctionDefinition)
   end
 end
 
+"""
+Turn `CompositeExtract(%x, %index, %indices...)` into `CompositeExtract(%x, <literal>, <literals...>)`
+assuming that indices are either already literals or [`ResultID`](@ref)s of constant 32-bit unsigned integers.
+"""
 struct CompositeExtractDynamicToLiteral <: FunctionPass end
 
 composite_extract_dynamic_to_literal!(ir::IR) = CompositeExtractDynamicToLiteral()(ir)
@@ -158,12 +162,14 @@ function (::CompositeExtractDynamicToLiteral)(ir::IR, fdef::FunctionDefinition)
   for blk in fdef
     for ex in blk
       if ex.op == OpCompositeExtract
-        index = ex[2]::Union{UInt32, ResultID}
-        if isa(index, ResultID)
-          c = get(ir.constants, index, nothing)
-          isnothing(c) && throw_compilation_error("In CompositeExtractDynamicToLiteral pass, expected a constant dynamic index, got reference to non-constant $index")
-          c.type == IntegerType(32, false) || throw_compilation_error("Expected 32-bit unsigned integer type for index constant, got $(c.type)")
-          ex[2] = c.value
+        for i in 2:length(ex)
+          index = ex[2]::Union{UInt32, ResultID}
+          if isa(index, ResultID)
+            c = get(ir.constants, index, nothing)
+            isnothing(c) && throw_compilation_error("In CompositeExtractDynamicToLiteral pass, expected a constant dynamic index, got reference to non-constant $index")
+            c.type == IntegerType(32, false) || throw_compilation_error("Expected 32-bit unsigned integer type for index constant, got $(c.type)")
+            ex[2] = c.value
+          end
         end
       end
     end
