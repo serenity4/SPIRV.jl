@@ -50,7 +50,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
         OpExtension("SPV_EXT_physical_storage_buffer")
         OpMemoryModel(PhysicalStorageBuffer64, Vulkan)
         OpEntryPoint(Vertex, %14, "main", %4)
-        OpName(%6, "$(shader!)_Tuple{Vec4}")
+        OpName(%6, "$shader!(::Vec4)")
         OpName(%4, "color")
    %1 = OpTypeFloat(0x00000020)
    %2 = OpTypeVector(%1, 0x00000004)

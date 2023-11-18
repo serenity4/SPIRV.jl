@@ -176,7 +176,8 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables
 end
 
 function mangled_name(mi::MethodInstance)
-  Symbol(replace(string(mi.def.name, '_', Base.tuple_type_tail(mi.specTypes)), ' ' => ""))
+  sig = string(mi.def.name, '(', join("::" .* string.(mi.specTypes.parameters[2:end]), ","), ')')
+  Symbol(replace(sig, ' ' => ""))
 end
 
 function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables::Dictionary{Int,Variable})
