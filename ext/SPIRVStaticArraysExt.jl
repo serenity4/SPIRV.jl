@@ -2,138 +2,168 @@ module SPIRVStaticArraysExt
 
 using Base: IEEEFloat, BitInteger, BitSigned, BitUnsigned
 using SPIRV
-using SPIRV: @override
+using SPIRV: @override, unsigned_index, ntuple_uint32
+import SPIRV: remap_type,
+             Arr, Vec, Mat,
+             CompositeExtract, CompositeConstruct,
+             FAdd, FSub, FMul, FDiv, FRem, FMod,
+             IAdd, ISub, IMul, IDiv, IRem, IMod,
+             FConvert, SConvert, ConvertFToS, ConvertFToU, ConvertSToF, ConvertUToF,
+             Ceil, Exp, FNegate
 using SPIRV.MathFunctions
 import LinearAlgebra: norm, normalize
 using StaticArrays
 
-# Remap StaticArrays types into SPIR-V types.
-
-for N in 2:4
-  @eval SPIRV.remap_type(::Type{SVector{$N,T}}) where {T} = Vec{$N,T}
-  for M in 2:4
-    @eval SPIRV.remap_type(::Type{<:SMatrix{$N,$M,T}}) where {T} = Mat{$N,$M,T}
-  end
-end
-
-@eval SPIRV.remap_type(::Type{SVector{N,T}}) where {N,T} = Arr{N,T}
-
-# Define pseudo-intrinsics for conversions between StaticArrays types and SPIR-V types.
-
-for N in 2:4
-  @eval Base.convert(CT::Type{Vec{$N,T}}, x::SVector{$N}) where {T} = convert_native(CT, x)
-  @eval Base.convert(CT::Type{SVector{$N,T}}, x::Vec{$N}) where {T} = convert_native(CT, x)
-  @eval Base.convert(CT::Type{Vec{$N}}, x::SVector{$N}) = convert_native(CT, x)
-  @eval Base.convert(CT::Type{<:SVector{$N}}, x::Vec{$N}) = convert_native(CT, x)
-  for M in 2:4
-    @eval Base.convert(CT::Type{Mat{$N,$M,T}}, x::SMatrix{$N,$M}) where {T} = convert_native(CT, x)
-    @eval Base.convert(CT::Type{<:SMatrix{$N,$M,T}}, x::Mat{$N,$M}) where {T} = convert_native(CT, x)
-    @eval Base.convert(CT::Type{Mat{$N,$M}}, x::SMatrix{$N,$M}) = convert_native(CT, x)
-    @eval Base.convert(CT::Type{<:SMatrix{$N,$M}}, x::Mat{$N,$M}) = convert_native(CT, x)
-  end
-end
-
-Base.convert(CT::Type{Arr{N,T}}, x::SVector{N}) where {N,T} = convert_native(CT, x)
-Base.convert(CT::Type{SVector{N,T}}, x::Arr{N}) where {N,T} = convert_native(CT, x)
-Base.convert(CT::Type{Arr{N}}, x::SVector{N}) where {N} = convert_native(CT, x)
-Base.convert(CT::Type{<:SVector{N}}, x::Arr{N}) where {N} = convert_native(CT, x)
-
-Base.convert(::Type{Vec}, v::SVector{N,T}) where {N,T} = convert(Vec{N,T}, v)
-Base.convert(::Type{Arr}, v::SVector{N,T}) where {N,T} = convert(Arr{N,T}, v)
-convert_spirv(v::SVector{N}) where {N} = 2 ≤ N ≤ 4 ? convert(Vec, v) : convert(Arr, v)
-Base.convert(::Type{SVector}, v::Vec{N,T}) where {N,T} = convert(SVector{N,T}, v)
-Base.convert(::Type{SVector}, v::Arr{N,T}) where {N,T} = convert(SVector{N,T}, v)
-
-SPIRV.Vec(v::SVector) = convert(Vec, v)
-SPIRV.Arr(v::SVector) = convert(Arr, v)
-StaticArrays.SVector(v::Vec) = convert(SVector, v)
-StaticArrays.SVector(arr::Arr) = convert(SVector, arr)
-
-## Implement conversion CPU fallbacks for pseudo-intrinsics. Those definitions are meant for CPU execution.
-
-for N in 2:4
-  @eval @noinline convert_native(::Type{Vec{$N,T}}, x::SVector{$N}) where {T} = Vec{$N,T}(x.data)
-  @eval @noinline convert_native(::Type{SVector{$N,T}}, x::Vec{$N}) where {T} = SVector{$N,T}(ntuple(i -> x[i], $N))
-  @eval @noinline convert_native(::Type{Vec{$N}}, x::SVector{$N}) = Vec(x.data)
-  @eval @noinline convert_native(::Type{<:SVector{$N}}, x::Vec{$N}) = SVector{$N}(ntuple(i -> x[i], $N))
-  for M in 2:4
-    @eval @noinline convert_native(::Type{Mat{$N,$M,T}}, x::SMatrix{$N,$M}) where {T} = Mat{$N,$M,T}(Vec{$N,T}.(ntuple(i -> x.data[1 + (i-1)*$N:i*$N], $M))...)
-    @eval @noinline convert_native(::Type{<:SMatrix{$N,$M,T}}, x::Mat{$N,$M}) where {T} = SMatrix{$N,$M,T}(x.data)
-    @eval @noinline convert_native(::Type{Mat{$N,$M}}, x::SMatrix{$N,$M}) = Mat(Vec.(ntuple(i -> x.data[1 + (i-1)*$N:i*$N], $M))...)
-    @eval @noinline convert_native(::Type{<:SMatrix{$N,$M}}, x::Mat{$N,$M}) = SMatrix{$N,$M}(x.data)
-  end
-end
-
-@noinline convert_native(::Type{Arr{N,T}}, x::SVector{N}) where {N,T} = Arr{N,T}(x.data)
-@noinline convert_native(::Type{<:SVector{N,T}}, x::Arr{N}) where {N,T} = SVector{N,T}(x.data)
-@noinline convert_native(::Type{Arr{N}}, x::SVector{N}) where {N} = Arr(x.data)
-@noinline convert_native(::Type{<:SVector{N}}, x::Arr{N}) where {N} = SVector{N}(x.data)
-
-## Conversions between static vectors of different element type.
-
-@noinline SPIRV.FConvert(::Type{SVector{N,T}}, v::SVector{N}) where {N,T} = convert_vec(SVector{N,T}, v)
-@noinline SPIRV.SConvert(::Type{SVector{N,T}}, v::SVector{N}) where {N,T} = convert_vec(SVector{N,T}, v)
-@noinline SPIRV.UConvert(::Type{SVector{N,T}}, v::SVector{N}) where {N,T} = convert_vec(SVector{N,T}, v)
-@noinline SPIRV.ConvertSToF(::Type{SVector{N,T}}, v::SVector{N}) where {N,T} = convert_vec(SVector{N,T}, v)
-@noinline SPIRV.ConvertUToF(::Type{SVector{N,T}}, v::SVector{N}) where {N,T} = convert_vec(SVector{N,T}, v)
-@noinline SPIRV.ConvertFToS(::Type{SVector{N,T}}, v::SVector{N}) where {N,T} = convert_vec(SVector{N,T}, v)
-@noinline SPIRV.ConvertFToU(::Type{SVector{N,T}}, v::SVector{N}) where {N,T} = convert_vec(SVector{N,T}, v)
-convert_vec(::Type{SVector{N,T}}, v::SVector{N}) where {N,T} = SVector{N,T}(SPIRV.ntuple_uint32(i -> convert(T, @inbounds v[i]), N)...)
-
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,<:IEEEFloat}) where {N,T<:IEEEFloat} = SPIRV.FConvert(SVector{N,T}, v)
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,<:BitSigned}) where {N,T<:BitSigned} = SPIRV.SConvert(SVector{N,T}, v)
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,<:BitUnsigned}) where {N,T<:BitUnsigned} = SPIRV.UConvert(SVector{N,T}, v)
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,<:BitSigned}) where {N,T<:IEEEFloat} = SPIRV.ConvertSToF(SVector{N,T}, v)
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,<:BitUnsigned}) where {N,T<:IEEEFloat} = SPIRV.ConvertUToF(SVector{N,T}, v)
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,<:IEEEFloat}) where {N,T<:BitSigned} = SPIRV.ConvertFToS(SVector{N,T}, v)
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,<:IEEEFloat}) where {N,T<:BitUnsigned} = SPIRV.ConvertFToU(SVector{N,T}, v)
-Base.convert(::Type{SVector{N,T1}}, v::SVector{N,T2}) where {N,T1,T2} = SVector{N,T1}(ntuple_uint32(i -> convert(T1, @inbounds v[i]), N)...)
-
-### No-op conversions.
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,T}) where {N,T} = v
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,T}) where {N,T<:Union{IEEEFloat}} = v
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,T}) where {N,T<:Union{BitSigned}} = v
-Base.convert(::Type{SVector{N,T}}, v::SVector{N,T}) where {N,T<:Union{BitUnsigned}} = v
-
-# Add pseudo-intrinsics for vector access.
-
-for V in (:SVector, :MVector)
-  @eval @override Base.getindex(v::$V, i::Integer) = SPIRV.CompositeExtract(v, SPIRV.unsigned_index(i))
-  @eval @override Base.getindex(v::$V, i::Int) = SPIRV.CompositeExtract(v, UInt32(i))
-  @eval @noinline SPIRV.CompositeExtract(v::$V, index::UInt32) = v.data[index]
-end
-
-# Add vector math pseudo-intrinsics for static arrays.
-
-for N in 2:4
-  for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, :Mod))
-    # Define FAdd, IMul, etc. for vectors of matching type.
-    opF, opI = Symbol.((:F, :I), op)
-
-    @eval @override Base.$f(x::SVector{$N,T}, y::SVector{$N,T}) where {T<:IEEEFloat} = SPIRV.$opF(x, y)
-    @eval @override Base.$f(x::SVector{$N,T}, y::SVector{$N,T}) where {T<:BitInteger} = SPIRV.$opI(x, y)
-    @eval @override Base.$f(x::SVector{$N}, y::SVector{$N}) = $f(promote(x, y)...)
-
-    for (opX, XT) in zip((opF, opI), (:IEEEFloat, :BitInteger))
-      @eval @override Base.$f(x::SVector{$N,<:$XT}, y::SVector{$N,<:$XT}) = SPIRV.$opX(x, y)
-
-      @eval @noinline SPIRV.$opX(v1::T, v2::T) where {T<:SVector{$N,<:$XT}} = vectorize($f, v1, v2)
-
-      # Allow usage of promotion rules for these operations.
-      @eval SPIRV.$opX(v1::SVector{$N,<:$XT}, v2::SVector{$N,<:$XT}) = SPIRV.$opX(promote(v1, v2)...)
-
-      # Define broadcasting rules so that broadcasting eagerly uses the vector instruction when applicable.
-      @eval Base.broadcasted(::typeof($f), v1::T, v2::T) where {T<:SVector{$N,<:$XT}} = SPIRV.$opX(v1, v2)
+for (VT, MT) in zip((:SVector, :MVector), (:SMatrix, :MMatrix))
+  # Remap StaticArrays types into SPIR-V types.
+  for N in 2:4
+    @eval remap_type(::Type{$VT{$N,T}}) where {T} = Vec{$N,T}
+    for M in 2:4
+      @eval remap_type(::Type{<:$MT{$N,$M,T}}) where {T} = Mat{$N,$M,T}
     end
   end
+
+  @eval remap_type(::Type{$VT{N,T}}) where {N,T} = Arr{N,T}
+
+  # Define pseudo-intrinsics for conversions between StaticArrays types and SPIR-V types.
+  # XXX: Also define SVector <-> MVector (no-op) conversions.
+
+  for N in 2:4
+    @eval Base.convert(CT::Type{Vec{$N,T}}, x::$VT{$N}) where {T} = convert_native(CT, x)
+    @eval Base.convert(CT::Type{$VT{$N,T}}, x::Vec{$N}) where {T} = convert_native(CT, x)
+    @eval Base.convert(CT::Type{Vec{$N}}, x::$VT{$N}) = convert_native(CT, x)
+    @eval Base.convert(CT::Type{<:$VT{$N}}, x::Vec{$N}) = convert_native(CT, x)
+    for M in 2:4
+      @eval Base.convert(CT::Type{Mat{$N,$M,T}}, x::$MT{$N,$M}) where {T} = convert_native(CT, x)
+      @eval Base.convert(CT::Type{<:$MT{$N,$M,T}}, x::Mat{$N,$M}) where {T} = convert_native(CT, x)
+      @eval Base.convert(CT::Type{Mat{$N,$M}}, x::$MT{$N,$M}) = convert_native(CT, x)
+      @eval Base.convert(CT::Type{<:$MT{$N,$M}}, x::Mat{$N,$M}) = convert_native(CT, x)
+    end
+  end
+
+  @eval Base.convert(CT::Type{Arr{N,T}}, x::$VT{N}) where {N,T} = convert_native(CT, x)
+  @eval Base.convert(CT::Type{$VT{N,T}}, x::Arr{N}) where {N,T} = convert_native(CT, x)
+  @eval Base.convert(CT::Type{Arr{N}}, x::$VT{N}) where {N} = convert_native(CT, x)
+  @eval Base.convert(CT::Type{<:$VT{N}}, x::Arr{N}) where {N} = convert_native(CT, x)
+
+  @eval Base.convert(::Type{Vec}, v::$VT{N,T}) where {N,T} = convert(Vec{N,T}, v)
+  @eval Base.convert(::Type{Arr}, v::$VT{N,T}) where {N,T} = convert(Arr{N,T}, v)
+  @eval convert_spirv(v::$VT{N}) where {N} = 2 ≤ N ≤ 4 ? convert(Vec, v) : convert(Arr, v)
+  @eval Base.convert(::Type{$VT}, v::Vec{N,T}) where {N,T} = convert($VT{N,T}, v)
+  @eval Base.convert(::Type{$VT}, v::Arr{N,T}) where {N,T} = convert($VT{N,T}, v)
+
+  @eval Vec(v::$VT) = convert(Vec, v)
+  @eval Arr(v::$VT) = convert(Arr, v)
+  @eval StaticArrays.$VT(v::Vec) = convert($VT, v)
+  @eval StaticArrays.$VT(arr::Arr) = convert($VT, arr)
+
+  ## Implement conversion CPU fallbacks for pseudo-intrinsics. Those definitions are meant for CPU execution.
+
+  for N in 2:4
+    @eval @noinline convert_native(::Type{Vec{$N,T}}, x::$VT{$N}) where {T} = Vec{$N,T}(x.data)
+    @eval @noinline convert_native(::Type{$VT{$N,T}}, x::Vec{$N}) where {T} = $VT{$N,T}(ntuple(i -> x[i], $N))
+    @eval @noinline convert_native(::Type{Vec{$N}}, x::$VT{$N}) = Vec(x.data)
+    @eval @noinline convert_native(::Type{<:$VT{$N}}, x::Vec{$N}) = $VT{$N}(ntuple(i -> x[i], $N))
+    for M in 2:4
+      @eval @noinline convert_native(::Type{Mat{$N,$M,T}}, x::$MT{$N,$M}) where {T} = Mat{$N,$M,T}(Vec{$N,T}.(ntuple(i -> x.data[1 + (i-1)*$N:i*$N], $M))...)
+      @eval @noinline convert_native(::Type{<:$MT{$N,$M,T}}, x::Mat{$N,$M}) where {T} = $MT{$N,$M,T}(x.data)
+      @eval @noinline convert_native(::Type{Mat{$N,$M}}, x::$MT{$N,$M}) = Mat(Vec.(ntuple(i -> x.data[1 + (i-1)*$N:i*$N], $M))...)
+      @eval @noinline convert_native(::Type{<:$MT{$N,$M}}, x::Mat{$N,$M}) = $MT{$N,$M}(x.data)
+    end
+  end
+
+  @eval @noinline convert_native(::Type{Arr{N,T}}, x::$VT{N}) where {N,T} = Arr{N,T}(x.data)
+  @eval @noinline convert_native(::Type{<:$VT{N,T}}, x::Arr{N}) where {N,T} = $VT{N,T}(x.data)
+  @eval @noinline convert_native(::Type{Arr{N}}, x::$VT{N}) where {N} = Arr(x.data)
+  @eval @noinline convert_native(::Type{<:$VT{N}}, x::Arr{N}) where {N} = $VT{N}(x.data)
+
+  ## Conversions between static vectors of different element type.
+
+  @eval @noinline FConvert(::Type{$VT{N,T}}, v::$VT{N}) where {N,T} = convert_vec($VT{N,T}, v)
+  @eval @noinline SConvert(::Type{$VT{N,T}}, v::$VT{N}) where {N,T} = convert_vec($VT{N,T}, v)
+  @eval @noinline UConvert(::Type{$VT{N,T}}, v::$VT{N}) where {N,T} = convert_vec($VT{N,T}, v)
+  @eval @noinline ConvertSToF(::Type{$VT{N,T}}, v::$VT{N}) where {N,T} = convert_vec($VT{N,T}, v)
+  @eval @noinline ConvertUToF(::Type{$VT{N,T}}, v::$VT{N}) where {N,T} = convert_vec($VT{N,T}, v)
+  @eval @noinline ConvertFToS(::Type{$VT{N,T}}, v::$VT{N}) where {N,T} = convert_vec($VT{N,T}, v)
+  @eval @noinline ConvertFToU(::Type{$VT{N,T}}, v::$VT{N}) where {N,T} = convert_vec($VT{N,T}, v)
+  @eval convert_vec(::Type{$VT{N,T}}, v::$VT{N}) where {N,T} = $VT{N,T}(ntuple_uint32(i -> convert(T, @inbounds v[i]), N)...)
+
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,<:IEEEFloat}) where {N,T<:IEEEFloat} = FConvert($VT{N,T}, v)
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,<:BitSigned}) where {N,T<:BitSigned} = SConvert($VT{N,T}, v)
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,<:BitUnsigned}) where {N,T<:BitUnsigned} = UConvert($VT{N,T}, v)
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,<:BitSigned}) where {N,T<:IEEEFloat} = ConvertSToF($VT{N,T}, v)
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,<:BitUnsigned}) where {N,T<:IEEEFloat} = ConvertUToF($VT{N,T}, v)
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,<:IEEEFloat}) where {N,T<:BitSigned} = ConvertFToS($VT{N,T}, v)
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,<:IEEEFloat}) where {N,T<:BitUnsigned} = ConvertFToU($VT{N,T}, v)
+  @eval Base.convert(::Type{$VT{N,T1}}, v::$VT{N,T2}) where {N,T1,T2} = $VT{N,T1}(ntuple_uint32(i -> convert(T1, @inbounds v[i]), N)...)
+
+  ### No-op conversions.
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,T}) where {N,T} = v
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,T}) where {N,T<:Union{IEEEFloat}} = v
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,T}) where {N,T<:Union{BitSigned}} = v
+  @eval Base.convert(::Type{$VT{N,T}}, v::$VT{N,T}) where {N,T<:Union{BitUnsigned}} = v
+
+  # Add pseudo-intrinsics for vector access.
+
+  @eval @override Base.getindex(v::$VT, i::Integer) = CompositeExtract(v, unsigned_index(i))
+  @eval @override Base.getindex(v::$VT, i::Int) = CompositeExtract(v, UInt32(i))
+  @eval @noinline CompositeExtract(v::$VT, index::UInt32) = v.data[index]
+
+  @eval @override $VT{N,T}(components::NTuple{N,T}) where {N,T} = CompositeConstruct($VT{N,T}, components...)
+  @eval @noinline (@generated function CompositeConstruct(::Type{$VT{N,T}}, data::T...) where {N,T}
+    Expr(:new, $VT{N,T}, :data)
+  end)
+
+  ## Work around direct `.data` field access for `SVector`/`MVector` in favor of indexed access.
+
+  @eval @override function Base.getproperty(v::$VT, name::Symbol)
+    name === :x && return v[1]
+    name === :y && return v[2]
+    name === :z && return v[3]
+    name === :w && return v[4]
+    getfield(v, name)
+  end
+
+  # Add vector math pseudo-intrinsics for static arrays.
+  for N in 2:4
+    for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, :Mod))
+      # Define FAdd, IMul, etc. for vectors of matching type.
+      opF, opI = Symbol.((:F, :I), op)
+
+      @eval @override Base.$f(x::$VT{$N,T}, y::$VT{$N,T}) where {T<:IEEEFloat} = $opF(x, y)
+      @eval @override Base.$f(x::$VT{$N,T}, y::$VT{$N,T}) where {T<:BitInteger} = $opI(x, y)
+      @eval @override Base.$f(x::$VT{$N}, y::$VT{$N}) = $f(promote(x, y)...)
+
+      for (opX, XT) in zip((opF, opI), (:IEEEFloat, :BitInteger))
+        @eval @override Base.$f(x::$VT{$N,<:$XT}, y::$VT{$N,<:$XT}) = $opX(x, y)
+
+        @eval @noinline $opX(v1::T, v2::T) where {T<:$VT{$N,<:$XT}} = vectorize($f, v1, v2)
+
+        # Allow usage of promotion rules for these operations.
+        @eval $opX(v1::$VT{$N,<:$XT}, v2::$VT{$N,<:$XT}) = $opX(promote(v1, v2)...)
+
+        # Define broadcasting rules so that broadcasting eagerly uses the vector instruction when applicable.
+        @eval Base.broadcasted(::typeof($f), v1::T, v2::T) where {T<:$VT{$N,<:$XT}} = $opX(v1, v2)
+      end
+    end
+  end
+
+  ## Unary vector operations.
+  for (f, op) in zip((:ceil, :exp, :-), (:Ceil, :Exp, :FNegate))
+    @eval @noinline $op(v::$VT) = vectorize($f, v)
+    @eval @override Base.broadcasted(::typeof($f), v::$VT) = $op(v)
+    @eval @override Base.$f(v::$VT) = $op(v)
+  end
+
+  ## CPU implementation for instructions that directly operate on vectors.
+  @eval vectorize(op, v1::T, v2::T) where {T<:$VT} = $VT(op.(v1.data, v2.data))
+  @eval vectorize(op, v::T, x::Scalar) where {T<:$VT} = $VT(op.(v.data, x))
+  @eval vectorize(op, v::T) where {T<:$VT} = $VT(op.(v.data))
 end
 
-## CPU implementation for instructions that directly operate on vectors.
-vectorize(op, v1::T, v2::T) where {T<:SVector} = SVector(op.(v1.data, v2.data))
-vectorize(op, v::T, x::Scalar) where {T<:SVector} = SVector(op.(v.data, x))
-vectorize(op, v::T) where {T<:SVector} = Vec(op.(v.data))
 
 # Forward methods to `Vec`/`Arr` instances.
+# XXX: Don't do that, and instead support methods on static arrays to avoid pointless conversions between mutable/non-mutable objects.
 
 @override normalize(x::StaticVector) = SVector(normalize(convert_spirv(x)))
 @override norm(x::StaticVector) = norm(convert_spirv(x))
@@ -143,5 +173,7 @@ vectorize(op, v::T) where {T<:SVector} = Vec(op.(v.data))
 
 Base.promote_rule(::Type{Vec{N,T1}}, ::Type{SVector{N,T2}}) where {N,T1,T2} = SVector{N,promote_type(T1,T2)}
 Base.promote_rule(::Type{Vec{N,T1}}, ::Type{MVector{N,T2}}) where {N,T1,T2} = Vec{N,promote_type(T1,T2)}
+Base.promote_rule(::Type{Arr{N,T1}}, ::Type{SVector{N,T2}}) where {N,T1,T2} = SVector{N,promote_type(T1,T2)}
+Base.promote_rule(::Type{Arr{N,T1}}, ::Type{MVector{N,T2}}) where {N,T1,T2} = Arr{N,promote_type(T1,T2)}
 
 end

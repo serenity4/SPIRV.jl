@@ -44,6 +44,11 @@ function apply!(mod::Module, diff::Diff)
   @set mod.bound = UInt32(ResultID(diff.idcounter)) + 1
 end
 
+apply(mod::Module, diff::Diff) = apply!(deepcopy(mod), diff)
+apply(x, diff::Diff) = apply!(deepcopy(Module(x)), diff)
+
+Base.delete!(diff::Diff, i::Integer) = push!(diff.deletions, i)
+
 function update!(diff::Diff, insts)
   for pair in insts
     update!(diff, pair)

@@ -190,8 +190,11 @@ end
 function Base.getindex(tmap::TypeMap, T::DataType)
   t = get(tmap.d, T, nothing)
   !isnothing(t) && return t
-  isstructtype(T) && !(T <: Vec || T <: Arr || T <: Mat || T <: Vector) && return throw(UnknownType("Type $T has no known mapping to SPIR-V within this `TypeMap`", T))
-  spir_type(T, tmap; fill_tmap = false)
+  t = spir_type(T, tmap; fill_tmap = false)
+  # If we get a struct, it should have been obtained via the TypeMap,
+  # as we would otherwise get a brand new struct with a new ID.
+  isa(t, StructType) && throw(UnknownType("Type $T has no known mapping to SPIR-V within this `TypeMap`", T))
+  t
 end
 
 assert_type_known(t::SPIRType) = !isa(t, OpaqueType) || error("Unknown type `$(t.name)` reached. This suggests that an error was encoutered in the Julia function during its compilation.")
@@ -209,8 +212,9 @@ Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is p
 If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
 """
 function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing; wrap_mutable = false, storage_class = nothing, fill_tmap = true)
+  ismutable = ismutabletype(t)
   t = remap_type(t)
-  wrap_mutable && ismutabletype(t) && return PointerType(StorageClassFunction, spir_type(t, tmap))
+  wrap_mutable && ismutable && return PointerType(StorageClassFunction, spir_type(t, tmap))
   !isnothing(tmap) && isnothing(storage_class) && haskey(tmap, t) && return tmap[t]
   type = @match t begin
     &Float16 => FloatType(16)

@@ -109,6 +109,7 @@ Indexing instructions include those whose opcode is:
 - `VectorExtractDynamic`
 - `AccessChain`
 - `InBoundsAccessChain`
+- `CompositeExtract`
 """
 struct RemapDynamic1BasedIndices <: FunctionPass end
 
@@ -117,7 +118,7 @@ remap_dynamic_1based_indices!(ir::IR) = RemapDynamic1BasedIndices()(ir)
 function index_arguments(ex::Expression)
   n = lastindex(ex)
   @match ex.op begin
-    &OpVectorExtractDynamic || &OpAccessChain || &OpInBoundsAccessChain || &OpPtrAccessChain || &OpInBoundsPtrAccessChain => 2:n
+    &OpCompositeExtract || &OpVectorExtractDynamic || &OpAccessChain || &OpInBoundsAccessChain || &OpPtrAccessChain || &OpInBoundsPtrAccessChain => 2:n
     &OpImageRead && if ex.type.dim ≠ DimSubpassData end || &OpImageWrite || &OpImageFetch || &OpImageSparseFetch || &OpImageSparseRead => 2:2
     &OpImageTexelPointer => 2:3
     _ => 1:0
@@ -128,14 +129,15 @@ function (::RemapDynamic1BasedIndices)(ir::IR, fdef::FunctionDefinition)
   for blk in fdef
     insert = Pair{Int,Expression}[]
     for ex in blk
-      if ex.op in (OpVectorExtractDynamic, OpAccessChain, OpInBoundsAccessChain)
+      if ex.op in (OpCompositeExtract, OpVectorExtractDynamic, OpAccessChain, OpInBoundsAccessChain)
         indices = index_arguments(ex)
         for i in indices
           arg = ex[i]
           if isa(arg, ResultID)
             j = findfirst(x -> x === ex, blk)
-            get!(() -> next!(ir.idcounter), ir.types, IntegerType(32, false))
-            one = get!(() -> next!(ir.idcounter), ir.constants, Constant(1U))
+            c = Constant(1U)
+            get!(() -> next!(ir.idcounter), ir.types, c.type)
+            one = get!(() -> next!(ir.idcounter), ir.constants, c)
             ret = next!(ir.idcounter)
             decrement = @ex ret = OpISub(arg, one)::IntegerType(32, false)
             push!(insert, j => decrement)
@@ -194,6 +196,7 @@ function (::ConstantPropatation)(ir::IR, fdef::FunctionDefinition)
         f = intrinsic_function(ex, ir)
         ret = f(args...)
         result = Constant(ret)
+        get!(() -> next!(ir.idcounter), ir.types, result.type)
         insert!(replacements, ex.result, get!(() -> next!(ir.idcounter), ir.constants, result))
       end
     end
@@ -296,3 +299,38 @@ builtin_type(ir::IR, t::VectorType) = Vec{t.eltype,builtin_type(t.eltype)}
 builtin_type(ir::IR, t::MatrixType) = t.is_column_major ? Mat{t.eltype.n, t.n, builtin_type(t.eltype.eltype)} : Mat{t.n, t.eltype.n, builtin_type(t.eltype.eltype)}
 builtin_type(ir::IR, t::ArrayType) = isnothing(t.size) ? Vector{builtin_type(ir, t.eltype)} : Arr{t.size.value, builtin_type(t.eltype)}
 builtin_type(ir::IR, t::PointerType) = Pointer{builtin_type(ir, t.type)}
+
+"""
+Replace `Nop`s by their operands, making it act either as:
+- An identity operation, for instructions of the form `y = Nop(x)`
+- A meaningless instruction, as originally intended by the SPIR-V specification, for instructions of the form `x = Nop()`. In such a case, the result ID `x` should not be used elsewhere.
+"""
+struct RemoveOpNop <: FunctionPass end
+
+remove_op_nops!(ir::IR) = RemoveOpNop()(ir)
+
+function (::RemoveOpNop)(fdef::FunctionDefinition)
+  deletions = Int64[]
+  replacements = Dictionary{ResultID,ResultID}()
+  for blk in fdef
+    to_remove = Int64[]
+    for (i, ex) in enumerate(blk)
+      if ex.op === OpNop
+        push!(deletions, i)
+        if !isempty(ex)
+          @assert length(ex) == 1
+          value = ex[1]::ResultID
+          insert!(replacements, ex.result, value)
+        end
+      else
+        for (j, arg) in enumerate(ex)
+          isa(arg, ResultID) || continue
+          replacement = get(replacements, arg, nothing)
+          isnothing(replacement) && continue
+          ex[j] = replacement
+        end
+      end
+    end
+    splice!(blk.exs, deletions)
+  end
+end

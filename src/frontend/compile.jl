@@ -88,6 +88,7 @@ function IR(mt::ModuleTarget, tr::Translation)
   # and subtractions coming from Int64 1-based vs UInt32 0-based indexing.
   propagate_constants!(ir)
   composite_extract_dynamic_to_literal!(ir)
+  remove_op_nops!(ir)
 end
 
 mutable struct CompilationError <: Exception
@@ -301,16 +302,6 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
       insert!(tr.results, core_ssaval, emit!(mt, tr, Constant(jinst.args[1])))
       continue
     end
-    if Meta.isexpr(jinst, :invoke) && begin
-        mi = jinst.args[1]
-        isa(mi, MethodInstance) && mi.def.name === :convert_native
-      end
-      # Ignore conversions that only occur in a native code generation context
-      # such as Vec <-> SVector conversions.
-      x = jinst.args[4]
-      insert!(tr.results, core_ssaval, ResultID(x, tr))
-      continue
-    end
     jtype = ssavaluetypes[i]
     isa(jtype, Core.PartialStruct) && (jtype = jtype.typ)
     isa(jtype, Core.Const) && (jtype = typeof(jtype.val))
@@ -357,14 +348,16 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         end
         ret, stype = emit_expression!(mt, tr, target, fdef, jinst, jtype, blk)
         if isa(ret, Expression)
-          if ismutabletype(jtype) && !isa(jinst, Core.PhiNode)
-            # The current core ResultID has already been assigned (to the variable).
-            add_expression!(blk, tr, ret, nothing)
-            # Store to the new variable.
-            add_expression!(blk, tr, @ex OpStore(tr.results[core_ssaval], ret.result::ResultID))
-          elseif ismutabletype(jtype) && isa(jinst, Core.PhiNode)
-            insert!(tr.variables, core_ssaval, Variable(stype, StorageClassFunction))
-            add_expression!(blk, tr, ret, core_ssaval)
+          if ismutabletype(jtype)
+            if isa(jinst, Core.PhiNode)
+              insert!(tr.variables, core_ssaval, Variable(stype, StorageClassFunction))
+              add_expression!(blk, tr, ret, core_ssaval)
+            else
+              # The current core ResultID has already been assigned (to the variable).
+              add_expression!(blk, tr, ret, nothing)
+              # Store to the new variable.
+              add_expression!(blk, tr, @ex OpStore(tr.results[core_ssaval], ret.result::ResultID))
+            end
           else
             add_expression!(blk, tr, ret, core_ssaval)
           end

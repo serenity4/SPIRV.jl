@@ -266,7 +266,7 @@ end
 @eval Base.broadcasted(::typeof(atan), v1::T, v2::T) where {T<:Vec{<:Any,<:SmallFloat}} = Atan2(v1, v2)
 
 ## Unary vector operations.
-for (f, op) in zip((:ceil, :exp), (:Ceil, :Exp))
+for (f, op) in zip((:ceil, :exp, :-), (:Ceil, :Exp, :FNegate))
   @eval @noinline $op(v::Vec) = vectorize($f, v)
   @eval Base.broadcasted(::typeof($f), v::Vec) = $op(v)
 end

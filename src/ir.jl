@@ -262,7 +262,8 @@ function Module(ir::IR; debug_info = true)
   append_globals!(insts, globals)
   append_functions!(insts, ir.fdefs, globals)
 
-  Module(ir.ir_meta, id_bound(ir), insts)
+  mod = Module(ir.ir_meta, insts)
+  remove_obsolete_annotations!(mod)
 end
 
 function replace_name(id::ResultID, names)

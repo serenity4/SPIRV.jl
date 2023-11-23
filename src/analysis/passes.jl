@@ -7,7 +7,7 @@ function renumber_ssa(amod::AnnotatedModule)
   swaps = ResultDict{ResultID}()
   new_insts = Instruction[]
 
-  for inst in instructions(amod, first(amod.capabilities):(first(amod.functions) - 1))
+  for inst in instructions(amod, first(amod.capabilities):(last(amod.globals)))
     push!(new_insts, swap_result_id!(swaps, counter, inst))
   end
 
@@ -42,3 +42,20 @@ function swap_result_id!(swaps::ResultDict{ResultID}, counter::IDCounter, inst::
   insert!(swaps, inst.result_id, id)
   @set inst.result_id = id
 end
+
+"""
+Remove all annotations (including debug annotations and decorations)
+such as `Name`, `Decorate`, etc. if referenced IDs are greater than the bound
+declared by the module.
+"""
+function remove_obsolete_annotations!(amod::AnnotatedModule)
+  diff = Diff(amod)
+  bound = ResultID(amod.mod.bound)
+  for i in amod.debug
+    inst = amod[i]
+    any(x -> isa(x, ResultID) && x ≥ bound, inst.arguments) && delete!(diff, i)
+  end
+  apply!(amod, diff)
+end
+
+remove_obsolete_annotations!(mod::Module) = remove_obsolete_annotations!(annotate(mod))

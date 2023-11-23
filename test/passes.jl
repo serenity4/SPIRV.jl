@@ -1,5 +1,5 @@
 using SPIRV, Test, Accessors
-using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!, propagate_constants!
+using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!, propagate_constants!, remove_op_nops!, remove_obsolete_annotations!
 
 @testset "Passes" begin
   @testset "SSA renumbering" begin
@@ -186,5 +186,29 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
     @test ir ≈ expected renumber = true
     propagate_constants!(ir)
     @test ir ≈ expected renumber = true
+  end
+
+  @testset "OpNop removal" begin
+    ir = @spv_ir begin
+      UInt32 = TypeInt(32, false)
+      Nothing = TypeVoid()
+      @function f(x::UInt32)::UInt32 begin
+        _ = Label()
+        y = Nop(x)::UInt32
+        z = Nop()::Nothing
+        ReturnValue(x)
+      end
+    end
+    remove_op_nops!(ir)
+    expected = @spv_ir begin
+      UInt32 = TypeInt(32, false)
+      Nothing = TypeVoid()
+      @function f(x::UInt32)::UInt32 begin
+        _ = Label()
+        ReturnValue(x)
+      end
+    end
+    @test ir ≈ expected
+    @test unwrap(validate(ir))
   end
 end;

@@ -421,14 +421,16 @@ SUPPORTED_FEATURES = SupportedFeatures(
     expected = @spv_ir begin
       Float32 = TypeFloat(32)
       Vec2 = TypeVector(Float32, 2U)
-      Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
-      @function var"+_Tuple{SVector{2,Float32},SVector{2,Float32}}"(x::Vec2Ptr, y::Vec2Ptr)::Vec2 begin
-        b1 = Label()
-        _x = Load(x)::Vec2
-        _y = Load(y)::Vec2
-        ret = FAdd(_x, _y)::Vec2
-        ReturnValue(ret)
-      end
+      # XXX: The Vec2Ptr type is inserted after the function definition,
+      # which is impossible to express given the current DSL. That should be addressed some time.
+      FType = TypeFunction(Vec2, Vec2, Vec2)
+      f = Function(SPIRV.FunctionControlNone, FType)
+      x = FunctionParameter()::Vec2
+      y = FunctionParameter()::Vec2
+      _ = Label()
+      ret = FAdd(x, y)::Vec2
+      ReturnValue(ret)
+      FunctionEnd()
     end
     @test unwrap(validate(ir))
     @test ir ≈ expected
@@ -436,5 +438,100 @@ SUPPORTED_FEATURES = SupportedFeatures(
     SPIRV.@code_typed debuginfo=:source +(::SVector{2,Float16}, ::SVector{2,Float32})
     ir = @compile +(::SVector{2,Float16}, ::SVector{2,Float32})
     @test unwrap(validate(ir))
+
+    @testset "Conversions" begin
+      ir = @compile (function (x)
+        y = SVector(x)
+        -y
+      end)(::Vec2)
+      expected = @spv_ir begin
+        Float32 = TypeFloat(32)
+        Vec2 = TypeVector(Float32, 2U)
+        Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
+        @function f(x::Vec2Ptr)::Vec2 begin
+          _ = Label()
+          value = Load(x)::Vec2
+          result = FNegate(value)::Vec2
+          ReturnValue(result)
+        end
+      end
+      @test unwrap(validate(expected))
+      @test ir ≈ expected renumber = true
+
+      ir = @compile (function (x)
+        y = MVector(x)
+        -y
+      end)(::Vec2)
+      expected = @spv_ir begin
+        Float32 = TypeFloat(32)
+        Vec2 = TypeVector(Float32, 2U)
+        Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
+        @function f(x::Vec2Ptr)::Vec2 begin
+          _ = Label()
+          v = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
+          v_intermediate = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
+          value = Load(x)::Vec2
+          Store(v, value)
+          value2 = Load(v)::Vec2
+          result = FNegate(value2)::Vec2
+          Store(v_intermediate, result)
+          ret = Load(v_intermediate)::Vec2
+          ReturnValue(ret)
+        end
+      end
+      @test unwrap(validate(expected))
+      @test ir ≈ expected renumber = true
+
+      ir = @compile (function (x)
+        y = Vec(x)
+        -y
+      end)(::SVector{2,Float32})
+      expected = @spv_ir begin
+        Float32 = TypeFloat(32)
+        Vec2 = TypeVector(Float32, 2U)
+        # XXX: The Vec2Ptr type is inserted after the function definition,
+        # which is impossible to express given the current DSL. That should be addressed some time.
+        FType = TypeFunction(Vec2, Vec2)
+        Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
+        f = Function(SPIRV.FunctionControlNone, FType)
+        x = FunctionParameter()::Vec2
+        _ = Label()
+        v = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
+        v_intermediate = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
+        Store(v, x)
+        value = Load(v)::Vec2
+        result = FNegate(value)::Vec2
+        Store(v_intermediate, result)
+        ret = Load(v_intermediate)::Vec2
+        ReturnValue(ret)
+        FunctionEnd()
+      end
+      @test unwrap(validate(expected))
+      @test ir ≈ expected renumber = true
+
+      ir = @compile (function (x)
+        y = Vec(x)
+        -y
+      end)(::MVector{2,Float32})
+      expected = @spv_ir begin
+        Float32 = TypeFloat(32)
+        Vec2 = TypeVector(Float32, 2U)
+        Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
+        @function f(x::Vec2Ptr)::Vec2 begin
+          _ = Label()
+          v = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
+          v_intermediate = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
+          _x = Load(x)::Vec2
+          Store(v, _x)
+          value = Load(v)::Vec2
+          result = FNegate(value)::Vec2
+          Store(v_intermediate, result)
+          ret = Load(v_intermediate)::Vec2
+          ReturnValue(ret)
+        end
+      end
+      @test unwrap(validate(expected))
+      @test ir ≈ expected renumber = true
+    end
   end
 end;

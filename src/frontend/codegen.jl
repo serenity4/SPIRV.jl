@@ -49,7 +49,13 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
     Expr(:invoke, mi, f, args...) => begin
       isa(f, Core.SSAValue) && (f = tr.globalrefs[f])
       @assert isa(f, GlobalRef)
-      if f.mod == @__MODULE__() || !in(f.mod, (Base, Core))
+      if f.name === :convert_native && nameof(f.mod) === :SPIRVStaticArraysExt
+        # Ignore conversions that only occur in a native code generation context
+        # such as Vec <-> SVector conversions.
+        @assert length(args) == 2
+        _, x = args # ignore first argument `::Type{...}`
+        (OpNop, (x,))
+      elseif f.mod == @__MODULE__() || !in(f.mod, (Base, Core))
         opcode = lookup_opcode(f.name)
         if !isnothing(opcode)
           !isempty(args) && isa(first(args), DataType) && (args = args[2:end])
@@ -76,17 +82,16 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
     _ => throw_compilation_error("expected call or invoke expression, got $(repr(jinst))")
   end
 
-  args = collect(args)
+  args = collect(Any, args)
 
   if opcode in (OpCompositeExtract, OpVectorShuffle, OpAccessChain)
     for (i, arg) in enumerate(args)
-      if isa(arg, Integer)
-        # Turn literal 1-based indexing into 0-based literal indexing.
-        # Constant indices in OpAccessChain will later show up as ResultIDs, which will be remapped by `remap_dynamic_1based_indices!`.
-        opcode ≠ OpAccessChain && (arg -= 1U)
-        # Force literal to be 32-bit.
-        args[i] = UInt32(arg)
-      end
+      isa(arg, Integer) || continue
+      # Turn literal 1-based indexing into 0-based literal indexing.
+      # Constant indices in OpAccessChain will later show up as ResultIDs, which will be remapped by `remap_dynamic_1based_indices!`.
+      opcode ≠ OpAccessChain && (arg -= 1U)
+      # Force literal to be 32-bit.
+      args[i] = UInt32(arg)
     end
   end
 

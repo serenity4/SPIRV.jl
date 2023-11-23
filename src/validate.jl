@@ -59,12 +59,26 @@ function validate_khronos(pmod::PhysicalModule; flags = [])::Result{Bool,Validat
   true
 end
 
-function validate(ir::IR)
-  if isempty(ir.entry_points)
-    # Add the Linkage capability to work around the requirement of having at least one entry point.
-    ir = @set ir.capabilities = union(ir.capabilities, [CapabilityLinkage])
+validate(ir::IR) = validate(Module(work_around_missing_entry_point(ir)))
+validate(amod::AnnotatedModule) = validate(Module(work_around_missing_entry_point(amod)))
+
+function work_around_missing_entry_point(ir::IR)
+  !isempty(ir.entry_points) && return ir
+  # Add the Linkage capability to work around the requirement of having at least one entry point.
+  ir = @set ir.capabilities = union(ir.capabilities, [CapabilityLinkage])
+end
+
+function work_around_missing_entry_point(amod::AnnotatedModule)
+  !isempty(amod.entry_points) && return amod
+  # Add the Linkage capability to work around the requirement of having at least one entry point.
+  for i in amod.capabilities
+    inst = amod[i]
+    capability = inst.arguments[1]::Capability
+    capability === CapabilityLinkage && return amod
   end
-  validate(Module(ir))
+  diff = Diff(amod)
+  insert!(diff, lastindex(amod.capabilities) => @inst Capability(CapabilityLinkage))
+  apply(amod, diff)
 end
 
 function validate_shader(ir::IR; flags = [])
