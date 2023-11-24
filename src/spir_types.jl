@@ -199,9 +199,15 @@ end
 
 assert_type_known(t::SPIRType) = !isa(t, OpaqueType) || error("Unknown type `$(t.name)` reached. This suggests that an error was encoutered in the Julia function during its compilation.")
 
+error_type_not_known(t::Type) = error("Type `$t` does not have a corresponding SPIR-V type.")
+
 function spir_type(@nospecialize(t::Union{Union, Type{Union{}}}), tmap::Optional{TypeMap} = nothing; kwargs...)
   t === Union{} && return OpaqueType(Symbol("Union{}"))
   error("Can't get a SPIR-V type for $t; unions are not supported at the moment.")
+end
+function spir_type(@nospecialize(t::Type), tmap::Optional{TypeMap} = nothing; kwargs...)
+  !isconcretetype(t) && throw(ArgumentError("Non-concrete types are not supported in SPIR-V."))
+  error_type_not_known(t)
 end
 
 remap_type(@nospecialize(t::DataType)) = t
@@ -251,10 +257,14 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
     ::Type{<:Image} => ImageType(spir_type(component_type(t), tmap), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
     ::Type{<:SampledImage} => SampledImageType(spir_type(image_type(t), tmap))
     GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type.(t.types, tmap))
-    GuardBy(isprimitivetype) => primitive_type_to_spirv(t)
+    ::Type{<:Enum} => spir_type(t.super.parameters[1]::DataType, tmap)
+    GuardBy(isprimitivetype) => begin
+      T = primitive_type_to_spirv(t)
+      isa(T, SPIRType) ? T : spir_type(T, tmap)
+    end
     ::Type{Any} => error("Type Any is not a valid SPIR-V type; type inference must have failed.")
     GuardBy(isabstracttype) => error("Abstract types cannot be mapped to SPIR-V types (type: $t).")
-    _ => error("Type $t does not have a corresponding SPIR-V type.")
+    _ => error_type_not_known(t)
   end
 
   #TODO: WIP, need to insert an `OpCompositeExtract` for all uses if the type changed.

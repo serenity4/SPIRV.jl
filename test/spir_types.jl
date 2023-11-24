@@ -14,20 +14,56 @@ using SPIRV: Constant, TypeMap, Translation, ModuleTarget, emit_constant!, Resul
   @test t_ptr ≈ t2_ptr
 end
 
-@testset "TypeMap" begin
+@enum TestEnum::UInt32 TEST_A = 1 TEST_B = 2
+primitive type TestPrimitiveTypeAllowed 32 end
+SPIRV.primitive_type_to_spirv(::Type{TestPrimitiveTypeAllowed}) = UInt32
+primitive type TestPrimitiveTypeDisallowed 32 end
+
+@testset "Mapping Julia types to SPIR-V types" begin
   tmap = TypeMap()
-  @test spir_type(Tuple{Int64,Int64}, tmap) == ArrayType(IntegerType(64, true), Constant(2U))
-  @test isa(spir_type(Tuple{Int64}, tmap), StructType)
-  t = spir_type(Tuple{Int64,Float64}, tmap)
-  @test isa(t, StructType)
-  @test t === spir_type(Tuple{Int64,Float64}, tmap)
-  pt = spir_type(Pointer{Tuple{Int64,Float64}}, tmap)
-  @test t === pt.type
-  @test_throws "Abstract types" spir_type(Ref{Tuple{Int64,Float64}}, tmap; wrap_mutable = true)
-  pt = spir_type(Base.RefValue{Tuple{Int64,Float64}}, tmap; wrap_mutable = true)
-  ref_t = pt.type
-  @test t === only(ref_t.members)
-  @test isa(spir_type(Union{}, tmap), OpaqueType)
+
+  @testset "Tuples" begin
+    # 1-element tuples are treated as structs.
+    @test isa(spir_type(Tuple{Int64}, tmap), StructType)
+
+    # Heterogeneous tuples are treated as structs.
+    t = spir_type(Tuple{Int64,Float64}, tmap)
+    @test isa(t, StructType)
+    @test t === spir_type(Tuple{Int64,Float64}, tmap)
+
+    # Homogeneous tuples are treated as arrays.
+    @test spir_type(Tuple{Int64,Int64}, tmap) == ArrayType(IntegerType(64, true), Constant(2U))
+  end
+
+  @testset "Pointers" begin
+    t = spir_type(Tuple{Int64,Float64}, tmap)
+    pt = spir_type(Pointer{Tuple{Int64,Float64}}, tmap)
+    @test pt.type === t
+
+    # Mutable objects will give immutable SPIR-V types, unless `wrap_mutable` is set to true,
+    # in which case a pointer type (which is the only way to express mutability in SPIR-V) will be returned.
+    rt = spir_type(Base.RefValue{Tuple{Int64,Float64}}, tmap)
+    @test isa(rt, StructType)
+    @test rt.members == [t]
+    @test rt.members[1] === t
+    pt = spir_type(Base.RefValue{Tuple{Int64,Float64}}, tmap; wrap_mutable = true)
+    @test isa(pt, PointerType)
+    @test pt.type === rt
+  end
+
+  @testset "Primitive types" begin
+    @test spir_type(TestEnum) == IntegerType(32, false)
+    @test spir_type(TestPrimitiveTypeAllowed) == IntegerType(32, false)
+  end
+
+  @test spir_type(Union{}, tmap) == OpaqueType(Symbol("Union{}"))
+
+  @testset "Disallowed types" begin
+    @test_throws "Abstract types" spir_type(Ref{Tuple{Int64,Float64}}, tmap)
+    @test_throws "Non-concrete types" spir_type(NTuple{3}, tmap)
+    @test_throws "Primitive type" spir_type(TestPrimitiveTypeDisallowed, tmap)
+    @test_throws "unions are not supported" spir_type(Union{Int64,Float64}, tmap)
+  end
 end
 
 @testset "Constants" begin

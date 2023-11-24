@@ -141,6 +141,7 @@ function Base.showerror(io::IO, err::CompilationError)
   frame.code.rettype == Union{} && length(frame.code.code) < 100 && println(io, "\n\n", frame.code)
   if isdefined(err, :jinst)
     print(io, "\n\n", error_field("Julia instruction" * (!iszero(err.jinst_index) ? " at index %$(err.jinst_index)" : "")), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
+    err.jtype === Union{} && printstyled(io, "\n\n", "The type of the instruction is `Union{}`, which may indicate an error in the code that would throw an exception at runtime."; italic = true)
   end
   if isdefined(err, :ex)
     print(io, "\n\n", error_field("Wrapped SPIR-V expression"))
