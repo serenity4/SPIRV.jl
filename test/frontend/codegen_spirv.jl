@@ -534,4 +534,118 @@ SUPPORTED_FEATURES = SupportedFeatures(
       @test ir ≈ expected renumber = true
     end
   end
+
+  @testset "(===) support" begin
+    egal(x, y) = x === y
+    ir = @compile egal(::Float32, ::Float32)
+    expected = @spv_ir begin
+      Bool = TypeBool()
+      Float32 = TypeFloat(32)
+      @function (===)(x::Float32, y::Float32)::Bool begin
+        _ = Label()
+        same = FOrdEqual(x, y)::Bool
+        ReturnValue(same)
+      end
+    end
+    @test unwrap(validate(expected))
+    @test ir ≈ expected
+
+    ir = @compile egal(::Tuple{Float32}, ::Tuple{Float32})
+    expected = @spv_ir begin
+      Bool = TypeBool()
+      Float32 = TypeFloat(32)
+      TupleF32 = TypeStruct(Float32)
+      @function (===)(x::TupleF32, y::TupleF32)::Bool begin
+        _ = Label()
+        _x = CompositeExtract(x, 0U)::Float32
+        _y = CompositeExtract(y, 0U)::Float32
+        same = FOrdEqual(_x, _y)::Bool
+        ReturnValue(same)
+      end
+    end
+    @test unwrap(validate(expected))
+    @test ir ≈ expected
+
+    ir = @compile egal(::GaussianBlur, ::GaussianBlur)
+    expected = @spv_ir begin
+      Bool = TypeBool()
+      Float32 = TypeFloat(32)
+      GaussianBlur = TypeStruct(Float32, Float32)
+      @function (===)(x::GaussianBlur, y::GaussianBlur)::Bool begin
+        _ = Label()
+        scale_x = CompositeExtract(x, 0U)::Float32
+        scale_y = CompositeExtract(y, 0U)::Float32
+        same_scale = FOrdEqual(scale_x, scale_y)::Bool
+        strength_x = CompositeExtract(x, 1U)::Float32
+        strength_y = CompositeExtract(y, 1U)::Float32
+        same_strength = FOrdEqual(strength_x, strength_y)::Bool
+        result = LogicalAnd(same_scale, same_strength)::Bool
+        ReturnValue(result)
+      end
+    end
+    @test unwrap(validate(expected))
+    @test ir ≈ expected
+
+    ir = @compile egal(::_BoidAgent, ::_BoidAgent)
+    expected = @spv_ir begin
+      Bool = TypeBool()
+      Float32 = TypeFloat(32)
+      Vec2 = TypeVector(Float32, 2U)
+      BoidAgent = TypeStruct(Vec2, Vec2, Float32)
+      # XXX: The Vec2B type is inserted after the function definition,
+      # which is impossible to express given the current DSL. That should be addressed some time.
+      FType = TypeFunction(Bool, BoidAgent, BoidAgent)
+      Vec2B = TypeVector(Bool, 2U)
+      (===) = Function(SPIRV.FunctionControlNone, FType)::Bool
+      x = FunctionParameter()::BoidAgent
+      y = FunctionParameter()::BoidAgent
+      _ = Label()
+      position_x = CompositeExtract(x, 0U)::Vec2
+      position_y = CompositeExtract(y, 0U)::Vec2
+      same_positions = FOrdEqual(position_x, position_y)::Vec2B
+      same_position = All(same_positions)::Bool
+      velocity_x = CompositeExtract(x, 1U)::Vec2
+      velocity_y = CompositeExtract(y, 1U)::Vec2
+      same_velocities = FOrdEqual(velocity_x, velocity_y)::Vec2B
+      same_velocity = All(same_velocities)::Bool
+      mass_x = CompositeExtract(x, 2U)::Float32
+      mass_y = CompositeExtract(y, 2U)::Float32
+      same_mass = FOrdEqual(mass_x, mass_y)::Bool
+      result_1 = LogicalAnd(same_position, same_velocity)::Bool
+      result_2 = LogicalAnd(result_1, same_mass)::Bool
+      ReturnValue(result_2)
+      FunctionEnd()
+    end
+    @test unwrap(validate(expected))
+    @test ir ≈ expected renumber = true
+
+    ir = @compile egal(::SMatrix{3,2,Float32,4}, ::SMatrix{3,2,Float32,4})
+    expected = @spv_ir begin
+      Bool = TypeBool()
+      Float32 = TypeFloat(32)
+      Vec3 = TypeVector(Float32, 3)
+      Mat3x2 = TypeMatrix(Vec3, 2)
+      # XXX: The Vec3B type is inserted after the function definition,
+      # which is impossible to express given the current DSL. That should be addressed some time.
+      FType = TypeFunction(Bool, Mat3x2, Mat3x2)
+      Vec3B = TypeVector(Bool, 3)
+      (===) = Function(SPIRV.FunctionControlNone, FType)::Bool
+      x = FunctionParameter()::Mat3x2
+      y = FunctionParameter()::Mat3x2
+      _ = Label()
+      col1x = CompositeExtract(x, 0U)::Vec3
+      col1y = CompositeExtract(y, 0U)::Vec3
+      same_col1s = FOrdEqual(col1x, col1y)::Vec3B
+      same_col1 = All(same_col1s)::Bool
+      col2x = CompositeExtract(x, 1U)::Vec3
+      col2y = CompositeExtract(y, 1U)::Vec3
+      same_col2s = FOrdEqual(col2x, col2y)::Vec3B
+      same_col2 = All(same_col2s)::Bool
+      result = LogicalAnd(same_col1, same_col2)::Bool
+      ReturnValue(result)
+      FunctionEnd()
+    end
+    @test unwrap(validate(expected))
+    @test ir ≈ expected renumber = true
+  end
 end;

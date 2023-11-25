@@ -124,3 +124,5 @@ macro force_construct(T, ex)
 end
 
 propagate_source(__source__, ex) = Expr(:block, LineNumberNode(__source__.line, __source__.file), ex)
+
+const LiteralValue = Union{Float32, Float64, UInt8, UInt16, UInt32, UInt64, UInt128, Int32, Int64, Bool, String}

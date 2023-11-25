@@ -57,6 +57,12 @@ struct BoidAgent
   mass::Float32
 end
 
+struct _BoidAgent
+  position::SVector{2,Float32}
+  velocity::SVector{2,Float32} # facing direction is taken to be the normalized velocity
+  mass::Float32
+end
+
 function step_euler(agent::BoidAgent, forces::Vec2, Δt)
   (; position, velocity, mass) = agent
 

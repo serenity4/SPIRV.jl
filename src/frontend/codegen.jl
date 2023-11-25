@@ -41,7 +41,20 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         value = args[3]
         throw_compilation_error("`setfield!` not supported at the moment")
       end
-      &Core.tuple => (OpCompositeConstruct, args) # throw_compilation_error("the function `Core.tuple` is not supported at the moment")
+      &Core.tuple => (OpCompositeConstruct, args)
+      &(===) => begin
+        x, y = args
+        type = BooleanType()
+        Tx, Ty = retrieve_type(target, tr, x), retrieve_type(target, tr, y)
+        ret = if Tx !== Ty
+          emit!(mt, tr, Constant(false))
+        else
+          xid = isa(x, LiteralValue) ? emit!(mt, tr, Constant(x)) : ResultID(x, tr)
+          yid = isa(y, LiteralValue) ? emit!(mt, tr, Constant(y)) : ResultID(y, tr)
+          emit_recursive_egal!(blk, mt, tr, xid, yid, Tx)
+        end
+        return (ret, BooleanType())
+      end
       ::Function && if jtype === Union{} end => throw_compilation_error("unresolved call to function `$f`, indicating a `MethodError`")
       ::Function => throw_compilation_error("dynamic dispatch detected for function `$f`. All call sites must be statically resolved")
       _ => throw_compilation_error("call to unknown function `$f`")
@@ -125,6 +138,75 @@ function get_field_index(composite_type, field::QuoteNode, tr::Translation, targ
   index = findfirst(==(name), fieldnames(T))
   !isnothing(index) || throw_compilation_error("symbol $(repr(name)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
   index
+end
+
+retrieve_type(target::SPIRVTarget, tr::Translation, x::Core.SSAValue) = target.code.ssavaluetypes[x.id]
+retrieve_type(target::SPIRVTarget, tr::Translation, x::Core.Argument) = tr.argtypes[x.n - 1]
+retrieve_type(target::SPIRVTarget, tr::Translation, x::Number) = typeof(x)
+
+equality_operator(::IntegerType) = OpIEqual
+equality_operator(::FloatType) = OpFOrdEqual
+equality_operator(::BooleanType) = OpLogicalEqual
+
+function emit_recursive_egal!(blk::Block, mt::ModuleTarget, tr::Translation, x::ResultID, y::ResultID, T::Type)
+  ismutabletype(T) && throw_compilation_error("(===) is not supported between mutable values yet, nor between values of immutable types with mutable fields")
+  (; idcounter) = mt
+  t = spir_type(T, tr.tmap)
+  Bool = BooleanType()
+  ex = @match t begin
+    ::VectorType => begin
+      vec_comparison = @ex next!(idcounter) = equality_operator(t.eltype)(x, y)::VectorType(Bool, t.n)
+      add_expression!(blk, tr, vec_comparison)
+      @ex next!(idcounter) = All(vec_comparison.result)::Bool
+    end
+    ::MatrixType => begin
+      ids = ResultID[]
+      for i in 1:t.n
+        cx, cy = next!(idcounter), next!(idcounter)
+        xex = @ex cx = CompositeExtract(x, (i - 1)U)::t.eltype
+        yex = @ex cy = CompositeExtract(y, (i - 1)U)::t.eltype
+        add_expression!(blk, tr, xex)
+        add_expression!(blk, tr, yex)
+        id = emit_recursive_egal!(blk, mt, tr, xex.result, yex.result, coltype(T))
+        push!(ids, id)
+      end
+      return foldl(ids) do x, y
+        ex = @ex next!(idcounter) = LogicalAnd(x, y)::Bool
+        add_expression!(blk, tr, ex)
+        ex.result
+      end
+    end
+    ::IntegerType || ::FloatType || ::BooleanType => @ex next!(idcounter) = equality_operator(t)(x, y)::Bool
+    # XXX: Create a loop for arrays?
+    ::ArrayType => error("Arrays are not supported yet for `===` comparisons")
+    ::VoidType => return emit!(mt, tr, Constant(true))
+    ::StructType => begin
+      iszero(fieldcount(T)) && return emit_constant!(mt.constants, idcounter, mt.types, tr.tmap, Constant(true))
+      ids = ResultID[]
+      for (i, subT) in enumerate(fieldtypes(T))
+        subx, suby = next!(idcounter), next!(idcounter)
+        subt = spir_type(subT, tr.tmap)
+        xex = @ex subx = CompositeExtract(x, (i - 1)U)::subt
+        yex = @ex suby = CompositeExtract(y, (i - 1)U)::subt
+        add_expression!(blk, tr, xex)
+        add_expression!(blk, tr, yex)
+        id = emit_recursive_egal!(blk, mt, tr, xex.result, yex.result, subT)
+        push!(ids, id)
+      end
+      # Unroll all comparisons.
+      # This requires fieldcount(T) instructions, alternatives could be:
+      # - Short-circuit conditions.
+      # - Construct a Vec4 (or a vector of smaller size) and use All(vec).
+      # - Construct Arr(ids...) and emit a loop.
+      return foldl(ids) do x, y
+        ex = @ex next!(idcounter) = LogicalAnd(x, y)::Bool
+        add_expression!(blk, tr, ex)
+        ex.result
+      end
+    end
+  end
+  add_expression!(blk, tr, ex)
+  ex.result
 end
 
 function lookup_opcode(fname::Symbol)

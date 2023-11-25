@@ -365,11 +365,11 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
             add_expression!(blk, tr, ret, core_ssaval)
           end
         elseif isa(ret, ResultID)
-          # The value is a SPIR-V global (possibly a constant),
-          # so no need to push a new expression.
+          # The value references one that has already been inserted,
+          # possibly a SPIR-V global (e.g. a constant).
           # Just map the current SSA value to the global.
           # If the instruction was a `GlobalRef` then we'll already have inserted the result.
-          !isa(jinst, GlobalRef) && insert!(tr.results, core_ssaval, ret)
+          insert!(tr.results, core_ssaval, ret)
         end
       end
       jtype === Union{} && throw_compilation_error("`Union{}` type detected: the code to compile contains an error")
@@ -403,6 +403,7 @@ function add_expression!(block::Block, tr::Translation, ex::Expression, core_ssa
     insert!(tr.results, core_ssaval, ex.result)
   end
   push!(block, ex)
+  ex
 end
 
 function emit_extinst!(mt::ModuleTarget, extinst)

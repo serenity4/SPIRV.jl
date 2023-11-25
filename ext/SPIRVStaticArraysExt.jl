@@ -5,6 +5,7 @@ using SPIRV
 using SPIRV: @override, unsigned_index, ntuple_uint32
 import SPIRV: remap_type,
              Arr, Vec, Mat,
+             coltype,
              CompositeExtract, CompositeConstruct,
              FAdd, FSub, FMul, FDiv, FRem, FMod,
              IAdd, ISub, IMul, IDiv, IRem, IMod,
@@ -20,6 +21,7 @@ for (VT, MT) in zip((:SVector, :MVector), (:SMatrix, :MMatrix))
     @eval remap_type(::Type{$VT{$N,T}}) where {T} = Vec{$N,T}
     for M in 2:4
       @eval remap_type(::Type{<:$MT{$N,$M,T}}) where {T} = Mat{$N,$M,T}
+      @eval coltype(::Type{<:$MT{$N,$M,T}}) where {T} = $VT{$N,T}
     end
   end
 
@@ -149,18 +151,17 @@ for (VT, MT) in zip((:SVector, :MVector), (:SMatrix, :MMatrix))
         # Define broadcasting rules so that broadcasting eagerly uses the vector instruction when applicable.
         @eval Base.broadcasted(::typeof($f), v1::T, v2::T) where {T<:$VT{$N,<:$XT}} = $opX(v1, v2)
       end
+    end
 
-      # Linear algebra operations.
-      for (f, op, code) in zip((:dot,), (:Dot,), (:(sum(v1 * v2)),))
-        @eval @override $f(v1::$VT{$N}, v2::Vec{$N}) = $f(promote(v1, v2)...)
-        @eval @override $f(v1::Vec{$N}, v2::$VT{$N}) = $f(promote(v1, v2)...)
-        @eval @override $f(v1::$VT{$N,T}, v2::$VT{$N,T}) where {T<:IEEEFloat} = $op(promote(v1, v2)...)
-        @eval @override $f(v1::$VT{$N,T}, v2::$VT{$N,T}) where {T<:IEEEFloat} = $op(promote(v1, v2)...)
-        @eval @noinline $op(v1::T, v2::T) where {T<:$VT{$N,<:IEEEFloat}} = $code
+    # Linear algebra operations.
+    for (f, op, code) in zip((:dot,), (:Dot,), (:(sum(v1 * v2)),))
+      @eval @override $f(v1::$VT{$N,T}, v2::$VT{$N,T}) where {T<:IEEEFloat} = $op(promote(v1, v2)...)
+      @eval $f(v1::$VT{$N}, v2::Vec{$N}) = $f(promote(v1, v2)...)
+      @eval $f(v1::Vec{$N}, v2::$VT{$N}) = $f(promote(v1, v2)...)
+      @eval @noinline $op(v1::T, v2::T) where {T<:$VT{$N,<:IEEEFloat}} = $code
 
-        # Allow usage of promotion rules for these operations.
-        @eval $op(v1::$VT{$N,<:$IEEEFloat}, v2::$VT{$N,<:$IEEEFloat}) = $op(promote(v1, v2)...)
-      end
+      # Allow usage of promotion rules for these operations.
+      @eval $op(v1::$VT{$N,<:$IEEEFloat}, v2::$VT{$N,<:$IEEEFloat}) = $op(promote(v1, v2)...)
     end
   end
 
