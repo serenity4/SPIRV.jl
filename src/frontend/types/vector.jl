@@ -235,8 +235,6 @@ end
 
 # Math operations.
 
-import LinearAlgebra: cross
-
 cross(x::Vec{2}, y::Vec{2}) = x.x * y.y - x.y * y.x
 
 ## Binary vector operations.

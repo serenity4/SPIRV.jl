@@ -11,7 +11,7 @@ import SPIRV: remap_type,
              FConvert, SConvert, ConvertFToS, ConvertFToU, ConvertSToF, ConvertUToF,
              Ceil, Exp, FNegate
 using SPIRV.MathFunctions
-import LinearAlgebra: norm, normalize
+import LinearAlgebra: norm, normalize, cross, dot
 using StaticArrays
 
 for (VT, MT) in zip((:SVector, :MVector), (:SMatrix, :MMatrix))
@@ -148,6 +148,18 @@ for (VT, MT) in zip((:SVector, :MVector), (:SMatrix, :MMatrix))
 
         # Define broadcasting rules so that broadcasting eagerly uses the vector instruction when applicable.
         @eval Base.broadcasted(::typeof($f), v1::T, v2::T) where {T<:$VT{$N,<:$XT}} = $opX(v1, v2)
+      end
+
+      # Linear algebra operations.
+      for (f, op, code) in zip((:dot,), (:Dot,), (:(sum(v1 * v2)),))
+        @eval @override $f(v1::$VT{$N}, v2::Vec{$N}) = $f(promote(v1, v2)...)
+        @eval @override $f(v1::Vec{$N}, v2::$VT{$N}) = $f(promote(v1, v2)...)
+        @eval @override $f(v1::$VT{$N,T}, v2::$VT{$N,T}) where {T<:IEEEFloat} = $op(promote(v1, v2)...)
+        @eval @override $f(v1::$VT{$N,T}, v2::$VT{$N,T}) where {T<:IEEEFloat} = $op(promote(v1, v2)...)
+        @eval @noinline $op(v1::T, v2::T) where {T<:$VT{$N,<:IEEEFloat}} = $code
+
+        # Allow usage of promotion rules for these operations.
+        @eval $op(v1::$VT{$N,<:$IEEEFloat}, v2::$VT{$N,<:$IEEEFloat}) = $op(promote(v1, v2)...)
       end
     end
   end

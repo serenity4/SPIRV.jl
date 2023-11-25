@@ -34,6 +34,8 @@ using Base: Fix1, Fix2,
 const IEEEFloat_types = (Float16, Float32, Float64)
 const SmallFloat = Union{Float16,Float32}
 
+import LinearAlgebra: dot, cross
+
 import SPIRV_Tools_jll
 const spirv_val = SPIRV_Tools_jll.spirv_val()
 

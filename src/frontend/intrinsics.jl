@@ -43,6 +43,9 @@ end
 
 @override muladd(x::T, y::T, z::T) where {T<:IEEEFloat} = FAdd(FMul(x, y), z)
 
+@override dot(x::T, y::T) where {T<:Vec{<:Any,<:IEEEFloat}} = Dot(x, y)
+@noinline Dot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
+
 ## Comparisons.
 
 @override (==)(x::T, y::T) where {T<:IEEEFloat}              = FOrdEqual(x, y)
