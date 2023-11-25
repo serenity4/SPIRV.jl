@@ -168,7 +168,7 @@ function (::CompositeExtractDynamicToLiteral)(ir::IR, fdef::FunctionDefinition)
           index = ex[2]::Union{UInt32, ResultID}
           if isa(index, ResultID)
             c = get(ir.constants, index, nothing)
-            isnothing(c) && throw_compilation_error("In CompositeExtractDynamicToLiteral pass, expected a constant dynamic index, got reference to non-constant $index")
+            isnothing(c) && throw_compilation_error("In CompositeExtractDynamicToLiteral pass, expected a constant dynamic index, got reference to non-constant $index for ", sprintc_mime(show, Instruction(ex, ir.types)))
             c.type == IntegerType(32, false) || throw_compilation_error("Expected 32-bit unsigned integer type for index constant, got $(c.type)")
             ex[2] = c.value
           end
@@ -310,13 +310,12 @@ struct RemoveOpNop <: FunctionPass end
 remove_op_nops!(ir::IR) = RemoveOpNop()(ir)
 
 function (::RemoveOpNop)(fdef::FunctionDefinition)
-  deletions = Int64[]
   replacements = Dictionary{ResultID,ResultID}()
   for blk in fdef
     to_remove = Int64[]
     for (i, ex) in enumerate(blk)
       if ex.op === OpNop
-        push!(deletions, i)
+        push!(to_remove, i)
         if !isempty(ex)
           @assert length(ex) == 1
           value = ex[1]::ResultID
@@ -331,6 +330,6 @@ function (::RemoveOpNop)(fdef::FunctionDefinition)
         end
       end
     end
-    splice!(blk.exs, deletions)
+    splice!(blk.exs, to_remove)
   end
 end
