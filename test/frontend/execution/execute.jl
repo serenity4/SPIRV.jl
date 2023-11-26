@@ -5,7 +5,8 @@ debug_callback_c = @cfunction(default_debug_callback, UInt32, (DebugUtilsMessage
 
 function create_device()
   layers = String[]
-  layers = String["VK_LAYER_KHRONOS_validation"]
+  # Validation layers seem to crash when `Bool` is returned.
+  # layers = String["VK_LAYER_KHRONOS_validation"]
   extensions = String["VK_EXT_debug_utils"]
   instance = Instance(layers, extensions; application_info = ApplicationInfo(v"0.1", v"0.1", v"1.3"))
   messenger = DebugUtilsMessengerEXT(instance, debug_callback_c)
@@ -51,7 +52,6 @@ function execute(source::ShaderSource, device::Device, T::Type)
   unwrap(bind_buffer_memory(device, buffer, memory, 0))
   out_host_ptr = unwrap(map_memory(device, memory, 0, sizeof(T)))
   out_device_ptr = get_buffer_device_address(device, BufferDeviceAddressInfo(buffer))
-  unsafe_store!(Ptr{T}(out_host_ptr), 0F)
 
   push_constant_range = PushConstantRange(stage, 0, sizeof(DeviceAddressBlock))
   pipeline_layout = PipelineLayout(device, [], [push_constant_range])
@@ -88,11 +88,13 @@ end
 
 SPIRV.Pointer{T}(addr::DeviceAddressBlock) where {T} = SPIRV.Pointer{T}(addr.addr)
 
-function execute(T::Type, ex::Expr)
-  eval(quote
-    source = @eval @compute supported_features VulkanAlignment() assemble = true (function (out)
-      @store out::$T = $ex
-    end)(::DeviceAddressBlock::PushConstant) options = ComputeExecutionOptions(local_size = (1, 1, 1))
-    execute(source, device, $T)
+function execute(ex::Expr, T = nothing)
+  T = @something(T, begin
+    code = @eval SPIRV.@code_typed (() -> $ex)()
+    code.rettype
   end)
+  source = @eval @compute supported_features VulkanAlignment() assemble = true (function (out)
+    @store out::$T = $ex
+  end)(::DeviceAddressBlock::PushConstant) options = ComputeExecutionOptions(local_size = (1, 1, 1))
+  execute(source, device, T)
 end

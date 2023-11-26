@@ -97,6 +97,7 @@ end
 @noinline ConvertSToF(to::Type{T}, x::BitSigned) where {T<:IEEEFloat} = Base.sitofp(to, x)
 @override (::Type{T})(x::BitUnsigned) where {T<:IEEEFloat} = ConvertUToF(T, x)
 @noinline ConvertUToF(to::Type{T}, x::BitUnsigned) where {T<:IEEEFloat} = Base.uitofp(to, x)
+@override (::Type{T})(x::Bool) where {T<:IEEEFloat} = ifelse(x, one(T), zero(T))
 
 ### There is no possibility to throw errors in SPIR-V, so replace safe operations with unsafe ones.
 @override trunc(::Type{T}, x::IEEEFloat) where {T<:BitInteger} = unsafe_trunc(T, x)

@@ -8,4 +8,5 @@ using SPIRV, Test
   include("frontend/codegen_julia.jl");
   include("frontend/codegen_spirv.jl");
   include("frontend/shader.jl");
+  include("frontend/execution.jl")
 end;
