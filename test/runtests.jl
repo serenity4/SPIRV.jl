@@ -1,5 +1,5 @@
 using SPIRV, Test
-using SPIRV: @shader, @compute, @vertex, @fragment, @compute, @any_hit, @mesh
+using SPIRV: @shader, @compute, @vertex, @fragment, @compute, @any_hit, @mesh, Sampler, Image
 using SPIRV.MathFunctions
 using StaticArrays
 
@@ -31,4 +31,7 @@ load_module(file) = load_module(load_module_expr(file))
   include("analysis.jl");
   include("restructuring.jl");
   include("frontend.jl");
+
+  # Run with a supported GPU driver, e.g. not SwiftShader.
+  include("execution.jl")
 end;

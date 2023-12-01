@@ -4,4 +4,5 @@ import SwiftShader_jll
 ENV["JULIA_VULKAN_LIBNAME"] = basename(SwiftShader_jll.libvulkan)
 using Vulkan: Vk, set_driver
 # Use SwiftShader for testing.
-set_driver(:SwiftShader)
+# XXX: Do that only when we support execution with it.
+# set_driver(:SwiftShader)

@@ -370,7 +370,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
           # possibly a SPIR-V global (e.g. a constant).
           # Just map the current SSA value to the global.
           # If the instruction was a `GlobalRef` then we'll already have inserted the result.
-          insert!(tr.results, core_ssaval, ret)
+          !isa(jinst, GlobalRef) && insert!(tr.results, core_ssaval, ret)
         end
       end
       jtype === Union{} && throw_compilation_error("`Union{}` type detected: the code to compile contains an error")
