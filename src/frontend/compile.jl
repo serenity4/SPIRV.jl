@@ -229,11 +229,12 @@ emit_constant!(mt::ModuleTarget, tr::Translation, value) = emit_constant!(mt.con
 function Constant(value::T, mt::ModuleTarget, tr::Translation) where {T}
   t = spir_type(T, tr.tmap)
   !iscomposite(t) && return Constant(value, t)
-  ids = @match value begin
-    ::Union{Vec,Arr} => [emit_constant!(mt, tr, value[i]) for i in eachindex(value)]
-    ::Mat => [emit_constant!(mt, tr, col) for col in columns(mat)]
-    _ => [emit_constant!(mt, tr, getproperty(value, name)) for name in fieldnames(T)]
-  end 
+  ids = @match t begin
+    ::VectorType || ::ArrayType => [emit_constant!(mt, tr, value[i]) for i in eachindex(value)]
+    ::MatrixType => [emit_constant!(mt, tr, col) for col in columns(mat)]
+    ::StructType => [emit_constant!(mt, tr, getproperty(value, name)) for name in fieldnames(T)]
+    _ => error("Unexpected composite type `$t`")
+  end
   Constant(ids, t)
 end
 

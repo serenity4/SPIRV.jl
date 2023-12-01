@@ -86,8 +86,8 @@ function Expression(c::Constant, id::ResultID)
     (true, true) => @ex id = OpSpecConstantTrue()::type
     (false, false) => @ex id = OpConstantFalse()::type
     (false, true) => @ex id = OpSpecConstantFalse()::type
-    (ids::Vector{ResultID}, false) => @ex id = OpConstantComposite(ids...)::type
-    (ids::Vector{ResultID}, true) => @ex id = OpSpecConstantComposite(ids...)::type
+    (ids::AbstractVector{ResultID}, false) => @ex id = OpConstantComposite(ids...)::type
+    (ids::AbstractVector{ResultID}, true) => @ex id = OpSpecConstantComposite(ids...)::type
     (GuardBy(isprimitivetype ∘ typeof), _) => @ex id = OpConstant(reinterpret(UInt32, [value]))::type
     _ => error("Unexpected value $(c.value) with type $type for constant expression")
   end
