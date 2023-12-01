@@ -368,9 +368,8 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         elseif isa(ret, ResultID)
           # The value references one that has already been inserted,
           # possibly a SPIR-V global (e.g. a constant).
-          # Just map the current SSA value to the global.
-          # If the instruction was a `GlobalRef` then we'll already have inserted the result.
-          !isa(jinst, GlobalRef) && insert!(tr.results, core_ssaval, ret)
+          # Just map the current SSA value to the global, unless it has already been set.
+          !haskey(tr.results, core_ssaval) && insert!(tr.results, core_ssaval, ret)
         end
       end
       jtype === Union{} && throw_compilation_error("`Union{}` type detected: the code to compile contains an error")
