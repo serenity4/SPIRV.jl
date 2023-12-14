@@ -13,7 +13,7 @@ import LinearAlgebra: norm, normalize
 
 export lerp, slerp_2d, angle_2d, rotate_2d, normalize, distance2, distance, norm, compute_roots, saturated_softmax, linearstep, smoothstep, smootherstep, remap
 
-lerp(x, y, t) = x * t + (1 - t)y
+lerp(x, y, t) = x .* t .+ (1 .- t)y
 
 # from https://en.wikipedia.org/wiki/Slerp
 function slerp_2d(x, y, t)
