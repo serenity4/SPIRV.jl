@@ -146,8 +146,7 @@ function Base.showerror(io::IO, err::CompilationError)
     err.jtype === Union{} && printstyled(io, "\n\n", "The type of the instruction is `Union{}`, which may indicate an error in the code that would throw an exception at runtime."; italic = true)
   end
   if isdefined(err, :ex)
-    print(io, "\n\n", error_field("Wrapped SPIR-V expression"))
-    emit(io, err.ex)
+    print(io, "\n\n", error_field("Wrapped SPIR-V expression"), err.ex)
   end
   println(io)
 end
@@ -372,7 +371,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
           !haskey(tr.results, core_ssaval) && insert!(tr.results, core_ssaval, ret)
         end
       end
-      jtype === Union{} && throw_compilation_error("`Union{}` type detected: the code to compile contains an error")
+      jtype === Union{} && !isa(jinst, Union{Core.GotoNode, Core.GotoIfNot}) && throw_compilation_error("`Union{}` type detected: the code to compile contains an error")
     catch e
       fields = (; jinst, jinst_index = i, jtype)
       !isnothing(ex) && (fields = (; fields..., ex))
