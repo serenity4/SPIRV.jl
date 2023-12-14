@@ -131,6 +131,10 @@ end
 
 function CC.concrete_eval_eligible(interp::SPIRVInterpreter, @nospecialize(f), result::CC.MethodCallResult, arginfo::CC.ArgInfo, sv::CC.InferenceState)
   neweffects = CC.Effects(result.effects; nonoverlayed=true)
-  result = CC.MethodCallResult(result.rt, result.edgecycle, result.edgelimited, result.edge, neweffects)
+  @static if VERSION > v"1.11.0-DEV.945"
+    result = CC.MethodCallResult(result.rt, result.exct, result.edgecycle, result.edgelimited, result.edge, neweffects)
+  else
+    result = CC.MethodCallResult(result.rt, result.edgecycle, result.edgelimited, result.edge, neweffects)
+  end
   @invoke CC.concrete_eval_eligible(interp::CC.AbstractInterpreter, f::Any, result::CC.MethodCallResult, arginfo::CC.ArgInfo, sv::CC.InferenceState)
 end
