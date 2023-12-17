@@ -238,17 +238,24 @@ end
 cross(x::Vec{2}, y::Vec{2}) = x.x * y.y - x.y * y.x
 
 ## Binary vector operations.
-for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, :Mod))
-  # Define FAdd, IMul, etc. for vectors of matching type.
-  opF, opI = Symbol.((:F, :I), op)
-
-  @eval Base.$f(x::Vec{N,T}, y::Vec{N,T}) where {N,T<:IEEEFloat} = $opF(x, y)
-  @eval Base.$f(x::Vec{N,T}, y::Vec{N,T}) where {N,T<:BitInteger} = $opI(x, y)
+for (f, op) in zip((:+, :-, :*, :/, :rem, :mod, :^, :atan), (:Add, :Sub, :Mul, :Div, :Rem, :Mod, :Pow, :Atan2))
   @eval Base.$f(x::Vec{N}, y::Vec{N}) where {N} = $f(promote(x, y)...)
   @eval Base.$f(x::Vec, y::AbstractVector) = $f(promote(x, y)...)
   @eval Base.$f(x::AbstractVector, y::Vec) = $f(promote(x, y)...)
 
-  for (opX, XT) in zip((opF, opI), (:IEEEFloat, :BitInteger))
+  ops, XTs = if in(op, (:Pow, :Atan2))
+    @eval Base.$f(x::Vec{N,T}, y::Vec{N,T}) where {N,T<:IEEEFloat} = $op(x, y)
+    (op,), (:IEEEFloat,)
+  else
+    opF, opI = Symbol.((:F, :I), op)
+    # Define FAdd, IMul, etc. for vectors of matching type.
+    @eval Base.$f(x::Vec{N,T}, y::Vec{N,T}) where {N,T<:IEEEFloat} = $opF(x, y)
+    @eval Base.$f(x::Vec{N,T}, y::Vec{N,T}) where {N,T<:BitInteger} = $opI(x, y)
+    
+    (opF, opI), (:IEEEFloat, :BitInteger)
+  end
+
+  for (opX, XT) in zip(ops, XTs)
     @eval @noinline $opX(v1::T, v2::T) where {T<:Vec{<:Any,<:$XT}} = vectorize($f, v1, v2)
 
     # Allow usage of promotion rules for these operations.
@@ -258,10 +265,6 @@ for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, 
     @eval Base.broadcasted(::typeof($f), v1::T, v2::T) where {T<:Vec{<:Any,<:$XT}} = $opX(v1, v2)
   end
 end
-
-@eval @noinline Atan2(v1::T, v2::T) where {T<:Vec} = vectorize(atan, v1, v2)
-@eval Atan2(v1::Vec{N}, v2::Vec{N}) where {N} = Atan2(promote(v1, v2)...)
-@eval Base.broadcasted(::typeof(atan), v1::T, v2::T) where {T<:Vec{<:Any,<:SmallFloat}} = Atan2(v1, v2)
 
 ## Unary vector operations.
 for (f, op) in zip((:ceil, :exp, :-), (:Ceil, :Exp, :FNegate))

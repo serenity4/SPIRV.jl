@@ -57,6 +57,7 @@ macro test_code(code, args...)
         Meta.isexpr(st, :call) && st.args[1] == GlobalRef(Base, :getfield) && return true
         Meta.isexpr(st, :new) && return true
         isa(st, GlobalRef) && return true
+        Meta.isexpr(st, :boundscheck) && return true
         Meta.isexpr(st, :invoke) || ($(log(:("Expected `invoke` expression, got `$st`"))); return false)
         mi = st.args[1]::Core.MethodInstance
         (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || ($(log(:("Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`")); false))
@@ -112,11 +113,17 @@ end
       (; code, ssavaluetypes) = SPIRV.@code_typed f_extinst(::Float32)
       @test operation.(code[1:(end - 1)]) == [:Exp, :Sin, :FMul, :FAdd, :Log, :FAdd]
       @test ssavaluetypes[1:(end - 1)] == fill(Float32, 6)
+
+      (; code, ssavaluetypes) = SPIRV.@code_typed ^(::Float32, ::Float32)
+      @test operation(code[1]) == :Pow
+      @test ssavaluetypes[1] == Float32
+
+      (; code, ssavaluetypes) = SPIRV.@code_typed ^(::Float64, ::Float64)
+      @test operation(code[1]) == :Pow
+      @test ssavaluetypes[1] == Float64
     end
 
     @testset "Constant propagation" begin
-      # TODO: These tests are highly unreliable because constant propagation is disabled for overlaid methods.
-      # The situation should be improved once https://github.com/JuliaGPU/GPUCompiler.jl/issues/384 is implemented.
       function test_constprop()
         x = 3
         z = 10 + x
@@ -306,7 +313,7 @@ end
     @test_code ci minlength = 3 maxlength = 3 # 1 FConvert, 1 FAdd, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source lerp(::Vec2, ::Vec2, ::Float32)
-    @test_code ci minlength = 7 maxlength = 17 # A bunch of math operations, code length is variable due to the possibility of constructing intermediate vectors.
+    @test_code ci minlength = 7 maxlength = 28 spirv_chunk = false # A bunch of math operations, code length is variable due to broadcasting and the possible construction of intermediate vectors.
 
     ci = SPIRV.@code_typed debuginfo=:source slerp_2d(::Vec2, ::Vec2, ::Float32)
     @test_code ci minlength = 30

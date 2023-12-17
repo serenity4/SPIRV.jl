@@ -128,19 +128,27 @@ for (VT, MT) in zip((:SVector, :MVector), (:SMatrix, :MMatrix))
 
   # Add vector math pseudo-intrinsics for static arrays.
   for N in 2:4
-    for (f, op) in zip((:+, :-, :*, :/, :rem, :mod), (:Add, :Sub, :Mul, :Div, :Rem, :Mod))
-      # Define FAdd, IMul, etc. for vectors of matching type.
-      opF, opI = Symbol.((:F, :I), op)
+    for (f, op) in zip((:+, :-, :*, :/, :rem, :mod, :^, :atan), (:Add, :Sub, :Mul, :Div, :Rem, :Mod, :Pow, :Atan2))
 
-      @eval @override Base.$f(x::$VT{$N,T}, y::$VT{$N,T}) where {T<:IEEEFloat} = $opF(x, y)
-      @eval @override Base.$f(x::$VT{$N,T}, y::$VT{$N,T}) where {T<:BitInteger} = $opI(x, y)
       @eval @override Base.$f(x::$VT{$N}, y::$VT{$N}) = $f(promote(x, y)...)
       @eval Base.$f(v1::$VT{$N}, v2::Vec{$N}) = $f(promote(v1, v2)...)
       @eval Base.$f(v1::Vec{$N}, v2::$VT{$N}) = $f(promote(v1, v2)...)
       @eval Base.$f(v1::$VT{$N}, v2::Arr{$N}) = $f(promote(v1, v2)...)
       @eval Base.$f(v1::Arr{$N}, v2::$VT{$N}) = $f(promote(v1, v2)...)
 
-      for (opX, XT) in zip((opF, opI), (:IEEEFloat, :BitInteger))
+      ops, XTs = if in(op, (:Pow, :Atan2))
+        @eval @override Base.$f(x::$VT{$N,T}, y::$VT{$N,T}) where {T<:IEEEFloat} = $op(x, y)
+        (op,), (:IEEEFloat,)
+      else
+        opF, opI = Symbol.((:F, :I), op)
+        # Define FAdd, IMul, etc. for vectors of matching type.
+        @eval @override Base.$f(x::$VT{$N,T}, y::$VT{$N,T}) where {T<:IEEEFloat} = $opF(x, y)
+        @eval @override Base.$f(x::$VT{$N,T}, y::$VT{$N,T}) where {T<:BitInteger} = $opI(x, y)
+
+        (opF, opI), (:IEEEFloat, :BitInteger)
+      end
+
+      for (opX, XT) in zip(ops, XTs)
         @eval @override Base.$f(x::$VT{$N,<:$XT}, y::$VT{$N,<:$XT}) = $opX(x, y)
 
         @eval @noinline $opX(v1::T, v2::T) where {T<:$VT{$N,<:$XT}} = vectorize($f, v1, v2)
