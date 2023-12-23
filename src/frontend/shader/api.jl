@@ -17,7 +17,7 @@ const execution_models = dictionary([
 
 macro shader(model::QuoteNode, features, layout, kwargs...)
   (ex, options, cache, assemble, interpreter) = parse_shader_kwargs(kwargs)
-  propagate_source(__source__, esc(shader(ex, execution_models[model.value::Symbol], options, features, layout, cache; assemble, interpreter)))
+  propagate_source(__source__, esc(shader(ex, __module__, execution_models[model.value::Symbol], options, features, layout, cache; assemble, interpreter)))
 end
 
 function parse_shader_kwargs(kwargs)
@@ -40,6 +40,6 @@ end
 for (name, model) in pairs(execution_models)
   @eval macro $name(features, layout, kwargs...)
     (ex, options, cache, assemble, interpreter) = parse_shader_kwargs(kwargs)
-    propagate_source(__source__, esc(shader(ex, $model, options, features, layout, cache; assemble, interpreter)))
+    propagate_source(__source__, esc(shader(ex, __module__, $model, options, features, layout, cache; assemble, interpreter)))
   end
 end

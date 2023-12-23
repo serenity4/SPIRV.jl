@@ -50,12 +50,12 @@ function Base.show(io::IO, mime::MIME"text/plain", shader::Shader)
   end
 end
 
-function shader(ex::Expr, execution_model::ExecutionModel, options, features, layout, cache; assemble = nothing, interpreter = nothing)
+function shader(ex::Expr, __module__, execution_model::ExecutionModel, options, features, layout, cache; assemble = nothing, interpreter = nothing)
   f, args = @match ex begin
     :($f($(args...))) => (f, args)
   end
 
-  argtypes, storage_classes, variable_decorations = shader_decorations(ex)
+  argtypes, storage_classes, variable_decorations = shader_decorations(ex, __module__)
 
   interface = :($ShaderInterface($execution_model;
     storage_classes = $(copy(storage_classes)),
@@ -67,7 +67,7 @@ function shader(ex::Expr, execution_model::ExecutionModel, options, features, la
   shader(call, interface, layout, cache; assemble, interpreter)
 end
 
-function shader_decorations(ex::Expr)
+function shader_decorations(ex::Expr, __module__)
   f, args = @match ex begin
     :($f($(args...))) => (f, args)
   end
@@ -103,11 +103,14 @@ function shader_decorations(ex::Expr)
       end
       for dec in decs
         (name, args) = @match dec begin
-          Expr(:macrocall, name, source, args...) => (Symbol(string(name)[2:end]), args)
+          Expr(:macrocall, name, source, args...) => (Symbol(string(name)[2:end]), collect(args))
           _ => error("Expected macrocall (e.g. `@DescriptorSet(1)`), got $dec")
         end
         concrete_dec = get_decoration(name)
         isnothing(concrete_dec) && throw(ArgumentError("Unknown decoration $name in $(repr(arg))"))
+        for (k, arg) in enumerate(args)
+          Meta.isexpr(arg, :$, 1) && (args[k] = Base.eval(__module__, arg.args[1]))
+        end
         get!(Decorations, variable_decorations, i).decorate!(concrete_dec, args...)
       end
       if sc in (StorageClassInput, StorageClassOutput) && (!has_decorations || begin
