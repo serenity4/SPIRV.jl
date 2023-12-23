@@ -173,33 +173,34 @@ info(inst::Instruction, skip_ids::Bool = true) = info(inst.opcode, inst.argument
 function Instruction(inst::PhysicalInstruction)
   opcode = OpCode(inst.opcode)
   op_infos = copy(operand_infos(inst))
-  operands = inst.operands
+  (; operands) = inst
 
   arguments = []
-  i = 1
-  while i ≤ length(operands)
-    operand = length(arguments) + 1
-    info = op_infos[operand]
-    category = kind_to_category[info.kind]
-    (; quantifier) = info
-    @switch quantifier begin
-      @case "?"
-      error("Unhandled '?' quantifier for instruction $opcode")
-      @case "*" || nothing
-      consumes_remaining_words = opcode == OpConstant && operand == lastindex(op_infos)
-      j, arg = next_argument(operands[i:end], info, consumes_remaining_words)
-      category == "Id" && (arg = ResultID(arg))
-      isa(arg, Vector{Word}) ? append!(arguments, arg) : push!(arguments, arg)
-      add_extra_operands!(op_infos, i, arg, info)
-      i += j
+  operand = 1
+  while operand ≤ lastindex(operands)
+    argument = 1 + lastindex(arguments)
+    info = if argument > lastindex(op_infos) && op_infos[end].quantifier == "*";
+      op_infos[end]
+    else
+      op_infos[argument]
     end
-    quantifier == "*" && push!(op_infos, last(op_infos))
+    (; kind, quantifier) = info
+    @switch quantifier begin
+      @case "*" || "?" && if info === op_infos[end] end || nothing
+      category = kind_to_category[kind]
+      consumes_remaining_words = opcode == OpConstant && info === op_infos[end]
+      consumed, arg = next_argument(operands[operand:end], kind, category, consumes_remaining_words)
+      isa(arg, Vector{Word}) ? append!(arguments, arg) : push!(arguments, arg)
+      add_extra_operands!(op_infos, operand, arg, info)
+      operand += consumed
+      @case "?"
+      error("Unhandled non-final '?' quantifier for instruction $opcode")
+    end
   end
   Instruction(opcode, inst.type_id, inst.result_id, arguments)
 end
 
-function next_argument(operands, info, consumes_remaining_words::Bool)
-  (; kind) = info
+function next_argument(operands, kind, category, consumes_remaining_words::Bool)
   (nwords, val) = if kind == LiteralString
     bytes = reinterpret(UInt8, operands)
     i, chars = parse_bytes_for_utf8_string(bytes)
@@ -208,9 +209,12 @@ function next_argument(operands, info, consumes_remaining_words::Bool)
   elseif kind isa Literal
     consumes_remaining_words ? (length(operands), operands) : (1, first(operands))
   elseif kind isa DataType && is_enum(kind)
-    1, kind(first(operands))
+    T = kind
+    1, T(operands[1])
   else
-    1, first(operands)
+    arg = operands[1]
+    category == "Id" && (arg = ResultID(arg))
+    1, arg
   end
 end
 

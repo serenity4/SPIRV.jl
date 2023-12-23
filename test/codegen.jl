@@ -74,6 +74,8 @@ using SPIRV: generate_ir
       @test unwrap(validate(ir))
       @test only(ir.constants) === SPIRV.Constant(4.65)
     end
+    ir = load_ir_reparsed("optional_argument.jl")
+    @test unwrap(validate(ir))
 
     ir = load_ir("phi_variables")
     # TODO: We should not have to do this by hand.
