@@ -60,6 +60,7 @@ Base.size(image::Image, lod::Integer) = size(image, convert(UInt32, lod))
   isa(coord, Integer) && return img.data[coord]
   img.data[CartesianIndex(coord...)]
 end
+ImageRead(img::Image, coords::Vec{N,<:Union{UInt64,Int64}}) where {N} = ImageRead(img, UInt32.(coords))
 
 @noinline function ImageWrite(img::_Image{T}, coord::Union{Vec{<:Any,<:BitInteger},BitInteger}, texel::T) where {T}
   if isa(coord, Integer)
