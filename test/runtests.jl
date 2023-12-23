@@ -10,6 +10,7 @@ read_module(file) = read(joinpath(@__DIR__, "modules", file * (last(splitext(fil
 load_module_expr(file) = Meta.parse(string("quote; ", read_module(file), "; end")).args[1]
 load_ir(ex::Expr) = eval(macroexpand(Main, :(@spv_ir $ex)))
 load_ir(file) = load_ir(load_module_expr(file))
+load_ir_reparsed(file) = IR(assemble(load_ir(file)))
 load_module(ex::Expr) = eval(macroexpand(Main, :(@spv_module $ex)))
 load_module(file) = load_module(load_module_expr(file))
 

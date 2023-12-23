@@ -26,16 +26,6 @@ function emit(io::IO, inst::Instruction)
   end
 end
 
-function emit_argument(io, i, arg::AbstractVector, kind)
-  category = kind_to_category[kind]
-  args = copy(arg)
-  emit_argument(io, popfirst!(args), kind, category)
-  while !isempty(args)
-    print(io, ", ")
-    emit_argument(io, popfirst!(args), kind, category)
-  end
-end
-
 function emit_argument(io, i, arg, kind, category = kind_to_category[kind])
   @match category begin
     "ValueEnum" => printstyled(io, replace(string(arg), string(nameof(kind)) => ""); color = ENUM_COLOR)

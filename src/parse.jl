@@ -90,7 +90,7 @@ function Base.read(io::SwapStream, ::Type{PhysicalModule})
   bound = read_word(io)
   bound > 4_194_303 && invalid_format("ID bound above valid limit (", bound, " > ", 4_194_303)
   schema = read_word(io)
-  while !eof(io)
+  while !eof(io) && bytesavailable(io.io) > 3
     push!(insts, next_instruction(io, read_word))
   end
 
@@ -120,9 +120,7 @@ function next_instruction(io::IO, read_word)
   op_data = read_word(io)
   word_count = op_data >> 2^4
 
-  if word_count == 0
-    invalid_format("SPIR-V instructions cannot consume 0 words")
-  end
+  iszero(word_count) && invalid_format("SPIR-V instructions cannot consume 0 words")
 
   opcode = OpCode(op_data & 0xffff)
   op_kinds = operand_kinds(opcode, false)
@@ -188,9 +186,10 @@ function Instruction(inst::PhysicalInstruction)
       @case "?"
       error("Unhandled '?' quantifier for instruction $opcode")
       @case "*" || nothing
-      j, arg = next_argument(operands[i:end], info)
+      consumes_remaining_words = opcode == OpConstant && operand == lastindex(op_infos)
+      j, arg = next_argument(operands[i:end], info, consumes_remaining_words)
       category == "Id" && (arg = ResultID(arg))
-      push!(arguments, arg)
+      isa(arg, Vector{Word}) ? append!(arguments, arg) : push!(arguments, arg)
       add_extra_operands!(op_infos, i, arg, info)
       i += j
     end
@@ -199,7 +198,7 @@ function Instruction(inst::PhysicalInstruction)
   Instruction(opcode, inst.type_id, inst.result_id, arguments)
 end
 
-function next_argument(operands, info)
+function next_argument(operands, info, consumes_remaining_words::Bool)
   (; kind) = info
   (nwords, val) = if kind == LiteralString
     bytes = reinterpret(UInt8, operands)
@@ -207,10 +206,7 @@ function next_argument(operands, info)
     str = GC.@preserve chars unsafe_string(pointer(chars))
     div(i, 4, RoundUp), str
   elseif kind isa Literal
-    arg = first(operands)
-    #FIXME: Literals that consume multiple words are not supported.
-    # We need a way to detect the number of words they take.
-    1, arg
+    consumes_remaining_words ? (length(operands), operands) : (1, first(operands))
   elseif kind isa DataType && is_enum(kind)
     1, kind(first(operands))
   else

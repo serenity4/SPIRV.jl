@@ -67,7 +67,7 @@ function shader(ex::Expr, __module__, execution_model::ExecutionModel, options, 
   shader(call, interface, layout, cache; assemble, interpreter)
 end
 
-function shader_decorations(ex::Expr, __module__)
+function shader_decorations(ex::Expr, __module__ = @__MODULE__)
   f, args = @match ex begin
     :($f($(args...))) => (f, args)
   end

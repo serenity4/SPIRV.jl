@@ -66,6 +66,14 @@ using SPIRV: generate_ir
     @test unwrap(validate(ir))
     ir = load_ir("simple_loop_2")
     @test unwrap(validate(ir))
+    for ir in [load_ir("int64_literals"), load_ir_reparsed("int64_literals")]
+      @test unwrap(validate(ir))
+      @test only(ir.constants) === SPIRV.Constant(1)
+    end
+    for ir in [load_ir("float64_literals"), load_ir_reparsed("float64_literals")]
+      @test unwrap(validate(ir))
+      @test only(ir.constants) === SPIRV.Constant(4.65)
+    end
 
     ir = load_ir("phi_variables")
     # TODO: We should not have to do this by hand.
