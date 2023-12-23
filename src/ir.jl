@@ -267,7 +267,8 @@ function Module(ir::IR; debug_info = true)
 end
 
 function replace_name(id::ResultID, names)
-  name = get(names, id, UInt32(id))
+  symbol = get(names, id, nothing)
+  name = isnothing(symbol) || symbol == Symbol("") ? UInt32(id) : symbol
   "%$name"
 end
 
