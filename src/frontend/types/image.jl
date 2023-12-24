@@ -49,6 +49,7 @@ Base.setindex!(img::_Image{T}, value, coords::Vec) where {T} = setindex!(img, co
 Base.size(image::Image) = ImageQuerySize(image)
 Base.size(image::Image, lod::UInt32) = ImageQuerySizeLod(image, lod)
 Base.size(image::Image, lod::Integer) = size(image, convert(UInt32, lod))
+Base.length(image::Image) = foldl(*, size(image))
 
 @noinline ImageQuerySize(image::Image{<:Any,Dim2D})::Vec{2,UInt32} = Vec{2,UInt32}(size(image.data)...)
 @noinline ImageQuerySize(image::Image{<:Any,Dim3D})::Vec{3,UInt32} = Vec{3,UInt32}(size(image.data)...)
