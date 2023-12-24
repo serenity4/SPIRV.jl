@@ -60,13 +60,16 @@ function pad!(bytes, amount)
 end
 
 serialize!(bytes, data::Vector{UInt8}, ::LayoutStrategy) = append!(bytes, data)
-function serialize!(bytes, data::VecOrMat, layout::LayoutStrategy)
-  pad = padding(layout, typeof(data))
-  iszero(pad) && isprimitivetype(data) && return append!(bytes, reinterpret(UInt8, data))
+function serialize_array!(bytes, data::AbstractVecOrMat, layout::LayoutStrategy, padding)
   for x in data
     serialize!(bytes, x, layout)
-    pad!(bytes, pad)
+    pad!(bytes, padding)
   end
+end
+function serialize!(bytes, data::VecOrMat, layout::LayoutStrategy)
+  pad = padding(layout, typeof(data))
+  iszero(pad) && isbitstype(eltype(data)) && return append!(bytes, reinterpret(UInt8, data))
+  serialize_array!(bytes, data, layout, pad)
 end
 
 # VulkanLayout-specific serialization rules.
