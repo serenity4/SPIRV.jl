@@ -6,7 +6,7 @@ end
 Block(id::ResultID) = Block(id, Expression[])
 
 @forward_interface Block field = :exs interface = [iteration, indexing]
-@forward_methods Block field = :exs Base.insert!(_, args...) Base.push!(_, ex::Expression) Base.view(_, range) Base.keys(_)
+@forward_methods Block field = :exs Base.insert!(_, args...) Base.push!(_, ex::Expression) Base.view(_, range) Base.deleteat!(_, i) Base.keys(_)
 
 function termination_instruction(blk::Block)
   ex = blk[end]
@@ -37,6 +37,13 @@ function directly_reachable_blocks(blk::Block)
     &OpBranchConditional => collect(ResultID, inst[end-1:end])
     &OpSwitch => collect(ResultID, inst[4:2:end])
   end
+end
+
+function Base.insert!(blk::Block, index::Int64, exs::AbstractVector{Expression})
+  for ex in reverse(exs)
+    insert!(blk.exs, index, ex)
+  end
+  blk
 end
 
 @struct_hash_equal struct FunctionDefinition

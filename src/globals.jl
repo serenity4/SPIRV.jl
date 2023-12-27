@@ -12,8 +12,7 @@ mutable struct Variable
   initializer::Optional{ResultID}
   Variable(type::PointerType, initializer::Optional{ResultID} = nothing) = new(type, type.storage_class, initializer)
 end
-Variable(type::SPIRType, storage_class::StorageClass = StorageClassFunction, initializer::Optional{ResultID} = nothing) =
-Variable(PointerType(storage_class, type), initializer)
+Variable(type::SPIRType, storage_class::StorageClass = StorageClassFunction, initializer::Optional{ResultID} = nothing) = Variable(PointerType(storage_class, type), initializer)
 Variable(type::PointerType, ::StorageClass, initializer::Optional{ResultID} = nothing) = Variable(type, initializer)
 
 function Variable(ex::Expression)

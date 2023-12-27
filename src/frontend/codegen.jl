@@ -26,7 +26,14 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         field_idx = @match args[2] begin
           node::QuoteNode => get_field_index(composite, node, tr, target)
           idx::Integer => idx
-          idx::Core.SSAValue => throw_compilation_error("dynamic access into tuple or struct members is not supported")
+          idx::Core.SSAValue => @match spir_type(retrieve_type(target, tr, args[1]), tr.tmap) begin
+            # Dynamic accesses into arrays are supported, but not via
+            # OpCompositeExtract; we'll need to convert this instruction
+            # to an OpVariable + OpStore + OpAccessChain + OpLoad chain.
+            # We do this in the pass `composite_extract_to_access_chain_load!`.
+            ::ArrayType => idx
+            _ => throw_compilation_error("dynamic access into inhomogeneous tuple or struct members is not supported")
+          end
         end
         (OpCompositeExtract, (composite, field_idx))
       end

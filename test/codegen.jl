@@ -76,6 +76,8 @@ using SPIRV: generate_ir
     end
     ir = load_ir_reparsed("optional_argument.jl")
     @test unwrap(validate(ir))
+    ir = load_ir("dynamic_array_access.jl")
+    @test unwrap(validate(ir))
 
     ir = load_ir("phi_variables")
     # TODO: We should not have to do this by hand.

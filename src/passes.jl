@@ -333,3 +333,106 @@ function (::RemoveOpNop)(fdef::FunctionDefinition)
     splice!(blk.exs, to_remove)
   end
 end
+
+struct CompositeExtractToAccessChainLoad <: FunctionPass end
+
+composite_extract_to_access_chain_load!(ir::IR) = CompositeExtractToAccessChainLoad()(ir)
+
+function (::CompositeExtractToAccessChainLoad)(ir::IR, fdef::FunctionDefinition)
+  for blk in fdef
+    for (i, ex) in enumerate(blk)
+      ex.op == OpCompositeExtract || continue
+      length(ex) == 2 || continue
+      composite, index = ex
+      isa(index, ResultID) || continue
+      composite_t = retrieve_type(composite, fdef, ir)
+      isa(composite_t, ArrayType) || continue
+
+      patch = Expression[]
+      # 1. Create a Variable if `composite` does not result from a load instruction.
+      def = definition(composite, fdef, ir)
+      def_id = isa(def, ResultID) ? def : def.result
+      storage_class, ptr_id = if isa(def, Expression) && def.op == OpLoad
+        from = def[1]::ResultID
+        if haskey(ir.global_vars, from)
+          var = definition(from, fdef, ir)::Variable
+          var.storage_class, from
+        else
+          j = findfirst(ex -> ex.result === from, fdef.local_vars)
+          # XXX: It could be that we load from a non-variable pointer.
+          # In this case the typeassert will su
+          @assert !isnothing(j) "Loading from a non-variable pointer, which is not supported for this pass yet"
+          var_ex = fdef.local_vars[j]
+          var_ex[1], from
+        end
+      else
+        var = Variable(composite_t)
+        allocation = create_variable!(ir, fdef, var, next!(ir.idcounter))
+        # Store to Variable.
+        push!(patch, @ex Store(allocation.result, def_id))
+        var.storage_class, allocation.result
+      end
+      # 2. Construct AccessChain pointer.
+      access_chain_t = PointerType(storage_class, ex.type)
+      access_chain = @ex next!(ir.idcounter) = AccessChain(ptr_id, index)::access_chain_t
+      push!(patch, access_chain)
+      # 3. Load through the pointer.
+      load = @ex ex.result = Load(access_chain.result)::ex.type
+      push!(patch, load)
+      ex[2] = load.result
+      deleteat!(blk, i)
+      insert!(blk, i, patch)
+    end
+  end
+end
+
+function definition(id::ResultID, fdef::FunctionDefinition, ir::IR)
+  @something definition(id, fdef) definition(id, ir) Some(nothing)
+end
+
+function definition(id::ResultID, fdef::FunctionDefinition)
+  # Look for the global variable instead.
+  in(id, fdef.global_vars) && return nothing
+  i = findfirst(==(id), fdef.args)
+  !isnothing(i) && return fdef.args[i]
+  i = findfirst(==(id), fdef.block_ids)
+  !isnothing(i) && return fdef.blocks[fdef.block_ids[i]]
+  for blk in fdef
+    for ex in blk
+      ex.result === id && return ex
+    end
+  end
+end
+
+function definition(id::ResultID, ir::IR)
+  var = get(ir.global_vars, id, nothing)
+  !isnothing(var) && return var
+  c = get(ir.constants, id, nothing)
+  !isnothing(c) && return c
+  fdef = get(ir.fdefs, id, nothing)
+  !isnothing(fdef) && return fdef
+  nothing
+end
+
+function type_definition(id::ResultID, ir::IR)
+  t = get(ir.constants, id, nothing)
+  !isnothing(t) && return t
+  x = definition(id, ir)::Union{Constant, Variable, FunctionDefinition}
+  x.type
+end
+
+function retrieve_type(id::ResultID, fdef::FunctionDefinition, ir::IR)
+  def = definition(id, fdef, ir)
+  @match def begin
+    ::Expression => def.type
+    ::Variable => def.type.type
+    ::Constant => SPIRType(def, ir.tmap)
+    ::ResultID => begin
+      # The definition comes from a function argument.
+      # We need to extract the type from the function signature.
+      i = findfirst(==(def), fdef.args)::Int
+      fdef.type.argtypes[i]
+    end
+    ::Block => throw(ArgumentError("Blocks don't have types"))
+  end
+end

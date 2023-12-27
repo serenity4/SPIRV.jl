@@ -83,6 +83,7 @@ function IR(mt::ModuleTarget, tr::Translation)
   ir.tmap = tr.tmap
   ir.metadata = mt.metadata
   fill_phi_branches!(ir)
+  composite_extract_to_access_chain_load!(ir)
   remap_dynamic_1based_indices!(ir)
   # XXX: Only a handful of operations are propagated, related to index conversions
   # and subtractions coming from Int64 1-based vs UInt32 0-based indexing.

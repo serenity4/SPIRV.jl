@@ -26,7 +26,13 @@ function renumber_ssa(amod::AnnotatedModule)
 
   for (i, inst) in enumerate(new_insts)
     for (j, arg) in enumerate(inst.arguments)
-      isa(arg, ResultID) && (inst.arguments[j] = swaps[arg])
+      if isa(arg, ResultID)
+        if !haskey(swaps, arg)
+          @warn "A reference to $arg was made in $(sprintc_mime(show, inst)), but no instruction defines this ID in the original module. Leaving it untouched."
+        else
+          inst.arguments[j] = swaps[arg]
+        end
+      end
     end
     if isa(inst.type_id, ResultID)
       new_insts[i] = @set inst.type_id = swaps[inst.type_id]

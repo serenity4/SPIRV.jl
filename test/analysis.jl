@@ -2,6 +2,7 @@ using SPIRV, Test, Graphs, AbstractTrees, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
 using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, node_index, cyclic_region, acyclic_region
 using SPIRV: REGION_BLOCK, REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION, REGION_PROPER, REGION_SELF_LOOP, REGION_WHILE_LOOP, REGION_NATURAL_LOOP, REGION_IMPROPER
+using SPIRV: definition
 
 # All the following graphs are rooted in 1.
 
@@ -715,5 +716,17 @@ end
     # chain = UseDefChain(amod, only(amod.annotated_functions), iadd, st)
     # @test nodevalue.(Leaves(chain)) == getindex.(amod, [ResultID(8), ResultID(9), ResultID(4)])
     # @test nodevalue.(chain.defs) == getindex.(amod, [ResultID(15), ResultID(4)])
+  end
+
+  @testset "Introspection utilities" begin
+    ir = load_ir("dynamic_array_access.jl")
+    id, constant = only(pairs(ir.constants))
+    fdef = ir[1]
+    blk = fdef[1]
+    @test definition(id, ir) === constant
+    @test definition(id, fdef, ir) === constant
+    access_chain = blk[3]
+    @test definition(access_chain.result, fdef) === access_chain
+    @test definition(access_chain.result, fdef, ir) === access_chain
   end
 end;

@@ -1,5 +1,5 @@
 using SPIRV, Test, Accessors
-using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!, propagate_constants!, remove_op_nops!, remove_obsolete_annotations!
+using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!, composite_extract_to_access_chain_load!, propagate_constants!, remove_op_nops!, remove_obsolete_annotations!
 
 @testset "Passes" begin
   @testset "SSA renumbering" begin
@@ -145,6 +145,106 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
 
     composite_extract_dynamic_to_literal!(ir)
     @test ir == expected
+    @test unwrap(validate(ir))
+  end
+
+  @testset "Array dynamic indices in `CompositeExtract` conversion to Variable/AccessChain/Load" begin
+    ir = @spv_ir begin
+      F32 = TypeFloat(32)
+      I32 = TypeInt(32, false)
+      c_I32_2 = Constant(2U)::I32
+      ArrayF32_2 = TypeArray(F32, c_I32_2)
+
+      @function f(arr::ArrayF32_2, index::I32)::F32 begin
+        _ = Label()
+        x = CompositeExtract(arr, index)::F32
+        ReturnValue(x)
+      end
+    end
+    # The validator confuses `index` for a literal.
+    @test_throws "Array access is out of bounds" unwrap(validate(ir))
+    composite_extract_to_access_chain_load!(ir)
+
+    expected = @spv_ir begin
+      F32 = TypeFloat(32)
+      I32 = TypeInt(32, false)
+      c_I32_2 = Constant(2U)::I32
+      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      # XXX: The const-proped result is inserted after function types,
+      # which is impossible to express given the current DSL. That should be addressed some time.
+      ft = TypeFunction(F32, ArrayF32_2, I32)
+      PtrArrayF32_2 = TypePointer(SPIRV.StorageClassFunction, ArrayF32_2)
+      PtrF32 = TypePointer(SPIRV.StorageClassFunction, F32)
+      f = Function(SPIRV.FunctionControlNone, ft)
+      arr = FunctionParameter()::ArrayF32_2
+      index = FunctionParameter()::I32
+      _ = Label()
+      var = Variable(SPIRV.StorageClassFunction)::PtrArrayF32_2
+      Store(var, arr)
+      ptr = AccessChain(var, index)::PtrF32
+      x = Load(ptr)::F32
+      ReturnValue(x)
+      FunctionEnd()
+    end
+    @test unwrap(validate(expected))
+    @test ir ≈ expected renumber = true
+
+    ir = @spv_ir begin
+      F32 = TypeFloat(32)
+      I32 = TypeInt(32, false)
+      c_I32_2 = Constant(2U)::I32
+      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      PtrArrayF32_2 = TypePointer(SPIRV.StorageClassFunction, ArrayF32_2)
+      PtrF32 = TypePointer(SPIRV.StorageClassFunction, F32)
+
+      @function f(arr_ptr::PtrArrayF32_2, index::I32)::F32 begin
+        _ = Label()
+        arr = Load(arr_ptr)::ArrayF32_2
+        x = CompositeExtract(arr, index)::F32
+        ReturnValue(x)
+      end
+    end
+    @test_throws "Array access is out of bounds" unwrap(validate(ir))
+    @test_throws "non-variable" composite_extract_to_access_chain_load!(ir)
+
+    ir = @spv_ir begin
+      F32 = TypeFloat(32)
+      I32 = TypeInt(32, false)
+      c_I32_2 = Constant(2U)::I32
+      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      PtrArrayF32_2 = TypePointer(SPIRV.StorageClassFunction, ArrayF32_2)
+      PtrF32 = TypePointer(SPIRV.StorageClassFunction, F32)
+
+      @function f(arr::ArrayF32_2, index::I32)::F32 begin
+        _ = Label()
+        var = Variable(SPIRV.StorageClassFunction)::PtrArrayF32_2
+        Store(var, arr)
+        load = Load(var)::ArrayF32_2
+        x = CompositeExtract(load, index)::F32
+        ReturnValue(x)
+      end
+    end
+    @test_throws "Array access is out of bounds" unwrap(validate(ir))
+    composite_extract_to_access_chain_load!(ir)
+    @test unwrap(validate(ir))
+
+    ir = @spv_ir begin
+      F32 = TypeFloat(32)
+      I32 = TypeInt(32, false)
+      c_I32_2 = Constant(2U)::I32
+      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      PtrArrayF32_2 = TypePointer(SPIRV.StorageClassPushConstant, ArrayF32_2)
+      arr_ptr = Variable(SPIRV.StorageClassPushConstant)::PtrArrayF32_2
+
+      @function f(index::I32)::F32 begin
+        _ = Label()
+        arr = Load(arr_ptr)::ArrayF32_2
+        x = CompositeExtract(arr, index)::F32
+        ReturnValue(x)
+      end
+    end
+    @test_throws "Array access is out of bounds" unwrap(validate(ir))
+    composite_extract_to_access_chain_load!(ir)
     @test unwrap(validate(ir))
   end
 

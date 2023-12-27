@@ -242,6 +242,14 @@ function emit_types!(ir::IR)
   ir
 end
 
+function create_variable!(ir::IR, fdef::FunctionDefinition, ex::Expression)
+  emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, ex.type)
+  push!(fdef.local_vars, ex)
+  ex
+end
+create_variable!(ir::IR, fdef::FunctionDefinition, variable::Variable, id::ResultID) = create_variable!(ir, fdef, Expression(variable, id))
+create_variable!(ir::IR, fdef::FunctionDefinition, type::SPIRType, id::ResultID) = create_variable!(ir, fdef, Variable(type), id)
+
 function Module(ir::IR; debug_info = true)
   insts = Instruction[]
 
