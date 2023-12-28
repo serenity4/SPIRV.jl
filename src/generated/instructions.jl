@@ -702,6 +702,7 @@
   OpGroupLogicalAndKHR                                                    = 6406
   OpGroupLogicalOrKHR                                                     = 6407
   OpGroupLogicalXorKHR                                                    = 6408
+  OpEgal                                                                  = 200001
 end
 
 const instruction_infos = Dict{OpCode,InstructionInfo}(
@@ -7016,6 +7017,16 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'X'", nothing),
     ],
     RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, [CapabilityGroupUniformArithmeticKHR]),
+  ),
+  OpEgal => InstructionInfo(
+    "Package-defined",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Operand 1'", nothing),
+      OperandInfo(IdRef, "'Operand 2'", nothing),
+    ],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
   ),
 )
 

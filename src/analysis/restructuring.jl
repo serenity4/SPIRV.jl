@@ -19,6 +19,7 @@ function (::AddMergeHeaders)(fdef::FunctionDefinition)
 
     @switch ctree begin
       @case GuardBy(is_loop)
+      has_merge_header(blk) && continue
       local_back_edges = filter!(in(back_edges), [Edge(u, v) for u in inneighbors(cfg, v)])
       length(local_back_edges) > 1 && throw_compilation_error("there is more than one backedge to a loop")
       ncont = node_to_id(src(only(local_back_edges)))
@@ -30,6 +31,7 @@ function (::AddMergeHeaders)(fdef::FunctionDefinition)
       insert!(blk, lastindex(blk), header)
 
       @case GuardBy(is_selection)
+      has_merge_header(blk) && continue
       bs = node_to_id.(node_index.(@view ctree.children[2:end]))
       if all(!in(b, merge_blocks) && !in(b, continue_targets) for b in bs)
         vmerge = merge_candidate(ctree, cfg)
@@ -127,10 +129,13 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
     # TODO: Optimize this by using the property above to avoid traversing all leaves.
     # We don't use `inneighbors` here because the CFG may have changed. Using control tree leaves
     # is more robust and will prevent us from having to rebuild the CFG in that case.
-    branching_blks = Block[fdef[node_index(tree)] for tree in Leaves(ctree) if in(merge_inner, outneighbors(cfg, node_index(tree)))]
+    branching_blks = branching_blocks(fdef, ctree) do tree
+      v = node_index(tree)
+      in(merge_inner, outneighbors(cfg, v))
+    end
     new = new_block!(fdef, next!(pass!.idcounter))
 
-    redirect_branches!(branching_blks, merge_blk.id, new.id)
+    redirect_branches!(branching_blks, merge_blk, new)
 
     # Intercept OpPhi instructions in the original merge block by the new block.
     intercept_phi_instructions!!(pass!.idcounter, branching_blks, new, merge_blk)
@@ -140,6 +145,20 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
     push!(reapply_on, node_index(outer_construct))
   end
 end
+
+function branching_blocks(condition::Function, fdef::FunctionDefinition, ctree::ControlTree)
+  blks = Block[]
+  for tree in Leaves(ctree)
+    if condition(tree)
+      v = node_index(tree)
+      blk = fdef[v]
+      push!(blks, blk)
+    end
+  end
+  blks
+end
+
+branching_blocks(fdef::FunctionDefinition, ctree::ControlTree) = branching_blocks(Returns(true), fdef, ctree)
 
 nesting_levels(ctree::ControlTree) = nesting_levels!(Dictionary{Int,Pair{ControlTree,Int}}(), ctree, 1)
 
@@ -155,24 +174,27 @@ function nesting_levels!(nesting_levels, ctree::ControlTree, level::Integer)
   nesting_levels
 end
 
-function redirect_branches!(from::AbstractVector{Block}, to::ResultID, new::ResultID)
+function redirect_branches!(from::AbstractVector{Block}, to::Block, new::Block)
   for blk in from
-    ex = termination_instruction(blk)
-    @switch ex.op begin
-      @case &OpBranch
-      ex[1] = new
-
-      @case &OpBranchConditional
-      index = findfirst(==(to), ex)
-      ex[index] = new
-
-      @case &OpSwitch
-      indices = findall(==(to), ex)
-      ex[indices] .= new
-    end
+    redirect_branches!(blk, to, new)
   end
+end
 
-  diff
+"Modify the branching instruction of `from` such that any branches to `to` are remapped to target `new` instead."
+function redirect_branches!(from::Block, to::Block, new::Block)
+  ex = termination_instruction(from)
+  @tryswitch ex.op begin
+    @case &OpBranch
+    ex[1] = new.id
+
+    @case &OpBranchConditional
+    index = findfirst(==(to.id), ex)
+    ex[index] = new.id
+
+    @case &OpSwitch
+    indices = findall(==(to.id), ex)
+    ex[indices] .= new.id
+  end
 end
 
 """
@@ -275,7 +297,7 @@ function (pass!::RestructureLoopHeaderConditionals)(fdef::FunctionDefinition)
     cont = merge_header_inst[2]::ResultID
     any(in(fdef.block_ids[w], (merge, cont)) for w in outneighbors(cfg, v)) && continue
     new = new_block!(fdef, next!(pass!.idcounter))
-    intercept_phi_instructions!(Block[fdef[w] for w in outneighbors(cfg, v)], blk, new)
+    remap_phi_sources!(Block[fdef[w] for w in outneighbors(cfg, v)], blk => new)
     vmerge = merge_candidate(header, cfg)::Int
     merge_blk = fdef[vmerge]
 
@@ -284,12 +306,12 @@ function (pass!::RestructureLoopHeaderConditionals)(fdef::FunctionDefinition)
       branching_blks = Block[fdef[u] for u in inneighbors(cfg, vmerge)]
       new2 = new_block!(fdef, next!(pass!.idcounter))
 
-      redirect_branches!(branching_blks, merge_blk.id, new2.id)
+      redirect_branches!(branching_blks, merge_blk, new2)
 
       # Intercept OpPhi instructions in the original merge block by the new block.
       intercept_phi_instructions!!(pass!.idcounter, branching_blks, new2, merge_blk)
 
-      push!(new2, @ex OpBranch(merge_blk.id))
+      branch!(new2, merge_blk)
       push!(new, @ex OpSelectionMerge(new2.id, SelectionControlNone))
     else
       push!(new, @ex OpSelectionMerge(merge_blk.id, SelectionControlNone))
@@ -300,15 +322,13 @@ function (pass!::RestructureLoopHeaderConditionals)(fdef::FunctionDefinition)
   end
 end
 
-"""
-Intercept `OpPhi` instructions involving a source block in a set of targets, and replace the source block by an intercepting block.
-"""
-function intercept_phi_instructions!(to::AbstractVector{Block}, from::Block, intercepter::Block)
-  for blk in to
+function remap_phi_sources!(blks::AbstractVector{Block}, (from, to)::Pair{ResultID, ResultID})
+  for blk in blks
     for ex in phi_expressions(blk)
-      i = findfirst(==(from.id), ex)
-      isnothing(i) && continue
-      ex[i] = intercepter.id
+      i = findfirst(==(from), ex)
+      !isnothing(i) && (ex[i] = to)
     end
   end
 end
+
+remap_phi_sources!(blks::AbstractVector{Block}, (from, to)::Pair{Block, Block}) = remap_phi_sources!(blks, from.id => to.id)

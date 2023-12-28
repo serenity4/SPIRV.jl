@@ -83,8 +83,9 @@ function IR(mt::ModuleTarget, tr::Translation)
   ir.tmap = tr.tmap
   ir.metadata = mt.metadata
   fill_phi_branches!(ir)
-  composite_extract_to_access_chain_load!(ir)
   remap_dynamic_1based_indices!(ir)
+  egal_to_recursive_equal!(ir)
+  composite_extract_to_access_chain_load!(ir)
   # XXX: Only a handful of operations are propagated, related to index conversions
   # and subtractions coming from Int64 1-based vs UInt32 0-based indexing.
   propagate_constants!(ir)
@@ -387,15 +388,17 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
   end
 end
 
+function allocate_variable!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, variable::Variable, id::ResultID)
+  emit!(mt, tr, variable.type)
+  push!(fdef.local_vars, Expression(variable, id))
+end
+
 function allocate_variable!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, jtype::Type, core_ssaval::Core.SSAValue)
-  # Create a SPIR-V variable to allow for future mutations.
   id = next!(mt.idcounter)
-  type = PointerType(StorageClassFunction, spir_type(jtype, tr.tmap))
-  var = Variable(type)
-  emit!(mt, tr, type)
-  insert!(tr.variables, core_ssaval, var)
+  variable = Variable(spir_type(jtype, tr.tmap))
+  insert!(tr.variables, core_ssaval, variable)
   insert!(tr.results, core_ssaval, id)
-  push!(fdef.local_vars, Expression(var, id))
+  allocate_variable!(mt, tr, fdef, variable, id)
 end
 
 function add_expression!(block::Block, tr::Translation, ex::Expression, core_ssaval::Optional{Core.SSAValue} = nothing)

@@ -564,7 +564,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
       end
     end
     @test unwrap(validate(expected))
-    @test ir ≈ expected
+    @test ir ≈ expected renumber = true
 
     ir = @compile egal(::GaussianBlur, ::GaussianBlur)
     expected = @spv_ir begin
@@ -584,7 +584,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
       end
     end
     @test unwrap(validate(expected))
-    @test ir ≈ expected
+    @test ir ≈ expected renumber = true
 
     ir = @compile egal(::_BoidAgent, ::_BoidAgent)
     expected = @spv_ir begin

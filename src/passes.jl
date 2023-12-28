@@ -436,3 +436,141 @@ function retrieve_type(id::ResultID, fdef::FunctionDefinition, ir::IR)
     ::Block => throw(ArgumentError("Blocks don't have types"))
   end
 end
+
+struct EgalToRecursiveEqual <: FunctionPass end
+
+egal_to_recursive_equal!(ir::IR) = EgalToRecursiveEqual()(ir)
+
+function (::EgalToRecursiveEqual)(ir::IR, fdef::FunctionDefinition)
+  (; idcounter) = ir
+  for blk in fdef
+    i = firstindex(blk)
+    while i ≤ lastindex(blk)
+      original_blk = blk
+      ex = blk[i]
+      ex.op == OpEgal || ((i += 1) & continue)
+      exs = splice!(blk, i:lastindex(blk))
+      popfirst!(exs)
+      tx = retrieve_type(ex[1], fdef, ir)
+      ty = retrieve_type(ex[2], fdef, ir)
+      @assert tx === ty
+      current_blk = Ref(blk)
+      emit_recursive_equal!(current_blk, ir, fdef, blk, ex[1], ex[2], tx)
+      blk = current_blk[]
+      isegal = blk[end]
+      blk[end] = @set isegal.result = ex.result
+      i = lastindex(blk) + 1
+      append!(blk, exs)
+      blk !== original_blk && remap_phi_sources!(targets(blk, fdef), original_blk => blk)
+    end
+  end
+end
+
+function emit_recursive_equal!(current_blk::Ref{Block}, ir::IR, fdef::FunctionDefinition, blk::Block, x::ResultID, y::ResultID, t::SPIRType)
+  (; idcounter) = ir
+  B = BooleanType()
+  U32 = IntegerType(32, false)
+
+  @switch t begin
+    @case ::IntegerType || ::FloatType || ::BooleanType
+    result = next!(idcounter)
+    ex = @ex result = equality_operator(t)(x, y)::B
+    push!(blk, ex)
+
+    @case ::VectorType
+    intermediate_result, result = next!(idcounter), next!(idcounter)
+    push!(blk, @ex intermediate_result = equality_operator(t.eltype)(x, y)::VectorType(B, t.n))
+    push!(blk, @ex result = All(intermediate_result)::B)
+
+    @case ::MatrixType
+    ids = ResultID[]
+    et = t.eltype
+    for i in 1:t.n
+      cx, cy = next!(idcounter), next!(idcounter)
+      xex = @ex cx = CompositeExtract(x, (i - 1)U)::et
+      yex = @ex cy = CompositeExtract(y, (i - 1)U)::et
+      push!(blk, xex, yex)
+      ex = emit_recursive_equal!(current_blk, ir, fdef, blk, xex.result, yex.result, t.eltype)
+      push!(ids, ex.result)
+    end
+    # Unroll all comparisons.
+    foldl(ids) do x, y
+      ex = @ex next!(idcounter) = LogicalAnd(x, y)::B
+      push!(blk, ex)
+      ex.result
+    end
+
+    @case ::VoidType
+    push!(blk, @ex next!(idcounter) = ConstantTrue()::B)
+
+    @case ::StructType
+    if iszero(length(t.members))
+      push!(blk, @ex next!(idcounter) = ConstantTrue()::B)
+    else
+      ids = ResultID[]
+      for (i, subt) in enumerate(t.members)
+        subx, suby = next!(idcounter), next!(idcounter)
+        xex = @ex subx = CompositeExtract(x, (i - 1)U)::subt
+        yex = @ex suby = CompositeExtract(y, (i - 1)U)::subt
+        push!(blk, xex, yex)
+        ex = emit_recursive_equal!(current_blk, ir, fdef, blk, xex.result, yex.result, subt)
+        push!(ids, ex.result)
+      end
+      # Unroll all comparisons.
+      foldl(ids) do x, y
+        ex = @ex next!(idcounter) = LogicalAnd(x, y)::B
+        push!(blk, ex)
+        ex.result
+      end
+    end
+
+    @case ::ArrayType
+    # Iterate over all array elements.
+    # The array must be statically sized.
+    isnothing(t.size) && error("Arrays must be statically sized for `===` comparisons.")
+    n = Int(t.size.value)
+    et = t.eltype
+    header = new_block!(fdef, next!(idcounter))
+    body = new_block!(fdef, next!(idcounter))
+    merge = new_block!(fdef, next!(idcounter))
+    branch!(blk, header)
+
+    start = emit_constant!(ir, Constant(0U))
+    stop = emit_constant!(ir, Constant((n)U))
+    one = emit_constant!(ir, Constant(1U))
+    c_true = emit_constant!(ir, Constant(true))
+    i, result = next!(idcounter, 2)
+    allocate_variable!(ir, fdef, Variable(U32, StorageClassFunction, start), i)
+    allocate_variable!(ir, fdef, Variable(B, StorageClassFunction, c_true), result)
+
+    i_load, result_load, iter_remaining, cond = next!(idcounter, 4)
+    push!(header, @ex i_load = Load(i)::U32)
+    push!(header, @ex result_load = Load(result)::B)
+    push!(header, @ex iter_remaining = ULessThan(i_load, stop)::B)
+    push!(header, @ex cond = LogicalAnd(iter_remaining, result_load)::B)
+    branch!(header, cond, body, merge)
+
+    i_load_2, xex, yex, result_load_2, intermediate_result, i_incremented = next!(idcounter, 6)
+    push!(body, @ex i_load_2 = Load(i)::U32)
+    push!(body, @ex xex = CompositeExtract(x, i_load_2)::et)
+    push!(body, @ex yex = CompositeExtract(y, i_load_2)::et)
+    comp = emit_recursive_equal!(current_blk, ir, fdef, body, xex, yex, et)
+    push!(body, @ex result_load_2 = Load(result)::B)
+    push!(body, @ex intermediate_result = LogicalAnd(result_load_2, comp.result)::B)
+    push!(body, @ex Store(result, intermediate_result))
+    push!(body, @ex i_incremented = IAdd(i_load_2, one)::U32)
+    push!(body, @ex Store(i, i_incremented))
+    branch!(body, header)
+
+    reduced_result = next!(idcounter)
+    push!(merge, @ex reduced_result = Load(result)::B)
+
+    current_blk[] = merge
+    blk = merge
+  end
+  blk[end]
+end
+
+equality_operator(::IntegerType) = OpIEqual
+equality_operator(::FloatType) = OpFOrdEqual
+equality_operator(::BooleanType) = OpLogicalEqual

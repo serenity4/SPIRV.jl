@@ -226,24 +226,33 @@ function merge_metadata!(ir::IR, id::ResultID, meta::Metadata)
   merge!(metadata!(ir, id), meta)
 end
 
+emit_type!(ir::IR, t::SPIRType) = emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, t)
+emit_constant!(ir::IR, c::Constant) = emit_constant!(ir.constants, ir.idcounter, ir.types, ir.tmap, c)
+
+function allocate_variable!(ir::IR, fdef::FunctionDefinition, variable::Variable, id::ResultID)
+  emit_type!(ir, variable.type)
+  push!(fdef.local_vars, Expression(variable, id))
+  id
+end
+
 function emit_types!(ir::IR)
   for fdef in ir.fdefs
     for blk in fdef
-      emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, fdef.type)
+      emit_type!(ir, fdef.type)
       for ex in blk
         isnothing(ex.type) && continue
-        emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, ex.type)
+        emit_type!(ir, ex.type)
       end
     end
   end
   for var in ir.global_vars
-    emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, var.type)
+    emit_type!(ir, var.type)
   end
   ir
 end
 
 function create_variable!(ir::IR, fdef::FunctionDefinition, ex::Expression)
-  emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, ex.type)
+  emit_type!(ir, ex.type)
   push!(fdef.local_vars, ex)
   ex
 end

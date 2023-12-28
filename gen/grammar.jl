@@ -64,6 +64,9 @@ function generate_instructions()
   values = (:($(opname(inst)) = $(inst[:opcode])) for inst in g[:instructions])
   :(@cenum OpCode::UInt32 begin
     $(values...)
+
+    # Custom `OpCode`s for internal use.
+    OpEgal = 200001
   end)
 end
 
@@ -76,6 +79,16 @@ end
 
 function generate_instruction_infos()
   infos = map(instruction_info, g[:instructions])
+  push!(infos, :(OpEgal => InstructionInfo(
+    "Package-defined",
+    [
+      OperandInfo(IdResultType, nothing, nothing),
+      OperandInfo(IdResult, nothing, nothing),
+      OperandInfo(IdRef, "'Operand 1'", nothing),
+      OperandInfo(IdRef, "'Operand 2'", nothing),
+    ],
+    RequiredSupport(VersionRange(v"0.0.0", v"∞"), nothing, nothing),
+  )))
   :(const instruction_infos = Dict{OpCode,InstructionInfo}($(infos...)))
 end
 

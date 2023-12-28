@@ -1,5 +1,5 @@
 using SPIRV, Test, Accessors
-using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!, composite_extract_to_access_chain_load!, propagate_constants!, remove_op_nops!, remove_obsolete_annotations!
+using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!, composite_extract_to_access_chain_load!, propagate_constants!, remove_op_nops!, remove_obsolete_annotations!, egal_to_recursive_equal!, add_merge_headers!
 
 @testset "Passes" begin
   @testset "SSA renumbering" begin
@@ -309,6 +309,47 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
       end
     end
     @test ir ≈ expected
+    @test unwrap(validate(ir))
+  end
+
+  @testset "Egal to recursive Equal" begin
+    ir = @spv_ir begin
+      Bool = TypeBool()
+      Float32 = TypeFloat(32)
+      @function (===)(x::Float32, y::Float32)::Bool begin
+        _ = Label()
+        same = Egal(x, y)::Bool
+        ReturnValue(same)
+      end
+    end
+    egal_to_recursive_equal!(ir)
+    expected = @spv_ir begin
+      Bool = TypeBool()
+      Float32 = TypeFloat(32)
+      @function (===)(x::Float32, y::Float32)::Bool begin
+        _ = Label()
+        same = FOrdEqual(x, y)::Bool
+        ReturnValue(same)
+      end
+    end
+    @test ir ≈ expected
+    @test unwrap(validate(ir))
+
+    ir = @spv_ir begin
+      B = TypeBool()
+      F32 = TypeFloat(32)
+      I32 = TypeInt(32, false)
+      c_I32_2 = Constant(2U)::I32
+      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      @function (===)(x::ArrayF32_2, y::ArrayF32_2)::B begin
+        _ = Label()
+        same = Egal(x, y)::B
+        ReturnValue(same)
+      end
+    end
+    egal_to_recursive_equal!(ir)
+    composite_extract_to_access_chain_load!(ir)
+    add_merge_headers!(ir)
     @test unwrap(validate(ir))
   end
 end;

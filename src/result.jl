@@ -41,3 +41,5 @@ ResultID(counter::IDCounter) = counter[]
 function next!(counter::IDCounter)
   counter[] = ResultID(UInt32(counter.current_id) + 1)
 end
+
+next!(counter::IDCounter, n::Integer) = ntuple(_ -> next!(counter), n)

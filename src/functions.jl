@@ -6,7 +6,7 @@ end
 Block(id::ResultID) = Block(id, Expression[])
 
 @forward_interface Block field = :exs interface = [iteration, indexing]
-@forward_methods Block field = :exs Base.insert!(_, args...) Base.push!(_, ex::Expression) Base.view(_, range) Base.deleteat!(_, i) Base.keys(_)
+@forward_methods Block field = :exs Base.insert!(_, args...) Base.push!(_, ex::Expression) Base.append!(_, exs) Base.view(_, range) Base.deleteat!(_, i) Base.keys(_) Base.splice!(_, args...)
 
 function termination_instruction(blk::Block)
   ex = blk[end]
@@ -14,10 +14,11 @@ function termination_instruction(blk::Block)
   ex
 end
 
+has_merge_header(blk::Block) = length(blk) ≥ 2 && is_merge_instruction(blk[end - 1])
+
 function merge_header(blk::Block)
-  ex = blk[end - 1]
-  @assert is_merge_instruction(ex)
-  ex
+  @assert has_merge_header(blk)
+  blk[end - 1]
 end
 
 function phi_expressions(blk::Block)
@@ -30,21 +31,30 @@ function phi_expressions(blk::Block)
   exs
 end
 
-function directly_reachable_blocks(blk::Block)
-  inst = termination_instruction(blk)
-  @match opcode(inst) begin
-    &OpBranch => ResultID[inst[end]]
-    &OpBranchConditional => collect(ResultID, inst[end-1:end])
-    &OpSwitch => collect(ResultID, inst[4:2:end])
-  end
-end
-
-function Base.insert!(blk::Block, index::Int64, exs::AbstractVector{Expression})
+function Base.insert!(blk::Block, index::Int, exs::AbstractVector{Expression})
   for ex in reverse(exs)
     insert!(blk.exs, index, ex)
   end
   blk
 end
+
+function Base.replace!(blk::Block, index::Int, by::Union{Expression, AbstractVector{Expression}})
+  deleteat!(blk, index)
+  insert!(blk, index, by)
+end
+
+function targets(blk::Block)
+  inst = termination_instruction(blk)
+  @match opcode(inst) begin
+    &OpBranch => ResultID[inst[end]]
+    &OpBranchConditional => collect(ResultID, @view inst[end-1:end])
+    &OpSwitch => collect(ResultID, @view inst[4:2:end])
+    &OpReturn || &OpReturnValue || &OpUnreachable || &OpKill => ResultID[]
+  end
+end
+
+branch!(from::Block, to::Block) = push!(from, @ex Branch(to.id))
+branch!(from::Block, cond::ResultID, yes::Block, no::Block) = push!(from, @ex BranchConditional(cond, yes.id, no.id))
 
 @struct_hash_equal struct FunctionDefinition
   type::FunctionType
@@ -95,3 +105,5 @@ function Base.show(io::IO, fdef::FunctionDefinition)
   fdef.control ≠ FunctionControlNone && print(io, fdef.control, ", ")
   print(io, length(fdef.args), " argument", length(fdef.args) == 1 ? "" : "s" , ", ", length(fdef.blocks), " block", length(fdef.blocks) == 1 ? "" : "s", ", ", nexs(fdef), " expressions)")
 end
+
+targets(blk::Block, fdef::FunctionDefinition) = Block[fdef[target] for target in targets(blk)]
