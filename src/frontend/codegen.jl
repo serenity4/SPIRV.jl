@@ -26,7 +26,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         field_idx = @match args[2] begin
           node::QuoteNode => get_field_index(composite, node, tr, target)
           idx::Integer => idx
-          idx::Core.SSAValue => @match spir_type(retrieve_type(target, tr, args[1]), tr.tmap) begin
+          idx::Core.SSAValue => @match spir_type(target, tr, args[1]) begin
             # Dynamic accesses into arrays are supported, but not via
             # OpCompositeExtract; we'll need to convert this instruction
             # to an OpVariable + OpStore + OpAccessChain + OpLoad chain.
@@ -41,7 +41,10 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         composite = args[1]
         field_idx = @match args[2] begin
           node::QuoteNode => get_field_index(composite, node, tr, target)
-          idx::Core.SSAValue => throw_compilation_error("dynamic access into tuple or struct members is not supported")
+          idx::Core.SSAValue => @match spir_type(target, tr, args[1]) begin
+            ::ArrayType => throw_compilation_error("dynamic `setfield!` into homogeneous tuples is not yet supported")
+            _ => throw_compilation_error("dynamic `setfield!` into inhomogeneous tuple or struct members is not supported")
+          end
           idx::Integer => idx
           field => throw_compilation_error("unknown field type $(typeof(field))")
         end
@@ -150,6 +153,7 @@ end
 retrieve_type(target::SPIRVTarget, tr::Translation, x::Core.SSAValue) = target.code.ssavaluetypes[x.id]
 retrieve_type(target::SPIRVTarget, tr::Translation, x::Core.Argument) = tr.argtypes[x.n - 1]
 retrieve_type(target::SPIRVTarget, tr::Translation, x::Number) = typeof(x)
+spir_type(target::SPIRVTarget, tr::Translation, x) = spir_type(retrieve_type(target, tr, x), tr.tmap, fill_tmap = false)
 
 equality_operator(::IntegerType) = OpIEqual
 equality_operator(::FloatType) = OpFOrdEqual
