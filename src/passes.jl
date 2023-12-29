@@ -75,31 +75,32 @@ end
 
 argtypes(fdef::FunctionDefinition) = fdef.type.argtypes
 
+struct FillPhiBranches <: FunctionPass end
+
+fill_phi_branches!(ir::IR) = FillPhiBranches()(ir)
+
 """
 SPIR-V requires all branching nodes to give a result, while Julia does not if the Phi instructions
 will never get used if coming from branches that are not covered.
 We can make use of OpUndef to provide a value, producing it in the incoming nodes
 just before branching to the node which defines a Phi instruction.
 """
-function fill_phi_branches!(ir::IR)
-  for fdef in ir.fdefs
-    cfg = ControlFlowGraph(fdef)
-    for v in traverse(cfg)
-      blk = fdef[v]
-      exs = phi_expressions(blk)
-      for ex in exs
-        length(ex) == 2length(inneighbors(cfg, v)) && continue
-        missing_branches = filter(u -> !in(fdef.block_ids[u], @view ex[2:2:end]), inneighbors(cfg, v))
-        for u in missing_branches
-          blkin = fdef[u]
-          id = next!(ir.idcounter)
-          insert!(blkin, lastindex(blkin), @ex id = OpUndef()::ex.type)
-          push!(ex, id, fdef.block_ids[u])
-        end
+function (::FillPhiBranches)(ir::IR, fdef::FunctionDefinition)
+  cfg = ControlFlowGraph(fdef)
+  for v in traverse(cfg)
+    blk = fdef[v]
+    exs = phi_expressions(blk)
+    for ex in exs
+      length(ex) == 2length(inneighbors(cfg, v)) && continue
+      missing_branches = filter(u -> !in(fdef.block_ids[u], phi_sources(ex)), inneighbors(cfg, v))
+      for u in missing_branches
+        blkin = fdef[u]
+        id = next!(ir.idcounter)
+        insert!(blkin, lastindex(blkin), @ex id = OpUndef()::ex.type)
+        push!(ex, id, fdef.block_ids[u])
       end
     end
   end
-  ir
 end
 
 """
@@ -574,3 +575,88 @@ end
 equality_operator(::IntegerType) = OpIEqual
 equality_operator(::FloatType) = OpFOrdEqual
 equality_operator(::BooleanType) = OpLogicalEqual
+
+"""
+Remove blocks that consist of a single `Branch` instruction if such removal may be done without
+affecting semantics.
+
+The intended use case is to simplify long chains that may come from inlining and constant propagation,
+which appear as nested folding `goto`s in Julia IR.
+
+!!! warning
+    This does not currently update merge header information and should not be attempted on IR that has `LoopMerge` or `SelectionMerge` instructions.
+"""
+struct CompactBlocks <: FunctionPass end
+
+compact_blocks!(ir::IR) = CompactBlocks()(ir)
+
+function (::CompactBlocks)(ir::IR, fdef::FunctionDefinition)
+  cfg = ControlFlowGraph(fdef)
+  merged_to = IdDict{Int, Int}()
+  block_deletions = Int[]
+  remaining = collect(1:length(fdef))
+  for i in remaining
+    blk = fdef[i]
+    length(blk) == 2 || continue
+    ex = termination_expression(blk)
+    ex.op == OpBranch || continue
+    next = fdef[ex[1]::ResultID]
+    all(ex -> !in(blk.id, phi_sources(ex)), phi_expressions(next)) || continue
+    v = block_index(fdef, blk)
+    if !isempty(inneighbors(cfg, v))
+      length(inneighbors(cfg, v)) == 1 || continue
+      u = inneighbors(cfg, v)[1]
+      u = get(merged_to, u, u)
+      prev = fdef[u]
+      branch_type = opcode(termination_expression(prev))
+      substitute_targets!(prev, blk => next)
+      new_branch_type = opcode(termination_expression(prev))
+      branch_type != new_branch_type && new_branch_type == OpBranch && push!(remaining, u)
+      merged_to[v] = u
+    end
+    # XXX: Update existing `LoopMerge`/`SelectionMerge` if any, or prevent
+    # simplification if the block was declared a merge target by another block.
+    # Currently this should run before the restructuring passes, so it is fine.
+    push!(block_deletions, i)
+  end
+  unique!(sort!(block_deletions))
+  delete!(fdef, block_deletions)
+end
+
+phi_sources(ex::Expression) = @view ex[2:2:end]
+
+function substitute_targets!(blk::Block, (old, new)::Pair{Block})
+  ex = termination_expression(blk)
+  for i in branch_target_indices(ex)
+    ex[i] === old.id && (ex[i] = new.id)
+  end
+  simplified = simplify_branches(ex)
+  ex !== simplified && (blk[end] = simplified)
+  simplified
+end
+
+function simplify_branches(ex::Expression)
+  @match ex.op begin
+    &OpBranchConditional => ex[2]::ResultID == ex[3]::ResultID ? @ex(Branch(ex[2]::ResultID)) : ex
+    &OpSwitch => begin
+      indices = branch_target_indices(ex)
+      keep = Int[]
+      covered = Set{ResultID}()
+      for i in indices
+        target = ex[i]::ResultID
+        in(target, covered) && continue
+        push!(covered, target)
+        push!(keep, i)
+      end
+      length(keep) == 1 && return @ex Branch(ex[keep[1]]::ResultID)
+      selector, default = ex[1]::ResultID, ex[2]::ResultID
+      ret = @ex Switch(selector, default)
+      for i in keep
+        push!(ret.args, ex[i - 1]) # literal
+        push!(ret.args, ex[i]::ResultID) # label
+      end
+      ret
+    end
+    _ => ex
+  end
+end

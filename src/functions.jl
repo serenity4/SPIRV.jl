@@ -8,7 +8,7 @@ Block(id::ResultID) = Block(id, Expression[])
 @forward_interface Block field = :exs interface = [iteration, indexing]
 @forward_methods Block field = :exs Base.insert!(_, args...) Base.push!(_, ex::Expression) Base.append!(_, exs) Base.view(_, range) Base.deleteat!(_, i) Base.keys(_) Base.splice!(_, args...)
 
-function termination_instruction(blk::Block)
+function termination_expression(blk::Block)
   ex = blk[end]
   @assert is_termination_instruction(ex)
   ex
@@ -43,14 +43,20 @@ function Base.replace!(blk::Block, index::Int, by::Union{Expression, AbstractVec
   insert!(blk, index, by)
 end
 
-function targets(blk::Block)
-  inst = termination_instruction(blk)
-  @match opcode(inst) begin
-    &OpBranch => ResultID[inst[end]]
-    &OpBranchConditional => collect(ResultID, @view inst[end-1:end])
-    &OpSwitch => collect(ResultID, @view inst[4:2:end])
-    &OpReturn || &OpReturnValue || &OpUnreachable || &OpKill => ResultID[]
+"Indices of arguments which represent target block IDs in a branching instruction."
+function branch_target_indices(ex::Expression)
+  @match ex.op begin
+    &OpBranch => 1:1
+    &OpBranchConditional => 2:3
+    &OpSwitch => 4:2:lastindex(ex)
+    &OpReturn || &OpReturnValue || &OpUnreachable || &OpKill || &OpTerminateInvocation => 1:0
   end
+end
+
+function targets(blk::Block)
+  ex = termination_expression(blk)
+  indices = branch_target_indices(ex)
+  collect(ResultID, @view ex[indices])
 end
 
 branch!(from::Block, to::Block) = push!(from, @ex Branch(to.id))
@@ -95,6 +101,14 @@ end
 function Base.push!(fdef::FunctionDefinition, blk::Block)
   insert!(fdef.blocks, blk.id, blk)
   push!(fdef.block_ids, blk.id)
+  fdef
+end
+
+function Base.delete!(fdef::FunctionDefinition, block_indices::AbstractVector{<:Integer})
+  block_ids = splice!(fdef.block_ids, block_indices)
+  for id in block_ids
+    delete!(fdef.blocks, id)
+  end
   fdef
 end
 

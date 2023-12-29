@@ -182,7 +182,7 @@ end
 
 "Modify the branching instruction of `from` such that any branches to `to` are remapped to target `new` instead."
 function redirect_branches!(from::Block, to::Block, new::Block)
-  ex = termination_instruction(from)
+  ex = termination_expression(from)
   @tryswitch ex.op begin
     @case &OpBranch
     ex[1] = new.id
@@ -254,7 +254,7 @@ end
 
 conflicted_merge_blocks(fdef::FunctionDefinition) = filter!(>(1) ∘ length, merge_blocks(fdef))
 
-"Find blocks that are the target of merge headers, along with the list of nodes that declared it with as a merge header."
+"Find blocks that are the target of merge headers, along with the list of nodes that declared it as a merge header."
 function merge_blocks(fdef::FunctionDefinition)
   merge_blks = Dictionary{ResultID,Vector{ResultID}}()
   for blk in fdef

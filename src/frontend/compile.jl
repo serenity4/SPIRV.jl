@@ -82,6 +82,7 @@ function IR(mt::ModuleTarget, tr::Translation)
   ir.idcounter = mt.idcounter
   ir.tmap = tr.tmap
   ir.metadata = mt.metadata
+  compact_blocks!(ir)
   fill_phi_branches!(ir)
   remap_dynamic_1based_indices!(ir)
   egal_to_recursive_equal!(ir)

@@ -1,5 +1,5 @@
 using SPIRV, Test, Accessors
-using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!, composite_extract_to_access_chain_load!, propagate_constants!, remove_op_nops!, remove_obsolete_annotations!, egal_to_recursive_equal!, add_merge_headers!
+using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap_dynamic_1based_indices!, composite_extract_dynamic_to_literal!, composite_extract_to_access_chain_load!, propagate_constants!, remove_op_nops!, remove_obsolete_annotations!, egal_to_recursive_equal!, add_merge_headers!, compact_blocks!
 
 @testset "Passes" begin
   @testset "SSA renumbering" begin
@@ -17,6 +17,89 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
     mod = SPIRV.Module(PhysicalModule(resource("comp.spv")))
     renumbered = renumber_ssa(mod)
     @test unwrap(validate(renumbered))
+  end
+
+  @testset "Compacting blocks" begin
+    ir = @spv_ir begin
+      Nothing = TypeVoid()
+      @function f()::Nothing begin
+        blk1 = Label()
+        Branch(blk2)
+        blk2 = Label()
+        Branch(blk3)
+        blk3 = Label()
+        Return()
+      end
+    end
+    @test unwrap(validate(ir))
+    compact_blocks!(ir)
+    expected = @spv_ir begin
+      Nothing = TypeVoid()
+      @function f()::Nothing begin
+        blk3 = Label()
+        Return()
+      end
+    end
+    @test unwrap(validate(expected))
+    @test ir ≈ expected renumber = true
+
+    ir = @spv_ir begin
+      Nothing = TypeVoid()
+      B = TypeBool()
+      c_true = ConstantTrue()::B
+      @function f()::Nothing begin
+        blk1 = Label()
+        trivia = LogicalAnd(c_true, c_true)::B
+        BranchConditional(c_true, blk2, blk3)
+        blk2 = Label()
+        Branch(blk3)
+        blk3 = Label()
+        Return()
+      end
+    end
+    @test unwrap(validate(ir))
+    compact_blocks!(ir)
+    expected = @spv_ir begin
+      Nothing = TypeVoid()
+      B = TypeBool()
+      c_true = ConstantTrue()::B
+      @function f()::Nothing begin
+        blk1 = Label()
+        trivia = LogicalAnd(c_true, c_true)::B
+        Branch(blk3)
+        blk3 = Label()
+        Return()
+      end
+    end
+    @test unwrap(validate(expected))
+    @test ir ≈ expected renumber = true
+
+    ir = @spv_ir begin
+      Nothing = TypeVoid()
+      B = TypeBool()
+      c_true = ConstantTrue()::B
+      @function f()::Nothing begin
+        blk1 = Label()
+        BranchConditional(c_true, blk2, blk3)
+        blk2 = Label()
+        Branch(blk3)
+        blk3 = Label()
+        Return()
+      end
+    end
+    @test unwrap(validate(ir))
+    compact_blocks!(ir)
+    expected = @spv_ir begin
+      Nothing = TypeVoid()
+      B = TypeBool()
+      c_true = ConstantTrue()::B
+      @function f()::Nothing begin
+        blk3 = Label()
+        Return()
+      end
+    end
+    @test unwrap(validate(expected))
+    @test ir ≈ expected renumber = true
   end
 
   @testset "Filling in missing Phi branches" begin

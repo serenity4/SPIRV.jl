@@ -122,7 +122,7 @@ instructions(amod::AnnotatedModule, af::AnnotatedFunction) = instructions(amod, 
 instructions(amod::AnnotatedModule, af::AnnotatedFunction, block::Integer) = instructions(amod, af.blocks[block])
 
 const termination_instructions = Set([
-  OpBranch, OpBranchConditional,
+  OpBranch, OpBranchConditional, OpSwitch,
   OpReturn, OpReturnValue,
   OpUnreachable,
   OpKill, OpTerminateInvocation,
