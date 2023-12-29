@@ -5,11 +5,14 @@ struct NewCodeInfo
 end
 NewCodeInfo(from::CodeInfo) = NewCodeInfo(from, Any[], Int[])
 
-function should_remove_instruction(inst, i, cfg)
+function should_remove_instruction(code, inst, i, cfg)
   # Strip any `:meta` expression, as we don't read anything from them.
   Meta.isexpr(inst, :meta) && return true
   # Remove basic blocks consisting of a lone `nothing` statement.
-  if inst === nothing
+  # They may be problematic otherwise because they form new potential entry points,
+  # confusing algorithms that expect only one entry point into the CFG.
+  # The exception is when it actually is the entry point, i.e. the first instruction.
+  if inst === nothing && i > 1
     bb = basic_block(cfg, i)
     isempty(bb.preds) && length(bb.stmts) == 1 && return true
   end
@@ -20,7 +23,7 @@ function apply_passes(code::CodeInfo)
   new_code = NewCodeInfo(code)
   cfg = compute_basic_blocks(code.code)
   for (i, inst) in enumerate(code.code)
-    if should_remove_instruction(inst, i, cfg)
+    if should_remove_instruction(code, inst, i, cfg)
       push!(new_code.from_ssavalues, false)
     else
       push!(new_code.from_ssavalues, true)
