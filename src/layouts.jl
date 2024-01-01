@@ -3,7 +3,40 @@ Layout strategy used to compute alignments, offsets and strides.
 """
 @refbroadcast abstract type LayoutStrategy end
 
-element_stride(layout::LayoutStrategy, t) = align(datasize(layout, t), alignment(layout, t))
+"""
+    alignment(layout, T)
+
+Memory alignment which must be respected when allocating a value of the given type.
+
+This refers to an *external* alignment, i.e. this value is of interest when allocating a value of type `T` within a struct or array. In particular, this value *does not* indicate what should be the alignment of any struct member or the stride of any array element contained in `T`, if `T` is a struct or an array.
+"""
+function alignment end
+
+"""
+    padding(layout, T, i) # padding before struct member `i` of `T`
+    padding(layout, T) # padding between elements of array type `T`
+
+Required space between elements of an array (two-argument form) or between members of a structure (three-argument form).
+"""
+function padding end
+
+"""
+    element_stride(layout, T)
+
+Minimum array stride required by an element of type `T` if it were to be part of an array.
+
+The stride of an array must be a multiple of this element stride, and thus may be greater.
+"""
+function element_stride end
+
+"""
+    datasize(layout, T)
+
+This is the total space occupied by a value of type `T`, including padding between struct elements and array strides.
+"""
+function datasize end
+
+element_stride(layout::LayoutStrategy, t, array_sizes...) = align(datasize(layout, t, array_sizes...), alignment(layout, t, array_sizes...))
 
 function padding(layout::LayoutStrategy, T, i)
   i == 1 && return 0
@@ -12,13 +45,24 @@ function padding(layout::LayoutStrategy, T, i)
   offset - last
 end
 
+padding(layout::LayoutStrategy, x::VecOrMat) = padding(layout, typeof(x))
 padding(layout::LayoutStrategy, T::Type) = error("Padding not defined for `$(typeof(layout))` with type `$T`")
-function padding(layout::LayoutStrategy, A::Type{<:VecOrMat{T}}) where {T}
-  s = stride(layout, Vector{T})
-  s - datasize(layout, T)
+padding(layout::LayoutStrategy, x::VecOrMat{<:VecOrMat}) = padding(layout, typeof(x), size(x[1]))
+function padding(layout::LayoutStrategy, A::Type{<:VecOrMat{T}}, sizes...) where {T}
+  s = stride(layout, Vector{T}, sizes...)
+  s - datasize(layout, T, sizes...)
 end
 
 align(offset::Integer, alignment::Integer) = alignment * cld(offset, alignment)
+
+datasize(layout::LayoutStrategy, ::Type{T}, size) where {T<:VecOrMat} = stride(layout, T) * prod(size; init = 1)
+datasize(layout::LayoutStrategy, ::Type{T}, size_outer, size_inner) where {T<:VecOrMat{<:VecOrMat}} = stride(layout, T, size_inner) * prod(size_outer; init = 1)
+datasize(layout::LayoutStrategy, x::VecOrMat) = datasize(layout, typeof(x), size(x))
+datasize(layout::LayoutStrategy, x::VecOrMat{<:VecOrMat}) = datasize(layout, typeof(x), size(x), size(x[1]))
+datasize(layout::LayoutStrategy, x) = datasize(layout, typeof(x))
+
+Base.stride(layout::LayoutStrategy, ::Type{<:VecOrMat{T}}) where {T} = element_stride(layout, T)
+Base.stride(layout::LayoutStrategy, ::Type{<:VecOrMat{T}}, size_inner) where {T<:VecOrMat} = datasize(layout, T, size_inner)
 
 """"
 Julia layout, with a special handling of mutable fields for composite types.
@@ -30,9 +74,7 @@ The alternative would be to completely disallow structs which contain mutable fi
 """
 struct NativeLayout <: LayoutStrategy end
 
-datasize(layout::LayoutStrategy, x::VecOrMat) = stride(layout, typeof(x)) * length(x)
-datasize(layout::LayoutStrategy, x) = datasize(layout, typeof(x))
-Base.stride(layout::NativeLayout, ::Type{<:VecOrMat{T}}) where {T} = datasize(layout, T)
+datasize(layout::NativeLayout, ::Type{<:VecOrMat}) = error("Array dimensions must be provided to know the size of a vector or a matrix. If you intend to get the size of a vector of vectors or a vector of matrices, you must not use a tuple and must either provide a value or extra dimension arguments.")
 function datasize(layout::NativeLayout, T::DataType)
   isbitstype(T) && return sizeof(T)
   isconcretetype(T) || error("A concrete type is required.")
@@ -65,7 +107,7 @@ datasize(layout::NoPadding, ::Type{T}) where {T} = isprimitivetype(T) ? sizeof(T
 dataoffset(layout::NoPadding, ::Type{T}, i::Integer) where {T} = sum(ntuple(i -> datasize(layout, fieldtype(T, i)), i - 1); init = 0)::Int64
 alignment(::NoPadding, ::Type) = 1
 
-padding(::NoPadding, T, i) = 0
+padding(::NoPadding, T, i::Integer) = 0
 padding(::NoPadding, ::Type{Vector{T}}) where {T} = 0
 
 @struct_hash_equal struct LayoutInfo
@@ -167,6 +209,7 @@ isinterface(layout::VulkanLayout, t::StructType) = in(t, layout.interfaces)
 isinterface(layout::VulkanLayout, ::SPIRType) = false
 
 Base.stride(layout::VulkanLayout, T::Type) = stride(layout, layout[T])
+Base.stride(layout::VulkanLayout, T::Type{<:VecOrMat{ET}}) where {ET} = stride(layout, layout[T])
 element_stride(layout::VulkanLayout, T::Type) = element_stride(layout, layout[T])
 datasize(layout::VulkanLayout, T::Type) = datasize(layout, layout[T])
 datasize(layout::VulkanLayout, data::Matrix{T}) where {T} = element_stride(layout, T) * length(data)

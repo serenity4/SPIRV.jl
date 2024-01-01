@@ -55,4 +55,20 @@ end
       @test recursive_equals(object, data)
     end
   end
+
+  # Julia values incompatible with shaders, but of interest in client APIs
+  # e.g. for buffers or images.
+  # These are not meant to be deserialized; they use dynamic sizes that are lost
+  # in the serialization process.
+  dataset = [[[1, 2], [3, 4], [5, 6]], [[1 2; 3 4], [5 6; 7 8]]]
+  layouts = [NativeLayout(), NoPadding()]
+  for layout in layouts
+    for data in dataset
+      n = datasize(layout, data)
+      isa(n, Int)
+      bytes = serialize(data, layout)
+      @test isa(bytes, Vector{UInt8}) && !isempty(bytes)
+      @test length(bytes) == n
+    end
+  end
 end;

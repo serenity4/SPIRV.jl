@@ -67,7 +67,7 @@ function serialize_array!(bytes, data::AbstractVecOrMat, layout::LayoutStrategy,
   end
 end
 function serialize!(bytes, data::VecOrMat, layout::LayoutStrategy)
-  pad = padding(layout, typeof(data))
+  pad = padding(layout, data)
   iszero(pad) && isbitstype(eltype(data)) && return append!(bytes, reinterpret(UInt8, data))
   serialize_array!(bytes, data, layout, pad)
 end

@@ -1,6 +1,6 @@
 using SPIRV, Test, Dictionaries
 using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClass, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, TypeMetadata, metadata!
-using SPIRV: datasize, alignment, element_stride, stride, dataoffset, isinterface
+using SPIRV: datasize, alignment, element_stride, stride, dataoffset, isinterface, padding
 
 function test_has_offset(tmeta, T, field, offset)
   decs = decorations(tmeta, tmeta[T], field)
@@ -134,6 +134,15 @@ layout = VulkanLayout(align_types)
       @test datasize(layout, Align12) == 32
       @test stride(layout, Vector{Align12}) == datasize(layout, Align12)
       @test datasize(layout, [Align12((0.1, 0.2, 0.3), (0.4, 0.5, 0.6), 0.7, 0.8)]) == 32
+
+      data = [rand(32, 32) for _ in 1:6]
+      @test_throws "Array dimensions must be provided" datasize(layout, Matrix{Float64})
+      @test datasize(layout, data[1]) == 32*32*8
+      @test_throws "Array dimensions must be provided" datasize(layout, Tuple(data))
+      @test datasize(layout, data) == 6datasize(layout, data[1])
+
+      data = Vec3[(1, 2, 3), (4, 5, 6)]
+      @test padding(layout, data) == 0
     end
   end
   @testset "Alignments" begin
