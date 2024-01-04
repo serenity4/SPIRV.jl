@@ -103,7 +103,7 @@ function println_metadata(io::IO, meta::ModuleMetadata)
   println(io, "Schema: ", meta.schema)
 end
 
-padding(id::ResultID, bound) = length(string(bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
+padding(id::Optional{ResultID}, bound) = length(string(bound)) - (isnothing(id) ? -4 : length(string(id)) - 1)
 
 function print_instructions(io::IO, insts::AbstractVector{Instruction}, bound = UInt32(compute_id_bound(insts)))
   for inst in insts
