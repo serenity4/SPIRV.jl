@@ -24,6 +24,7 @@ using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, Me
   retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView,
   WorldRange, OverlayMethodTable
 const CC = Core.Compiler
+using Base: ScopedValue
 using Base.Experimental: @overlay, @MethodTable
 using Base: Fix1, Fix2,
             IEEEFloat,
@@ -88,7 +89,6 @@ include("requirements.jl")
 include("analysis/deltagraph.jl")
 include("analysis/control_flow.jl")
 
-include("frontend/ci_cache.jl")
 include("frontend/method_table.jl")
 include("frontend/overlay.jl")
 include("frontend/types/abstractarray.jl")

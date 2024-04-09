@@ -91,7 +91,7 @@ SPIRV.Pointer{T}(addr::DeviceAddressBlock) where {T} = SPIRV.Pointer{T}(addr.add
 function execute(ex::Expr, T = nothing)
   T = @something(T, begin
     code = @eval SPIRV.@code_typed (() -> $ex)()
-    code.rettype
+    code.parent.cache.rettype
   end)
   source = @eval @compute supported_features VulkanAlignment() assemble = true (function (out)
     @store out::$T = $ex

@@ -138,11 +138,11 @@ function Base.showerror(io::IO, err::CompilationError)
       println(io)
       here ? printstyled(io, '>'; color = :red, bold = true) : print(io, ' ')
       print(io, " [$i] ")
-      str = string(frame.mi, "::", frame.code.rettype)
+      str = string(frame.mi, "::", frame.mi.cache.rettype)
       here ? printstyled(io, str; color = :red, bold = true) : print(io, str)
     end
     frame = last(stacktrace)
-    frame.code.rettype == Union{} && length(frame.code.code) < 100 && println(io, "\n\n", frame.code)
+    frame.mi.cache.rettype == Union{} && length(frame.code.code) < 100 && println(io, "\n\n", frame.code)
   end
   if isdefined(err, :jinst)
     print(io, "\n\n", error_field("Julia instruction" * (!iszero(err.jinst_index) ? " at index %$(err.jinst_index)" : "")), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
@@ -210,8 +210,8 @@ function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       end
     end
   end
-  ci = target.interp.global_cache[mi]
-  ftype = FunctionType(spir_type(ci.rettype, tr.tmap), argtypes)
+  code_instance = retrieve_code_instance(target.interp, mi)
+  ftype = FunctionType(spir_type(code_instance.rettype, tr.tmap), argtypes)
   FunctionDefinition(ftype, FunctionControlNone, [], [], ResultDict(), [], global_vars)
 end
 
@@ -430,9 +430,8 @@ macro compile(ex)
 end
 
 function getline(code::CodeInfo, i::Int)
-  codeloc = code.codelocs[i]
-  iszero(codeloc) && return nothing
-  line = code.linetable[codeloc]
+  line = Base.IRShow.buildLineInfoNode(code.debuginfo, code.parent, i)
+  line
 end
 
 function validate(code::CodeInfo)::Result{Bool,ValidationError}

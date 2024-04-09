@@ -19,8 +19,6 @@ SUPPORTED_FEATURES = SupportedFeatures(
 )
 RAY_TRAYCING_FEATURES = union(SUPPORTED_FEATURES, SupportedFeatures(["SPV_KHR_ray_tracing"], [SPIRV.CapabilityRayTracingKHR]))
 
-interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE]);
-
 @testset "Shaders" begin
   @testset "Shader execution options" begin
     for execution_model in [SPIRV.ExecutionModelVertex, SPIRV.ExecutionModelFragment, SPIRV.ExecutionModelGLCompute, SPIRV.ExecutionModelGeometry, SPIRV.ExecutionModelTessellationControl, SPIRV.ExecutionModelTessellationEvaluation, SPIRV.ExecutionModelMeshNV, SPIRV.ExecutionModelAnyHitKHR]
@@ -136,7 +134,7 @@ interp_novulkan = SPIRVInterpreter([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_MET
 
     @test frag_shader == @shader :fragment SUPPORTED_FEATURES VulkanAlignment() shader!(::Vec4::Output)
 
-    any_hit_shader = @any_hit RAY_TRAYCING_FEATURES VulkanAlignment() interpreter = interp_novulkan shader!(::Vec4::Output)
+    any_hit_shader = Base.@with SPIRV.METHOD_TABLES => [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE] @any_hit RAY_TRAYCING_FEATURES VulkanAlignment() shader!(::Vec4::Output)
     @test isa(any_hit_shader, Shader)
 
     compute_shader = @compute SUPPORTED_FEATURES VulkanAlignment() assemble = true Returns(nothing)()

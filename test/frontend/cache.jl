@@ -27,4 +27,4 @@ using SPIRV, Test
   @eval some_function() = something()
   # Make sure world age bumps don't have any effect when there is no invalidation.
   @test haskey(global_cache, target.mi)
-end
+end;

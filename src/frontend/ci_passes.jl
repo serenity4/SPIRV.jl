@@ -70,60 +70,33 @@ function code_info(code::NewCodeInfo)
   (; from) = code
   # Must be updated if new instructions may be added.
   # XXX: Consider editing code locations to reflect modifications.
-  codelocs = from.codelocs[code.from_ssavalues]
+  # Update pre-linetable refactor was `codelocs = from.codelocs[code.from_ssavalues]`
+  # XXX: The debug info should most likely be transformed.
+  (; debuginfo) = from
   ssavaluetypes = isa(from.ssavaluetypes, Vector{Any}) ? from.ssavaluetypes[code.from_ssavalues] : from.ssavaluetypes
   ssaflags = from.ssaflags[code.from_ssavalues]
 
-  @static if VERSION < v"1.10-DEV"
-    new_code = _CodeInfo(
-      code.insts,
-      codelocs,
-      ssavaluetypes,
-      ssaflags,
-      from.method_for_inference_limit_heuristics,
-      from.linetable,
-      from.slotnames,
-      from.slotflags,
-      from.slottypes,
-      from.rettype,
-      from.parent,
-      from.edges,
-      from.min_world,
-      from.max_world,
-      from.inferred,
-      from.inlining_cost,
-      from.propagate_inbounds,
-      from.pure,
-      from.has_fcall,
-      from.constprop,
-      from.purity,
-    )
-  else
-    new_code = _CodeInfo(
-      code.insts,
-      codelocs,
-      ssavaluetypes,
-      ssaflags,
-      from.method_for_inference_limit_heuristics,
-      from.linetable,
-      from.slotnames,
-      from.slotflags,
-      from.slottypes,
-      from.rettype,
-      from.parent,
-      from.edges,
-      from.min_world,
-      from.max_world,
-      from.inferred,
-      from.propagate_inbounds,
-      from.has_fcall,
-      from.nospecializeinfer,
-      from.inlining,
-      from.constprop,
-      from.purity,
-      from.inlining_cost,
-    )
-  end
+  new_code = _CodeInfo(
+    code.insts,
+    debuginfo,
+    ssavaluetypes,
+    ssaflags,
+    from.slotnames,
+    from.slotflags,
+    from.slottypes,
+    from.parent,
+    from.method_for_inference_limit_heuristics,
+    from.edges,
+    from.min_world,
+    from.max_world,
+    from.propagate_inbounds,
+    from.has_fcall,
+    from.nospecializeinfer,
+    from.inlining,
+    from.constprop,
+    from.purity,
+    from.inlining_cost,
+  )
   verify(new_code)
   new_code
 end

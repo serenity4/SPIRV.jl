@@ -43,9 +43,12 @@ function method_instances(@nospecialize(f), @nospecialize(t), interp::SPIRVInter
   map(Core.Compiler.specialize_method, matches)
 end
 
-function SPIRVTarget(mi::MethodInstance, interp::AbstractInterpreter)
-  code_instance = get(interp.global_cache, mi, nothing)
-  !isnothing(code_instance) && return SPIRVTarget(mi, code_instance, interp)
+function SPIRVTarget(mi::MethodInstance, interp::SPIRVInterpreter)
+  cache = code_instance_cache(interp)
+  code_instance = CC.get(cache, mi, nothing)
+  # If no inferred source is available, pretend we don't have a code instance
+  # to run inference again.
+  !isnothing(code_instance) && !isnothing(code_instance.inferred) && return SPIRVTarget(mi, code_instance, interp)
   # Run type inference on lowered code.
   infer(mi, interp)
   SPIRVTarget(mi, interp)
@@ -125,27 +128,23 @@ end
 
 "Run type inference on the given `MethodInstance`."
 function infer(mi::MethodInstance, interp::AbstractInterpreter)
-  (; global_cache) = interp
-  haskey(global_cache, mi) && return false
-
   # Reset interpreter state.
   empty!(interp.local_cache)
 
-  src = Core.Compiler.typeinf_ext_toplevel(interp, mi)
+  inferred_code_instance = Core.Compiler.typeinf_ext_toplevel(interp, mi, CC.SOURCE_MODE_FORCE_SOURCE)
+
+  cache = code_instance_cache(interp)
+  code_instance = CC.get(cache, mi, nothing)
+  !isnothing(code_instance) || error("Could not get inferred code from cache.")
 
   # If src is rettyp_const, the `CodeInfo` is dicarded after type inference
   # (because it is normally not supposed to be used ever again).
   # To avoid the need to re-infer to get the code, store it manually.
-  ci = get(global_cache, mi, nothing)
-  if ci !== nothing && ci.inferred === nothing
-    @static if VERSION ≥ v"1.9.0-DEV.1115"
-      @atomic ci.inferred = src
-    else
-      ci.inferred = src
-    end
+  if code_instance.inferred === nothing
+    CC.setindex!(cache, inferred_code_instance, mi)
+    code_instance = CC.getindex(cache, mi)
   end
-  haskey(global_cache, mi) || error("Could not get inferred code from cache.")
-  true
+  code_instance
 end
 
 function Base.show(io::IO, target::SPIRVTarget)

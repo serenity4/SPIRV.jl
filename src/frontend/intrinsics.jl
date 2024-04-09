@@ -285,3 +285,8 @@ end
   end
   Base.twomul(x,y)
 end
+
+# Reduce the complexity of Julia IR by emitting simpler definitions.
+
+## Skip boundscheck to avoid leaving dead nodes and branches in the CFG.
+@override getindex(x::Number, i::Integer) = x

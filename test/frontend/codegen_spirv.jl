@@ -276,7 +276,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
     """,
       )
 
-      ir = @compile SPIRVInterpreter([INTRINSICS_METHOD_TABLE]) clamp(::Float64, ::Float64, ::Float64)
+      ir = Base.@with SPIRV.METHOD_TABLES => [INTRINSICS_METHOD_TABLE] @compile SPIRVInterpreter() clamp(::Float64, ::Float64, ::Float64)
       @test unwrap(validate(ir))
       @test ir ≈ parse(
         SPIRV.Module,
