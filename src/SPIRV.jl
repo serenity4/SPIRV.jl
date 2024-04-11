@@ -224,6 +224,9 @@ export
   Pointer, @load, @store,
   Image, image_type, Sampler,
   SampledImage,
+  DPdx, DPdy, Fwidth,
+  DPdxCoarse, DPdyCoarse, FwidthCoarse,
+  DPdxFine, DPdyFine, FwidthFine,
   combine
 
 end

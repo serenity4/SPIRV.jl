@@ -195,9 +195,21 @@ sampled_type(img::SampledImage) = sampled_type(typeof(img))
 (img::SampledImage)(coord::IEEEFloat) = ImageSampleImplicitLod(img, coord)
 (img::SampledImage)(coord::IEEEFloat, coord2::IEEEFloat, coords::IEEEFloat...) = img(Vec(coord, coord2, coords...))
 (img::SampledImage)(coords::Vec{<:Any,<:IEEEFloat}) = ImageSampleImplicitLod(img, coords)
-(img::SampledImage)(coords::Vec{<:Any,<:IEEEFloat}, lod::Real) = ImageSampleExplicitLod(img, coords, ImageOperandsLod, convert(Float32, lod))
+(img::SampledImage)(coords::Vec{<:Any,<:IEEEFloat}, lod) = ImageSampleExplicitLod(img, coords, ImageOperandsLod, lod)
 (img::SampledImage)(coords::V, dx::V, dy::V) where {V<:Vec{<:Any,<:IEEEFloat}} = ImageSampleExplicitLod(img, coords, ImageOperandsGrad, dx, dy)
 
 @noinline ImageSampleImplicitLod(img::SampledImage, coord) = zero(sampled_type(img))
-@noinline ImageSampleExplicitLod(img::SampledImage, coord, lod::Integer) = zero(sampled_type(img))
-@noinline ImageSampleExplicitLod(img::SampledImage, coord, dx, dy) = zero(sampled_type(img))
+@noinline ImageSampleExplicitLod(img::SampledImage, coord, lod_operand::SPIRV.ImageOperands, lod::Number) = zero(sampled_type(img))
+@noinline ImageSampleExplicitLod(img::SampledImage, coord, grad_operand::SPIRV.ImageOperands, dx, dy) = zero(sampled_type(img))
+
+@noinline DPdx(p) = p
+@noinline DPdy(p) = p
+@noinline Fwidth(p) = p
+
+@noinline DPdxCoarse(p) = p
+@noinline DPdyCoarse(p) = p
+@noinline FwidthCoarse(p) = p
+
+@noinline DPdxFine(p) = p
+@noinline DPdyFine(p) = p
+@noinline FwidthFine(p) = p
