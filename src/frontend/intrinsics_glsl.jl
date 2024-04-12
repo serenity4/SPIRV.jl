@@ -23,6 +23,7 @@ for func in (:sin, :cos, :tan, :asin, :acos, :atan, :cosh, :tanh, :asinh, :acosh
   @eval (@override_glsl $func(x::SmallFloat) = $op(x))
   @eval (@noinline $op(x::T) where {T<:SmallFloat} = T($func(Float64(x))))
 end
+@override_glsl sincos(x::SmallFloat) = (sin(x), cos(x))
 
 @override_glsl atan(y::T, x::T) where {T<:SmallFloat} = Atan2(y, x)
 @override_glsl atan(y::Float32, x::Float32) = Atan2(y, x)
