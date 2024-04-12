@@ -378,8 +378,9 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
       @function f(x::UInt32)::UInt32 begin
         _ = Label()
         y = Nop(x)::UInt32
+        y2 = Nop(y)::UInt32
         z = Nop()::Nothing
-        ReturnValue(x)
+        ReturnValue(y2)
       end
     end
     remove_op_nops!(ir)

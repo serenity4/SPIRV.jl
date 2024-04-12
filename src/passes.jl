@@ -322,13 +322,17 @@ function (::RemoveOpNop)(fdef::FunctionDefinition)
           value = ex[1]::ResultID
           insert!(replacements, ex.result, value)
         end
-      else
-        for (j, arg) in enumerate(ex)
-          isa(arg, ResultID) || continue
-          replacement = get(replacements, arg, nothing)
-          isnothing(replacement) && continue
-          ex[j] = replacement
+      end
+      for (j, arg) in enumerate(ex)
+        isa(arg, ResultID) || continue
+        replacement = get(replacements, arg, nothing)
+        isnothing(replacement) && continue
+        while true
+          further_replacement = get(replacements, replacement, nothing)
+          isnothing(further_replacement) && break
+          replacement = further_replacement
         end
+        ex[j] = replacement
       end
     end
     splice!(blk.exs, to_remove)
