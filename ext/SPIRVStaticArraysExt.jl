@@ -26,6 +26,7 @@ for (VT, MT) in zip((:SVector, :MVector), (:SMatrix, :MMatrix))
   end
 
   @eval remap_type(::Type{$VT{N,T}}) where {N,T} = Arr{N,T}
+  @eval @override Tuple(x::$VT) = ntuple_uint32(i -> x[i], length(x))
 
   # Define pseudo-intrinsics for conversions between StaticArrays types and SPIR-V types.
   # XXX: Also define SVector <-> MVector (no-op) conversions.
