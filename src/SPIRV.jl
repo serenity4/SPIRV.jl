@@ -47,6 +47,7 @@ Base.:(*)(x, ::Type{LiteralType{T}}) where {T} = T(x)
 
 const U = LiteralType{UInt32}
 const F = LiteralType{Float32}
+const πF = (π)F
 
 const MAGIC_NUMBER = 0x07230203
 const GENERATOR_MAGIC_NUMBER = 0x12349876
@@ -134,6 +135,7 @@ export
 
   # Conversion character literals.
   U, F,
+  πF,
 
   # Parsing, assembly, disassembly.
   PhysicalInstruction, PhysicalModule,

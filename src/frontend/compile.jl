@@ -362,7 +362,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
               # The current core ResultID has already been assigned (to the variable).
               add_expression!(blk, tr, ret, nothing)
               # Store to the new variable.
-              add_expression!(blk, tr, @ex OpStore(tr.results[core_ssaval], ret.result::ResultID))
+              add_expression!(blk, tr, @ex Store(tr.results[core_ssaval], ret.result::ResultID))
             end
           else
             add_expression!(blk, tr, ret, core_ssaval)
