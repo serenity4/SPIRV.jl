@@ -128,14 +128,13 @@ function deserialize(::Type{Vector{T}}, bytes, from::LayoutStrategy, dims = noth
   res
 end
 deserialize(::Type{<:Matrix}, bytes, from::LayoutStrategy) = error("Matrix dimensions `(nrows, ncols)` must be provided as an extra argument.")
-function deserialize(::Type{Matrix{T}}, bytes, from::LayoutStrategy, (n, m)) where {T}
-  i = 0
+function deserialize(::Type{Matrix{T}}, bytes, from::LayoutStrategy, (n, m), column_padding = 0) where {T}
   s = stride(from, Vector{T})
   size = datasize(from, T)
   res = Matrix{T}(undef, n, m)
   for j in 1:m
     for i in 1:n
-      offset = (j - 1) * s * n + (i - 1) * s
+      offset = (j - 1) * (s * n + column_padding) + (i - 1) * s
       elbytes = @view bytes[1 + offset:offset + size]
       res[i, j] = deserialize(T, elbytes, from)
     end

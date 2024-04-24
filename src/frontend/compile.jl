@@ -315,6 +315,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     try
       @switch jinst begin
         @case ::Core.ReturnNode
+        !isdefined(jinst, :val) && throw_compilation_error("unreachable statement encountered at location $i")
         ex = @match follow_globalref(jinst.val) begin
           ::Nothing => @ex OpReturn()
           val => begin
