@@ -93,11 +93,11 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
           end
         else
           args, variables = peel_global_vars(args, mt, tr, fdef)
-          (OpFunctionCall, (emit_new!(mt, tr, target.interp, mi, fdef, variables), args...))
+          (OpFunctionCall, (emit_new!(mt, tr, target, mi, fdef, variables), args...))
         end
       else
         args, variables = peel_global_vars(args, mt, tr, fdef)
-        (OpFunctionCall, (emit_new!(mt, tr, target.interp, mi, fdef, variables), args...))
+        (OpFunctionCall, (emit_new!(mt, tr, target, mi, fdef, variables), args...))
       end
     end
     Expr(:foreigncall, f, _...) => begin
@@ -297,7 +297,23 @@ function literals_to_const!(args, mt::ModuleTarget, tr::Translation, opcode)
   end
 end
 
-function emit_new!(mt::ModuleTarget, tr::Translation, interp::SPIRVInterpreter, mi::MethodInstance, fdef::FunctionDefinition, variables)
+function emit_new!(mt::ModuleTarget, tr::Translation, from::SPIRVTarget, mi::MethodInstance, fdef::FunctionDefinition, variables)
+  (; interp) = from
   target = SPIRVTarget(mi, interp)
-  emit!(mt, Translation(target, tr.tmap, tr.types), target, variables)
+  add_frame_lineno!(interp.debug, tr, from)
+  ret = emit!(mt, Translation(target, tr.tmap, tr.types), target, variables)
+  remove_frame_lineno!(interp.debug)
+  ret
+end
+
+function add_frame_lineno!(debug::InterpDebugInfo, tr::Translation, from::SPIRVTarget)
+  iszero(tr.index) && return
+  line = getline(from.code, tr.index)[end]
+  frame = debug.stacktrace[end]
+  debug.stacktrace[end] = @set frame.line = line
+end
+
+function remove_frame_lineno!(debug::InterpDebugInfo)
+  frame = debug.stacktrace[end]
+  debug.stacktrace[end] = @set frame.line = nothing
 end

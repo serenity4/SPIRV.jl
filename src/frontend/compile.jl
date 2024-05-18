@@ -20,22 +20,23 @@ function set_name!(mt::ModuleTarget, id::ResultID, name::Symbol)
   set_name!(metadata!(mt.metadata, id), name)
 end
 
-struct Translation
-  argtypes::Vector{Any}
-  argmap::BijectiveMapping{Int64, Core.Argument}
-  args::Dictionary{Core.Argument,ResultID}
+mutable struct Translation
+  const argtypes::Vector{Any}
+  const argmap::BijectiveMapping{Int64, Core.Argument}
+  const args::Dictionary{Core.Argument,ResultID}
   "Result IDs for basic blocks from Julia IR."
-  bbs::BijectiveMapping{Int,ResultID}
+  const bbs::BijectiveMapping{Int,ResultID}
   "Result IDs for each `Core.SSAValue` that implicitly represents a basic block."
-  bb_results::Dictionary{Core.SSAValue,ResultID}
+  const bb_results::Dictionary{Core.SSAValue,ResultID}
   "Result IDs that correspond semantically to `Core.SSAValue`s."
-  results::Dictionary{Core.SSAValue,ResultID}
+  const results::Dictionary{Core.SSAValue,ResultID}
   "Intermediate results that correspond to SPIR-V `Variable`s. Typically, these results have a mutable Julia type."
-  variables::Dictionary{Core.SSAValue,Variable}
-  tmap::TypeMap
+  const variables::Dictionary{Core.SSAValue,Variable}
+  const tmap::TypeMap
   "SPIR-V types derived from Julia types."
-  types::Dictionary{DataType,ResultID}
-  globalrefs::Dictionary{Core.SSAValue,GlobalRef}
+  const types::Dictionary{DataType,ResultID}
+  const globalrefs::Dictionary{Core.SSAValue,GlobalRef}
+  index::Int64
 end
 
 function Translation(target::SPIRVTarget, tmap, types)
@@ -47,7 +48,7 @@ function Translation(target::SPIRVTarget, tmap, types)
 end
 Translation(target::SPIRVTarget) = Translation(target, TypeMap(), Dictionary())
 Translation() = Translation([], BijectiveMapping(), TypeMap(), Dictionary())
-Translation(argtypes, argmap, tmap, types) = Translation(argtypes, argmap, Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), tmap, types, Dictionary())
+Translation(argtypes, argmap, tmap, types) = Translation(argtypes, argmap, Dictionary(), BijectiveMapping(), Dictionary(), Dictionary(), Dictionary(), tmap, types, Dictionary(), 0)
 
 ResultID(arg::Core.Argument, tr::Translation) = tr.args[arg]
 ResultID(bb::Int, tr::Translation) = tr.bbs[bb]
@@ -134,15 +135,16 @@ function Base.showerror(io::IO, err::CompilationError)
     (; stacktrace) = err.target.interp.debug
     print(io, "\nStacktrace:")
     for (i, frame) in enumerate(reverse(stacktrace))
-      here = i == firstindex(stacktrace)
-      println(io)
-      here ? printstyled(io, '>'; color = :red, bold = true) : print(io, ' ')
-      print(io, " [$i] ")
-      str = string(frame.mi, "::", frame.mi.cache.rettype)
-      here ? printstyled(io, str; color = :red, bold = true) : print(io, str)
+      (; mi) = frame
+      here = (i == firstindex(stacktrace))
+      color = here ? :red : :default
+      weight = here ? :bold : :normal
+      file = contractuser(string(mi.def.file))
+      line = !isnothing(frame.line) ? frame.line.line : !iszero(err.jinst_index) && i == lastindex(stacktrace) ? getline(err.target.code, err.jinst_index)[end].line : mi.def.line
+      print(io, styled"""
+        \n{$color,$weight: $(here ? '>' : ' ') [$i] $mi::$(mi.cache.rettype)}
+             {magenta:@ $(mi.def.module)} {gray:$file:$line}""")
     end
-    frame = last(stacktrace)
-    frame.mi.cache.rettype == Union{} && length(frame.code.code) < 100 && println(io, "\n\n", frame.code)
   end
   if isdefined(err, :jinst)
     print(io, "\n\n", error_field("Julia instruction" * (!iszero(err.jinst_index) ? " at index %$(err.jinst_index)" : "")), err.jinst, Base.text_colors[:yellow], "::", err.jtype, Base.text_colors[:default])
@@ -312,6 +314,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     isa(jtype, Core.PartialStruct) && (jtype = jtype.typ)
     isa(jtype, Core.Const) && (jtype = typeof(jtype.val))
     ex = nothing
+    tr.index = i
     try
       @switch jinst begin
         @case ::Core.ReturnNode

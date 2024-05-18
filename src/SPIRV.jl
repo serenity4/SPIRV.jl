@@ -17,6 +17,7 @@ using UUIDs: UUID, uuid1
 using SnoopPrecompile
 using ForwardMethods
 using Random
+using StyledStrings
 import Serialization: serialize, deserialize
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
@@ -26,6 +27,7 @@ using Core.Compiler: CodeInfo, IRCode, compute_basic_blocks, uncompressed_ir, Me
 const CC = Core.Compiler
 using Base: ScopedValue
 using Base.Experimental: @overlay, @MethodTable
+using Base.IRShow: LineInfoNode
 using Base: Fix1, Fix2,
             IEEEFloat,
             BitSigned, BitSigned_types,

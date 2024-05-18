@@ -1,7 +1,9 @@
 struct DebugFrame
   mi::MethodInstance
   code::CodeInfo
+  line::Optional{LineInfoNode}
 end
+DebugFrame(mi, code) = DebugFrame(mi, code, nothing)
 
 struct InterpDebugInfo
   stacktrace::Vector{DebugFrame}
