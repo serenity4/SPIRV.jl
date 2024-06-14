@@ -236,6 +236,7 @@ end
 # Math operations.
 
 cross(x::Vec{2}, y::Vec{2}) = x.x * y.y - x.y * y.x
+cross(x::Vec{3}, y::Vec{3}) = Vec3(x.y * y.z - x.z * y.y, x.z * y.x - x.x * y.z, x.x * y.y - x.y * y.x)
 
 ## Binary vector operations.
 for (f, op) in zip((:+, :-, :*, :/, :rem, :mod, :^, :atan), (:Add, :Sub, :Mul, :Div, :Rem, :Mod, :Pow, :Atan2))
