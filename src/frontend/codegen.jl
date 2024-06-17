@@ -72,8 +72,16 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       _ => throw_compilation_error("call to unknown function `$f`")
     end
     Expr(:invoke, mi, f, args...) => begin
-      isa(f, Core.SSAValue) && (f = tr.globalrefs[f])
-      @assert isa(f, GlobalRef)
+      f = @match f begin
+        ::Core.SSAValue => begin
+          value = get(tr.globalrefs, f, nothing)
+          isnothing(value) && throw_compilation_error("call to non-global object `$f` detected. All function calls must be made to globally defined symbols; if using a closure, the closure must be inlined")
+          value
+        end
+        ::Core.Argument => throw_compilation_error("call to function argument `$f` detected. All function calls must be made to globally defined symbols; if using a closure, the closure must be inlined")
+        ::GlobalRef => f
+        _ => throw_compilation_error("call to function argument `$f` detected. All function calls must be made to globally defined symbols")
+      end
       if f.name === :convert_native && nameof(f.mod) === :SPIRVStaticArraysExt
         # Ignore conversions that only occur in a native code generation context
         # such as Vec <-> SVector conversions.
