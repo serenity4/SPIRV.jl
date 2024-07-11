@@ -43,9 +43,6 @@ struct SPIRVInterpreter <: AbstractInterpreter
   debug::InterpDebugInfo
 end
 
-# Avoid copying the interpreter in deep copies.
-Base.deepcopy_internal(interp::SPIRVInterpreter, ::IdDict) = interp
-
 function cap_world(world, max_world)
   if world == typemax(UInt)
     # Sometimes the caller is lazy and passes typemax(UInt).
