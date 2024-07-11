@@ -219,7 +219,6 @@ export
   @target,
   compile,
   SPIRVInterpreter,
-  invalidate_all!,
   @compile,
   INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE,
   DEFAULT_CI_CACHE,

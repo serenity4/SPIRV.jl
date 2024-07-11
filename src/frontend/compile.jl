@@ -1,4 +1,4 @@
-struct ModuleTarget
+@refbroadcast struct ModuleTarget
   extinst_imports::Dictionary{String,ResultID}
   types::BijectiveMapping{ResultID,SPIRType}
   constants::BijectiveMapping{ResultID,Constant}
@@ -20,7 +20,7 @@ function set_name!(mt::ModuleTarget, id::ResultID, name::Symbol)
   set_name!(metadata!(mt.metadata, id), name)
 end
 
-mutable struct Translation
+@refbroadcast mutable struct Translation
   const argtypes::Vector{Any}
   const argmap::BijectiveMapping{Int64, Core.Argument}
   const args::Dictionary{Core.Argument,ResultID}

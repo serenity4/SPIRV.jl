@@ -79,16 +79,6 @@ function SPIRVInterpreter(
   )
 end
 
-function invalidate_all!(interp::SPIRVInterpreter = SPIRVInterpreter())
-  # XXX: How can we do that?
-end
-
-function reset_world!(interp::SPIRVInterpreter)
-  interp.world = get_world_counter()
-  interp.method_table = NOverlayMethodTable(interp.world, interp.method_table.tables)
-  nothing
-end
-
 code_instance_cache(interp::SPIRVInterpreter) = WorldView(CC.code_cache(interp), WorldRange(interp.world))
 retrieve_code_instance(interp::SPIRVInterpreter, mi::MethodInstance) = CC.getindex(code_instance_cache(interp), mi)
 
