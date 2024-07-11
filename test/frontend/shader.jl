@@ -19,6 +19,8 @@ SUPPORTED_FEATURES = SupportedFeatures(
 )
 RAY_TRAYCING_FEATURES = union(SUPPORTED_FEATURES, SupportedFeatures(["SPV_KHR_ray_tracing"], [SPIRV.CapabilityRayTracingKHR]))
 
+shader!(position) = (position[] = Vec(1f0, 1f0, 1f0, 1f0))
+
 @testset "Shaders" begin
   @testset "Shader execution options" begin
     for execution_model in [SPIRV.ExecutionModelVertex, SPIRV.ExecutionModelFragment, SPIRV.ExecutionModelGLCompute, SPIRV.ExecutionModelGeometry, SPIRV.ExecutionModelTessellationControl, SPIRV.ExecutionModelTessellationEvaluation, SPIRV.ExecutionModelMeshNV, SPIRV.ExecutionModelAnyHitKHR]
@@ -88,8 +90,6 @@ RAY_TRAYCING_FEATURES = union(SUPPORTED_FEATURES, SupportedFeatures(["SPV_KHR_ra
   end
 
   @testset "`@shader` macro" begin
-    shader! = position -> position[] = Vec(1f0, 1f0, 1f0, 1f0)
-
     @test_throws r"ShaderCompilationCache.* expected" @eval @fragment SUPPORTED_FEATURES cache = "" shader!(::Vec4::Output)
     @test_throws "More than one built-in" @eval @fragment SUPPORTED_FEATURES any_shader(::UInt32::Input{VertexIndex, InstanceIndex})
     @test_throws "Expected macrocall" @eval @fragment SUPPORTED_FEATURES any_shader(::UInt32::Input{VertexIndex, DescriptorSet = 1})
@@ -139,6 +139,10 @@ RAY_TRAYCING_FEATURES = union(SUPPORTED_FEATURES, SupportedFeatures(["SPV_KHR_ra
     compute_shader = @compute SUPPORTED_FEATURES assemble = true Returns(nothing)()
     @test isa(compute_shader, ShaderSource)
     @test Vk.ShaderStageFlag(compute_shader) == Vk.SHADER_STAGE_COMPUTE_BIT
+
+    argtypes, scs, vardecs = shader_decorations(:(any_shader(::Arr{128, Float32}::Workgroup, ::Vec3::Input{GlobalInvocationId})))
+    @test argtypes == [:(Arr{128, Float32}), :Vec3]
+    @test scs == [SPIRV.StorageClassWorkgroup, SPIRV.StorageClassInput]
 
     @testset "Shader cache" begin
       cache = ShaderCompilationCache()
@@ -206,6 +210,11 @@ RAY_TRAYCING_FEATURES = union(SUPPORTED_FEATURES, SupportedFeatures(["SPV_KHR_ra
 
     shader = @fragment SUPPORTED_FEATURES ((out_color, frag_color) -> out_color[] = frag_color)(::Vec4::Output, ::Vec4::Input)
     @test unwrap(validate(shader))
+
+    compute_shader = @compute SUPPORTED_FEATURES (function (buffer, index)
+        buffer[index] = buffer[index] + 1U
+      end)(::Arr{128, Float32}::Workgroup, ::UInt32::Input{LocalInvocationIndex})
+    @test unwrap(validate(compute_shader))
 
     @testset "Barrier instructions" begin
       shader = @compute SUPPORTED_FEATURES (function ()

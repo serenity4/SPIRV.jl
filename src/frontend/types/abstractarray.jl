@@ -16,7 +16,7 @@ const Scalar = Union{Bool,BitInteger,IEEEFloat}
 
 unsigned_index(x::Integer) = convert(UInt32, x)
 
-Base.getindex(arr::AbstractSPIRVArray, indices::Integer...) = Load(AccessChain(arr, unsigned_index.(indices)...))
+Base.getindex(arr::AbstractSPIRVArray, index, indices::Integer...) = Load(AccessChain(arr, index, unsigned_index.(indices)...))
 Base.setindex!(arr::AbstractSPIRVArray, value, indices...) = setindex!(arr, convert(eltype(arr), value), indices...)
 Base.setindex!(arr::AbstractSPIRVArray{T}, value::T, indices::Integer...) where {T} = Store(AccessChain(arr, unsigned_index.(indices)...), value)
 Base.setindex!(arr1::AbstractSPIRVArray, arr2::AbstractSPIRVArray) = Store(arr1, convert(typeof(arr1), arr2))

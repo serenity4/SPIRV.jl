@@ -147,11 +147,13 @@ get_decoration(dec) = get_enum_if_defined(dec, Decoration)
 const HAS_WARNED_ABOUT_CACHE = Ref(false)
 
 function shader(ex::Expr, interface, cache = nothing; assemble = nothing, layout = nothing, interpreter = nothing)
-  args = get_signature(ex)
-  _cache, _interpreter, _layout, _assemble, _info = gensym.((:cache, :interpreter, :layout, :assemble, :info))
+  f, args = get_signature(ex)
+  _f, _args, _cache, _interpreter, _layout, _assemble, _info = gensym.((:f, :args, :cache, :interpreter, :layout, :assemble, :info))
   quote
     $_cache = $cache
     $_layout = @something($layout, $VulkanLayout())::$LayoutStrategy
+    $_f = $f
+    $_args = $args
     $_interpreter = @something($interpreter, $SPIRVInterpreter())::$SPIRVInterpreter
     isa($_cache, Union{Nothing, $ShaderCompilationCache}) || throw(ArgumentError(string("`Union{Nothing, ", $ShaderCompilationCache, "}` expected as cache argument, got a value of type `", typeof($_cache), '`')))
     $_assemble = something($assemble, false)::Bool
@@ -159,7 +161,7 @@ function shader(ex::Expr, interface, cache = nothing; assemble = nothing, layout
       $HAS_WARNED_ABOUT_CACHE[] = true
       @warn "A cache was provided, but the `assemble` option has not been set to `true`; the shader will not be cached."
     end
-    $_info = $ShaderInfo($(args...), $interface; interp = $_interpreter, layout = $_layout)
+    $_info = $ShaderInfo($_f, $_args, $interface; interp = $_interpreter, layout = $_layout)
     $_assemble ? $ShaderSource($_cache, $_info) : $Shader($_info)
   end
 end

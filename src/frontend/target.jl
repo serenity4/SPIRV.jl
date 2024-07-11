@@ -183,8 +183,12 @@ function get_signature(ex::Expr)
 end
 
 macro target(interp, ex)
-  cfg_args = get_signature(ex)
-  :($SPIRVTarget($(esc.(cfg_args)...); interp = $(esc(interp))))
+  f, args = get_signature(ex)
+  quote
+    f, args = $(esc(f)), $(esc(args))
+    interp = $(esc(interp))
+    $SPIRVTarget(f, args; interp)
+  end
 end
 
 macro target(ex)

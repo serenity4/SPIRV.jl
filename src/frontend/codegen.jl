@@ -129,7 +129,6 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
   end
 
   type = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier)) ? nothing : spir_type(jtype, tr.tmap)
-  result = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier)) ? nothing : next!(mt.idcounter)
 
   if in(opcode, (OpControlBarrier, OpMemoryBarrier))
     for i in eachindex(args)
@@ -151,6 +150,8 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
 
   load_variables!(args, blk, mt, tr, fdef, opcode)
   remap_args!(args, mt, tr, opcode)
+
+  result = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier)) ? nothing : next!(mt.idcounter)
 
   ex = @ex result = opcode(args...)::type
   (ex, type)
