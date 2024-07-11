@@ -290,3 +290,8 @@ end
 
 ## Skip boundscheck to avoid leaving dead nodes and branches in the CFG.
 @override getindex(x::Number, i::Integer) = x
+
+# Barriers.
+
+@noinline ControlBarrier(execution::Scope, scope::Scope, memory_semantics::MemorySemantics) = invokelatest(Returns(nothing))::Nothing
+@noinline MemoryBarrier(scope::Scope, memory_semantics::MemorySemantics) = invokelatest(Returns(nothing))::Nothing

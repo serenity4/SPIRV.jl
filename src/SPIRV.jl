@@ -2,6 +2,7 @@ module SPIRV
 
 using CompileTraces
 using CEnum
+using CEnum: Cenum
 using MLStyle
 using Graphs
 using Reexport

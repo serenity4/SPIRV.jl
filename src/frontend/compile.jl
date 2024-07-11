@@ -230,6 +230,10 @@ emit!(mt::ModuleTarget, tr::Translation, c::Constant) = emit_constant!(mt.consta
 
 emit_constant!(mt::ModuleTarget, tr::Translation, value) = emit_constant!(mt.constants, mt.idcounter, mt.types, tr.tmap, Constant(value, mt, tr))
 
+Constant(value::GlobalRef, mt::ModuleTarget, tr::Translation) = Constant(follow_globalref(value, mt, tr), mt, tr)
+Constant(value::BitMask, mt::ModuleTarget, tr::Translation) = Constant(value.val, mt, tr)
+Constant(value::QuoteNode, mt::ModuleTarget, tr::Translation) = Constant(value.value, mt, tr)
+
 function Constant(value::T, mt::ModuleTarget, tr::Translation) where {T}
   t = spir_type(T, tr.tmap)
   !iscomposite(t) && return Constant(value, t)

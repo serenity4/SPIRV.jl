@@ -259,7 +259,6 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
     ::Type{<:Image} => ImageType(spir_type(component_type(t), tmap), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
     ::Type{<:SampledImage} => SampledImageType(spir_type(image_type(t), tmap))
     GuardBy(isstructtype) || ::Type{<:NamedTuple} => StructType(spir_type.(t.types, tmap))
-    ::Type{<:Enum} => spir_type(t.super.parameters[1]::DataType, tmap)
     GuardBy(isprimitivetype) => begin
       T = primitive_type_to_spirv(t)
       isa(T, SPIRType) ? T : spir_type(T, tmap)
@@ -291,6 +290,7 @@ Both types must have the same number of bits.
 function primitive_type_to_spirv end
 
 primitive_type_to_spirv(T::DataType) = error("Primitive type $T has no known SPIR-V type. This function must be extended to choose which SPIR-V type to map this primitive type to.")
+primitive_type_to_spirv(::Union{Type{<:Enum{T}}, Type{<:Cenum{T}}}) where {T} = spir_type(T)
 
 function promote_to_interface_block(type, storage_class)
   @tryswitch storage_class begin

@@ -207,6 +207,14 @@ RAY_TRAYCING_FEATURES = union(SUPPORTED_FEATURES, SupportedFeatures(["SPV_KHR_ra
     shader = @fragment SUPPORTED_FEATURES ((out_color, frag_color) -> out_color[] = frag_color)(::Vec4::Output, ::Vec4::Input)
     @test unwrap(validate(shader))
 
+    @testset "Barrier instructions" begin
+      shader = @compute SUPPORTED_FEATURES (function ()
+        SPIRV.ControlBarrier(SPIRV.ScopeWorkgroup, SPIRV.ScopeWorkgroup, SPIRV.MemorySemanticsNone)
+        SPIRV.MemoryBarrier(SPIRV.ScopeWorkgroup, SPIRV.MemorySemanticsWorkgroupMemory | SPIRV.MemorySemanticsAcquireRelease)
+      end)()
+      @test unwrap(validate(shader))
+    end
+
     @testset "Structured control-flow" begin
       shader = @vertex SUPPORTED_FEATURES (function (out, x)
           y = x > 0F ? x + 1F : x - 1F
