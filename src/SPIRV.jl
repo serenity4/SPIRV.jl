@@ -47,8 +47,28 @@ const Optional{T} = Union{Nothing,T}
 struct LiteralType{T} end
 Base.:(*)(x, ::Type{LiteralType{T}}) where {T} = T(x)
 
+"""
+    x*I
+    (x)I
+
+Converts an input `x` to an `Int32` when `I` is right-multiplied with it.
+"""
+const I = LiteralType{Int32} # unexported to avoid clashes with `I` for the identity matrix.
+"""
+    x*U
+    (x)U
+
+Converts an input `x` to an `UInt32` when `U` is right-multiplied with it.
+"""
 const U = LiteralType{UInt32}
+"""
+    x*F
+    (x)F
+
+Converts an input `x` to a `Float32` when `F` is right-multiplied with it.
+"""
 const F = LiteralType{Float32}
+"32-bit floating-point representation of `π`."
 const πF = (π)F
 
 const MAGIC_NUMBER = 0x07230203

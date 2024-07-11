@@ -38,6 +38,9 @@ makedocs(;
     "Tutorials" => [
       "tutorials/manipulating_spirv.md",
     ],
+    "Reference" => [
+      "reference/bit_width.md",
+    ],
     "Targeting SPIR-V via LLVM" => "spirv_llvm.md",
     "Features" => "features.md",
     "API" => "api.md",

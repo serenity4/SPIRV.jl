@@ -16,7 +16,7 @@ This form is suited for introspection and modification. It can then be converted
 This library contains an experimental Julia to SPIR-V compiler, which only supports Vulkan-flavored SPIR-V. From a SPIR-V perspective, this is a Julia frontend, and from a Julia perspective, this is a SPIR-V backend (as opposed to the traditional LLVM backend used to execute CPU code).
 
 !!! warning
-    This functionality requires Julia 1.9 or higher.
+    This functionality requires Julia 1.11 or higher.
 
 This compiler supports:
 - Basic SPIR-V instructions, requiring special types (`Arr`, `Vec`, `Mat`).
