@@ -47,5 +47,5 @@ makedocs(;
 )
 
 deploydocs(
-  repo = Documenter.Remotes.GitHub("serenity4", "SPIRV.jl"),
+  repo = "github.com/serenity4/SPIRV.jl.git",
 )
