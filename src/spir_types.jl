@@ -171,21 +171,22 @@ iscomposite(@nospecialize(t::SPIRType)) =  isa(t, StructType) || isa(t, VectorTy
   d::Dictionary{DataType,SPIRType}
 end
 
+TypeMap() = TypeMap(Dictionary())
+
+@forward_interface TypeMap field = :d interface = dict omit = [getindex, setindex!]
+Base.setindex!(tmap::TypeMap, type::SPIRType, T::DataType) = set!(tmap.d, T, type)
+
+function Base.merge!(x::TypeMap, y::TypeMap)
+  merge!(x.d, y.d)
+  x
+end
+
 struct UnknownType <: Exception
   msg::String
   T::DataType
 end
 
 Base.showerror(io::IO, exc::UnknownType) = print(io, "UnknownType: ", exc.msg)
-
-TypeMap() = TypeMap(Dictionary())
-
-@forward_interface TypeMap field = :d interface = dict omit = [getindex, setindex!]
-Base.setindex!(tmap::TypeMap, type::SPIRType, T::DataType) = set!(tmap.d, T, type)
-function Base.merge!(x::TypeMap, y::TypeMap)
-  merge!(x.d, y.d)
-  x
-end
 
 function Base.getindex(tmap::TypeMap, T::DataType)
   t = get(tmap.d, T, nothing)

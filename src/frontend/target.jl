@@ -32,7 +32,6 @@ function method_instance(@nospecialize(f), argtypes::Type = Tuple{}, interp::SPI
 end
 
 function SPIRVTarget(@nospecialize(f), argtypes::Type = Tuple{}; interp::SPIRVInterpreter = SPIRVInterpreter())
-  reset_world!(interp)
   SPIRVTarget(method_instance(f, argtypes, interp), interp)
 end
 
@@ -189,7 +188,7 @@ macro target(interp, ex)
 end
 
 macro target(ex)
-  :($(esc(:($(@__MODULE__).@target $(SPIRVInterpreter()) $ex))))
+  :($(esc(:($(@__MODULE__).@target $SPIRVInterpreter() $ex))))
 end
 
 macro code_typed(debuginfo, interp, ex)
@@ -206,7 +205,7 @@ macro code_typed(debuginfo, interp, ex)
 end
 
 macro code_typed(debuginfo, ex)
-  esc(:($(@__MODULE__).@code_typed $debuginfo $(SPIRVInterpreter()) $ex))
+  esc(:($(@__MODULE__).@code_typed $debuginfo $SPIRVInterpreter() $ex))
 end
 macro code_typed(ex)
   esc(:($(@__MODULE__).@code_typed debuginfo=:none $ex))
@@ -227,5 +226,5 @@ macro which(ex, interp)
   end
 end
 macro which(ex)
-  esc(:($(@__MODULE__).@which $ex $(SPIRVInterpreter())))
+  esc(:($(@__MODULE__).@which $ex $SPIRVInterpreter()))
 end

@@ -46,7 +46,7 @@ Base.get(cache::Cache, key, default) = get(() -> default, cache, key)
 """
     ShaderCompilationCache()
 
-Create a cache that may be used to associate shaders to be compiled ([`ShaderSpec`](@ref)) with
+Create a cache that may be used to associate shaders to be compiled ([`ShaderInfo`](@ref)) with
 compiled code ([`ShaderSource`](@ref)).
 
 Although this cache will already significantly speed up shader creation by compiling only what is required,
@@ -56,14 +56,22 @@ For Vulkan, that would be a `Vk.ShaderModule`, for example. It is then recommend
 to avoid hashing the whole source code.
 
 !!! warning
-    This cache assumes that the same `MethodInstance` and [`ShaderInterface`](@ref) will result in the same compiled shader. However, if different (non-default) [`SPIRVInterpreter`](@ref)s are used, compilation may yield different results. For performance reasons, and because most users will be fine with the default interpreter, the choice of interpreter is not checked; it is the user's responsibility to ensure different caches are used if different interpreters are to be used.
+    Caching assumes the same [`SPIRVInterpreter`](@ref) to be used, and will not look into the `ShaderSource`'s `interp` field. Generally, applications should use a single interpreter, and not fiddle with parameters across different shader compilation runs. This allows caching to skip hashing `SPIRVInterpreter` contents needlessly in what should be >99.9% of cases.
 """
-const ShaderCompilationCache = Cache{Dict{ShaderSpec,ShaderSource}}
+const ShaderCompilationCache = Cache{Dict{UInt64,ShaderSource}}
+
+function cache_token(info::ShaderInfo)
+  h = hash(ShaderInfo)
+  h = hash(info.mi, h)
+  h = hash(info.interface, h)
+  h = hash(info.layout.alignment, h)
+  h
+end
 
 # The cache could be reused across devices, if we want to avoid going through codegen again.
 # However the supported features would have to be taken as the intersection of all the supported
 # ones on each hypothetical device.
 
-ShaderSource(cache::ShaderCompilationCache, spec::ShaderSpec, layout::Union{VulkanAlignment, LayoutStrategy}, interp) = get!(cache, spec, layout, interp)
-ShaderSource(::Nothing, spec::ShaderSpec, layout::Union{VulkanAlignment, LayoutStrategy}, interp) = ShaderSource(spec, layout, interp)
-Base.get!(cache::ShaderCompilationCache, spec::ShaderSpec, layout::Union{VulkanAlignment, LayoutStrategy}, interp::SPIRVInterpreter = SPIRVInterpreter()) = get!(() -> ShaderSource(spec, layout, interp), cache, spec)
+ShaderSource(cache::ShaderCompilationCache, info::ShaderInfo) = get!(cache, info)
+ShaderSource(cache::Nothing, info::ShaderInfo) = ShaderSource(info)
+Base.get!(cache::ShaderCompilationCache, info::ShaderInfo) = get!(() -> ShaderSource(info), cache, cache_token(info))

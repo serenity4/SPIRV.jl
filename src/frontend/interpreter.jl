@@ -27,7 +27,7 @@ NOverlayMethodTable(world) = NOverlayMethodTable(world, METHOD_TABLES[])
 
 SPIRVToken() = SPIRVToken(METHOD_TABLES[])
 
-mutable struct SPIRVInterpreter <: AbstractInterpreter
+struct SPIRVInterpreter <: AbstractInterpreter
   global_cache_token::SPIRVToken
   """
   Custom method table to redirect Julia builtin functions to SPIR-V builtins.

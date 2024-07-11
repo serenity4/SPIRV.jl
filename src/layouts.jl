@@ -314,11 +314,20 @@ storage_classes(tmeta::TypeMetadata, t::SPIRType) = storage_classes(keys(tmeta.d
 isinterface(tmeta::TypeMetadata, t::StructType) = has_decoration(tmeta, t, DecorationBlock)
 isinterface(tmeta::TypeMetadata, ::SPIRType) = false
 
-VulkanLayout(alignment::VulkanAlignment) = VulkanLayout(alignment, TypeMap(), Dict{SPIRType, Set{StorageClass}}(), Set{StructType}())
+VulkanLayout(alignment::VulkanAlignment = VulkanAlignment()) = VulkanLayout(alignment, TypeMap(), Dict{SPIRType, Set{StorageClass}}(), Set{StructType}())
+
+merge_layout!(layout::VulkanLayout, ir::IR) = merge_layout!(layout, TypeMetadata(ir))
+function merge_layout!(layout::VulkanLayout, tmeta::TypeMetadata)
+  merge!(layout.tmap, tmeta.tmap)
+  for t in layout.tmap
+    layout.storage_classes[t] = storage_classes(tmeta, t)
+    isa(t, StructType) && isinterface(tmeta, t) && push!(layout.interfaces, t)
+  end
+  layout
+end
 
 function VulkanLayout(tmeta::TypeMetadata, alignment::VulkanAlignment)
-  (; tmap) = tmeta
-  VulkanLayout(alignment, tmap, Dict(t => storage_classes(tmeta, t) for t in tmap), Set(StructType[t for t in tmap if isa(t, StructType) && isinterface(tmeta, t)]))
+  merge_layout!(VulkanLayout(alignment), tmeta)
 end
 
 VulkanLayout(ir::IR, alignment::VulkanAlignment) = VulkanLayout(TypeMetadata(ir), alignment)

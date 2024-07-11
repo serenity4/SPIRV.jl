@@ -15,31 +15,32 @@ const execution_models = dictionary([
   :mesh => ExecutionModelMeshEXT,
 ])
 
-macro shader(model::QuoteNode, features, layout, kwargs...)
-  (ex, options, cache, assemble, interpreter) = parse_shader_kwargs(kwargs)
-  propagate_source(__source__, esc(shader(ex, __module__, execution_models[model.value::Symbol], options, features, layout, cache; assemble, interpreter)))
+macro shader(model::QuoteNode, features, kwargs...)
+  (ex, options, cache, assemble, layout, interpreter) = parse_shader_kwargs(kwargs)
+  propagate_source(__source__, esc(shader(ex, __module__, execution_models[model.value::Symbol], options, features, cache; assemble, layout, interpreter)))
 end
 
 function parse_shader_kwargs(kwargs)
-  ex = options = cache = assemble = interpreter = nothing
+  ex = options = cache = assemble = layout = interpreter = nothing
   for kwarg in kwargs
     @match kwarg begin
       Expr(:(=), :options, value) || :options && Do(value = :options) => (options = value)
       Expr(:(=), :cache, value) || :cache && Do(value = :cache) => (cache = value)
       Expr(:(=), :assemble, value) || :assemble && Do(value = :assemble) => (assemble = value)
       Expr(:(=), :interpreter, value) || :interpreter && Do(value = :interpreter) => (interpreter = value)
+      Expr(:(=), :layout, value) || :layout && Do(value = :layout) => (layout = value)
       Expr(:(=), parameter, value) => throw(ArgumentError("Received unknown parameter `$parameter` with value $value"))
       ::Expr => (ex = kwarg)
       _ => throw(ArgumentError("Expected parameter or expression as argument, got $kwarg"))
     end
   end
   !isnothing(ex) || throw(ArgumentError("Expected expression as positional argument"))
-  (ex, options, cache, assemble, interpreter)
+  (ex, options, cache, assemble, layout, interpreter)
 end
 
 for (name, model) in pairs(execution_models)
-  @eval macro $name(features, layout, kwargs...)
-    (ex, options, cache, assemble, interpreter) = parse_shader_kwargs(kwargs)
-    propagate_source(__source__, esc(shader(ex, __module__, $model, options, features, layout, cache; assemble, interpreter)))
+  @eval macro $name(features, kwargs...)
+    (ex, options, cache, assemble, layout, interpreter) = parse_shader_kwargs(kwargs)
+    propagate_source(__source__, esc(shader(ex, __module__, $model, options, features, cache; assemble, layout, interpreter)))
   end
 end

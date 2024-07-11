@@ -233,7 +233,7 @@ export
   GeometryExecutionOptions,
   TessellationExecutionOptions,
   MeshExecutionOptions,
-  ShaderSpec, ShaderInfo, ShaderSource,
+  ShaderInfo, ShaderSource,
   ShaderCompilationCache,
 
   # Layouts.

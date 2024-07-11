@@ -430,7 +430,7 @@ macro compile(interp, ex)
   esc(:($(@__MODULE__).@compile $(AllSupported()) $interp $ex))
 end
 macro compile(ex)
-  esc(:($(@__MODULE__).@compile $(AllSupported()) $(SPIRVInterpreter()) $ex))
+  esc(:($(@__MODULE__).@compile $(AllSupported()) $SPIRVInterpreter() $ex))
 end
 
 function getline(code::CodeInfo, i::Int)

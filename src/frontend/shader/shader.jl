@@ -1,5 +1,3 @@
-const LayoutSpec = Union{VulkanAlignment, LayoutStrategy}
-
 struct MemoryResource
   address::ResultID
   type::ResultID
@@ -8,7 +6,7 @@ end
 @struct_hash_equal struct Shader
   ir::IR
   entry_point::ResultID
-  layout::LayoutStrategy
+  layout::VulkanLayout
   memory_resources::ResultDict{MemoryResource}
 end
 
@@ -24,9 +22,9 @@ function validate(shader::Shader)
   validate_shader(shader.ir; flags)
 end
 
-function Shader(target::SPIRVTarget, interface::ShaderInterface, layout::Union{VulkanAlignment, LayoutStrategy})
+function Shader(target::SPIRVTarget, interface::ShaderInterface, layout::VulkanLayout = VulkanLayout())
   ir = IR(target, interface)
-  isa(layout, VulkanAlignment) && (layout = VulkanLayout(ir, layout))
+  merge_layout!(layout, ir)
   main = entry_point(ir, :main).func
   satisfy_requirements!(ir, interface.features)
 
@@ -35,7 +33,7 @@ function Shader(target::SPIRVTarget, interface::ShaderInterface, layout::Union{V
 
   Shader(ir, main, layout, memory_resources(ir, main))
 end
-Shader(mi::MethodInstance, interface::ShaderInterface, interp::SPIRVInterpreter, layout::Union{VulkanAlignment, LayoutStrategy}) = Shader(SPIRVTarget(mi, interp), interface, layout)
+Shader(mi::MethodInstance, interface::ShaderInterface, interp::SPIRVInterpreter, layout::VulkanLayout = VulkanLayout()) = Shader(SPIRVTarget(mi, interp), interface, layout)
 
 function Base.show(io::IO, mime::MIME"text/plain", shader::Shader)
   n = sum(fdef -> sum(length, fdef), shader.ir)
@@ -50,7 +48,7 @@ function Base.show(io::IO, mime::MIME"text/plain", shader::Shader)
   end
 end
 
-function shader(ex::Expr, __module__, execution_model::ExecutionModel, options, features, layout, cache; assemble = nothing, interpreter = nothing)
+function shader(ex::Expr, __module__, execution_model::ExecutionModel, options, features, cache; assemble = nothing, layout = nothing, interpreter = nothing)
   f, args = @match ex begin
     :($f($(args...))) => (f, args)
   end
@@ -64,7 +62,7 @@ function shader(ex::Expr, __module__, execution_model::ExecutionModel, options, 
   ))
   !isnothing(options) && push!(interface.args[2].args, :(execution_options = $options))
   call = Expr(:call, f, Expr.(:(::), argtypes)...)
-  shader(call, interface, layout, cache; assemble, interpreter)
+  shader(call, interface, cache; assemble, layout, interpreter)
 end
 
 function shader_decorations(ex::Expr, __module__ = @__MODULE__)
@@ -148,21 +146,20 @@ get_decoration(dec) = get_enum_if_defined(dec, Decoration)
 
 const HAS_WARNED_ABOUT_CACHE = Ref(false)
 
-function shader(ex::Expr, interface, layout, cache = nothing; assemble = nothing, interpreter = nothing)
+function shader(ex::Expr, interface, cache = nothing; assemble = nothing, layout = nothing, interpreter = nothing)
   args = get_signature(ex)
-  _layout, _cache, _interpreter, _assemble, _spec = gensym.((:layout, :cache, :interpreter, :assemble, :spec))
+  _cache, _interpreter, _layout, _assemble, _info = gensym.((:cache, :interpreter, :layout, :assemble, :info))
   quote
-    $_layout = $layout
     $_cache = $cache
-    $_interpreter = @something($interpreter, $SPIRVInterpreter())
-    isa($_layout, Union{$VulkanAlignment, $LayoutStrategy}) || throw(ArgumentError(string("`Union{", $VulkanAlignment, ", ", $LayoutStrategy, "}` expected as layout, got a value of type `", typeof($_layout), '`')))
+    $_layout = @something($layout, $VulkanLayout())::$LayoutStrategy
+    $_interpreter = @something($interpreter, $SPIRVInterpreter())::$SPIRVInterpreter
     isa($_cache, Union{Nothing, $ShaderCompilationCache}) || throw(ArgumentError(string("`Union{Nothing, ", $ShaderCompilationCache, "}` expected as cache argument, got a value of type `", typeof($_cache), '`')))
     $_assemble = something($assemble, false)::Bool
     if !$_assemble && !isnothing($_cache) && !$HAS_WARNED_ABOUT_CACHE[]
       $HAS_WARNED_ABOUT_CACHE[] = true
       @warn "A cache was provided, but the `assemble` option has not been set to `true`; the shader will not be cached."
     end
-    $_spec = $ShaderSpec($(args...), $interface)
-    $_assemble ? $ShaderSource($_cache, $_spec, $_layout, $_interpreter) : $Shader($_spec, $_layout, $_interpreter)
+    $_info = $ShaderInfo($(args...), $interface; interp = $_interpreter, layout = $_layout)
+    $_assemble ? $ShaderSource($_cache, $_info) : $Shader($_info)
   end
 end
