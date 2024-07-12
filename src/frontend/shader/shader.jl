@@ -22,6 +22,8 @@ function validate(shader::Shader)
   validate_shader(shader.ir; flags)
 end
 
+Shader(info::ShaderInfo) = Shader(info.mi, info.interface, info.interp, info.layout)
+
 function Shader(target::SPIRVTarget, interface::ShaderInterface, layout::VulkanLayout = VulkanLayout())
   ir = IR(target, interface)
   merge_layout!(layout, ir)
@@ -48,7 +50,30 @@ function Base.show(io::IO, mime::MIME"text/plain", shader::Shader)
   end
 end
 
-function shader(ex::Expr, __module__, execution_model::ExecutionModel, options, features, cache; assemble = nothing, layout = nothing, interpreter = nothing)
+function ShaderSource(shader::Shader, info::ShaderInfo; validate::Bool = true)
+  ret = @__MODULE__().validate(shader)
+  if iserror(ret)
+    show_debug_spirv_code(stdout, shader.ir)
+    err = unwrap_error(ret)
+    throw(err)
+  end
+  ShaderSource(reinterpret(UInt8, assemble(shader)), info)
+end
+
+"""
+    compile_shader_ex(ex, __module__, execution_mode, options, features; cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
+
+Extract shader interface information from `ex` and other arguments, then return a call to [`compile_shader`](@ref).
+
+This function is intended for macro creation, exposing the underlying expression generation.
+
+`__module__` is used to evaluate expressions interpolated with `\$`.
+
+For the documentation of the remaining arguments, see [`compile_shader`](@ref).
+
+$DOCSTRING_SYNTAX_REFERENCE
+"""
+function compile_shader_ex(ex::Expr, __module__, execution_model::ExecutionModel, options, features; cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
   f, args = @match ex begin
     :($f($(args...))) => (f, args)
   end
@@ -61,10 +86,16 @@ function shader(ex::Expr, __module__, execution_model::ExecutionModel, options, 
     features = $features,
   ))
   !isnothing(options) && push!(interface.args[2].args, :(execution_options = $options))
-  call = Expr(:call, f, Expr.(:(::), argtypes)...)
-  shader(call, interface, cache; assemble, layout, interpreter)
+  compile_shader_ex(f, :($Tuple{$(argtypes...)}), interface; cache, assemble, layout, interpreter)
 end
 
+"""
+    shader_decorations(ex, __module__ = @__MODULE__)
+
+Extract built-in and decoration annotations from an `Expr` following the pattern
+
+$DOCSTRING_SIGNATURE_PATTERN
+"""
 function shader_decorations(ex::Expr, __module__ = @__MODULE__)
   f, args = @match ex begin
     :($f($(args...))) => (f, args)
@@ -144,24 +175,30 @@ get_builtin(dec) = get_enum_if_defined(dec, BuiltIn)
 get_storage_class(dec) = get_enum_if_defined(dec, StorageClass)
 get_decoration(dec) = get_enum_if_defined(dec, Decoration)
 
-const HAS_WARNED_ABOUT_CACHE = Ref(false)
+const HAS_WARNED_ABOUT_CACHE = Threads.Atomic{Bool}(false)
 
-function shader(ex::Expr, interface, cache = nothing; assemble = nothing, layout = nothing, interpreter = nothing)
-  f, args = get_signature(ex)
-  _f, _args, _cache, _interpreter, _layout, _assemble, _info = gensym.((:f, :args, :cache, :interpreter, :layout, :assemble, :info))
-  quote
-    $_cache = $cache
-    $_layout = @something($layout, $VulkanLayout())::$LayoutStrategy
-    $_f = $f
-    $_args = $args
-    $_interpreter = @something($interpreter, $SPIRVInterpreter())::$SPIRVInterpreter
-    isa($_cache, Union{Nothing, $ShaderCompilationCache}) || throw(ArgumentError(string("`Union{Nothing, ", $ShaderCompilationCache, "}` expected as cache argument, got a value of type `", typeof($_cache), '`')))
-    $_assemble = something($assemble, false)::Bool
-    if !$_assemble && !isnothing($_cache) && !$HAS_WARNED_ABOUT_CACHE[]
-      $HAS_WARNED_ABOUT_CACHE[] = true
-      @warn "A cache was provided, but the `assemble` option has not been set to `true`; the shader will not be cached."
-    end
-    $_info = $ShaderInfo($_f, $_args, $interface; interp = $_interpreter, layout = $_layout)
-    $_assemble ? $ShaderSource($_cache, $_info) : $Shader($_info)
+"""
+    compile_shader(f, args, interface; cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
+
+Compile a shader corresponding to the signature `f(args...)` with the specified [`ShaderInterface`](@ref).
+
+A cache may be provided as a [`ShaderCompilationCache`](@ref), caching the resulting [`ShaderSource`](@ref) if `assemble` is set to `true`. By default, no caching is performed.
+
+A custom layout and interpreter may be provided. If using a custom interpreter and providing a cache at the same time, make sure that cache entries were created with the same interpreter.
+"""
+function compile_shader(f, args, interface::ShaderInterface; cache::Optional{ShaderCompilationCache} = nothing, assemble::Optional{Bool} = nothing, layout::Optional{VulkanLayout} = nothing, interpreter::Optional{SPIRVInterpreter} = nothing)
+  layout = @something(layout, VulkanLayout())::VulkanLayout
+  interpreter = @something(interpreter, SPIRVInterpreter())::SPIRVInterpreter
+  assemble = something(assemble, false)::Bool
+  if !assemble && !isnothing(cache) && !HAS_WARNED_ABOUT_CACHE[]
+    HAS_WARNED_ABOUT_CACHE[] = true
+    @warn "A cache was provided, but the `assemble` option has not been set to `true`; the shader will not be cached."
   end
+  info = ShaderInfo(f, args, interface; interp = interpreter, layout)
+  !assemble && return Shader(info)
+  ShaderSource(cache, info)
+end
+
+function compile_shader_ex(f, args, interface; cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
+  :($compile_shader($f, $args, $interface; cache = $cache, assemble = $assemble, layout = $layout, interpreter = $interpreter))
 end

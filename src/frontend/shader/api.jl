@@ -1,25 +1,3 @@
-const execution_models = dictionary([
-  :vertex => ExecutionModelVertex,
-  :geometry => ExecutionModelGeometry,
-  :tessellation_control => ExecutionModelTessellationControl,
-  :tessellation_evaluation => ExecutionModelTessellationEvaluation,
-  :fragment => ExecutionModelFragment,
-  :compute => ExecutionModelGLCompute,
-  :ray_generation => ExecutionModelRayGenerationKHR,
-  :intersection => ExecutionModelIntersectionKHR,
-  :closest_hit => ExecutionModelClosestHitKHR,
-  :any_hit => ExecutionModelAnyHitKHR,
-  :miss => ExecutionModelMissKHR,
-  :callable => ExecutionModelCallableKHR,
-  :task => ExecutionModelTaskEXT,
-  :mesh => ExecutionModelMeshEXT,
-])
-
-macro shader(model::QuoteNode, features, kwargs...)
-  (ex, options, cache, assemble, layout, interpreter) = parse_shader_kwargs(kwargs)
-  propagate_source(__source__, esc(shader(ex, __module__, execution_models[model.value::Symbol], options, features, cache; assemble, layout, interpreter)))
-end
-
 function parse_shader_kwargs(kwargs)
   ex = options = cache = assemble = layout = interpreter = nothing
   for kwarg in kwargs
@@ -38,9 +16,9 @@ function parse_shader_kwargs(kwargs)
   (ex, options, cache, assemble, layout, interpreter)
 end
 
-for (name, model) in pairs(execution_models)
-  @eval macro $name(features, kwargs...)
+for (stage, model) in pairs(EXECUTION_MODELS)
+  @eval Core.@doc $(macro_docstring(stage)) macro $stage(features, kwargs...)
     (ex, options, cache, assemble, layout, interpreter) = parse_shader_kwargs(kwargs)
-    propagate_source(__source__, esc(shader(ex, __module__, $model, options, features, cache; assemble, layout, interpreter)))
+    propagate_source(__source__, esc(compile_shader_ex(ex, __module__, $model, options, features; cache, assemble, layout, interpreter)))
   end
 end

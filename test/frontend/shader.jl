@@ -89,8 +89,7 @@ shader!(position) = (position[] = Vec(1f0, 1f0, 1f0, 1f0))
     @test unwrap(validate(shader))
   end
 
-  @testset "`@shader` macro" begin
-    @test_throws r"ShaderCompilationCache.* expected" @eval @fragment SUPPORTED_FEATURES cache = "" shader!(::Vec4::Output)
+  @testset "Shader macro API" begin
     @test_throws "More than one built-in" @eval @fragment SUPPORTED_FEATURES any_shader(::UInt32::Input{VertexIndex, InstanceIndex})
     @test_throws "Expected macrocall" @eval @fragment SUPPORTED_FEATURES any_shader(::UInt32::Input{VertexIndex, DescriptorSet = 1})
     @test_throws "Unknown storage class" @eval @fragment SUPPORTED_FEATURES any_shader(::UInt32::Typo{VertexIndex, DescriptorSet = 1})
@@ -130,8 +129,6 @@ shader!(position) = (position[] = Vec(1f0, 1f0, 1f0, 1f0))
 
     frag_shader = @fragment SUPPORTED_FEATURES shader!(::Vec4::Output)
     @test isa(frag_shader, Shader)
-
-    @test frag_shader == @shader :fragment SUPPORTED_FEATURES shader!(::Vec4::Output)
 
     any_hit_shader = Base.@with SPIRV.METHOD_TABLES => [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE] @any_hit RAY_TRAYCING_FEATURES shader!(::Vec4::Output)
     @test isa(any_hit_shader, Shader)

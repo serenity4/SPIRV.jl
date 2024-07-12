@@ -93,3 +93,20 @@ function add_type_metadata!(ir::IR, interface::ShaderInterface)
     merge_metadata!(ir, ir.types[ir.tmap[target]], meta)
   end
 end
+
+const EXECUTION_MODELS = dictionary([
+  :vertex => ExecutionModelVertex,
+  :geometry => ExecutionModelGeometry,
+  :tessellation_control => ExecutionModelTessellationControl,
+  :tessellation_evaluation => ExecutionModelTessellationEvaluation,
+  :fragment => ExecutionModelFragment,
+  :compute => ExecutionModelGLCompute,
+  :ray_generation => ExecutionModelRayGenerationKHR,
+  :intersection => ExecutionModelIntersectionKHR,
+  :closest_hit => ExecutionModelClosestHitKHR,
+  :any_hit => ExecutionModelAnyHitKHR,
+  :miss => ExecutionModelMissKHR,
+  :callable => ExecutionModelCallableKHR,
+  :task => ExecutionModelTaskEXT,
+  :mesh => ExecutionModelMeshEXT,
+])
