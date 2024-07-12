@@ -11,7 +11,8 @@ function create_device()
   instance = Instance(layers, extensions; application_info = ApplicationInfo(v"0.1", v"0.1", v"1.3"))
   messenger = DebugUtilsMessengerEXT(instance, debug_callback_c)
   physical_device = first(unwrap(enumerate_physical_devices(instance)))
-  device_features_1_2 = PhysicalDeviceVulkan12Features(:buffer_device_address, :vulkan_memory_model)
+  device_features_1_1 = PhysicalDeviceVulkan11Features(:variable_pointers)
+  device_features_1_2 = PhysicalDeviceVulkan12Features(:buffer_device_address, :vulkan_memory_model; next = device_features_1_1)
   device_features_1_3 = PhysicalDeviceVulkan13Features(:synchronization2, :dynamic_rendering; next = device_features_1_2)
   device_features = PhysicalDeviceFeatures2(PhysicalDeviceFeatures(:shader_float_64, :shader_int_64); next = device_features_1_3)
   device_extensions = String[]
@@ -22,6 +23,7 @@ function create_device()
     [], device_extensions; next = device_features
   )
   supported_features = SupportedFeatures(physical_device, v"1.3", device_extensions, device_features)
+  check_compiler_feature_requirements(supported_features)
   (; device, queue_family_index, supported_features)
 end
 

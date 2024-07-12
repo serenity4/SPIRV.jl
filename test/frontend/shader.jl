@@ -20,6 +20,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
 RAY_TRAYCING_FEATURES = union(SUPPORTED_FEATURES, SupportedFeatures(["SPV_KHR_ray_tracing"], [SPIRV.CapabilityRayTracingKHR]))
 
 shader!(position) = (position[] = Vec(1f0, 1f0, 1f0, 1f0))
+shader2!(color) = color.a = 1F
 
 @testset "Shaders" begin
   @testset "Shader execution options" begin
@@ -35,8 +36,7 @@ shader!(position) = (position[] = Vec(1f0, 1f0, 1f0, 1f0))
   end
 
   @testset "Basic construction" begin
-    shader! = color -> color.a = 1F
-    target = @target shader!(::Vec4)
+    target = @target shader2!(::Vec4)
     ir = compile(target, AllSupported())
     @test unwrap(validate(ir))
     interface = ShaderInterface(SPIRV.ExecutionModelVertex; storage_classes = [SPIRV.StorageClassOutput])
@@ -45,12 +45,11 @@ shader!(position) = (position[] = Vec(1f0, 1f0, 1f0, 1f0))
     @test mod == parse(
       SPIRV.Module,
         """
-        Capability(PhysicalStorageBufferAddresses)
         Capability(VulkanMemoryModel)
-        Extension("SPV_EXT_physical_storage_buffer")
-        MemoryModel(PhysicalStorageBuffer64, Vulkan)
+        Capability(Shader)
+        MemoryModel(Logical, Vulkan)
         EntryPoint(Vertex, %14, "main", %4)
-        Name(%6, "$shader!(::Vec4)")
+        Name(%6, "$shader2!(::Vec4)")
         Name(%4, "color")
    %1 = TypeFloat(0x00000020)
    %2 = TypeVector(%1, 0x00000004)

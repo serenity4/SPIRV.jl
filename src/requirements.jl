@@ -90,13 +90,38 @@ function add_requirements!(required_exts, required_caps, supported::FeatureSuppo
   !isnothing(capability) && push!(required_caps, capability)
 end
 
+function check_required_capabilities(capabilities, supported::FeatureSupport)
+  if !all(supports_capability(supported, capability) for capability in capabilities)
+    missing_caps = [styled"""{red,underline:$(replace(string(capability), r"^Capability" => ""))}""" for capability in capabilities if !supports_capability(supported, capability)]
+    error(styled"""The following capabilities are required by SPIRV.jl but are not supported: $(join(missing_caps, ", "))""")
+  end
+end
+
+function check_required_extensions(extensions, supported::FeatureSupport)
+  if !all(supports_extension(supported, extension) for extension in extensions)
+    missing_exts = [styled"{red,underline:$extension}" for extension in extensions if !supports_extension(supported, extension)]
+    error(styled"""The following extensions are required by SPIRV.jl but are not supported: $(join(missing_exts, ", "))""")
+  end
+end
+
 function FeatureRequirements(instructions, supported::FeatureSupport)
   required_exts = String[]
   required_caps = Capability[]
-  all(supports_capability(supported, cap) for cap in required_caps) || error("Certain base capabilities are not supported.")
+  variables = Set{ResultID}()
+  variable_pointers_spotted = false
   for inst in instructions
+    inst.opcode == OpVariable && !variable_pointers_spotted && push!(variables, inst.result_id)
     inst_info = info(inst)
     add_requirements!(required_exts, required_caps, supported, inst_info.required, inst)
+    !variable_pointers_spotted && @when &OpPhi = inst.opcode begin
+      for arg in @view inst.arguments[1:2:end]
+        if in(arg, variables)
+          push!(required_caps, CapabilityVariablePointers)
+          variable_pointers_spotted = true
+          break
+        end
+      end
+    end
     for (arg, op_info) in zip(inst.arguments, inst_info.operands)
       cap = @trymatch inst.opcode begin
         &OpTypeFloat => @trymatch Int(arg) begin
@@ -105,7 +130,7 @@ function FeatureRequirements(instructions, supported::FeatureSupport)
         end
         &OpTypeInt => @trymatch Int(arg) begin
           8  => CapabilityInt8
-          16  => CapabilityInt16
+          16 => CapabilityInt16
           64 => CapabilityInt64
         end
       end
@@ -144,6 +169,14 @@ function implicitly_declared_capabilities(capabilities)
 end
 
 FeatureRequirements(ir::IR, features::FeatureSupport) = FeatureRequirements(Module(ir), features)
+
+function check_compiler_feature_requirements(supported::FeatureSupport)
+  # We'll almost always need this when compiling Julia code to SPIR-V.
+  required_caps = Capability[CapabilityVariablePointers]
+  required_exts = String[]
+  check_required_capabilities(required_caps, supported)
+  check_required_extensions(required_exts, supported)
+end
 
 """
 Add all required extension and capabilities declarations to the IR.

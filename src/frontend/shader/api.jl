@@ -21,4 +21,5 @@ for (stage, model) in pairs(EXECUTION_MODELS)
     (ex, options, cache, assemble, layout, interpreter) = parse_shader_kwargs(kwargs)
     propagate_source(__source__, esc(compile_shader_ex(ex, __module__, $model, options, features; cache, assemble, layout, interpreter)))
   end
+  @eval export $(Symbol("@$stage"))
 end

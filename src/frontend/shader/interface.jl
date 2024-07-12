@@ -37,7 +37,6 @@ function IR(target::SPIRVTarget, interface::ShaderInterface)
   fdef = FunctionDefinition(mt, target.mi)
   ep = define_entry_point!(mt, tr, fdef, interface.execution_model, interface.execution_options)
   ir = IR(mt, tr)
-  ir.addressing_model = AddressingModelPhysicalStorageBuffer64
   insert!(ir.entry_points, ep.func, ep)
   make_shader!(ir, fdef, interface, variables)
 end

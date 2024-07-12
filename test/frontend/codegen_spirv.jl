@@ -394,15 +394,12 @@ SUPPORTED_FEATURES = SupportedFeatures(
 
     @testset "Loops" begin
       ir = @compile SUPPORTED_FEATURES interp compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
-      # TODO: We should not have to do this by hand.
-      push!(ir.capabilities, SPIRV.CapabilityVariablePointers)
       # Unfortunately, the Khronos validator seems to disallow loops without merge header,
       # even for generic SPIR-V modules that don't require structured control-flow.
       # So we only test for validation rules until that one.
       @test_throws "can only be formed between a block and a loop header" unwrap(validate(ir))
 
       ir = @compile SUPPORTED_FEATURES interp compute_blur_2(::GaussianBlur, ::SampledImage{IT}, ::Vec2)
-      push!(ir.capabilities, SPIRV.CapabilityVariablePointers)
       @test_throws "can only be formed between a block and a loop header" unwrap(validate(ir))
     end
   end

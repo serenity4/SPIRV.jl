@@ -191,6 +191,7 @@ export
   # Features.
   FeatureRequirements,
   FeatureSupport, AllSupported, SupportedFeatures,
+  check_compiler_feature_requirements,
 
   # Annotations.
   Decorations, has_decoration, decorate!, Metadata, decorations,
@@ -245,7 +246,7 @@ export
   Vec, Vec2, Vec3, Vec4,
   Mat, Mat2, Mat3, Mat4, @mat,
   Arr,
-  Pointer, @load, @store,
+  @load, @store,
   Image, image_type, Sampler,
   SampledImage,
   DPdx, DPdy, Fwidth,

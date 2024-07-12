@@ -80,8 +80,6 @@ using SPIRV: generate_ir
     @test unwrap(validate(ir))
 
     ir = load_ir("phi_variables")
-    # TODO: We should not have to do this by hand.
-    push!(ir.capabilities, SPIRV.CapabilityVariablePointers)
     @test unwrap(validate(ir))
   end
 end;
