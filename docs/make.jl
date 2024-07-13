@@ -26,12 +26,11 @@ makedocs(;
     "intro.md",
     "Tutorials" => [
       "tutorials/manipulating_spirv.md",
+      "tutorials/creating_a_shader.md",
     ],
     "Reference" => [
+      "reference/shader_compilation.md",
       "reference/bit_width.md",
-    ],
-    "Miscellaneous" => [
-      "misc/spirv_llvm.md",
     ],
     "features.md",
     "api.md",

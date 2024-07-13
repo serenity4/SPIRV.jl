@@ -55,7 +55,8 @@ let red = Base.text_colors[:red]
   """
   @eval function macro_docstring(stage)
     execution_opts = ShaderExecutionOptions(EXECUTION_MODELS[stage])
-    execution_opts_default, T = :($(Symbol(typeof(execution_opts)))()), typeof(execution_opts)
+    name = nameof(typeof(execution_opts))
+    execution_opts_default, T = :($name()), name
 
     other_macros = ["@$other_stage" for other_stage in filter(≠(stage), keys(EXECUTION_MODELS))]
 
