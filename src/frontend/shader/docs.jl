@@ -35,7 +35,7 @@ let red = Base.text_colors[:red]
   - *$(yellow)REQUIRED$default* An argument type.
   - *$(green)REQUIRED$default* A SPIR-V [storage class](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_storage_class) (required).
   - *$(magenta)OPTIONAL$default* A SPIR-V built-in category, see the [Vulkan built-in variables](https://registry.khronos.org/vulkan/specs/1.3-extensions/html/chap15.html#interfaces-builtin-variables).
-  - *$(salmon)OPTIONAL$default* One or more SPIR-V [decorations](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_decoration)). The value of such decorations may be interpolated with `\$`.
+  - *$(salmon)OPTIONAL$default* One or more SPIR-V [decorations](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_decoration). Arguments to such decorations may be interpolated with `\$`.
 
   This syntax is processed via [`SPIRV.compile_shader`](@ref).
 
