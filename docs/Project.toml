@@ -1,9 +1,13 @@
 [deps]
+About = "69d22d85-9f48-4c46-bbbe-7ad8341ff72a"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DocumenterTools = "35a29f4d-8980-5a13-9543-d66fff28ecb8"
+GitHubActions = "6b79fd1a-b13a-48ab-b6b0-aaee1fee41df"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
 SPIRV = "84138a67-b342-4d33-8200-33cfcca52eb2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
-[sources.SPIRV]
-path = ".."
+[sources]
+About = {url = "https://github.com/tecosaur/About.jl"}
+GitHubActions = {url = "https://github.com/serenity4/GitHubActions.jl"}
+SPIRV = {path = ".."}
