@@ -61,7 +61,7 @@ function ShaderSource(shader::Shader, info::ShaderInfo; validate::Bool = true)
 end
 
 """
-    compile_shader_ex(ex, __module__, execution_mode, options, features; cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
+    compile_shader_ex(ex, __module__, execution_mode; options = nothing, features = nothing, cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
 
 Extract shader interface information from `ex` and other arguments, then return a call to [`compile_shader`](@ref).
 
@@ -73,7 +73,7 @@ For the documentation of the remaining arguments, see [`compile_shader`](@ref).
 
 $DOCSTRING_SYNTAX_REFERENCE
 """
-function compile_shader_ex(ex::Expr, __module__, execution_model::ExecutionModel, options, features; cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
+function compile_shader_ex(ex::Expr, __module__, execution_model::ExecutionModel; options = nothing, features = nothing, cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
   f, args = @match ex begin
     :($f($(args...))) => (f, args)
   end
@@ -83,7 +83,7 @@ function compile_shader_ex(ex::Expr, __module__, execution_model::ExecutionModel
   interface = :($ShaderInterface($execution_model;
     storage_classes = $(copy(storage_classes)),
     variable_decorations = $(deepcopy(variable_decorations)),
-    features = $features,
+    features = something($features, $AllSupported()),
   ))
   !isnothing(options) && push!(interface.args[2].args, :(execution_options = $options))
   compile_shader_ex(f, :($Tuple{$(argtypes...)}), interface; cache, assemble, layout, interpreter)
@@ -187,9 +187,9 @@ A cache may be provided as a [`ShaderCompilationCache`](@ref), caching the resul
 A custom layout and interpreter may be provided. If using a custom interpreter and providing a cache at the same time, make sure that cache entries were created with the same interpreter.
 """
 function compile_shader(f, args, interface::ShaderInterface; cache::Optional{ShaderCompilationCache} = nothing, assemble::Optional{Bool} = nothing, layout::Optional{VulkanLayout} = nothing, interpreter::Optional{SPIRVInterpreter} = nothing)
-  layout = @something(layout, VulkanLayout())::VulkanLayout
-  interpreter = @something(interpreter, SPIRVInterpreter())::SPIRVInterpreter
-  assemble = something(assemble, false)::Bool
+  layout = @something(layout, VulkanLayout())
+  interpreter = @something(interpreter, SPIRVInterpreter())
+  assemble = something(assemble, false)
   if !assemble && !isnothing(cache) && !HAS_WARNED_ABOUT_CACHE[]
     HAS_WARNED_ABOUT_CACHE[] = true
     @warn "A cache was provided, but the `assemble` option has not been set to `true`; the shader will not be cached."

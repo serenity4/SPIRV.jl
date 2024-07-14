@@ -84,15 +84,16 @@ shader2!(color) = color.a = 1F
     shader = Shader(target, interface)
     @test unwrap(validate(shader))
 
-    shader = @vertex AllSupported() (color -> color[] = Vec(0.1F, 0.1F, 0.1F, 1F))(::Vec4::Output)
+    shader = @vertex (color -> color[] = Vec(0.1F, 0.1F, 0.1F, 1F))(::Vec4::Output)
     @test unwrap(validate(shader))
   end
 
   @testset "Shader macro API" begin
-    @test_throws "More than one built-in" @eval @fragment SUPPORTED_FEATURES any_shader(::UInt32::Input{VertexIndex, InstanceIndex})
-    @test_throws "Expected macrocall" @eval @fragment SUPPORTED_FEATURES any_shader(::UInt32::Input{VertexIndex, DescriptorSet = 1})
-    @test_throws "Unknown storage class" @eval @fragment SUPPORTED_FEATURES any_shader(::UInt32::Typo{VertexIndex, DescriptorSet = 1})
-    @test_throws "Unknown decoration" @eval @fragment SUPPORTED_FEATURES any_shader(::UInt32::Input{VertexIndex, @Typo(1)})
+    @test_throws "More than one built-in" @eval @fragment any_shader(::UInt32::Input{VertexIndex, InstanceIndex})
+    @test_throws "Expected macrocall" @eval @fragment any_shader(::UInt32::Input{VertexIndex, DescriptorSet = 1})
+    @test_throws "Unknown storage class" @eval @fragment any_shader(::UInt32::Typo{VertexIndex, DescriptorSet = 1})
+    @test_throws "Unknown decoration" @eval @fragment any_shader(::UInt32::Input{VertexIndex, @Typo(1)})
+    @test_throws "Only one non-keyword expression" @eval @fragment VulkanLayout() any_shader(::UInt32::Input{VertexIndex, @Typo(1)})
 
     argtypes, scs, vardecs = shader_decorations(:(any_shader(::Vec4::Uniform{@DescriptorSet(1)})))
     @test argtypes == [:Vec4]
@@ -126,13 +127,13 @@ shader2!(color) = color.a = 1F
       2 => Decorations(SPIRV.DecorationLocation, 3),
     ])
 
-    frag_shader = @fragment SUPPORTED_FEATURES shader!(::Vec4::Output)
+    frag_shader = @fragment features = SUPPORTED_FEATURES shader!(::Vec4::Output)
     @test isa(frag_shader, Shader)
 
-    any_hit_shader = Base.@with SPIRV.METHOD_TABLES => [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE] @any_hit RAY_TRAYCING_FEATURES shader!(::Vec4::Output)
+    any_hit_shader = Base.@with SPIRV.METHOD_TABLES => [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE] @any_hit features = RAY_TRAYCING_FEATURES shader!(::Vec4::Output)
     @test isa(any_hit_shader, Shader)
 
-    compute_shader = @compute SUPPORTED_FEATURES assemble = true Returns(nothing)()
+    compute_shader = @compute features = SUPPORTED_FEATURES assemble = true Returns(nothing)()
     @test isa(compute_shader, ShaderSource)
     @test Vk.ShaderStageFlag(compute_shader) == Vk.SHADER_STAGE_COMPUTE_BIT
 
@@ -144,20 +145,20 @@ shader2!(color) = color.a = 1F
       cache = ShaderCompilationCache()
       @test cache.diagnostics.misses == cache.diagnostics.hits == 0
       SPIRV.HAS_WARNED_ABOUT_CACHE[] = false
-      @test_logs (:warn, r"will not be cached") @fragment AllSupported() cache shader!(::Vec4::Output)
-      @test_logs @fragment AllSupported() cache shader!(::Vec4::Output)
+      @test_logs (:warn, r"will not be cached") @fragment cache shader!(::Vec4::Output)
+      @test_logs @fragment cache shader!(::Vec4::Output)
 
-      @fragment AllSupported() cache assemble = true shader!(::Vec4::Output)
+      @fragment cache assemble = true shader!(::Vec4::Output)
       @test cache.diagnostics.hits == 0
       @test cache.diagnostics.misses == 1
       @test !isempty(cache)
 
-      @fragment AllSupported() cache assemble = true shader!(::Vec4::Output)
+      @fragment cache assemble = true shader!(::Vec4::Output)
       @test cache.diagnostics.hits == 1
       @test cache.diagnostics.misses == 1
       @test length(cache) == 1
 
-      @fragment AllSupported() cache assemble = true shader!(::Vec{4,Float64}::Output)
+      @fragment cache assemble = true shader!(::Vec{4,Float64}::Output)
       @test cache.diagnostics.hits == 1
       @test cache.diagnostics.misses == 2
       @test length(cache) == 2
@@ -173,14 +174,14 @@ shader2!(color) = color.a = 1F
       x::Float32
       y::Float32
     end
-    shader = @vertex AllSupported() (function (out_pos, point)
+    shader = @vertex (function (out_pos, point)
         out_pos.x = point.x
         out_pos.y = point.y
       end)(::Vec4::Output, ::Point::Uniform{@DescriptorSet(0), @Binding(0)})
     @test unwrap(validate(shader))
 
     # With built-ins.
-    shader = @vertex AllSupported() (function (frag_color, index, position)
+    shader = @vertex (function (frag_color, index, position)
         frag_color.x = index
         position.x = index
       end)(::Vec4::Output, ::UInt32::Input{VertexIndex}, ::Vec4::Output{Position})
@@ -196,7 +197,7 @@ shader2!(color) = color.a = 1F
       pos::Vec2
       color::NTuple{3,Float32}
     end
-    shader = @vertex SUPPORTED_FEATURES (function (frag_color, position, index, dd)
+    shader = @vertex features = SUPPORTED_FEATURES (function (frag_color, position, index, dd)
         vd = @load dd.vbuffer[index]::VertexData
         (; pos, color) = vd
         position[] = Vec(pos.x, pos.y, 0F, 1F)
@@ -204,16 +205,16 @@ shader2!(color) = color.a = 1F
       end)(::Vec4::Output, ::Vec4::Output{Position}, ::UInt32::Input{VertexIndex}, ::DrawData::PushConstant)
     @test unwrap(validate(shader))
 
-    shader = @fragment SUPPORTED_FEATURES ((out_color, frag_color) -> out_color[] = frag_color)(::Vec4::Output, ::Vec4::Input)
+    shader = @fragment features = SUPPORTED_FEATURES ((out_color, frag_color) -> out_color[] = frag_color)(::Vec4::Output, ::Vec4::Input)
     @test unwrap(validate(shader))
 
-    compute_shader = @compute SUPPORTED_FEATURES (function (buffer, index)
+    compute_shader = @compute features = SUPPORTED_FEATURES (function (buffer, index)
         buffer[index] = buffer[index] + 1U
       end)(::Arr{128, Float32}::Workgroup, ::UInt32::Input{LocalInvocationIndex})
     @test unwrap(validate(compute_shader))
 
     @testset "Barrier instructions" begin
-      shader = @compute SUPPORTED_FEATURES (function ()
+      shader = @compute features = SUPPORTED_FEATURES (function ()
         SPIRV.ControlBarrier(SPIRV.ScopeWorkgroup, SPIRV.ScopeWorkgroup, SPIRV.MemorySemanticsNone)
         SPIRV.MemoryBarrier(SPIRV.ScopeWorkgroup, SPIRV.MemorySemanticsWorkgroupMemory | SPIRV.MemorySemanticsAcquireRelease)
       end)()
@@ -221,7 +222,7 @@ shader2!(color) = color.a = 1F
     end
 
     @testset "Structured control-flow" begin
-      shader = @vertex SUPPORTED_FEATURES (function (out, x)
+      shader = @vertex features = SUPPORTED_FEATURES (function (out, x)
           y = x > 0F ? x + 1F : x - 1F
           out.x = y
         end)(::Vec4::Output, ::Float32::Input)
@@ -229,15 +230,15 @@ shader2!(color) = color.a = 1F
 
       IT = SampledImage{SPIRV.image_type(SPIRV.ImageFormatR16f,SPIRV.Dim2D,0,false,false,1)}
 
-      shader = @fragment SUPPORTED_FEATURES ((res, blur, reference, direction, uv) -> res[] =
+      shader = @fragment features = SUPPORTED_FEATURES ((res, blur, reference, direction, uv) -> res[] =
         compute_blur(blur, reference, direction, uv))(::Vec3::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::UInt32::Input{@Flat}, ::Vec2::Input)
       @test unwrap(validate(shader))
 
-      shader = @fragment SUPPORTED_FEATURES ((res, blur, reference, uv) -> res[] =
+      shader = @fragment features = SUPPORTED_FEATURES ((res, blur, reference, uv) -> res[] =
         compute_blur_2(blur, reference, uv))(::Vec3::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::Vec2::Input)
       @test unwrap(validate(shader))
 
-      shader = @compute SUPPORTED_FEATURES step_euler(::BoidAgent::PushConstant, ::Vec2::Input, ::Float32::Input)
+      shader = @compute features = SUPPORTED_FEATURES step_euler(::BoidAgent::PushConstant, ::Vec2::Input, ::Float32::Input)
       @test unwrap(validate(shader))
     end
   end

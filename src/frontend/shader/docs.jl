@@ -43,15 +43,15 @@ let red = Base.text_colors[:red]
 
   Here are a few examples using the described syntax:
 
-  `@vertex ... f($(arg("Vec4", "Output", "Position")), $(arg("UInt32", "Input", "VertexIndex")))`
+  `@vertex [parameters] f($(arg("Vec4", "Output", "Position")), $(arg("UInt32", "Input", "VertexIndex")))`
 
-  `@fragment ... f($(arg("Vec4", "Input")), $(arg("InvocationData", "PushConstant")))`
+  `@fragment [parameters] f($(arg("Vec4", "Input")), $(arg("InvocationData", "PushConstant")))`
 
-  `@fragment ... f($(arg("Vec4", "Output")), $(arg("Vec4", "Input", "FragCoord")), $(arg("Vec2", "Input", "", ["@Flat ..."])))`
+  `@fragment [parameters] f($(arg("Vec4", "Output")), $(arg("Vec4", "Input", "FragCoord")), $(arg("Vec2", "Input", "", ["@Flat"])))`
 
-  `@compute ... f($(arg("UInt32", "Workgroup")))`
+  `@compute [parameters] f($(arg("UInt32", "Workgroup")))`
 
-  `@compute ... f($(arg("Arr{256, Float32}", "Workgroup")), $(arg("UInt32", "Input", "LocalInvocationIndex")))`
+  `@compute [parameters] f($(arg("Arr{256, Float32}", "Workgroup")), $(arg("UInt32", "Input", "LocalInvocationIndex")))`
   """
   @eval function macro_docstring(stage)
     execution_opts = ShaderExecutionOptions(EXECUTION_MODELS[stage])
@@ -61,16 +61,14 @@ let red = Base.text_colors[:red]
     other_macros = ["@$other_stage" for other_stage in filter(≠(stage), keys(EXECUTION_MODELS))]
 
     """
-        @$stage supported_features [option = val...] f(::Type1::StorageClass1[{...}], ...)
+        @$stage [parameters] f(::Type1::StorageClass1[{...}], ...)
 
     Compile the provided signature `f(args...)` into a $stage shader.
 
-    `supported_features` is a [`SPIRV.FeatureSupport`](@ref) structure informing the SPIR-V compiler
-    what capabilities and extensions are allowed. In application code, this should generally be a [`SupportedFeatures`](@ref) structure coming from the client API.
-    For instance, a package extension for Vulkan.jl exists which provides `SupportedFeatures(physical_device, api_version, device_extensions, device_features)`.
-
     The supported parameters are the following:
     - `options = $execution_opts_default`: a [`$T`](@ref) structure providing $stage-specific options.
+    - `features = AllSupported()`: a [`SPIRV.FeatureSupport`](@ref) structure informing the SPIR-V compiler
+    what capabilities and extensions are allowed. In application code, this should generally be a [`SupportedFeatures`](@ref) structure coming from the client API. For instance, a package extension for Vulkan.jl exists which provides `SupportedFeatures(physical_device, api_version, device_extensions, device_features)`.
     - `layout = VulkanLayout()`: a [`VulkanLayout`](@ref) to use to compute alignments, strides and offsets in structures and arrays.
     - `cache = nothing`: an optional [`ShaderCompilationCache`](@ref) used to cache [`ShaderSource`](@ref)s to prevent repeated compilation of SPIR-V modules.
     - `interpreter = SPIRVInterpreter()`: a [`SPIRVInterpreter`](@ref) containing method tables and optimization options for the computation. If a cache is provided, this interpreter must be identical to the one used to compile all previous cache entries.

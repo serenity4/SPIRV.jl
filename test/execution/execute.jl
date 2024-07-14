@@ -95,7 +95,7 @@ function execute(ex::Expr, T = nothing)
     code = @eval SPIRV.@code_typed (() -> $ex)()
     code.parent.cache.rettype
   end)
-  source = @eval @compute supported_features VulkanAlignment() assemble = true (function (out)
+  source = @eval @compute features = supported_features assemble = true (function (out)
     @store out::$T = $ex
   end)(::DeviceAddressBlock::PushConstant) options = ComputeExecutionOptions(local_size = (1, 1, 1))
   execute(source, device, T)

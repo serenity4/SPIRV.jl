@@ -45,16 +45,16 @@ We will specify this information using the [`@fragment`](@ref) macro, which acce
 
 =#
 
-using SPIRV: @fragment, AllSupported
+using SPIRV: @fragment
 
-shader = @fragment AllSupported() fragment_shader!(
+shader = @fragment fragment_shader!(
   ::Vec4::Output,
   ::FragmentData::PushConstant
 );
 
 #=
 
-What's with the `AllSupported()` argument? It defines the set of features and extensions supported by our GPU for SPIR-V. In this case, we won't be picky and assume any feature or extension is allowed. We'll be able to accurately specify our GPU feature support when we query it via a graphics API, e.g. Vulkan.
+There are multiple parameters to `@fragment`, but we'll stick with the defaults for now. Normally, we would at least provide a `features` parameter, which defines the set of features and extensions supported by our GPU for SPIR-V. The default assumes any feature or extension is allowed. We'll be able to accurately specify our GPU feature support when we query it via a graphics API, e.g. Vulkan.
 
 Let's take a look at what we got!
 
@@ -122,7 +122,7 @@ All good! Let's now turn it into a SPIR-V shader. Same as before, let's assume w
 
 using SPIRV: @compute
 
-shader = @compute AllSupported() compute_shader!(
+shader = @compute compute_shader!(
   ::ComputeData::PushConstant,
   ::UInt32::Input{LocalInvocationIndex}
 )
