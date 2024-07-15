@@ -16,41 +16,39 @@
     ],
   )
 
-  @static if VERSION ≥ v"1.8"
-    struct PRECOMPILE_DrawData
-      camera::UInt64
-      vbuffer::UInt64
-      material::UInt64
-    end
-
-    struct PRECOMPILE_VertexData
-      pos::Vec{2,Float32}
-      color::NTuple{3,Float32}
-    end
-
-    function PRECOMPILE_vert_shader(frag_color, position, index, dd)
-      vd = @load dd.vbuffer[index]::PRECOMPILE_VertexData
-      (; pos, color) = vd
-      position[] = Vec(pos.x, pos.y, 0F, 1F)
-      frag_color[] = Vec(color[1U], color[2U], color[3U], 1F)
-    end
-
-    target = @target PRECOMPILE_vert_shader(::Vec{4,Float32}, ::Vec{4,Float32}, ::UInt32, ::PRECOMPILE_DrawData)
-    interface = ShaderInterface(
-      storage_classes = [StorageClassOutput, StorageClassOutput, StorageClassInput, StorageClassPushConstant],
-      variable_decorations = dictionary([
-        1 => Decorations(DecorationLocation, 0U),
-        2 => Decorations(DecorationBuiltIn, BuiltInPosition),
-        3 => Decorations(DecorationBuiltIn, BuiltInVertexIndex),
-      ]),
-      type_metadata = dictionary([
-        PRECOMPILE_DrawData => Metadata().decorate!(DecorationBlock),
-      ]),
-      features = SUPPORTED_FEATURES,
-    )
-    ir = Shader(target, interface)
-    assemble(ir)
-
-    empty!(DEFAULT_CI_CACHE.dict)
+  struct PRECOMPILE_DrawData
+    camera::UInt64
+    vbuffer::UInt64
+    material::UInt64
   end
+
+  struct PRECOMPILE_VertexData
+    pos::Vec{2,Float32}
+    color::NTuple{3,Float32}
+  end
+
+  function PRECOMPILE_vert_shader(frag_color, position, index, dd)
+    vd = @load dd.vbuffer[index]::PRECOMPILE_VertexData
+    (; pos, color) = vd
+    position[] = Vec(pos.x, pos.y, 0F, 1F)
+    frag_color[] = Vec(color[1U], color[2U], color[3U], 1F)
+  end
+
+  target = @target PRECOMPILE_vert_shader(::Vec{4,Float32}, ::Vec{4,Float32}, ::UInt32, ::PRECOMPILE_DrawData)
+  interface = ShaderInterface(
+    storage_classes = [StorageClassOutput, StorageClassOutput, StorageClassInput, StorageClassPushConstant],
+    variable_decorations = dictionary([
+      1 => Decorations(DecorationLocation, 0U),
+      2 => Decorations(DecorationBuiltIn, BuiltInPosition),
+      3 => Decorations(DecorationBuiltIn, BuiltInVertexIndex),
+    ]),
+    type_metadata = dictionary([
+      PRECOMPILE_DrawData => Metadata().decorate!(DecorationBlock),
+    ]),
+    features = SUPPORTED_FEATURES,
+  )
+  ir = Shader(ShaderInfo(target.mi, interface))
+  assemble(ir)
+
+  empty!(DEFAULT_CI_CACHE.dict)
 end

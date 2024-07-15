@@ -7,11 +7,12 @@ supported in SPIR-V.
 """
 module MathFunctions
 
-using ..SPIRV: AbstractSPIRVArray, U, F
+using ..SPIRV: AbstractSPIRVArray, U, F, Vec
 
+using LinearAlgebra: dot
 import LinearAlgebra: norm, normalize
 
-export lerp, slerp_2d, angle_2d, rotate_2d, normalize, distance2, distance, norm, compute_roots, saturated_softmax, linearstep, smoothstep, smootherstep, remap
+export lerp, slerp_2d, angle_2d, rotate_2d, normalize, distance2, distance, norm, compute_roots, saturated_softmax, linearstep, smoothstep, smootherstep, remap, linear_index, image_index
 
 lerp(x, y, t) = x .* t .+ (1 .- t)y
 
@@ -93,5 +94,13 @@ function smootherstep(min, max, value)
   x = remap(value, min, max, zero(value), one(value))
   x^3 * (x * (6x - 15) + 10)
 end
+
+function linear_index(global_id, workgroup_size)
+  cluster_size = foldl(*, workgroup_size)
+  dot(Vec{3,UInt32}(1U, cluster_size, cluster_size^2), global_id)
+end
+
+image_index(linear_index::Integer, (ni, nj)) = (linear_index % ni, linear_index ÷ ni)
+image_index(global_id, workgroup_size, (ni, nj)) = image_index(linear_index(global_id, workgroup_size), (ni, nj))
 
 end

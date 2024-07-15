@@ -314,7 +314,8 @@ storage_classes(tmeta::TypeMetadata, t::SPIRType) = storage_classes(keys(tmeta.d
 isinterface(tmeta::TypeMetadata, t::StructType) = has_decoration(tmeta, t, DecorationBlock)
 isinterface(tmeta::TypeMetadata, ::SPIRType) = false
 
-VulkanLayout(alignment::VulkanAlignment = VulkanAlignment()) = VulkanLayout(alignment, TypeMap(), Dict{SPIRType, Set{StorageClass}}(), Set{StructType}())
+VulkanLayout(alignment::VulkanAlignment) = VulkanLayout(alignment, TypeMap(), Dict{SPIRType, Set{StorageClass}}(), Set{StructType}())
+VulkanLayout(; scalar_block_layout::Bool = false, uniform_buffer_standard_layout::Bool = false) = VulkanLayout(VulkanAlignment(scalar_block_layout, uniform_buffer_standard_layout))
 
 merge_layout!(layout::VulkanLayout, ir::IR) = merge_layout!(layout, TypeMetadata(ir))
 function merge_layout!(layout::VulkanLayout, tmeta::TypeMetadata)

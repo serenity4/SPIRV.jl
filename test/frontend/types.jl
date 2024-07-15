@@ -1,5 +1,5 @@
 using SPIRV, Test
-using SPIRV: component_type, texel_type, sampled_type, column
+using SPIRV: component_type, texel_type, sampled_type, column, Pointer
 using StaticArrays
 
 @testset "Array operations" begin

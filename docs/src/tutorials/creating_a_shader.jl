@@ -1,6 +1,6 @@
 #=
 
-# Creating a shader
+# [Creating a shader](@id tutorial-creating-a-shader)
 
 This tutorial will show you how to create a SPIR-V shader using the experimental [Julia → SPIR-V compiler](@ref compiler).
 
@@ -80,7 +80,7 @@ We could setup a storage buffer, but for simplicity, we'll work with a memory ad
 
 =#
 
-using SPIRV: @load, @store
+using SPIRV: @load, @store, U
 
 struct ComputeData
   buffer::UInt64 # memory address of a buffer
@@ -88,13 +88,18 @@ struct ComputeData
 end
 
 function compute_shader!((; buffer, size)::ComputeData, index)
+  # `index` is zero-based, coming from Vulkan; but we're now in Julia,
+  # where everything is one-based, so we make it one-based.
+  index += 1U
   value = @load buffer[index]::Float32
   result = exp(value)
-  index < size && @store result buffer[index]::Float32
+  1U ≤ index ≤ size && @store result buffer[index]::Float32
   nothing
 end
 
 #=
+
+You may notice that we use `1U`, which is simply some sugar syntax for `UInt32(1)`. We don't use the plain literal `1`. because we don't want `index` to widen to an `Int64`. See [Integer and float bit widths](@ref) for more details.
 
 We can run this shader on the CPU to test it first, but it's a bit more hacky this time since we chose to work with a memory address.
 
@@ -108,8 +113,8 @@ GC.@preserve array begin
   ptr = pointer(array)
   address = UInt64(ptr)
   data = ComputeData(address, length(array))
-  compute_shader!(data, 2)
-  compute_shader!(data, 6)
+  compute_shader!(data, 0)
+  compute_shader!(data, 5)
 end
 
 array

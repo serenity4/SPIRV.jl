@@ -77,8 +77,29 @@ function generate_instructions_glsl()
   end)
 end
 
+function instruction_infos(g, opname)
+  infos = Expr[]
+  i = 1
+  n = length(g[:instructions])
+  while i ≤ n
+    inst = g[:instructions][i]
+    aliases = []
+    if i ≠ n
+      next = g[:instructions][i + 1]
+      while next.opcode == inst.opcode && i + 1 ≤ n
+        push!(aliases, next)
+        i += 1
+        next = g[:instructions][i + 1]
+      end
+    end
+    push!(infos, instruction_info(inst, aliases, opname))
+    i += 1
+  end
+  infos
+end
+
 function generate_instruction_infos()
-  infos = map(instruction_info, g[:instructions])
+  infos = instruction_infos(g, opname)
   push!(infos, :(OpEgal => InstructionInfo(
     "Package-defined",
     [
@@ -93,27 +114,36 @@ function generate_instruction_infos()
 end
 
 function generate_instruction_infos_glsl()
-  infos = map(Base.Fix2(instruction_info, glsl_opname), extinst_glsl[:instructions])
+  infos = instruction_infos(extinst_glsl, glsl_opname)
   :(const instruction_infos_glsl = Dict{OpCodeGLSL,InstructionInfo}([$(infos...)]))
 end
 
-function instruction_info(inst, opname = opname)
+function instruction_info(inst, aliases, opname = opname)
   class = get(inst, :class, nothing)
   operands = operand_infos(inst)
+  supports = Expr[]
+  push!(supports, instruction_required_support(inst))
+  for alias in aliases
+    push!(supports, instruction_required_support(alias))
+  end
+  support = length(supports) == 1 ? supports[1] : Expr(:vect, supports...)
+  :($(opname(inst)) => InstructionInfo($class, [$(operands...)], $support))
+end
+
+function instruction_required_support(inst)
   exts, caps = get(inst, :extensions, []), capabilities(inst)
   exts_ex, caps_ex = nothing_if_empty.((exts, caps))
   lower, upper = min_version(inst), typemax(VersionNumber)
   support = :(RequiredSupport(VersionRange($lower, $upper), $exts_ex, $caps_ex))
-  :($(opname(inst)) => InstructionInfo($class, [$(operands...)], $support))
 end
 
-capabilities(dict) = map(Base.Fix1(Symbol, :Capability), get(dict, :capabilities, []))
+capabilities(dict) = map(Base.Fix1(Symbol, :Capability), get(Vector{Any}, dict, :capabilities))
 function min_version(dict)
   version_spec = get(dict, :version, "0")
   parse(VersionNumber, version_spec == "None" ? "0" : version_spec)
 end
 
-operand_infos(inst) = map(operand_info, get(inst, :operands, []))
+operand_infos(inst) = map(operand_info, get(Vector{Any}, inst, :operands))
 
 function operand_info(operand)
   kind = Symbol(operand[:kind])

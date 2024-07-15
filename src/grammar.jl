@@ -26,7 +26,7 @@ end
 struct InstructionInfo
   class::Optional{String}
   operands::Vector{OperandInfo}
-  required::RequiredSupport
+  required::Union{RequiredSupport, Vector{RequiredSupport}}
 end
 
 struct EnumerantInfo

@@ -12,7 +12,7 @@ Vec(components::Scalar...) = Vec(promote(components...)...)
 Vec(components::T...) where {T<:Scalar} = Vec{length(components),T}(components...)
 Vec(components::Tuple) = Vec(components...)
 Vec{T}(components...) where {T<:Scalar} = Vec{length(components),T}(convert.(T, components)...)
-Vec(v::Vec) = v
+(::Type{T})(v::Vec) where {T<:Vec} = T(v...)
 
 const Vec2 = Vec{2,Float32}
 const Vec3 = Vec{3,Float32}

@@ -40,7 +40,7 @@ shader2!(color) = color.a = 1F
     ir = compile(target, AllSupported())
     @test unwrap(validate(ir))
     interface = ShaderInterface(SPIRV.ExecutionModelVertex; storage_classes = [SPIRV.StorageClassOutput])
-    shader = Shader(target, interface)
+    shader = Shader(ShaderInfo(target.mi, interface))
     mod = SPIRV.Module(shader)
     @test mod == parse(
       SPIRV.Module,
@@ -81,7 +81,7 @@ shader2!(color) = color.a = 1F
     @test_throws "must be decorated with a location" unwrap(validate(shader))
 
     set!(interface.variable_decorations, 1, Decorations(SPIRV.DecorationLocation, 0))
-    shader = Shader(target, interface)
+    shader = Shader(ShaderInfo(target.mi, interface))
     @test unwrap(validate(shader))
 
     shader = @vertex (color -> color[] = Vec(0.1F, 0.1F, 0.1F, 1F))(::Vec4::Output)

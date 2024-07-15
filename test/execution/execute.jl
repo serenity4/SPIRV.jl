@@ -9,9 +9,9 @@ function create_device()
   # layers = String["VK_LAYER_KHRONOS_validation"]
   extensions = String["VK_EXT_debug_utils"]
   instance = Instance(layers, extensions; application_info = ApplicationInfo(v"0.1", v"0.1", v"1.3"))
-  messenger = DebugUtilsMessengerEXT(instance, debug_callback_c)
+  debug_messenger = DebugUtilsMessengerEXT(instance, debug_callback_c)
   physical_device = first(unwrap(enumerate_physical_devices(instance)))
-  device_features_1_1 = PhysicalDeviceVulkan11Features(:variable_pointers)
+  device_features_1_1 = PhysicalDeviceVulkan11Features(:variable_pointers, :variable_pointers_storage_buffer)
   device_features_1_2 = PhysicalDeviceVulkan12Features(:buffer_device_address, :vulkan_memory_model; next = device_features_1_1)
   device_features_1_3 = PhysicalDeviceVulkan13Features(:synchronization2, :dynamic_rendering; next = device_features_1_2)
   device_features = PhysicalDeviceFeatures2(PhysicalDeviceFeatures(:shader_float_64, :shader_int_64); next = device_features_1_3)
@@ -24,10 +24,10 @@ function create_device()
   )
   supported_features = SupportedFeatures(physical_device, v"1.3", device_extensions, device_features)
   check_compiler_feature_requirements(supported_features)
-  (; device, queue_family_index, supported_features)
+  (; debug_messenger, device, queue_family_index, supported_features)
 end
 
-(; device, queue_family_index, supported_features) = create_device()
+(; debug_messenger, device, queue_family_index, supported_features) = create_device()
 
 function find_memory_type(physical_device::PhysicalDevice, type, properties::MemoryPropertyFlag)
   memory_properties = get_physical_device_memory_properties(physical_device)

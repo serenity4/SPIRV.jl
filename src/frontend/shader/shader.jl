@@ -6,8 +6,7 @@ end
 @struct_hash_equal struct Shader
   ir::IR
   entry_point::ResultID
-  layout::VulkanLayout
-  memory_resources::ResultDict{MemoryResource}
+  info::ShaderInfo
 end
 
 @forward_methods Shader field = :ir Module assemble
@@ -22,26 +21,24 @@ function validate(shader::Shader)
   validate_shader(shader.ir; flags)
 end
 
-Shader(info::ShaderInfo) = Shader(info.mi, info.interface, info.interp, info.layout)
-
-function Shader(target::SPIRVTarget, interface::ShaderInterface, layout::VulkanLayout = VulkanLayout())
-  ir = IR(target, interface)
-  merge_layout!(layout, ir)
+function Shader(info::ShaderInfo)
+  target = SPIRVTarget(info.mi, info.interp)
+  ir = IR(target, info.interface)
+  merge_layout!(info.layout, ir)
   main = entry_point(ir, :main).func
-  satisfy_requirements!(ir, interface.features)
+  satisfy_requirements!(ir, info.interface.features)
 
-  add_type_layouts!(ir, layout)
-  add_align_operands!(ir, ir.fdefs[main], layout)
+  add_type_layouts!(ir, info.layout)
+  add_align_operands!(ir, ir.fdefs[main], info.layout)
 
-  Shader(ir, main, layout, memory_resources(ir, main))
+  Shader(ir, main, info)
 end
-Shader(mi::MethodInstance, interface::ShaderInterface, interp::SPIRVInterpreter, layout::VulkanLayout = VulkanLayout()) = Shader(SPIRVTarget(mi, interp), interface, layout)
 
 function Base.show(io::IO, mime::MIME"text/plain", shader::Shader)
   n = sum(fdef -> sum(length, fdef), shader.ir)
   ep = shader.ir.entry_points[shader.entry_point]
   model = replace(sprintc(printstyled, ep.model; color = ENUM_COLOR), "ExecutionModel" => "")
-  print(io, typeof(shader), " ($model, $n code instructions)")
+  print(io, typeof(shader), " ($model, $n function instructions)")
   if n < 100
     code = sprintc(show, mime, shader.ir)
     sep = sprintc(printstyled, '│'; color = :cyan)
@@ -50,14 +47,16 @@ function Base.show(io::IO, mime::MIME"text/plain", shader::Shader)
   end
 end
 
-function ShaderSource(shader::Shader, info::ShaderInfo; validate::Bool = true)
-  ret = @__MODULE__().validate(shader)
-  if iserror(ret)
-    show_debug_spirv_code(stdout, shader.ir)
-    err = unwrap_error(ret)
-    throw(err)
+function ShaderSource(shader::Shader; validate::Bool = true)
+  if validate
+    ret = @__MODULE__().validate(shader)
+    if iserror(ret)
+      show_debug_spirv_code(stdout, shader.ir)
+      err = unwrap_error(ret)
+      throw(err)
+    end
   end
-  ShaderSource(reinterpret(UInt8, assemble(shader)), info)
+  ShaderSource(reinterpret(UInt8, assemble(shader)), shader.info)
 end
 
 """

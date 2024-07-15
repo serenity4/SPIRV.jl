@@ -45,6 +45,12 @@ end
 
 @override dot(x::T, y::T) where {T<:Vec{<:Any,<:IEEEFloat}} = Dot(x, y)
 @noinline Dot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
+@override dot(x::T, y::T) where {T<:Vec{<:Any,<:BitUnsigned}} = UDot(x, y)
+@noinline UDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
+@override dot(x::T, y::T) where {T<:Vec{<:Any,<:BitSigned}} = SDot(x, y)
+@noinline SDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
+@override dot(x::Vec{N,<:BitSigned}, y::Vec{N,<:BitUnsigned}) where {N} = SUDot(x, y)
+@noinline SUDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
 
 ## Comparisons.
 

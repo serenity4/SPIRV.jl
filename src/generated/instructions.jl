@@ -3776,18 +3776,10 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Vector 2'", nothing),
       OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
-  ),
-  OpSDotKHR => InstructionInfo(
-    "Arithmetic",
     [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdRef, "'Vector 1'", nothing),
-      OperandInfo(IdRef, "'Vector 2'", nothing),
-      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
   ),
   OpUDot => InstructionInfo(
     "Arithmetic",
@@ -3798,18 +3790,10 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Vector 2'", nothing),
       OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
-  ),
-  OpUDotKHR => InstructionInfo(
-    "Arithmetic",
     [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdRef, "'Vector 1'", nothing),
-      OperandInfo(IdRef, "'Vector 2'", nothing),
-      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
   ),
   OpSUDot => InstructionInfo(
     "Arithmetic",
@@ -3820,18 +3804,10 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Vector 2'", nothing),
       OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
-  ),
-  OpSUDotKHR => InstructionInfo(
-    "Arithmetic",
     [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdRef, "'Vector 1'", nothing),
-      OperandInfo(IdRef, "'Vector 2'", nothing),
-      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
   ),
   OpSDotAccSat => InstructionInfo(
     "Arithmetic",
@@ -3843,19 +3819,10 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Accumulator'", nothing),
       OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
-  ),
-  OpSDotAccSatKHR => InstructionInfo(
-    "Arithmetic",
     [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdRef, "'Vector 1'", nothing),
-      OperandInfo(IdRef, "'Vector 2'", nothing),
-      OperandInfo(IdRef, "'Accumulator'", nothing),
-      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
   ),
   OpUDotAccSat => InstructionInfo(
     "Arithmetic",
@@ -3867,19 +3834,10 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Accumulator'", nothing),
       OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
-  ),
-  OpUDotAccSatKHR => InstructionInfo(
-    "Arithmetic",
     [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdRef, "'Vector 1'", nothing),
-      OperandInfo(IdRef, "'Vector 2'", nothing),
-      OperandInfo(IdRef, "'Accumulator'", nothing),
-      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
   ),
   OpSUDotAccSat => InstructionInfo(
     "Arithmetic",
@@ -3891,19 +3849,10 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Accumulator'", nothing),
       OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
-  ),
-  OpSUDotAccSatKHR => InstructionInfo(
-    "Arithmetic",
     [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdRef, "'Vector 1'", nothing),
-      OperandInfo(IdRef, "'Vector 2'", nothing),
-      OperandInfo(IdRef, "'Accumulator'", nothing),
-      OperandInfo(PackedVectorFormat, "'Packed Vector Format'", "?"),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDotProduct]),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
     ],
-    RequiredSupport(VersionRange(v"1.6.0", v"∞"), ["SPV_KHR_integer_dot_product"], [CapabilityDotProductKHR]),
   ),
   OpTypeRayQueryKHR => InstructionInfo(
     "Reserved",
@@ -4377,17 +4326,10 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       OperandInfo(IdRef, "'Hit'", nothing),
       OperandInfo(IdRef, "'HitKind'", nothing),
     ],
-    RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], [CapabilityRayTracingNV, CapabilityRayTracingKHR]),
-  ),
-  OpReportIntersectionKHR => InstructionInfo(
-    "Reserved",
     [
-      OperandInfo(IdResultType, nothing, nothing),
-      OperandInfo(IdResult, nothing, nothing),
-      OperandInfo(IdRef, "'Hit'", nothing),
-      OperandInfo(IdRef, "'HitKind'", nothing),
+      RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], [CapabilityRayTracingNV, CapabilityRayTracingKHR]),
+      RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], [CapabilityRayTracingNV, CapabilityRayTracingKHR]),
     ],
-    RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing"], [CapabilityRayTracingNV, CapabilityRayTracingKHR]),
   ),
   OpIgnoreIntersectionNV =>
     InstructionInfo("Reserved", [], RequiredSupport(VersionRange(v"0.0.0", v"∞"), ["SPV_NV_ray_tracing"], [CapabilityRayTracingNV])),
@@ -4449,20 +4391,18 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
   OpTypeAccelerationStructureNV => InstructionInfo(
     "Reserved",
     [OperandInfo(IdResult, nothing, nothing)],
-    RequiredSupport(
-      VersionRange(v"0.0.0", v"∞"),
-      ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing", "SPV_KHR_ray_query"],
-      [CapabilityRayTracingNV, CapabilityRayTracingKHR, CapabilityRayQueryKHR],
-    ),
-  ),
-  OpTypeAccelerationStructureKHR => InstructionInfo(
-    "Reserved",
-    [OperandInfo(IdResult, nothing, nothing)],
-    RequiredSupport(
-      VersionRange(v"0.0.0", v"∞"),
-      ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing", "SPV_KHR_ray_query"],
-      [CapabilityRayTracingNV, CapabilityRayTracingKHR, CapabilityRayQueryKHR],
-    ),
+    [
+      RequiredSupport(
+        VersionRange(v"0.0.0", v"∞"),
+        ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing", "SPV_KHR_ray_query"],
+        [CapabilityRayTracingNV, CapabilityRayTracingKHR, CapabilityRayQueryKHR],
+      ),
+      RequiredSupport(
+        VersionRange(v"0.0.0", v"∞"),
+        ["SPV_NV_ray_tracing", "SPV_KHR_ray_tracing", "SPV_KHR_ray_query"],
+        [CapabilityRayTracingNV, CapabilityRayTracingKHR, CapabilityRayQueryKHR],
+      ),
+    ],
   ),
   OpExecuteCallableNV => InstructionInfo(
     "Reserved",
@@ -4537,10 +4477,14 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
       [CapabilityFragmentShaderSampleInterlockEXT, CapabilityFragmentShaderPixelInterlockEXT, CapabilityFragmentShaderShadingRateInterlockEXT],
     ),
   ),
-  OpDemoteToHelperInvocation =>
-    InstructionInfo("Control-Flow", [], RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDemoteToHelperInvocation])),
-  OpDemoteToHelperInvocationEXT =>
-    InstructionInfo("Control-Flow", [], RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDemoteToHelperInvocationEXT])),
+  OpDemoteToHelperInvocation => InstructionInfo(
+    "Control-Flow",
+    [],
+    [
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDemoteToHelperInvocation]),
+      RequiredSupport(VersionRange(v"1.6.0", v"∞"), nothing, [CapabilityDemoteToHelperInvocationEXT]),
+    ],
+  ),
   OpIsHelperInvocationEXT => InstructionInfo(
     "Reserved",
     [OperandInfo(IdResultType, nothing, nothing), OperandInfo(IdResult, nothing, nothing)],
@@ -4888,22 +4832,18 @@ const instruction_infos = Dict{OpCode,InstructionInfo}(
   OpDecorateString => InstructionInfo(
     "Annotation",
     [OperandInfo(IdRef, "'Target'", nothing), OperandInfo(Decoration, nothing, nothing)],
-    RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"], nothing),
-  ),
-  OpDecorateStringGOOGLE => InstructionInfo(
-    "Annotation",
-    [OperandInfo(IdRef, "'Target'", nothing), OperandInfo(Decoration, nothing, nothing)],
-    RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"], nothing),
+    [
+      RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"], nothing),
+      RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"], nothing),
+    ],
   ),
   OpMemberDecorateString => InstructionInfo(
     "Annotation",
     [OperandInfo(IdRef, "'Struct Type'", nothing), OperandInfo(LiteralInteger, "'Member'", nothing), OperandInfo(Decoration, nothing, nothing)],
-    RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"], nothing),
-  ),
-  OpMemberDecorateStringGOOGLE => InstructionInfo(
-    "Annotation",
-    [OperandInfo(IdRef, "'Struct Type'", nothing), OperandInfo(LiteralInteger, "'Member'", nothing), OperandInfo(Decoration, nothing, nothing)],
-    RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"], nothing),
+    [
+      RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"], nothing),
+      RequiredSupport(VersionRange(v"1.4.0", v"∞"), ["SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"], nothing),
+    ],
   ),
   OpVmeImageINTEL => InstructionInfo(
     "@exclude",
