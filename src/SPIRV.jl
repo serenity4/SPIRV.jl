@@ -235,15 +235,20 @@ export
   TessellationExecutionOptions,
   MeshExecutionOptions,
   ShaderInfo, ShaderSource,
+  specialize_shader,
   ShaderCompilationCache,
 
   # Layouts.
   LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanAlignment, VulkanLayout, ShaderLayout, TypeMetadata,
   alignment, dataoffset, datasize, stride,
   serialize, deserialize,
+  serialize!, deserialize!,
 
   # SPIR-V array/vector/pointer/image types.
-  Vec, Vec2, Vec3, Vec4,
+  Vec,
+  Vec2, Vec3, Vec4,
+  Vec2U, Vec3U, Vec4U,
+  Vec2I, Vec3I, Vec4I,
   Mat, Mat2, Mat3, Mat4, @mat,
   Arr,
   @load, @store,

@@ -1,3 +1,38 @@
+struct SpecializationData{T}
+  data::Vector{UInt8}
+  info::T
+end
+
+function specialize_shader(source, specializations)
+  (isnothing(specializations) || isempty(specializations)) && return C_NULL
+  SpecializationData(source, specializations)
+end
+
+Base.convert(::Type{Union{Ptr{Cvoid}, T}}, data::SpecializationData{T}) where {T} = data.info
+
+function add_specialization!(specializations::Dictionary, mt::ModuleTarget, name::Symbol, constant::Constant)
+  haskey(specializations, name) && !is_builtin_specialization_constant(name) && error("Multiple arguments are bound to the same specialization constant name `$name`")
+  ids = ResultID[]
+  add_specialization!(ids, mt, constant)
+  set!(specializations, name, ids)
+end
+
+function add_specialization!(ids, mt::ModuleTarget, constant::Constant)
+  !constant.is_spec_const[] && return
+  (; value) = constant
+  if isa(value, Vector{ResultID})
+    for id in value
+      add_specialization!(ids, mt, mt.constants[id])
+    end
+  else
+    id = mt.constants[constant]
+    get!(Metadata, mt.metadata, id).decorate!(DecorationSpecId, UInt32(id))
+    push!(ids, id)
+  end
+end
+
+is_builtin_specialization_constant(name) = name === :local_size
+
 @struct_hash_equal struct ShaderInterface
   execution_model::ExecutionModel
   storage_classes::Vector{StorageClass}
@@ -7,8 +42,12 @@
   execution_options::ShaderExecutionOptions
 end
 
-function ShaderInterface(execution_model::ExecutionModel; storage_classes = [], variable_decorations = Dictionary(),
-  type_metadata = Dictionary(), features = AllSupported(), execution_options = ShaderExecutionOptions(execution_model))
+function ShaderInterface(execution_model::ExecutionModel;
+                         storage_classes = StorageClass[],
+                         variable_decorations = Dictionary{Int, Decorations}(),
+                         type_metadata = Dictionary{DataType, Metadata}(),
+                         features = AllSupported(),
+                         execution_options = ShaderExecutionOptions(execution_model))
   @assert validate(execution_options, execution_model)
   ShaderInterface(execution_model, storage_classes, variable_decorations, type_metadata, features, execution_options)
 end
@@ -18,27 +57,40 @@ function Base.show(io::IO, interface::ShaderInterface)
   print(io, ')')
 end
 
-function IR(target::SPIRVTarget, interface::ShaderInterface)
+function IR(target::SPIRVTarget, interface::ShaderInterface, specializations)
   mt = ModuleTarget()
   tr = Translation(target)
-  variables = Dictionary{Int,Variable}()
-  for (i, sc) in enumerate(interface.storage_classes)
-    if sc ≠ StorageClassFunction
-      t = spir_type(tr.argtypes[i], tr.tmap; storage_class = sc)
-      if sc in (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer)
+  globals = Dictionary{Int,Union{Constant,Variable}}()
+  for (i, storage_class) in enumerate(interface.storage_classes)
+    if represents_constant(storage_class)
+      T = tr.argtypes[i]
+      t = spir_type(T, tr.tmap; storage_class)
+      decs = interface.variable_decorations[i]
+      name, value = @match storage_class begin
+        &StorageClassConstantINTERNAL => (nothing, decs.internal)
+        &StorageClassSpecConstantINTERNAL => decs.internal
+      end
+      id = emit_constant!(mt, tr, value; is_specialization_constant = storage_class == StorageClassSpecConstantINTERNAL)
+      constant = mt.constants[id]
+      constant.type === t || error("For constant argument $i, a value of type `$(typeof(value))` was provided, but its declared type is `$T`")
+      !isnothing(name) && add_specialization!(specializations, mt, name, constant)
+      insert!(globals, i, constant)
+    elseif storage_class ≠ StorageClassFunction
+      t = spir_type(tr.argtypes[i], tr.tmap; storage_class)
+      if storage_class in (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer)
         decorate!(mt, emit!(mt, tr, t), DecorationBlock)
       end
-      ptr_type = PointerType(sc, t)
+      ptr_type = PointerType(storage_class, t)
       var = Variable(ptr_type)
-      insert!(variables, i, var)
+      insert!(globals, i, var)
     end
   end
-  compile!(mt, tr, target, variables)
+  compile!(mt, tr, target, globals)
   fdef = FunctionDefinition(mt, target.mi)
-  ep = define_entry_point!(mt, tr, fdef, interface.execution_model, interface.execution_options)
+  ep = define_entry_point!(mt, tr, specializations, fdef, interface.execution_model, interface.execution_options)
   ir = IR(mt, tr)
   insert!(ir.entry_points, ep.func, ep)
-  make_shader!(ir, fdef, interface, variables)
+  make_shader!(ir, fdef, interface, globals)
 end
 
 """
@@ -49,8 +101,8 @@ The provided interface describes storage locations and decorations for those glo
 
 It is assumed that the function arguments are typed to use the same storage classes.
 """
-function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterface, variables)
-  add_variable_decorations!(ir, variables, interface)
+function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterface, globals)
+  add_variable_decorations!(ir, globals, interface)
   emit_types!(ir)
   add_type_metadata!(ir, interface)
 
@@ -61,14 +113,14 @@ function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterfa
   ir
 end
 
-function define_entry_point!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, model::ExecutionModel, options::ShaderExecutionOptions)
+function define_entry_point!(mt::ModuleTarget, tr::Translation, specializations, fdef::FunctionDefinition, model::ExecutionModel, options::ShaderExecutionOptions)
   main = FunctionDefinition(FunctionType(VoidType(), []))
   ep = EntryPoint(:main, emit!(mt, tr, main), model, [], fdef.global_vars)
 
   # Fill function body.
   blk = new_block!(main, next!(mt.idcounter))
   # The dictionary loses some of its elements to #undef values.
-  #TODO: fix this hack in Dictionaries.jl
+  #TODO: fix this hack in Dictionaries.jl if it still exists.
   fid = findfirst(==(fdef), mt.fdefs.forward)
   push!(blk, @ex next!(mt.idcounter) = OpFunctionCall(fid)::fdef.type.rettype)
   push!(blk, @ex OpReturn())
@@ -76,14 +128,35 @@ function define_entry_point!(mt::ModuleTarget, tr::Translation, fdef::FunctionDe
   model == ExecutionModelFragment && return add_options!(ep, options::FragmentExecutionOptions)
   model == ExecutionModelGeometry && return add_options!(ep, options::GeometryExecutionOptions)
   model in (ExecutionModelTessellationControl, ExecutionModelTessellationEvaluation) && return add_options!(ep, options::TessellationExecutionOptions)
-  model == ExecutionModelGLCompute && return add_options!(ep, options::ComputeExecutionOptions)
+  if model == ExecutionModelGLCompute
+    # Add `local_size` built-in specialization constant, and
+    # set the execution mode to be `LocalSizeId` pointing to it.
+    options::ComputeExecutionOptions
+    (; local_size) = options
+    eltype(local_size) === UInt32 || error("IDs are not allowed in `options.local_size`. You should instead use specialization constants to set the local size at pipeline creation time, if that was your intent.")
+    ids = get!(specializations, :local_size) do
+      res = ResultID[]
+      for i in 1:3
+        id = emit_constant!(mt, tr, local_size[i]; is_specialization_constant = true)
+        add_specialization!(res, mt, mt.constants[id])
+      end
+      res
+    end
+    for (i, id) in enumerate(ids)
+      constant = mt.constants[id]
+      constant.value::UInt32 ≠ local_size[i] && (mt.constants[id] = @set constant.value = local_size[i])
+    end
+    return add_options!(ep, @set options.local_size = ntuple(i -> ids[i], 3))
+  end
   model in (ExecutionModelMeshNV, ExecutionModelMeshEXT) && return add_options!(ep, options::MeshExecutionOptions)
   add_options!(ep, options::CommonExecutionOptions)
 end
 
-function add_variable_decorations!(ir::IR, variables, interface::ShaderInterface)
+function add_variable_decorations!(ir::IR, globals, interface::ShaderInterface)
   for (i, decs) in pairs(interface.variable_decorations)
-    merge_metadata!(ir, ir.global_vars[variables[i]], Metadata(decs))
+    x = globals[i]
+    isa(x, Constant) && continue
+    merge_metadata!(ir, ir.global_vars[x], Metadata(decs))
   end
 end
 

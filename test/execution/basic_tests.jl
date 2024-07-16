@@ -1,5 +1,5 @@
 @testset "Checking basic execution" begin
-  # XXX: It's possible most of these are already optimized away before SPIR-V codegen.
+  # XXX: It's possible some of these are already optimized away before SPIR-V codegen.
   # If that is the case, we could prevent that by using opaque arguments (e.g. provided via buffers).
   @test execute(:(3F + 6F)) === 9F
   @test execute(:(3.0 + 12.0)) === 15.0
@@ -11,4 +11,30 @@
   @test execute(:(one(Vec3) != one(Vec3))) === false
   @test execute(:(convert(Float32, true))) === 1f0
   @test execute(:(zero(SVector{3,Float32}))) === zero(SVector{3,Float32})
+
+  @testset "Setting constants and specialization constants" begin
+    shader = @compute (function (out, value::T) where {T}
+      @store out::T = value
+    end)(::DeviceAddressBlock::PushConstant, ::UInt32::Constant{5U})
+    @test execute(ShaderSource(shader), device, UInt32) === 5U
+
+    shader = @compute (function (out, value::T) where {T}
+      @store out::T = value
+    end)(::DeviceAddressBlock::PushConstant, ::UInt32::Constant{value = 5U})
+    @test execute(ShaderSource(shader), device, UInt32) === 5U
+    @test execute(ShaderSource(shader), device, UInt32; specializations = (; value = 10U)) === 10U
+  end
+
+  @testset "Setting the workgroup size" begin
+    shader = @compute (function (out, value::T) where {T}
+      @store out::T = value
+    end)(::DeviceAddressBlock::PushConstant, ::Vec3U::Input{WorkgroupSize})
+    @test execute(ShaderSource(shader), device, Vec3U) == Vec3U(shader.info.interface.execution_options.local_size)
+
+    shader = @compute (function (out, value::T) where {T}
+      @store out::T = value
+    end)(::DeviceAddressBlock::PushConstant, ::Vec3U::Input{WorkgroupSize}) options = ComputeExecutionOptions(local_size = (1, 1, 1))
+    @test execute(ShaderSource(shader), device, Vec3U) == Vec3U(shader.info.interface.execution_options.local_size)
+    @test execute(ShaderSource(shader), device, Vec3U; specializations = (; local_size = Vec3U(16, 16, 2))) == Vec3U(16, 16, 2)
+  end
 end;

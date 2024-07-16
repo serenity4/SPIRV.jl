@@ -141,6 +141,16 @@ shader2!(color) = color.a = 1F
     @test argtypes == [:(Arr{128, Float32}), :Vec3]
     @test scs == [SPIRV.StorageClassWorkgroup, SPIRV.StorageClassInput]
 
+    argtypes, scs, vardecs = shader_decorations(:(any_shader(::Vec3U::Input{WorkgroupSize}, ::UInt32::Constant{1U}, ::Vec2::Constant{uv = zero(Vec2)})))
+
+    @test argtypes == [:Vec3U, :UInt32, :Vec2]
+    @test scs == [SPIRV.StorageClassSpecConstantINTERNAL, SPIRV.StorageClassConstantINTERNAL, SPIRV.StorageClassSpecConstantINTERNAL]
+    @test vardecs == dictionary([
+      1 => Decorations(SPIRV.DecorationInternal, :local_size => one(Vec3U)),
+      2 => Decorations(SPIRV.DecorationInternal, 1U),
+      3 => Decorations(SPIRV.DecorationInternal, :uv => zero(Vec2)),
+    ])
+
     @testset "Shader cache" begin
       cache = ShaderCompilationCache()
       @test cache.diagnostics.misses == cache.diagnostics.hits == 0
@@ -208,10 +218,18 @@ shader2!(color) = color.a = 1F
     shader = @fragment features = SUPPORTED_FEATURES ((out_color, frag_color) -> out_color[] = frag_color)(::Vec4::Output, ::Vec4::Input)
     @test unwrap(validate(shader))
 
-    compute_shader = @compute features = SUPPORTED_FEATURES (function (buffer, index)
+    shader = @compute features = SUPPORTED_FEATURES (function (buffer, index)
         buffer[index] = buffer[index] + 1U
       end)(::Arr{128, Float32}::Workgroup, ::UInt32::Input{LocalInvocationIndex})
-    @test unwrap(validate(compute_shader))
+    @test unwrap(validate(shader))
+
+    shader = @compute features = SUPPORTED_FEATURES ((size, val, uv) -> nothing)(::Vec3U::Input{WorkgroupSize}, ::UInt32::Constant{8U}, ::Vec2::Constant{uv = zero(Vec2)}) options = ComputeExecutionOptions(local_size = (3, 5, 10))
+    @test unwrap(validate(shader))
+    m = SPIRV.Module(shader)
+    @test count(inst -> inst.opcode == SPIRV.OpSpecConstant && inst.arguments[1] ≠ 0U, m) == 3
+    source = ShaderSource(shader)
+    @test length(source.specializations[:local_size]) == 3
+    @test length(source.specializations[:uv]) == 2
 
     @testset "Barrier instructions" begin
       shader = @compute features = SUPPORTED_FEATURES (function ()

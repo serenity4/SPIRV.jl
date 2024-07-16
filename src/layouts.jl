@@ -256,7 +256,7 @@ alignment(layout::VulkanLayout, t::SPIRType) = alignment(layout.alignment, t, st
 function extract_size(t::ArrayType)
   (; size) = t
   !isnothing(size) || throw(ArgumentError("Array types must be sized to extract their size."))
-  !size.is_spec_const || error("Arrays with a size provided by a specialization constants are not supported for size calculations yet.")
+  !size.is_spec_const[] || error("Arrays with a size provided by a specialization constants are not supported for size calculations.")
   isa(size.value, Integer) || error("Expected an integer array size, got ", size.value)
   size.value
 end

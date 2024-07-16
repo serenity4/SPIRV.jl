@@ -60,14 +60,13 @@ end
 
 compile(target::SPIRVTarget, args...) = compile!(ModuleTarget(), Translation(target), target, args...)
 
-function compile!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables::Dictionary{Int,Variable} = Dictionary{Int,Variable}())
-  # TODO: restructure CFG
-  emit!(mt, tr, target, variables)
+function compile!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals::Dictionary{Int,Union{Constant,Variable}} = Dictionary{Int,Union{Constant,Variable}}())
+  emit!(mt, tr, target, globals)
   mt
 end
 
-function compile!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, features::FeatureSupport, variables = Dictionary{Int,Variable}())
-  mt = compile!(mt, tr, target, variables)
+function compile!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, features::FeatureSupport, globals = Dictionary{Int,Union{Constant,Variable}}())
+  mt = compile!(mt, tr, target, globals)
   ir = IR(mt, tr)
   satisfy_requirements!(ir, features)
 end
@@ -156,13 +155,13 @@ function Base.showerror(io::IO, err::CompilationError)
   println(io)
 end
 
-function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables = Dictionary{Int,Variable}())
+function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals = Dictionary{Int,Union{Constant,Variable}}())
   push!(target.interp.debug.stacktrace, DebugFrame(target.mi, target.code))
   # Declare a new function.
   local fdef
   try
     # Fill the SPIR-V function with instructions generated from the target's inferred code.
-    fdef = define_function!(mt, tr, target, variables)
+    fdef = define_function!(mt, tr, target, globals)
   catch e
     throw_compilation_error(e, (; target))
   end
@@ -171,7 +170,12 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables
   arg_idx = 0
   gvar_idx = 0
   for (i, argument) in pairs(tr.argmap)
-    argid = haskey(variables, i) ? fdef.global_vars[gvar_idx += 1] : fdef.args[arg_idx += 1]
+    x = get(globals, i, nothing)
+    argid = @match x begin
+      ::Variable => fdef.global_vars[gvar_idx += 1]
+      ::Constant => mt.constants[x]
+      nothing => fdef.args[arg_idx += 1]
+    end
     insert!(tr.args, argument, argid)
     set_name!(mt, argid, target.code.slotnames[argument.n])
   end
@@ -192,23 +196,24 @@ function mangled_name(mi::MethodInstance)
   Symbol(replace(sig, ' ' => ""))
 end
 
-function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, variables::Dictionary{Int,Variable})
+function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals::Dictionary{Int,Union{Constant,Variable}})
   argtypes = SPIRType[]
   global_vars = ResultID[]
   (; mi) = target
 
   for (i, T) in enumerate(tr.argtypes)
+    x = get(globals, i, nothing)
+    isa(x, Constant) && continue
     t = spir_type(T, tr.tmap; wrap_mutable = true)
-    var = get(variables, i, nothing)
-    @switch var begin
+    @switch x begin
       @case ::Nothing
       push!(argtypes, t)
       @case ::Variable
-      @switch var.storage_class begin
+      @switch x.storage_class begin
         @case &StorageClassFunction
         push!(argtypes, t)
         @case ::StorageClass
-        push!(global_vars, emit!(mt, tr, var))
+        push!(global_vars, emit!(mt, tr, x))
       end
     end
   end
@@ -228,22 +233,23 @@ end
 emit!(mt::ModuleTarget, tr::Translation, @nospecialize(type::SPIRType)) = emit_type!(mt.types, mt.idcounter, mt.constants, tr.tmap, type)
 emit!(mt::ModuleTarget, tr::Translation, c::Constant) = emit_constant!(mt.constants, mt.idcounter, mt.types, tr.tmap, c)
 
-emit_constant!(mt::ModuleTarget, tr::Translation, value) = emit_constant!(mt.constants, mt.idcounter, mt.types, tr.tmap, Constant(value, mt, tr))
+emit_constant!(mt::ModuleTarget, tr::Translation, value; is_specialization_constant = false) = emit_constant!(mt.constants, mt.idcounter, mt.types, tr.tmap, Constant(value, mt, tr; is_specialization_constant))
 
-Constant(value::GlobalRef, mt::ModuleTarget, tr::Translation) = Constant(follow_globalref(value, mt, tr), mt, tr)
-Constant(value::BitMask, mt::ModuleTarget, tr::Translation) = Constant(value.val, mt, tr)
-Constant(value::QuoteNode, mt::ModuleTarget, tr::Translation) = Constant(value.value, mt, tr)
+Constant(value::GlobalRef, mt::ModuleTarget, tr::Translation; is_specialization_constant = false) = Constant(follow_globalref(value, mt, tr), mt, tr; is_specialization_constant)
+Constant(value::BitMask, mt::ModuleTarget, tr::Translation; is_specialization_constant = false) = Constant(value.val, mt, tr; is_specialization_constant)
+Constant(value::QuoteNode, mt::ModuleTarget, tr::Translation; is_specialization_constant = false) = Constant(value.value, mt, tr; is_specialization_constant)
 
-function Constant(value::T, mt::ModuleTarget, tr::Translation) where {T}
+function Constant(value::T, mt::ModuleTarget, tr::Translation; is_specialization_constant = false) where {T}
   t = spir_type(T, tr.tmap)
-  !iscomposite(t) && return Constant(value, t)
+  is_spec_const = is_specialization_constant ? Ref(true) : IS_SPEC_CONST_FALSE
+  !iscomposite(t) && return Constant(value, t, is_specialization_constant ? Ref(true) : IS_SPEC_CONST_FALSE)
   ids = @match t begin
-    ::VectorType || ::ArrayType => [emit_constant!(mt, tr, value[i]) for i in eachindex(value)]
-    ::MatrixType => [emit_constant!(mt, tr, col) for col in columns(mat)]
-    ::StructType => [emit_constant!(mt, tr, getproperty(value, name)) for name in fieldnames(T)]
+    ::VectorType || ::ArrayType => [emit_constant!(mt, tr, value[i]; is_specialization_constant) for i in 1:length(value)]
+    ::MatrixType => [emit_constant!(mt, tr, col; is_specialization_constant) for col in columns(mat)]
+    ::StructType => [emit_constant!(mt, tr, getproperty(value, name); is_specialization_constant) for name in fieldnames(T)]
     _ => error("Unexpected composite type `$t`")
   end
-  Constant(ids, t)
+  Constant(ids, t, ifelse(is_specialization_constant, IS_SPEC_CONST_TRUE, IS_SPEC_CONST_FALSE))
 end
 
 function emit!(mt::ModuleTarget, tr::Translation, var::Variable)

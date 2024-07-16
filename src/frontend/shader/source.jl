@@ -25,10 +25,11 @@ SPIR-V shader code, with stage and entry point information.
 @refbroadcast struct ShaderSource
   code::Vector{UInt8}
   info::ShaderInfo
+  specializations::Dictionary{Symbol, Vector{ResultID}}
 end
 
 function Base.show(io::IO, source::ShaderSource)
-  print(io, typeof(source), '(', source.info.interface.execution_model, ", ", length(source.code), " bytes)")
+  print(io, typeof(source), '(', source.info.interface.execution_model, ", ", length(source.code), " bytes, ", length(source.specializations), " specialization constants)")
 end
 
 ShaderSource(info::ShaderInfo; validate::Bool = true) = ShaderSource(Shader(info); validate)

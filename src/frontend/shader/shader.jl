@@ -7,6 +7,7 @@ end
   ir::IR
   entry_point::ResultID
   info::ShaderInfo
+  specializations::Dictionary{Symbol, Vector{ResultID}}
 end
 
 @forward_methods Shader field = :ir Module assemble
@@ -23,7 +24,8 @@ end
 
 function Shader(info::ShaderInfo)
   target = SPIRVTarget(info.mi, info.interp)
-  ir = IR(target, info.interface)
+  specializations = Dictionary{Symbol, Vector{ResultID}}()
+  ir = IR(target, info.interface, specializations)
   merge_layout!(info.layout, ir)
   main = entry_point(ir, :main).func
   satisfy_requirements!(ir, info.interface.features)
@@ -31,7 +33,7 @@ function Shader(info::ShaderInfo)
   add_type_layouts!(ir, info.layout)
   add_align_operands!(ir, ir.fdefs[main], info.layout)
 
-  Shader(ir, main, info)
+  Shader(ir, main, info, specializations)
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", shader::Shader)
@@ -56,7 +58,7 @@ function ShaderSource(shader::Shader; validate::Bool = true)
       throw(err)
     end
   end
-  ShaderSource(reinterpret(UInt8, assemble(shader)), shader.info)
+  ShaderSource(reinterpret(UInt8, assemble(shader)), shader.info, shader.specializations)
 end
 
 """
@@ -88,12 +90,23 @@ function compile_shader_ex(ex::Expr, __module__, execution_model::ExecutionModel
   compile_shader_ex(f, :($Tuple{$(argtypes...)}), interface; cache, assemble, layout, interpreter)
 end
 
+function tryeval(__module__, ex)
+  try
+    Base.eval(__module__, ex)
+  catch
+    @error "An error occurred while evaluating the following user-provided expression in module `$(nameof(__module__))`:\n\n    $ex"
+    rethrow()
+  end
+end
+
 """
     shader_decorations(ex, __module__ = @__MODULE__)
 
 Extract built-in and decoration annotations from an `Expr` following the pattern
 
 $DOCSTRING_SIGNATURE_PATTERN
+
+`Location` decorations will be automatically generated for `Input` and `Output`s, and must not be user-provided.
 """
 function shader_decorations(ex::Expr, __module__ = @__MODULE__)
   f, args = @match ex begin
@@ -107,16 +120,22 @@ function shader_decorations(ex::Expr, __module__ = @__MODULE__)
   output_location = -1
   i = firstindex(args)
   for arg in args
+    is_user_defined_specialization_constant = true
     @switch arg begin
       @case :(::$T::$C)
-      sc, decs = @match C begin
-        Expr(:curly, sc, decs...) => (get_storage_class(sc), collect(decs))
-        C => (get_storage_class(C), [])
+      if C == :(Input{WorkgroupSize})
+        C = :(Constant{local_size = $(one(Vec3U))})
+        is_user_defined_specialization_constant = false
       end
+      name, decs = @match C begin
+        Expr(:curly, sc, decs...) => (sc, collect(decs))
+        C => (C, [])
+      end
+      sc = get_storage_class(name, decs)
       has_decorations = !isempty(decs)
       isnothing(sc) && throw(ArgumentError("Unknown storage class provided in $(repr(arg))"))
       push!(storage_classes, sc)
-      if sc in (StorageClassInput, StorageClassOutput) && has_decorations
+      if in(sc, (StorageClassInput, StorageClassOutput)) && has_decorations
         # Look if there are any decorations which declare the argument as a built-in variable.
         # We assume that there must be only one such declaration at maximum.
         for (j, dec) in enumerate(decs)
@@ -129,17 +148,36 @@ function shader_decorations(ex::Expr, __module__ = @__MODULE__)
           !isempty(other_builtins) && throw(ArgumentError("More than one built-in decoration provided: $(join([builtin; other_builtins], ", "))"))
         end
       end
-      for dec in decs
-        (name, args) = @match dec begin
-          Expr(:macrocall, name, source, args...) => (Symbol(string(name)[2:end]), collect(args))
-          _ => error("Expected macrocall (e.g. `@DescriptorSet(1)`), got $dec")
+      if represents_constant(sc)
+        length(decs) == 1 || throw(ArgumentError("In `Constant`, expected a single parameter, got $(length(decs)) parameters"))
+        dec = decs[1]
+        if sc === StorageClassSpecConstantINTERNAL
+          @match dec begin
+            :($lhs = $rhs) => begin
+              value = Base.eval(__module__, rhs)
+              isa(lhs, Symbol) || throw(ArgumentError("Expected `Symbol` as specialization constant name in `$ex`, got `$name`"))
+              is_user_defined_specialization_constant && is_builtin_specialization_constant(lhs) && throw(ArgumentError("Specialization constant `$lhs` is a reserved built-in; use another name."))
+              get!(Decorations, variable_decorations, i).decorate!(DecorationInternal, lhs => value)
+            end
+            _ => throw(ArgumentError("`name = value` expression expected as specialization constant parameter, got `$dec`"))
+          end
+        elseif sc === StorageClassConstantINTERNAL
+          value = tryeval(__module__, dec)
+          get!(Decorations, variable_decorations, i).decorate!(DecorationInternal, value)
         end
-        concrete_dec = get_decoration(name)
-        isnothing(concrete_dec) && throw(ArgumentError("Unknown decoration $name in $(repr(arg))"))
-        for (k, arg) in enumerate(args)
-          Meta.isexpr(arg, :$, 1) && (args[k] = Base.eval(__module__, arg.args[1]))
+      else
+        for dec in decs
+          (name, args) = @match dec begin
+            Expr(:macrocall, name, source, args...) => (Symbol(string(name)[2:end]), collect(args))
+            _ => error("Expected macrocall (e.g. `@DescriptorSet(1)`), got $dec")
+          end
+          concrete_dec = get_decoration(name)
+          isnothing(concrete_dec) && throw(ArgumentError("Unknown decoration $name in $(repr(arg))"))
+          for (k, arg) in enumerate(args)
+            Meta.isexpr(arg, :$, 1) && (args[k] = Base.eval(__module__, arg.args[1]))
+          end
+          get!(Decorations, variable_decorations, i).decorate!(concrete_dec, args...)
         end
-        get!(Decorations, variable_decorations, i).decorate!(concrete_dec, args...)
       end
       if sc in (StorageClassInput, StorageClassOutput) && (!has_decorations || begin
             list = variable_decorations[i]
@@ -170,8 +208,14 @@ function get_enum_if_defined(dec, ::Type{T}) where {T}
   value::T
 end
 
+represents_constant(sc::StorageClass) = in(sc, (StorageClassConstantINTERNAL, StorageClassSpecConstantINTERNAL))
+
 get_builtin(dec) = get_enum_if_defined(dec, BuiltIn)
-get_storage_class(dec) = get_enum_if_defined(dec, StorageClass)
+function get_storage_class(name, decs)
+  name !== :Constant && return get_enum_if_defined(name, StorageClass)
+  Meta.isexpr(decs[1], :(=), 2) && return StorageClassSpecConstantINTERNAL
+  StorageClassConstantINTERNAL
+end
 get_decoration(dec) = get_enum_if_defined(dec, Decoration)
 
 const HAS_WARNED_ABOUT_CACHE = Threads.Atomic{Bool}(false)

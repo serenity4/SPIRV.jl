@@ -51,10 +51,10 @@ Base.size(image::Image, lod::UInt32) = ImageQuerySizeLod(image, lod)
 Base.size(image::Image, lod::Integer) = size(image, convert(UInt32, lod))
 Base.length(image::Image) = foldl(*, size(image))
 
-@noinline ImageQuerySize(image::Image{<:Any,Dim2D})::Vec{2,UInt32} = Vec{2,UInt32}(size(image.data)...)
+@noinline ImageQuerySize(image::Image{<:Any,Dim2D})::Vec2U = Vec2U(size(image.data)...)
 @noinline ImageQuerySize(image::Image{<:Any,Dim3D})::Vec{3,UInt32} = Vec{3,UInt32}(size(image.data)...)
 
-@noinline ImageQuerySizeLod(image::Image{<:Any,Dim2D}, lod)::Vec{2,UInt32} = Vec{2,UInt32}(size(image.data)...)
+@noinline ImageQuerySizeLod(image::Image{<:Any,Dim2D}, lod)::Vec2U = Vec2U(size(image.data)...)
 @noinline ImageQuerySizeLod(image::Image{<:Any,Dim3D}, lod)::Vec{3,UInt32} = Vec{3,UInt32}(size(image.data)...)
 
 @noinline function ImageRead(img::Image{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,T}, coord::Union{Vec{<:Any,<:BitInteger},BitInteger})::T where {T}

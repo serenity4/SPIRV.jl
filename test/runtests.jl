@@ -2,8 +2,7 @@ using SPIRV, Test
 using SPIRV: @compute, @vertex, @fragment, @compute, @any_hit, @mesh, Sampler, Image, Pointer
 using SPIRV.MathFunctions
 using StaticArrays
-
-include("vulkan_driver.jl")
+using Vulkan: Vk
 
 resource(filename) = joinpath(@__DIR__, "resources", filename)
 read_module(file) = read(joinpath(@__DIR__, "modules", file * (last(splitext(file)) == ".jl" ? "" : ".jl")), String)

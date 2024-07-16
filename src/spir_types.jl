@@ -73,10 +73,15 @@ struct SampledImageType <: SPIRType
   image_type::ImageType
 end
 
+const IS_SPEC_CONST_FALSE = Ref(false)
+const IS_SPEC_CONST_TRUE = Ref(true)
+
 @struct_hash_equal struct Constant
   value::Any
   type::SPIRType
-  is_spec_const::Bool
+  # Use a `Ref` so that specialization constants are unique.
+  # Do NOT modify the underlying value.
+  is_spec_const::Base.RefValue{Bool}
 end
 function Constant(value::T) where {T}
   isprimitivetype(T) && return Constant(value, spir_type(T))
@@ -84,7 +89,7 @@ function Constant(value::T) where {T}
   # Disallow composite types, as we don't want to generate new `StructTypes`.
   error("A type must be provided for the constant $value")
 end
-Constant(value, type) = Constant(value, type, false)
+Constant(value, type) = Constant(value, type, IS_SPEC_CONST_FALSE)
 Constant(node::QuoteNode, type) = Constant(node.value, type)
 
 struct ArrayType <: SPIRType

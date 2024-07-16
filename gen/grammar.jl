@@ -21,6 +21,10 @@ function generate_enum(enum)
     isa(value, String) && (value = parse(UInt32, value))
     :($name = $value)
   end
+  # Add `Constant` and `SpecConstant` storage classes, that SPIRV.jl will want to piggy-back on.
+  kind === :StorageClass && push!(values, :(StorageClassConstantINTERNAL = 10000), :(StorageClassSpecConstantINTERNAL = 10001))
+  # Same for an `Internal` decoration.
+  kind === :Decoration && push!(values, :(DecorationInternal = 10000))
   if enum[:category] == "BitEnum"
     :(@bitmask $kind::UInt32 begin
       $(values...)

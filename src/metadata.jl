@@ -25,6 +25,7 @@ mutable struct Decorations
   max_byte_offset_id::ResultID
   counter_buffer::ResultID
   user_semantic::String
+  internal::Any
   Decorations() = new(Set{Decoration}())
 end
 
@@ -59,12 +60,13 @@ has_decoration(decs::Decorations, dec::Decoration) = dec in decs.defined
 function decorate!(decs::Decorations, dec::Decoration, args...)
   info = get(enum_infos, dec, nothing)
   if isnothing(info)
-    @error "Unknown decoration $dec($(join([arg, args...], ", ")))"
-    return decs
-  end
-  if length(args) ≠ length(info.parameters)
-    # No variable-length parameters or optional parameters are available as of this writing in SPIR-V.
-    throw(ArgumentError(string("Invalid number of arguments for ", dec, ": expected ", iszero(length(info.parameters)) ? "no arguments" : join(format_parameter.(info.parameters), ", "), ", got ", length(args), " arguments")))
+    dec === DecorationInternal || error("Unknown decoration $dec($(join([args...], ", ")))")
+    @assert length(args) == 1 "Only one argument is allowed for DecorationInternal"
+  else
+    if length(args) ≠ length(info.parameters)
+      # No variable-length parameters or optional parameters are available as of this writing in SPIR-V.
+      throw(ArgumentError(string("Invalid number of arguments for ", dec, ": expected ", iszero(length(info.parameters)) ? "no arguments" : join(format_parameter.(info.parameters), ", "), ", got ", length(args), " arguments")))
+    end
   end
 
   push!(decs.defined, dec)
@@ -97,6 +99,7 @@ function decorate!(decs::Decorations, dec::Decoration, args...)
     @case &DecorationMaxByteOffsetId     ; setproperty!(decs, :max_byte_offset_id, arg)
     @case &DecorationCounterBuffer       ; setproperty!(decs, :counter_buffer, arg)
     @case &DecorationUserSemantic        ; setproperty!(decs, :user_semantic, arg)
+    @case &DecorationInternal            ; setproperty!(decs, :internal, arg)
     @case _                              ; error("Not implemented for ", dec)
   end
   decs
@@ -131,6 +134,7 @@ end
 append_decorations!(insts, id::ResultID, decs::Decorations, member_index::Signed) = append_decorations!(insts, id, decs, UInt32(member_index - 1))
 function append_decorations!(insts, id::ResultID, decs::Decorations, member_index::Optional{UInt32} = nothing)
   for dec in sort(collect(decs.defined))
+    dec === DecorationInternal && continue
     inst = instruction(decs, dec, member_index)
     if !isnothing(inst)
       pushfirst!(inst.arguments, id)
@@ -140,8 +144,10 @@ function append_decorations!(insts, id::ResultID, decs::Decorations, member_inde
 end
 
 function extract(f, decs::Decorations, dec::Decoration)
-  nargs_max = length(enum_infos[Decoration].enumerants[UInt32(dec)].parameters)
-  iszero(nargs_max) && return f(dec, nothing)
+  if dec !== DecorationInternal
+    nargs_max = length(enum_infos[Decoration].enumerants[UInt32(dec)].parameters)
+    iszero(nargs_max) && return f(dec, nothing)
+  end
   @match dec begin
     &DecorationSpecId               => f(dec, decs.spec_id)
     &DecorationArrayStride          => f(dec, decs.array_stride)
@@ -168,6 +174,7 @@ function extract(f, decs::Decorations, dec::Decoration)
     &DecorationMaxByteOffsetId      => f(dec, decs.max_byte_offset_id)
     &DecorationCounterBuffer        => f(dec, decs.counter_buffer)
     &DecorationUserSemantic         => f(dec, decs.user_semantic)
+    &DecorationInternal             => f(dec, decs.internal)
     _ => @error "Unknown decoration $dec"
   end
 end

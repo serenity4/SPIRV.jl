@@ -79,14 +79,14 @@ function Expression(c::Constant, id::ResultID)
       type.width == 16 ? UInt32(reinterpret(UInt16, c.value)) :
       error("Expected width to be a power of two starting from 8, got a width of $(type.width)")
   end
-  @match (c.value, c.is_spec_const) begin
+  @match (c.value, c.is_spec_const[]) begin
     (::Nothing, _) => @ex id = OpConstantNull()::type
     (true, false) => @ex id = OpConstantTrue()::type
     (true, true) => @ex id = OpSpecConstantTrue()::type
     (false, false) => @ex id = OpConstantFalse()::type
     (false, true) => @ex id = OpSpecConstantFalse()::type
-    (ids::AbstractVector{ResultID}, false) => @ex id = OpConstantComposite(ids...)::type
-    (ids::AbstractVector{ResultID}, true) => @ex id = OpSpecConstantComposite(ids...)::type
+    (ids::Vector{ResultID}, false) => @ex id = OpConstantComposite(ids...)::type
+    (ids::Vector{ResultID}, true) => @ex id = OpSpecConstantComposite(ids...)::type
     (GuardBy(isprimitivetype ∘ typeof), false) => @ex id = OpConstant(reinterpret(UInt32, [value]))::type
     (GuardBy(isprimitivetype ∘ typeof), true) => @ex id = OpSpecConstant(reinterpret(UInt32, [value]))::type
     _ => error("Unexpected value $(c.value) with type $type for constant expression")
@@ -118,7 +118,7 @@ function expressions(fdef::FunctionDefinition, id::ResultID)
 end
 
 function append_globals!(insts, globals::GlobalsInfo)
-  all_globals = merge_unique!(BijectiveMapping{ResultID,Any}(), globals.types, globals.constants, globals.global_vars)
+  all_globals = merge_unique!(BijectiveMapping{ResultID,Union{SPIRType, Constant, Variable}}(), globals.types, globals.constants, globals.global_vars)
   sortkeys!(all_globals)
   append!(insts, Instruction(val, id, globals) for (id, val) in pairs(all_globals))
 end

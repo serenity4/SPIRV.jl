@@ -219,17 +219,17 @@ end
 
 function peel_global_vars(args, mt::ModuleTarget, tr::Translation, fdef)
   fargs = []
-  variables = Dictionary{Int,Variable}()
+  globals = Dictionary{Int,Union{Constant,Variable}}()
   for (i, arg) in enumerate(args)
     @switch storage_class(arg, mt, tr, fdef) begin
       @case ::Nothing || &StorageClassFunction
       push!(fargs, arg)
       @case ::StorageClass
       isa(arg, Core.Argument) && (arg = ResultID(arg, tr))
-      insert!(variables, i, mt.global_vars[arg::ResultID])
+      insert!(globals, i, mt.global_vars[arg::ResultID])
     end
   end
-  fargs, variables
+  fargs, globals
 end
 
 function try_getopcode(name, prefix = "")

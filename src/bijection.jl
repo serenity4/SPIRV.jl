@@ -46,10 +46,18 @@ function Dictionaries.sortkeys!(bmap::BijectiveMapping)
 end
 
 function Base.delete!(bmap::BijectiveMapping{T1}, key::T1) where {T1}
-  value = get(bmap.forward, key, nothing)
-  isnothing(value) && return KeyError(key)
+  value = bmap[key]
   delete!(bmap.forward, key)
   delete!(bmap.backward, value)
+  bmap
+end
+
+function Base.setindex!(bmap::BijectiveMapping{T1,T2}, value::T2, key::T1) where {T1, T2}
+  old = bmap[key]
+  delete!(bmap.backward, old)
+  bmap.forward[key] = value
+  insert!(bmap.backward, value, key)
+  bmap
 end
 
 @forward_methods BijectiveMapping field = :forward Base.pairs Base.iterate(_, args...) Base.keys Base.length

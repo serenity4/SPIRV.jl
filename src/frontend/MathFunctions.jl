@@ -7,7 +7,7 @@ supported in SPIR-V.
 """
 module MathFunctions
 
-using ..SPIRV: AbstractSPIRVArray, U, F, Vec
+using ..SPIRV: AbstractSPIRVArray, U, F, Vec, Vec3U
 
 using LinearAlgebra: dot
 import LinearAlgebra: norm, normalize
@@ -97,7 +97,7 @@ end
 
 function linear_index(global_id, workgroup_size)
   cluster_size = foldl(*, workgroup_size)
-  dot(Vec{3,UInt32}(1U, cluster_size, cluster_size^2), global_id)
+  dot(Vec3U(1U, cluster_size, cluster_size^2), global_id)
 end
 
 image_index(linear_index::Integer, (ni, nj)) = (linear_index % ni, linear_index ÷ ni)

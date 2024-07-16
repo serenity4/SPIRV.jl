@@ -1,5 +1,4 @@
 using SPIRV
-using Vulkan
 using StaticArrays
 using Test
 

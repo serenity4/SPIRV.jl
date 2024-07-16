@@ -303,6 +303,8 @@ end
   StorageClassCodeSectionINTEL         = 5605
   StorageClassDeviceOnlyINTEL          = 5936
   StorageClassHostOnlyINTEL            = 5937
+  StorageClassConstantINTERNAL         = 10000
+  StorageClassSpecConstantINTERNAL     = 10001
 end
 
 @cenum Dim::UInt32 begin
@@ -602,6 +604,7 @@ end
   DecorationMMHostInterfaceMaxBurstINTEL       = 6181
   DecorationMMHostInterfaceWaitRequestINTEL    = 6182
   DecorationStableKernelArgumentINTEL          = 6183
+  DecorationInternal                           = 10000
 end
 
 @cenum BuiltIn::UInt32 begin

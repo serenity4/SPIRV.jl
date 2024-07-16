@@ -18,6 +18,14 @@ const Vec2 = Vec{2,Float32}
 const Vec3 = Vec{3,Float32}
 const Vec4 = Vec{4,Float32}
 
+const Vec2U = Vec{2,UInt32}
+const Vec3U = Vec{3,UInt32}
+const Vec4U = Vec{4,UInt32}
+
+const Vec2I = Vec{2,Int32}
+const Vec3I = Vec{3,Int32}
+const Vec4I = Vec{4,Int32}
+
 @noinline (@generated function CompositeConstruct(::Type{Vec{N,T}}, data::T...) where {N,T}
   2 ≤ N ≤ 4 || throw(ArgumentError("SPIR-V vectors must have between 2 and 4 components."))
   Expr(:new, Vec{N,T}, :data)
@@ -32,6 +40,10 @@ Base.zero(T::Type{<:Vec}) = T(ntuple(Returns(zero(eltype(T))), length(T)))
 Base.one(T::Type{<:Vec}) = T(ntuple(Returns(one(eltype(T))), length(T)))
 Base.promote_rule(::Type{Vec{N,T1}}, ::Type{Vec{N,T2}}) where {N,T1,T2} = Vec{N,promote_type(T1, T2)}
 Base.promote_rule(S::Type{<:Scalar}, ::Type{Vec{N,T}}) where {N,T} = Vec{N,promote_type(T, S)}
+# XXX: This seems to cause trouble with type inference in broadcast operations.
+# Base.getindex(v::Vec, index::Integer) = VectorExtractDynamic(v, unsigned_index(index))
+
+@noinline VectorExtractDynamic(v::Vec{<:Any,T}, index::UInt32) where {T} = v.data[index]::T
 
 # Conversions.
 

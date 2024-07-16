@@ -306,7 +306,7 @@ end
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Vec2}, ::Vec{2,Float16})
     @test_code ci minlength = 2 maxlength = 2 # 1 FConvert on vectors, 1 return
 
-    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Vec2}, ::Vec{2,UInt32})
+    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Vec2}, ::Vec2U)
     @test_code ci minlength = 2 maxlength = 2 # 1 ConvertUToF on vectors, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source +(::Vec2, ::Vec{2,Float16})
