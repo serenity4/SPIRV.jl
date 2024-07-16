@@ -10,16 +10,16 @@ struct InterpDebugInfo
 end
 
 # Care is required for anything that impacts:
-# - method_table
-# - inference_params
-# - optimization_params
+# - method_tables
+# - inference_parameters
+# - optimization_parameters
 # The token is compared with `===`.
 
 "Token used for the internal `CodeInstance` caching mechanism."
 struct SPIRVToken
   method_tables::Vector{Core.MethodTable}
-  inf_params::InferenceParams
-  opt_params::OptimizationParams
+  inference_parameters::InferenceParams
+  optimization_parameters::OptimizationParams
 end
 
 const METHOD_TABLES = ScopedValue([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE])
@@ -38,8 +38,8 @@ struct SPIRVInterpreter <: AbstractInterpreter
   local_cache::Vector{InferenceResult}
   "Maximum world in which functions can be used in."
   world::UInt
-  inf_params::InferenceParams
-  opt_params::OptimizationParams
+  inference_parameters::InferenceParams
+  optimization_parameters::OptimizationParams
   debug::InterpDebugInfo
 end
 
@@ -57,21 +57,21 @@ end
 # Constructor adapted from Julia's `NativeInterpreter`.
 function SPIRVInterpreter(
   world::UInt = get_world_counter();
-  inf_params = InferenceParams(
+  inference_parameters = InferenceParams(
     # XXX: this prevents `Base.getproperty(::Vec{2, Float64}, ::Symbol)` from being inlined for some reason.
     aggressive_constant_propagation = false,
     assume_bindings_static = true,
   ),
-  opt_params = OptimizationParams(inlining = true, inline_cost_threshold = 10000)
+  optimization_parameters = OptimizationParams(inlining = true, inline_cost_threshold = 10000)
 )
   method_table = NOverlayMethodTable(world)
   SPIRVInterpreter(
-    SPIRVToken(method_table.tables, inf_params, opt_params),
+    SPIRVToken(method_table.tables, inference_parameters, optimization_parameters),
     method_table,
     InferenceResult[],
     cap_world(world, get_world_counter()),
-    inf_params,
-    opt_params,
+    inference_parameters,
+    optimization_parameters,
     InterpDebugInfo(DebugFrame[]),
   )
 end
@@ -88,8 +88,8 @@ Everything else is similar to the `NativeInterpreter`.
 
 =#
 
-Core.Compiler.InferenceParams(si::SPIRVInterpreter) = si.inf_params
-Core.Compiler.OptimizationParams(si::SPIRVInterpreter) = si.opt_params
+Core.Compiler.InferenceParams(si::SPIRVInterpreter) = si.inference_parameters
+Core.Compiler.OptimizationParams(si::SPIRVInterpreter) = si.optimization_parameters
 Core.Compiler.get_world_counter(si::SPIRVInterpreter) = si.world
 Core.Compiler.get_inference_cache(si::SPIRVInterpreter) = si.local_cache
 Core.Compiler.get_inference_world(si::SPIRVInterpreter) = si.world
@@ -97,7 +97,7 @@ Core.Compiler.cache_owner(interp::SPIRVInterpreter) = interp.global_cache_token
 Core.Compiler.method_table(si::SPIRVInterpreter) = si.method_table
 
 function Base.show(io::IO, interp::SPIRVInterpreter)
-  print(io, SPIRVInterpreter, '(', interp.inf_params, ", ", interp.opt_params, ')')
+  print(io, SPIRVInterpreter, '(', interp.inference_parameters, ", ", interp.optimization_parameters, ')')
 end
 
 function CC.concrete_eval_eligible(interp::SPIRVInterpreter, @nospecialize(f), result::CC.MethodCallResult, arginfo::CC.ArgInfo, sv::CC.InferenceState)
