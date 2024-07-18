@@ -68,7 +68,7 @@ end
 Graphs.inneighbors(dg::DeltaGraph, v) = dg.badjlist[vertex_index(dg, v)]
 Graphs.outneighbors(dg::DeltaGraph, v) = dg.fadjlist[vertex_index(dg, v)]
 
-Graphs.ne(dg::DeltaGraph) = sum(length, dg.fadjlist[vertices(dg)])
+Graphs.ne(dg::DeltaGraph) = sum(length, dg.fadjlist)
 Graphs.nv(dg::DeltaGraph) = length(vertices(dg))
 
 function Graphs.add_vertex!(dg::DeltaGraph; fill_holes = true)

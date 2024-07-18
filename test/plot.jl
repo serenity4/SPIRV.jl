@@ -1,10 +1,11 @@
 # For prototyping; not used during actual tests.
-using SPIRV: SPIRV, IR, ControlFlowGraph
+using SPIRV: SPIRV, IR, ControlFlowGraph, DeltaGraph
 using Graphs: Graphs
 using Plots: plot
 import GraphRecipes
 
 plotcfg(g; names = Graphs.vertices(g), nodesize = 0.3, size = (1000, 1000), kwargs...) = plot(g; names, nodesize, size, kwargs...)
+plotcfg(g::DeltaGraph; kwargs...) = plotcfg(SimpleDiGraph(g); kwargs...)
 plotcfg(tgt::SPIRV.SPIRVTarget; kwargs...) = plotcfg(tgt.cfg; kwargs...)
 plotcfg(cfg::ControlFlowGraph; kwargs...) = plotcfg(cfg.g; kwargs...)
 plotcfg(shader::SPIRV.Shader, args...; kwargs...) = plotcfg(SPIRV.Module(shader), args...; kwargs...)

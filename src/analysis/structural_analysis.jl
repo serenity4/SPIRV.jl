@@ -311,13 +311,19 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
       end
     end
     isnothing(ret) && continue
+    if region_type == REGION_TERMINATION
+      cyclic = cyclic_region!(sccs, abstract_graph, v, ec, doms, domtrees, bedges)
+      # Between a cyclic region and a termination region, choose
+      # the cylic region; termination on the cycle's entry node
+      # is not really a termination, just the natural program flow.
+      if !isnothing(cyclic)
+        (region_type, (v, ws...)) = cyclic
+        ret = (region_type, ws)
+      end
+    end
+    update_control_tree!(control_trees, v, ws, region_type)
 
-    # `ws` must be in reverse post-order.
-    (region_type, ws) = ret
-    region = ControlTree(ControlNode(v, region_type), control_trees[w] for w in [v; ws])
-
-    # Add the new region and merge region vertices.
-    control_trees[v] = region
+    # Merge region vertices.
     if region_type ≠ REGION_SELF_LOOP
       for w in ws
         delete!(control_trees, w)
@@ -327,11 +333,11 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
           e = Edge(w, w′)
           if in(e, bedges)
             delete!(bedges, e)
-            push!(bedges, Edge(v, dst(e)))
+            push!(bedges, Edge(v, w′))
           end
           if in(e, ec.retreating_edges)
             delete!(ec.retreating_edges, e)
-            push!(ec.retreating_edges, Edge(v, dst(e)))
+            push!(ec.retreating_edges, Edge(v, w′))
           end
         end
 
@@ -348,6 +354,29 @@ function ControlTree(cfg::AbstractGraph{T}) where {T}
 
   @assert nv(abstract_graph) == 1 string("Expected to contract the CFG into a single vertex, got ", nv(abstract_graph), " vertices instead.", nv(cfg) > 15 ? "" : string("\n\nShowing the remaining control trees:\n\n", join((sprintc_mime(show, tree) for (v, tree) in pairs(control_trees)), "\n\n")), "\n")
   only(control_trees)
+end
+
+function update_control_tree!(control_trees, v, ws, region)
+  # `ws` must be in reverse post-order.
+  ctree = compact_blocks(control_trees, v, ws, region)
+  control_trees[v] = ctree
+end
+
+function compact_blocks(control_trees, v, ws, region)
+  !in(region, (REGION_BLOCK, REGION_NATURAL_LOOP, REGION_WHILE_LOOP)) && return ControlTree(ControlNode(v, region), control_trees[w] for w in [v; ws])
+  nodes = ControlTree[]
+  for w in ws
+    cctree = control_trees[w]
+    if region_type(cctree) == REGION_BLOCK
+      if all(region_type(x) == REGION_BLOCK for x in children(cctree))
+        isempty(children(cctree)) ? push!(nodes, cctree) : append!(nodes, children(cctree))
+        continue
+      end
+    end
+    push!(nodes, cctree)
+  end
+  pushfirst!(nodes, control_trees[v])
+  ControlTree(ControlNode(v, region), nodes)
 end
 
 function is_structured(ctree::ControlTree)

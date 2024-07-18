@@ -154,6 +154,30 @@ function (::RemapDynamic1BasedIndices)(ir::IR, fdef::FunctionDefinition)
 end
 
 """
+Turn `CompositeExtract(%x, %index)` into `VectorExtractDynamic(%x, %index)` for vector types.
+"""
+struct CompositeExtractToVectorExtractDynamic <: FunctionPass end
+
+composite_extract_to_vector_extract_dynamic!(ir::IR) = CompositeExtractToVectorExtractDynamic()(ir)
+
+function (::CompositeExtractToVectorExtractDynamic)(ir::IR, fdef::FunctionDefinition)
+  for blk in fdef
+    for (i, ex) in enumerate(blk)
+      if ex.op === OpCompositeExtract
+        length(ex) == 2 || continue
+        x = ex[1]::ResultID
+        t = retrieve_type(x, fdef, ir)
+        isa(t, VectorType) || continue
+        index = ex[2]::Union{UInt32, ResultID}
+        isa(index, ResultID) || continue
+        blk[i] = @set ex.op = OpVectorExtractDynamic
+      end
+    end
+  end
+  ir
+end
+
+"""
 Turn `CompositeExtract(%x, %index, %indices...)` into `CompositeExtract(%x, <literal>, <literals...>)`
 assuming that indices are either already literals or [`ResultID`](@ref)s of constant 32-bit unsigned integers.
 """
@@ -431,7 +455,7 @@ function retrieve_type(id::ResultID, fdef::FunctionDefinition, ir::IR)
   @match def begin
     ::Expression => def.type
     ::Variable => def.type.type
-    ::Constant => SPIRType(def, ir.tmap)
+    ::Constant => def.type
     ::ResultID => begin
       # The definition comes from a function argument.
       # We need to extract the type from the function signature.

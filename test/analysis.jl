@@ -42,6 +42,8 @@ g16() = DeltaGraph(1 => 2, 1 => 8, 2 => 3, 2 => 4, 3 => 5, 3 => 6, 5 => 7, 6 => 
 g17() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6)
 "CFG with a loop whose header branches to two blocks that are not the continue target or merge block."
 g18() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 5 => 6, 5 => 2)
+"CFG with a loop and a merge block consisting of multiple sub-blocks."
+g19() = DeltaGraph(1 => 2, 2 => 3, 3 => 2, 2 => 4, 4 => 5, 5 => 6)
 
 test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
 
@@ -275,10 +277,8 @@ end
               ControlTree(2, REGION_BLOCK),
               ControlTree(4, REGION_WHILE_LOOP, [
                 ControlTree(4, REGION_BLOCK),
-                ControlTree(5, REGION_BLOCK, [
-                  ControlTree(5, REGION_BLOCK),
-                  ControlTree(6, REGION_BLOCK),
-                ]),
+                ControlTree(5, REGION_BLOCK),
+                ControlTree(6, REGION_BLOCK),
               ]),
               ControlTree(7, REGION_BLOCK),
             ]),
@@ -315,14 +315,9 @@ end
         @test ctree == ControlTree(1, REGION_BLOCK, [
           ControlTree(1, REGION_BLOCK),
           ControlTree(2, REGION_NATURAL_LOOP, [
-            ControlTree(2, REGION_TERMINATION, [
-              ControlTree(2, REGION_BLOCK),
-              ControlTree(9, REGION_BLOCK),
-            ]),
-            ControlTree(3, REGION_BLOCK, [
-              ControlTree(3, REGION_BLOCK),
-              ControlTree(4, REGION_BLOCK),
-            ]),
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
             ControlTree(5, REGION_BLOCK, [
               ControlTree(5, REGION_IF_THEN_ELSE, [
                 ControlTree(5, REGION_BLOCK),
@@ -332,21 +327,22 @@ end
               ControlTree(8, REGION_BLOCK),
             ]),
           ]),
+          ControlTree(9, REGION_BLOCK),
         ])
 
         g = g7()
         ctree = ControlTree(g)
         test_coverage(g, ctree)
-        @test ctree == ControlTree(1, REGION_IMPROPER, [
-          ControlTree(1, REGION_BLOCK),
-          ControlTree(2, REGION_TERMINATION, [
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_IMPROPER, [
+            ControlTree(1, REGION_BLOCK),
             ControlTree(2, REGION_BLOCK),
-            ControlTree(4, REGION_BLOCK),
+            ControlTree(3, REGION_TERMINATION, [
+              ControlTree(3, REGION_BLOCK),
+              ControlTree(5, REGION_BLOCK),
+            ]),
           ]),
-          ControlTree(3, REGION_TERMINATION, [
-            ControlTree(3, REGION_BLOCK),
-            ControlTree(5, REGION_BLOCK),
-          ]),
+          ControlTree(4, REGION_BLOCK),
         ])
 
         g = g8()
@@ -383,10 +379,8 @@ end
           ControlTree(1, REGION_BLOCK),
           ControlTree(2, REGION_NATURAL_LOOP, [
             ControlTree(2, REGION_BLOCK),
-            ControlTree(3, REGION_BLOCK, [
-              ControlTree(3, REGION_BLOCK),
-              ControlTree(4, REGION_BLOCK),
-            ]),
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
           ]),
         ])
 
@@ -509,13 +503,27 @@ end
         g = g17()
         ctree = ControlTree(g)
         test_coverage(g, ctree)
-        @test_broken ctree == ControlTree(1, REGION_BLOCK, [
+        @test ctree == ControlTree(1, REGION_BLOCK, [
           ControlTree(1, REGION_BLOCK),
-          ControlTree(2, REGION_NATURAL_LOOP, [
+          ControlTree(2, REGION_WHILE_LOOP, [
             ControlTree(2, REGION_BLOCK),
             ControlTree(3, REGION_BLOCK),
             ControlTree(4, REGION_BLOCK),
             ]),
+          ControlTree(5, REGION_BLOCK),
+          ControlTree(6, REGION_BLOCK),
+        ])
+
+        g = g19()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_WHILE_LOOP, [
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+            ]),
+          ControlTree(4, REGION_BLOCK),
           ControlTree(5, REGION_BLOCK),
           ControlTree(6, REGION_BLOCK),
         ])

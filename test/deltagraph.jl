@@ -41,10 +41,13 @@ using SPIRV, Test, Graphs
   @testset "Graph manipulations" begin
     g = DeltaGraph(5, 1 => 2, 2 => 3)
     merge_vertices!(g, 1, 2, 3)
+    @test nv(g) == 3
     @test edges(g) == [Edge(1, 1)]
+    @test ne(g) == 1
 
     add_edge!(g, 1, 4)
     merge_vertices!(g, 4, 5)
     @test edges(g) == [Edge(1, 1), Edge(1, 4)]
+    @test ne(g) == 2
   end
 end;

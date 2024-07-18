@@ -86,10 +86,11 @@ function IR(mt::ModuleTarget, tr::Translation)
   fill_phi_branches!(ir)
   remap_dynamic_1based_indices!(ir)
   egal_to_recursive_equal!(ir)
-  composite_extract_to_access_chain_load!(ir)
   # XXX: Only a handful of operations are propagated, related to index conversions
   # and subtractions coming from Int64 1-based vs UInt32 0-based indexing.
   propagate_constants!(ir)
+  composite_extract_to_vector_extract_dynamic!(ir)
+  composite_extract_to_access_chain_load!(ir)
   composite_extract_dynamic_to_literal!(ir)
   remove_op_nops!(ir)
 end
