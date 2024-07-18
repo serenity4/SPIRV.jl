@@ -214,15 +214,20 @@ end
     end
 
     @testset "Image" begin
-      function sample_some_image(img, sampler)
+      function sample_some_image(img, sampler, uv)
         sampled_image = combine(img, sampler)
-        sampled_image(Vec(1f0, 2f0))
+        sampled_image(uv)
       end
 
-      T = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
-      (; code, ssavaluetypes) = SPIRV.@code_typed sample_some_image(::T, ::Sampler)
-      @test operation.(code[1:(end - 1)]) == [:SampledImage, :CompositeConstruct, :ImageSampleImplicitLod]
-      @test ssavaluetypes[1:(end - 1)] == [SampledImage{T}, Vec{2,Float32}, Vec{4, Float32}]
+      T = image_type(SPIRV.ImageFormatR16f, SPIRV.Dim2D, 0, false, false, 1)
+      (; code, ssavaluetypes) = SPIRV.@code_typed sample_some_image(::T, ::Sampler, ::Vec2)
+      @test operation.(code[1:(end - 1)]) == [:SampledImage, :ImageSampleImplicitLod]
+      @test ssavaluetypes[1:(end - 1)] == [SampledImage{T}, Vec{4, Float32}]
+
+      T = image_type(SPIRV.ImageFormatRg16f, SPIRV.Dim2D, 0, false, false, 1)
+      (; code, ssavaluetypes) = SPIRV.@code_typed sample_some_image(::T, ::Sampler, ::Vec2)
+      @test operation.(code[1:(end - 1)]) == [:SampledImage, :ImageSampleImplicitLod, :CompositeExtract, :CompositeExtract, :CompositeConstruct]
+      @test ssavaluetypes[1:(end - 1)] == [SampledImage{T}, Vec4, Float32, Float32, Vec2]
     end
   end
 

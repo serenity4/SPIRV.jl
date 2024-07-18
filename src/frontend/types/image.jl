@@ -203,9 +203,14 @@ convert_truncate(::Type{Vec{N,T}}, value::Vec{M}) where {N,M,T} = convert_trunca
 (img::SampledImage)(coords::Vec{<:Any,<:IEEEFloat}, lod) = convert_truncate(typeof(img), ImageSampleExplicitLod(img, coords, ImageOperandsLod, lod))
 (img::SampledImage)(coords::V, dx::V, dy::V) where {V<:Vec{<:Any,<:IEEEFloat}} = convert_truncate(typeof(img), ImageSampleExplicitLod(img, coords, ImageOperandsGrad, dx, dy))
 
-@noinline ImageSampleImplicitLod(img::SampledImage, coord) = zero(sampled_type(img))
-@noinline ImageSampleExplicitLod(img::SampledImage, coord, lod_operand::SPIRV.ImageOperands, lod::Number) = zero(sampled_type(img))
-@noinline ImageSampleExplicitLod(img::SampledImage, coord, grad_operand::SPIRV.ImageOperands, dx, dy) = zero(sampled_type(img))
+function dummy_sample(img::SampledImage)
+  T = sampled_type(img)
+  (Base.@invokelatest zero(T::Type{T}))::T
+end
+
+@noinline ImageSampleImplicitLod(img::SampledImage, coord) = dummy_sample(img)
+@noinline ImageSampleExplicitLod(img::SampledImage, coord, lod_operand::SPIRV.ImageOperands, lod::Number) = dummy_sample(img)
+@noinline ImageSampleExplicitLod(img::SampledImage, coord, grad_operand::SPIRV.ImageOperands, dx, dy) = dummy_sample(img)
 
 @noinline DPdx(p) = p
 @noinline DPdy(p) = p
