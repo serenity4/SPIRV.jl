@@ -47,6 +47,7 @@ const Optional{T} = Union{Nothing,T}
 
 struct LiteralType{T} end
 Base.:(*)(x, ::Type{LiteralType{T}}) where {T} = T(x)
+Base.getindex(::Type{LiteralType{T}}, values...) where {T} = getindex(T, values...)
 
 """
     x*I

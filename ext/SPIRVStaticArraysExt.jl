@@ -161,18 +161,16 @@ for (VT, MT) in zip((:SVector, :MVector), (:SMatrix, :MMatrix))
         @eval Base.broadcasted(::typeof($f), v1::T, v2::T) where {T<:$VT{$N,<:$XT}} = $opX(v1, v2)
       end
     end
-
-    # Linear algebra operations.
-    for (f, op, code) in zip((:dot,), (:Dot,), (:(sum(v1 * v2)),))
-      @eval @override $f(v1::$VT{$N,T}, v2::$VT{$N,T}) where {T<:IEEEFloat} = $op(promote(v1, v2)...)
-      @eval $f(v1::$VT{$N}, v2::Vec{$N}) = $f(promote(v1, v2)...)
-      @eval $f(v1::Vec{$N}, v2::$VT{$N}) = $f(promote(v1, v2)...)
-      @eval @noinline $op(v1::T, v2::T) where {T<:$VT{$N,<:IEEEFloat}} = $code
-
-      # Allow usage of promotion rules for these operations.
-      @eval $op(v1::$VT{$N,<:$IEEEFloat}, v2::$VT{$N,<:$IEEEFloat}) = $op(promote(v1, v2)...)
-    end
   end
+
+  @eval @override dot(x::T, y::T) where {T<:$VT{<:Any,<:IEEEFloat}} = Dot(x, y)
+  @eval @noinline Dot(x::$VT{N}, y::$VT{N}) where {N} = sum(x .* y)
+  @eval @override dot(x::T, y::T) where {T<:$VT{<:Any,<:BitUnsigned}} = UDot(x, y)
+  @eval @noinline UDot(x::$VT{N}, y::$VT{N}) where {N} = sum(x .* y)
+  @eval @override dot(x::T, y::T) where {T<:$VT{<:Any,<:BitSigned}} = SDot(x, y)
+  @eval @noinline SDot(x::$VT{N}, y::$VT{N}) where {N} = sum(x .* y)
+  @eval @override dot(x::$VT{N,<:BitSigned}, y::$VT{N,<:BitUnsigned}) where {N} = SUDot(x, y)
+  @eval @noinline SUDot(x::$VT{N}, y::$VT{N}) where {N} = sum(x .* y)
 
   ## Unary vector operations.
   for (f, op) in zip((:ceil, :exp, :-), (:Ceil, :Exp, :FNegate))
