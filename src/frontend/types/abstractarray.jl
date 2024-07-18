@@ -21,9 +21,6 @@ Base.setindex!(arr::AbstractSPIRVArray, value, indices...) = setindex!(arr, conv
 Base.setindex!(arr::AbstractSPIRVArray{T}, value::T, indices::Integer...) where {T} = Store(AccessChain(arr, unsigned_index.(indices)...), value)
 Base.setindex!(arr1::AbstractSPIRVArray, arr2::AbstractSPIRVArray) = Store(arr1, convert(typeof(arr1), arr2))
 
-@override getindex(v::Vector, index::Integer) = AccessChain(v, unsigned_index(index))[]
-@override setindex!(v::Vector{T}, value::T, index::Integer) where {T} = Store(AccessChain(v, unsigned_index(index)), value)
-
 Base.eltype(::Type{<:AbstractSPIRVArray{T}}) where {T} = T
 Base.firstindex(T::Type{<:AbstractSPIRVArray}, d = 1) = 1U
 Base.lastindex(T::Type{<:AbstractSPIRVArray}, d) = unsigned_index(size(T)[d])
@@ -43,20 +40,11 @@ end
   Store(ptr, x)
 end
 
-@generated Base.foldl(f::F, xs::AbstractSPIRVArray) where {F<:Function} =
-  foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex(xs)[2:end]; init = :(xs[$(firstindex(xs))]))
-@generated Base.foldl(f::F, xs::AbstractSPIRVArray, init) where {F <: Function} =
-  foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex(xs); init = :init)
-@generated Base.foldr(f::F, xs::AbstractSPIRVArray) where {F<:Function} =
-  foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex(xs)[1:(end - 1)]; init = :(xs[$(lastindex(xs))]))
-@generated Base.foldr(f::F, xs::AbstractSPIRVArray, init) where {F <: Function} =
-  foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex(xs); init = :init)
-Base.any(f::F, xs::AbstractSPIRVArray) where {F<:Function} = foldl((x, y) -> x | f(y), xs, false)
-Base.all(f::F, xs::AbstractSPIRVArray) where {F<:Function} = foldl((x, y) -> x & f(y), xs, true)
-@generated Base.sum(f::F, xs::AbstractSPIRVArray) where {F<:Function} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex(xs))...)
-@generated Base.prod(f::F, xs::AbstractSPIRVArray) where {F<:Function} = Expr(:call, :*, (:(f(xs[$i])) for i in eachindex(xs))...)
-Base.sum(xs::AbstractSPIRVArray) = sum(identity, xs)
-Base.prod(xs::AbstractSPIRVArray) = prod(identity, xs)
+eachindex_uint32(x) = firstindex_uint32(x):lastindex_uint32(x)
+firstindex_uint32(x) = UInt32(firstindex(x))
+lastindex_uint32(x) = UInt32(lastindex(x))
+firstindex_uint32(::Type{<:SVector}) = 1U
+lastindex_uint32(::Type{<:SVector{N}}) where {N} = UInt32(N)
 
 # Extracted from Base.
 """

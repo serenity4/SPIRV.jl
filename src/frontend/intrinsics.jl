@@ -1,35 +1,20 @@
-const FloatScalarOrVec = Union{IEEEFloat, Vec{<:Any,IEEEFloat}}
-
-# Definition of intrinsics and redirection (overrides) of Base methods to use these intrinsics.
-# Intrinsic definitions need not be applicable only to supported types. Any signature
-# incompatible with SPIR-V semantics should not be redirected to any of these intrinsics.
-
-@override reinterpret(::Type{T}, x) where {T} = Bitcast(T, x)
-@override reinterpret(::Type{T}, x::T) where {T} = x
 @noinline Bitcast(T, x) = Base.bitcast(T, x)
 
 # Floats.
 
 ## Arithmetic operations.
 
-@override (-)(x::FloatScalarOrVec)                     = FNegate(x)
 @noinline FNegate(x::T) where {T<:IEEEFloat}    = Base.neg_float(x)
-@override (+)(x::T, y::T) where {T<:FloatScalarOrVec}  = FAdd(x, y)
 @noinline FAdd(x::T, y::T) where {T<:IEEEFloat} = Base.add_float(x, y)
-@override (*)(x::T, y::T) where {T<:FloatScalarOrVec}  = FMul(x, y)
 @noinline FMul(x::T, y::T) where {T<:IEEEFloat} = Base.mul_float(x, y)
-@override (-)(x::T, y::T) where {T<:FloatScalarOrVec}  = FSub(x, y)
 @noinline FSub(x::T, y::T) where {T<:IEEEFloat} = Base.sub_float(x, y)
-@override (/)(x::T, y::T) where {T<:FloatScalarOrVec}  = FDiv(x, y)
 @noinline FDiv(x::T, y::T) where {T<:IEEEFloat} = Base.div_float(x, y)
-@override rem(x::T, y::T) where {T<:FloatScalarOrVec}  = FRem(x, y)
 @noinline FRem(x::T, y::T) where {T<:IEEEFloat} = @static if VERSION < v"1.10.0-DEV.101"
   Base.rem_float(x, y)::T
 else
   copysign(Base.rem_internal(abs(x), abs(y)), x)::T
 end
 
-@override mod(x::T, y::T) where {T<:FloatScalarOrVec} = FMod(x, y)
 @noinline function FMod(x::T, y::T) where {T<:IEEEFloat}
   r = rem(x, y)
   if r == 0
@@ -41,155 +26,118 @@ end
   end
 end
 
-@override muladd(x::T, y::T, z::T) where {T<:IEEEFloat} = FAdd(FMul(x, y), z)
-
-@override dot(x::T, y::T) where {T<:Vec{<:Any,<:IEEEFloat}} = Dot(x, y)
-@noinline Dot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
-@override dot(x::T, y::T) where {T<:Vec{<:Any,<:BitUnsigned}} = UDot(x, y)
-@noinline UDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
-@override dot(x::T, y::T) where {T<:Vec{<:Any,<:BitSigned}} = SDot(x, y)
-@noinline SDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
-@override dot(x::Vec{N,<:BitSigned}, y::Vec{N,<:BitUnsigned}) where {N} = SUDot(x, y)
-@noinline SUDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
-
 ## Comparisons.
 
-@override (==)(x::T, y::T) where {T<:IEEEFloat}              = FOrdEqual(x, y)
 @noinline FOrdEqual(x::T, y::T) where {T<:IEEEFloat}         = Base.eq_float(x, y)
-@override (!=)(x::T, y::T) where {T<:IEEEFloat}              = FUnordNotEqual(x, y)
 @noinline FUnordNotEqual(x::T, y::T) where {T<:IEEEFloat}    = Base.ne_float(x, y)
-@override (<)(x::T, y::T) where {T<:IEEEFloat}               = FOrdLessThan(x, y)
 @noinline FOrdLessThan(x::T, y::T) where {T<:IEEEFloat}      = Base.lt_float(x, y)
-@override (<=)(x::T, y::T) where {T<:IEEEFloat}              = FOrdLessThanEqual(x, y)
 @noinline FOrdLessThanEqual(x::T, y::T) where {T<:IEEEFloat} = Base.le_float(x, y)
 
-@override function isequal(x::T, y::T) where {T<:IEEEFloat}
-  IT = Base.inttype(T)
-  xi = reinterpret(IT, x)
-  yi = reinterpret(IT, y)
-  FUnordEqual(x, x) & FUnordEqual(y, y) | IEqual(xi, yi)
-end
 @inline function FUnordEqual(x::T, y::T) where {T<:IEEEFloat}
   isnan(x) & isnan(y) | x == y
 end
-@override isnan(x::IEEEFloat)    = IsNan(x)
 @noinline IsNan(x::IEEEFloat)    = invoke(isnan, Tuple{AbstractFloat}, x)
-@override isinf(x::IEEEFloat) = IsInf(x)
 @noinline IsInf(x::IEEEFloat)    = !invoke(isfinite, Tuple{AbstractFloat}, x)
-@override isfinite(x::IEEEFloat) = !isinf(x)
 
 have_fma(T) = false
 
 ## Conversions.
 
-for to in IEEEFloat_types, from in IEEEFloat_types
-  if sizeof(to) ≠ sizeof(from)
-    @eval @override $to(x::$from) = FConvert($to, x)
-    if sizeof(to) < sizeof(from)
-      @eval @noinline (FConvert(::Type{$to}, x::$from) = Base.fptrunc($to, x))
-    else
-      @eval @noinline (FConvert(::Type{$to}, x::$from) = Base.fpext($to, x))
-    end
-  end
-end
+@noinline FConvert(::Type{Float16}, x::Float32) = Base.fptrunc(Float16, x)
+@noinline FConvert(::Type{Float16}, x::Float64) = Base.fptrunc(Float16, x)
+@noinline FConvert(::Type{Float32}, x::Float64) = Base.fptrunc(Float32, x)
+@noinline FConvert(::Type{Float32}, x::Float16) = Base.fpext(Float32, x)
+@noinline FConvert(::Type{Float64}, x::Float16) = Base.fpext(Float64, x)
+@noinline FConvert(::Type{Float64}, x::Float32) = Base.fpext(Float64, x)
 
-@override unsafe_trunc(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = ConvertFToS(T, x)
 @noinline ConvertFToS(::Type{T}, x::IEEEFloat) where {T<:BitSigned} = Base.fptosi(T, x)
-
-@override unsafe_trunc(::Type{T}, x::IEEEFloat) where {T<:BitUnsigned} = ConvertFToU(T, x)
 @noinline ConvertFToU(::Type{T}, x::IEEEFloat) where {T<:BitUnsigned} = Base.fptoui(T, x)
-
-@override (::Type{T})(x::BitSigned) where {T<:IEEEFloat} = ConvertSToF(T, x)
 @noinline ConvertSToF(to::Type{T}, x::BitSigned) where {T<:IEEEFloat} = Base.sitofp(to, x)
-@override (::Type{T})(x::BitUnsigned) where {T<:IEEEFloat} = ConvertUToF(T, x)
 @noinline ConvertUToF(to::Type{T}, x::BitUnsigned) where {T<:IEEEFloat} = Base.uitofp(to, x)
-@override (::Type{T})(x::Bool) where {T<:IEEEFloat} = ifelse(x, one(T), zero(T))
 
 ### There is no possibility to throw errors in SPIR-V, so replace safe operations with unsafe ones.
-@override trunc(::Type{T}, x::IEEEFloat) where {T<:BitInteger} = unsafe_trunc(T, x)
-@override (::Type{T})(x::IEEEFloat) where {T<:BitInteger} = unsafe_trunc(T, x)
-@override trunc(x::IEEEFloat) = round(x, RoundToZero)
 
-# Integers.
+@noinline UConvert(::Type{UInt16}, x::UInt8)  = Base.zext_int(UInt16, x)
+@noinline UConvert(::Type{UInt32}, x::UInt8)  = Base.zext_int(UInt32, x)
+@noinline UConvert(::Type{UInt64}, x::UInt8)  = Base.zext_int(UInt64, x)
+@noinline UConvert(::Type{UInt8},  x::UInt16) = Base.trunc_int(UInt8, x)
+@noinline UConvert(::Type{UInt32}, x::UInt16) = Base.zext_int(UInt32, x)
+@noinline UConvert(::Type{UInt64}, x::UInt16) = Base.zext_int(UInt64, x)
+@noinline UConvert(::Type{UInt8},  x::UInt32) = Base.trunc_int(UInt8, x)
+@noinline UConvert(::Type{UInt16}, x::UInt32) = Base.trunc_int(UInt16, x)
+@noinline UConvert(::Type{UInt64}, x::UInt32) = Base.zext_int(UInt64, x)
+@noinline UConvert(::Type{UInt8},  x::UInt64) = Base.trunc_int(UInt8, x)
+@noinline UConvert(::Type{UInt16}, x::UInt64) = Base.trunc_int(UInt16, x)
+@noinline UConvert(::Type{UInt32}, x::UInt64) = Base.trunc_int(UInt32, x)
 
-## Integer conversions.
+@noinline SConvert(::Type{Int16}, x::Int8)  = Base.sext_int(Int16, x)
+@noinline SConvert(::Type{Int32}, x::Int8)  = Base.sext_int(Int32, x)
+@noinline SConvert(::Type{Int64}, x::Int8)  = Base.sext_int(Int64, x)
+@noinline SConvert(::Type{Int8},  x::Int16) = Base.trunc_int(Int8, x)
+@noinline SConvert(::Type{Int32}, x::Int16) = Base.sext_int(Int32, x)
+@noinline SConvert(::Type{Int64}, x::Int16) = Base.sext_int(Int64, x)
+@noinline SConvert(::Type{Int8},  x::Int32) = Base.trunc_int(Int8, x)
+@noinline SConvert(::Type{Int16}, x::Int32) = Base.trunc_int(Int16, x)
+@noinline SConvert(::Type{Int64}, x::Int32) = Base.sext_int(Int64, x)
+@noinline SConvert(::Type{Int8},  x::Int64) = Base.trunc_int(Int8, x)
+@noinline SConvert(::Type{Int16}, x::Int64) = Base.trunc_int(Int16, x)
+@noinline SConvert(::Type{Int32}, x::Int64) = Base.trunc_int(Int32, x)
 
-for to in BitInteger_types
-  constructor = GlobalRef(Core, Symbol(:to, nameof(to))) # toUInt16, toInt64, etc.
-  @eval @inline @override ($constructor(x::BitInteger) = rem(x, $to))
-  for from in BitInteger_types
-    convert = to <: Signed ? :SConvert : :UConvert
-    rem_f = sizeof(to) == sizeof(from) ? :reinterpret : convert
-    if sizeof(to) ≠ sizeof(from)
-      @eval @override (rem(x::$from, ::Type{$to}) = $convert($to, x))
-      if sizeof(to) < sizeof(from)
-        @eval @noinline ($convert(::Type{$to}, x::$from) = Base.trunc_int($to, x))
-      else # sizeof(to) > sizeof(from)
-        convert = to <: Signed ? :SConvert : :UConvert
-        method = to <: Signed ? :sext_int : :zext_int
-        @eval @noinline ($convert(::Type{$to}, x::$from) = Base.$method($to, x))
-      end
-    end
-  end
-end
+@noinline UConvert(::Type{UInt16}, x::Int8)  = Base.zext_int(UInt16, x)
+@noinline UConvert(::Type{UInt32}, x::Int8)  = Base.zext_int(UInt32, x)
+@noinline UConvert(::Type{UInt64}, x::Int8)  = Base.zext_int(UInt64, x)
+@noinline UConvert(::Type{UInt8},  x::Int16) = Base.trunc_int(UInt8, x)
+@noinline UConvert(::Type{UInt32}, x::Int16) = Base.zext_int(UInt32, x)
+@noinline UConvert(::Type{UInt64}, x::Int16) = Base.zext_int(UInt64, x)
+@noinline UConvert(::Type{UInt8},  x::Int32) = Base.trunc_int(UInt8, x)
+@noinline UConvert(::Type{UInt16}, x::Int32) = Base.trunc_int(UInt16, x)
+@noinline UConvert(::Type{UInt64}, x::Int32) = Base.zext_int(UInt64, x)
+@noinline UConvert(::Type{UInt8},  x::Int64) = Base.trunc_int(UInt8, x)
+@noinline UConvert(::Type{UInt16}, x::Int64) = Base.trunc_int(UInt16, x)
+@noinline UConvert(::Type{UInt32}, x::Int64) = Base.trunc_int(UInt32, x)
 
-@override rem(x::T, y::T) where {T<:BitSigned} = SRem(x, y)
+@noinline SConvert(::Type{Int16}, x::UInt8)  = Base.sext_int(Int16, x)
+@noinline SConvert(::Type{Int32}, x::UInt8)  = Base.sext_int(Int32, x)
+@noinline SConvert(::Type{Int64}, x::UInt8)  = Base.sext_int(Int64, x)
+@noinline SConvert(::Type{Int8},  x::UInt16) = Base.trunc_int(Int8, x)
+@noinline SConvert(::Type{Int32}, x::UInt16) = Base.sext_int(Int32, x)
+@noinline SConvert(::Type{Int64}, x::UInt16) = Base.sext_int(Int64, x)
+@noinline SConvert(::Type{Int8},  x::UInt32) = Base.trunc_int(Int8, x)
+@noinline SConvert(::Type{Int16}, x::UInt32) = Base.trunc_int(Int16, x)
+@noinline SConvert(::Type{Int64}, x::UInt32) = Base.sext_int(Int64, x)
+@noinline SConvert(::Type{Int8},  x::UInt64) = Base.trunc_int(Int8, x)
+@noinline SConvert(::Type{Int16}, x::UInt64) = Base.trunc_int(Int16, x)
+@noinline SConvert(::Type{Int32}, x::UInt64) = Base.trunc_int(Int32, x)
+
 @noinline SRem(x::T, y::T) where {T<:BitSigned} = Base.checked_srem_int(x, y)
 # SPIR-V does not have URem but it looks like SRem can work with unsigned ints.
-@override rem(x::T, y::T) where {T<:BitUnsigned} = SRem(x, y)
 @noinline SRem(x::T, y::T) where {T<:BitUnsigned} = Base.checked_urem_int(x, y)
-
-@override Int(x::Ptr) = reinterpret(Int, x)
-@override UInt(x::Ptr) = reinterpret(UInt, x)
 
 ## Comparisons.
 
-@override (<)(x::T, y::T) where {T<:BitSigned} = SLessThan(x, y)
-@override (<=)(x::T, y::T) where {T<:BitSigned} = SLessThanEqual(x, y)
-@override (<)(x::T, y::T) where {T<:BitUnsigned} = ULessThan(x, y)
-@override (<=)(x::T, y::T) where {T<:BitUnsigned} = ULessThanEqual(x, y)
-
-for (intr, core_intr) in zip((:SLessThan, :SLessThanEqual, :ULessThan, :ULessThanEqual), (:slt_int, :sle_int, :ult_int, :ule_int))
-  @eval @noinline ($intr(x::BitInteger, y::BitInteger) = Base.$core_intr(x, y))
-end
+@noinline SLessThan(x::BitInteger, y::BitInteger) = Base.slt_int(x, y)
+@noinline SLessThanEqual(x::BitInteger, y::BitInteger) = Base.sle_int(x, y)
+@noinline ULessThan(x::BitInteger, y::BitInteger) = Base.ult_int(x, y)
+@noinline ULessThanEqual(x::BitInteger, y::BitInteger) = Base.ule_int(x, y)
 
 ## Logical operators.
 
-@override (==)(x::T, y::T) where {T<:BitInteger}       = IEqual(x, y)
-@override (==)(x::BitInteger, y::BitInteger)           = ==(promote(x, y)...)
 @noinline IEqual(x::T, y::T) where {T<:BitInteger}     = Base.eq_int(x, y)
-@override (!=)(x::T, y::T) where {T<:BitInteger}       = INotEqual(x, y)
-@override (!=)(x::BitInteger, y::BitInteger)           = !=(promote(x, y)...)
 @noinline INotEqual(x::T, y::T) where {T<:BitInteger}  = Base.ne_int(x, y)
-@override (~)(x::BitInteger)                           = Not(x)
 @noinline Not(x::BitInteger)                           = Base.not_int(x)
-@override (&)(x::T, y::T) where {T<:BitInteger}        = BitwiseAnd(x, y)
 @noinline BitwiseAnd(x::T, y::T) where {T<:BitInteger} = Base.and_int(x, y)
-@override (|)(x::T, y::T) where {T<:BitInteger}        = BitwiseOr(x, y)
 @noinline BitwiseOr(x::T, y::T) where {T<:BitInteger}  = Base.or_int(x, y)
-@override xor(x::T, y::T) where {T<:BitInteger}        = BitwiseXor(x, y)
 @noinline BitwiseXor(x::T, y::T) where {T<:BitInteger} = Base.xor_int(x, y)
 
 ## Integer shifts.
 
-@override (>>)(x::BitSigned, y::BitUnsigned) = ShiftRightArithmetic(x, y)
 @noinline ShiftRightArithmetic(x::BitSigned, y::BitUnsigned) = Base.ashr_int(x, y)
-
-@override (>>)(x::BitUnsigned, y::BitUnsigned) = ShiftRightLogical(x, y)
-@override (>>>)(x::BitInteger, y::BitUnsigned) = ShiftRightLogical(x, y)
 @noinline ShiftRightLogical(x::BitInteger, y::BitInteger) = Base.lshr_int(x, y)
-
-@override (<<)(x::BitInteger, y::BitUnsigned) = ShiftLeftLogical(x, y)
 @noinline ShiftLeftLogical(x::BitInteger, y::BitInteger) = Base.shl_int(x, y)
 
 ## Arithmetic operations.
 
-@override (-)(x::BitInteger) = SNegate(x)
 @noinline SNegate(x::T) where {T<:BitInteger} = Base.neg_int(x)
-
-@override (+)(x::T, y::T) where {T<:BitInteger} = IAdd(x, y)
-@override (-)(x::T, y::T) where {T<:BitInteger} = ISub(x, y)
-@override (*)(x::T, y::T) where {T<:BitInteger} = IMul(x, y)
 
 for (intr, core_intr) in zip((:IAdd, :ISub, :IMul), (:add_int, :sub_int, :mul_int))
   @eval @noinline ($intr(x::T, y::T) where {T<:BitSigned} = Base.$core_intr(x, y))
@@ -198,7 +146,6 @@ for (intr, core_intr) in zip((:IAdd, :ISub, :IMul), (:add_int, :sub_int, :mul_in
   @eval @noinline ($intr(x::I, y::BitUnsigned) where {I<:BitSigned} = Base.$core_intr(x, y))
 end
 
-@override div(x::T, y::T) where {T<:BitUnsigned} = UDiv(x, y)
 @noinline UDiv(x::T, y::T) where {T<:BitUnsigned} = Base.udiv_int(x, y)
 @noinline SDiv(x::T, y::T) where {T<:BitSigned} = Base.sdiv_int(x, y)
 
@@ -209,11 +156,7 @@ IMod(x::T, y::T) where {T<:BitUnsigned} = UMod(x, y)
 IDiv(x::T, y::T) where {T<:BitSigned} = SDiv(x, y)
 IDiv(x::T, y::T) where {T<:BitUnsigned} = UDiv(x, y)
 
-@override ifelse(cond::Bool, x, y) = Select(cond, x, y)
 @noinline Select(cond::Bool, x::T, y::T) where {T} = Core.ifelse(cond, x, y)
-
-@override flipsign(x::T, y::T) where {T<:BitSigned} = Select(y ≥ 0, x, -x)
-@override flipsign(x::BitSigned, y::BitSigned) = flipsign(promote(x, y)...) % typeof(x)
 
 ## Counting operations.
 ## These have to be emulated, as they don't exist in SPIR-V.
@@ -232,7 +175,6 @@ function trailing_zeros_emulated(x::Integer) # alias `cttz`
   end
   r
 end
-@override trailing_zeros(x::Integer) = Int(trailing_zeros_emulated(x))
 
 function leading_zeros_emulated(x::Integer) # alias `ctlz`
   w = sizeof(x) % typeof(x)
@@ -245,59 +187,75 @@ function leading_zeros_emulated(x::Integer) # alias `ctlz`
   end
   r
 end
-@override leading_zeros(x::Integer) = Int(leading_zeros_emulated(x))
 
 # Booleans.
 
-@override (!)(x::Bool)           = LogicalNot(x)
 @noinline LogicalNot(x)          = Base.not_int(x)
-@override (&)(x::Bool, y::Bool)  = LogicalAnd(x, y)
 @noinline LogicalAnd(x, y)       = Base.and_int(x, y)
-@override (|)(x::Bool, y::Bool)  = LogicalOr(x, y)
 @noinline LogicalOr(x, y)        = Base.or_int(x, y)
-@override xor(x::Bool, y::Bool)  = BitwiseXor(x, y)
 @noinline BitwiseXor(x, y)       = Base.xor_int(x, y)
-@override (==)(x::Bool, y::Bool) = LogicalEqual(x, y)
 @noinline LogicalEqual(x, y)     = Base.eq_int(x, y)
-@override (!=)(x::Bool, y::Bool) = LogicalNotEqual(x, y)
 @noinline LogicalNotEqual(x, y)  = Base.ne_int(x, y)
 
-# Copying.
+# Copy.
 
-## Deep copying and shallow copying should be defined identically here, because of how
-## mutable objects are treated in SPIR-V (as pointers to immutable objects).
-## That would change if we expect to have pointers in object fields and expect
-# their contents to be recursively copied as well.
-
-# Deepcopy has only one implementation and relies on `deepcopy_internal` with consistent semantics.
-@override deepcopy(x) = CopyObject(x)
-# XXX: This overrides all definitions of `copy` for the purpose of method lookup and therefore breaks a few things.
-# @override copy(x) = CopyObject(x)
 @noinline function CopyObject(@nospecialize(x))
   isbitstype(typeof(x)) && return x
   return Base.deepcopy_internal(x, IdDict())::typeof(x)
 end
 
-# Miscellaneous Base methods which use intrinsics that don't map well to SPIR-V.
-
-@override copysign(x::T, y::T) where {T <: Union{Float32, Float64}} = ifelse(y < 0, -x, x)
-
-# Math functions using intrinsics directly.
-
-@override function Base.Math.two_mul(x::Float64, y::Float64)
-  if have_fma(Float64)
-      xy = x*y
-      xy, fma(x, y, -xy)
-  end
-  Base.twomul(x,y)
-end
-
-# Reduce the complexity of Julia IR by emitting simpler definitions.
-
-## Skip boundscheck to avoid leaving dead nodes and branches in the CFG.
-@override getindex(x::Number, i::Integer) = x
-
 # Barriers.
 
 @noinline ControlBarrier(execution::Scope, scope::Scope, memory_semantics::MemorySemantics) = invokelatest(Returns(nothing))::Nothing
 @noinline MemoryBarrier(scope::Scope, memory_semantics::MemorySemantics) = invokelatest(Returns(nothing))::Nothing
+
+# Vectors/matrices/arrays/pointers.
+
+@noinline IEqual(x::Vec, y::Vec) = x .== y
+@noinline FOrdEqual(x::Vec, y::Vec) = x .== y
+@noinline Any(x::Vec{<:Any,Bool}) = any(x.data)
+@noinline All(x::Vec{<:Any,Bool}) = all(x.data)
+
+@noinline FConvert(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline SConvert(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline UConvert(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline ConvertSToF(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline ConvertUToF(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline ConvertFToS(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+@noinline ConvertFToU(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
+convert_vec(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = Vec{N,T}(ntuple_uint32(i -> convert(T, @inbounds v[i]), N)...)
+
+@noinline CompositeExtract(v::Vec, index::UInt32) = v.data[index]
+
+@noinline (@generated function CompositeConstruct(::Type{Vec{N,T}}, data::T...) where {N,T}
+  Expr(:new, Vec{N,T}, :data)
+end)
+
+@noinline FAdd(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(+, x, y)
+@noinline IAdd(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(+, x, y)
+@noinline FSub(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(-, x, y)
+@noinline ISub(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(-, x, y)
+@noinline FMul(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(*, x, y)
+@noinline IMul(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(*, x, y)
+@noinline FDiv(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(/, x, y)
+@noinline IDiv(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(/, x, y)
+@noinline FRem(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(rem, x, y)
+@noinline IRem(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(rem, x, y)
+@noinline FMod(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(mod, x, y)
+@noinline IMod(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(mod, x, y)
+@noinline ^(x::V, y::V)     where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(^, x, y)
+@noinline Atan2(x::V, y::V) where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(atan, x, y)
+
+@noinline Dot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
+@noinline UDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
+@noinline SDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
+@noinline SUDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
+
+@noinline Ceil(x::Vec) = vectorize(ceil, x)
+@noinline Exp(x::Vec) = vectorize(exp, x)
+@noinline FNegate(x::Vec) = vectorize(-, x)
+
+## CPU implementation for instructions that directly operate on vectors.
+vectorize(op, v1::T, v2::T) where {T<:Vec} = Vec(op.(v1.data, v2.data))
+vectorize(op, v::T, x::Scalar) where {T<:Vec} = Vec(op.(v.data, x))
+vectorize(op, v::T) where {T<:Vec} = Vec(op.(v.data))

@@ -59,40 +59,6 @@ using StaticArrays
     end
   end
 
-  @testset "Vec" begin
-    v = Vec(1.0, 3.0, 1.0, 2.0)
-    @test v[2] === 3.0
-    v[3] = 4
-    @test v[4] == last(v) === 2.0
-    @test first(v) === 1.0
-    @test v.x === v.r === 1.0
-    @test v.y === v.g === 3.0
-    @test v.z === v.b === 4.0
-    @test v.w === v.a === 2.0
-    v.x = 10
-    @test v.x === 10.0
-    v2 = similar(v)
-    @test eltype(v2) == eltype(v)
-    @test size(v2) == size(v)
-    v = Vec4(1, 2, 3, 4)
-    @test v.xy == v.rg == Vec2(1, 2)
-    v.xy = Vec2(6, 7)
-    @test v.xy == Vec2(6, 7)
-    v.rab = (1, 2, 3)
-    @test v == Vec4(1, 7, 3, 2)
-
-    @test_throws ArgumentError Vec(1.0)
-    @test_throws ArgumentError Vec(1.0, 2.0, 3.0, 4.0, 5.0)
-
-    @test Vec2(1.0, 2.0) == Vec2((1.0, 2.0)) == convert(Vec2, (1.0, 2.0))
-
-    @test isa(rand(Vec2), Vec2)
-    @test isa(rand(Vec{3}), Vec3)
-
-    @test isa(repr(v), String)
-    @test isa(repr(MIME"text/plain"(), v), String)
-  end
-
   @testset "Mat" begin
     m = Mat(Vec(1.0, 1.0), Vec(3.0, 2.0))
     @test m[1, 1] === 1.0

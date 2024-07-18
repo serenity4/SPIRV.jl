@@ -20,17 +20,16 @@ ResultTypes = "08a2b407-ddc3-586a-afd6-c784ad1fffe2"
 SPIRV_Tools_jll = "6ac6d60f-d740-5983-97d7-a4482c0689f4"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StructEquality = "6ec83bb0-ed9f-11e9-3b4c-2b04cb4e219c"
 StyledStrings = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
 SwapStreams = "0b152c4a-7e29-418b-9258-223db38db9d9"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
 
 [extensions]
-SPIRVStaticArraysExt = "StaticArrays"
 SPIRVVulkanExt = "Vulkan"
 
 [compat]
@@ -58,4 +57,4 @@ MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MetaGraphs", "Vulkan", "StaticArrays"]
+test = ["Test", "MetaGraphs", "Vulkan"]

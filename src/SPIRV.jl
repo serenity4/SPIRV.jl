@@ -20,6 +20,7 @@ using ForwardMethods
 using Random
 using StyledStrings
 import Serialization: serialize, deserialize
+using StaticArrays: SVector, MVector, static_vector_gen
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
 using Core.Compiler: CodeInfo, IRCode, MethodInstance, InferenceResult, InferenceState,
@@ -115,17 +116,16 @@ include("analysis/deltagraph.jl")
 include("analysis/control_flow.jl")
 
 include("frontend/method_table.jl")
-include("frontend/overlay.jl")
 include("frontend/types/abstractarray.jl")
 include("frontend/types/pointer.jl")
 include("frontend/types/vector.jl")
 include("frontend/types/matrix.jl")
 include("frontend/types/array.jl")
 include("frontend/types/image.jl")
-include("frontend/types/broadcast.jl")
-include("frontend/types/base/ranges.jl")
 include("frontend/intrinsics.jl")
 include("frontend/intrinsics_glsl.jl")
+include("frontend/overlays.jl")
+include("frontend/types/broadcast.jl")
 include("frontend/MathFunctions.jl")
 include("layouts.jl")
 include("serialization.jl")
@@ -151,7 +151,7 @@ include("analysis/restructuring.jl")
 include("frontend/shader/analysis.jl")
 
 include("spirv_dsl.jl")
-include("precompile.jl")
+# include("precompile.jl")
 
 export
   MathFunctions,
@@ -249,6 +249,10 @@ export
   Vec2, Vec3, Vec4,
   Vec2U, Vec3U, Vec4U,
   Vec2I, Vec3I, Vec4I,
+  MVec,
+  MVec2, MVec3, MVec4,
+  MVec2U, MVec3U, MVec4U,
+  MVec2I, MVec3I, MVec4I,
   Mat, Mat2, Mat3, Mat4, @mat,
   Arr,
   @load, @store,

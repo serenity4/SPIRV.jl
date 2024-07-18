@@ -186,10 +186,6 @@ end
       (; code, ssavaluetypes) = SPIRV.@code_typed f_vector(v1, v2, v3)
       @test operation.(code[1:(end - 1)]) == [:FAdd, :FSub, :FMul]
       @test ssavaluetypes[1:(end - 1)] == fill(Vec{3,Float64}, 3)
-
-      (; code, ssavaluetypes) = SPIRV.@code_typed store(v1)
-      @test operation.(code[1:(end - 1)]) ==
-            [:UConvert, :AccessChain, :Load, :UConvert, :AccessChain, :Load, :FAdd, :UConvert, :AccessChain, :Store]
     end
 
     @testset "Arrays" begin
@@ -232,9 +228,9 @@ end
   end
 
   @testset "Generated functions" begin
-    @generated _fast_sum(f, xs::Vec{N}) where {N} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex(xs))...)
+    @generated _fast_sum(f, xs::Vec{N}) where {N} = Expr(:call, :+, (:(f(xs[$i])) for i in SPIRV.eachindex_uint32(xs))...)
     ci = SPIRV.@code_typed debuginfo=:source _fast_sum(identity, ::Vec2)
-    @test_code ci minlength = 6 maxlength = 6
+    @test_code ci minlength = 4 maxlength = 4
   end
 
   @testset "Fast paths" begin
@@ -263,9 +259,6 @@ end
     ci = SPIRV.@code_typed debuginfo=:source (==)(::Vec{2,Int32}, ::Vec{3,Float32})
     @test_code ci minlength = 1 maxlength = 1 # 1 return (false)
 
-    ci = SPIRV.@code_typed debuginfo=:source (v -> setindex!(v, Vec2(1, 2)))(::Vec2)
-    @test_code ci minlength = 3 maxlength = 3 # 2 intrinsics (CompositeConstruct + Store), 1 return
-
     ci = SPIRV.@code_typed debuginfo=:source (x -> @load x::Int32)(::UInt64)
     @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 load, 1 return
 
@@ -279,7 +272,7 @@ end
     @test_code ci minlength = 4 maxlength = 6 # 1 conversion, 1 access/store, 1 return, can be 2 more instructions if index is turned into 0-based index at runtime. 
 
     ci = SPIRV.@code_typed debuginfo=:source copy(::Vec2)
-    @test_code ci minlength = 3 maxlength = 3 # 2 intrinsics (CompositeConstruct + Store), 1 return
+    @test_code ci minlength = 4 maxlength = 4 # 3 intrinsics (2 CompositeExtract + 1 CompositeConstruct), 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source copy(::Pointer{Vec2})
     @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
@@ -288,10 +281,10 @@ end
     @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source sum(::Vec4)
-    @test_code ci minlength = 12 maxlength = 12 # 4 accesses (AccessChain + Load per access), 3 additions, 1 return
+    @test_code ci minlength = 8 maxlength = 8 # 4 accesses, 3 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source sum(::Arr{10,Float32})
-    @test_code ci minlength = 30 maxlength = 30 # 10 accesses, 9 additions, 1 return
+    @test_code ci minlength = 30 maxlength = 30 # 5 accesses, 9 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source ((x, y) -> x .+ y)(::Vec2, ::Vec2)
     @test_code ci minlength = 2 maxlength = 2 # 1 addition, 1 return
@@ -327,7 +320,7 @@ end
     @test_code ci minlength = 30
 
     ci = SPIRV.@code_typed debuginfo=:source linearstep(::Float32, ::Float32, ::Float32)
-    @test_code ci minlength = 10 maxlength = 20 spirv_chunk = false
+    @test_code ci minlength = 12 maxlength = 12 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source smoothstep(::Float32, ::Float32, ::Float32)
     @test_code ci minlength = 10 maxlength = 20 spirv_chunk = false
@@ -346,19 +339,5 @@ end
 
     ci = SPIRV.@code_typed debuginfo=:source step_euler(::BoidAgent, ::Vec2, ::Float32)
     @test_code ci minlength = 44 maxlength = 70 spirv_chunk = false # Assumes that `wrap_around` is inlined, otherwise should be fewer lines.
-
-    @testset "Static arrays integration" begin
-      ci = SPIRV.@code_typed debuginfo=:source convert(::Type{SVector{2,Float32}}, ::Vec2)
-      @test_code ci minlength = 2 maxlength = 2 spirv_chunk = false
-
-      ci = SPIRV.@code_typed debuginfo=:source (==)(::SVector{2,Float32}, ::SVector{2,Float32})
-      @test_code ci minlength = 4 maxlength = 8 spirv_chunk = false # at least 2 convert_native, 1 FOrdEqual and 1 return (there can also be 4 `nothing`s at the beginning)
-
-      ci = SPIRV.@code_typed debuginfo=:source (==)(::SVector{2,Float32}, ::SVector{2,Float16})
-      @test_code ci minlength = 5 maxlength = 9 spirv_chunk = false # same with 1 more conversion
-
-      ci = SPIRV.@code_typed debuginfo=:source (==)(::SVector{2,Float32}, ::Vec2)
-      @test_code ci minlength = 6 maxlength = 6 spirv_chunk = false # 3 convert_native, 1 vector operation, 1 logical operation, 1 return
-    end
   end
 end;

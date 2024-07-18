@@ -19,7 +19,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       # There sometimes remain quite a few calls to this intrinsic, so let's avoid having to reimplement a bunch of methods.
       &Base.bitcast => (OpBitcast, args[2:2])
       &Base.have_fma => return (emit!(mt, tr, Constant(true)), BooleanType())
-      ::Core.IntrinsicFunction => throw_compilation_error("reached illegal core intrinsic function '$f'")
+      ::Core.IntrinsicFunction => throw_compilation_error("reached unsupported core intrinsic function '$f'")
       &getfield => begin
         # If a third argument is provided, we ignore it; it indicates whether the field access is checked,
         # and for SPIR-V code there is no way to express such checks.
@@ -68,6 +68,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         end
       end
       ::Function && if jtype === Union{} end => throw_compilation_error("unresolved call to function `$f`, indicating a `MethodError`")
+      &Base.fieldtype => throw_compilation_error("call to unsupported built-in function `$f`")
       ::Function => throw_compilation_error("dynamic dispatch detected for function `$f`. All call sites must be statically resolved")
       _ => throw_compilation_error("call to unknown function `$f`")
     end
