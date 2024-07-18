@@ -246,14 +246,14 @@ shader2!(color) = color.a = 1F
         end)(::Vec4::Output, ::Float32::Input)
       @test unwrap(validate(shader))
 
-      IT = SampledImage{SPIRV.image_type(SPIRV.ImageFormatR16f,SPIRV.Dim2D,0,false,false,1)}
+      IT = SampledImage{SPIRV.image_type(SPIRV.ImageFormatRgba16f,SPIRV.Dim2D,0,false,false,1)}
 
       shader = @fragment features = SUPPORTED_FEATURES ((res, blur, reference, direction, uv) -> res[] =
-        compute_blur(blur, reference, direction, uv))(::Vec3::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::UInt32::Input{@Flat}, ::Vec2::Input)
+        compute_blur(blur, reference, direction, uv))(::Vec4::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::UInt32::Input{@Flat}, ::Vec2::Input)
       @test unwrap(validate(shader))
 
       shader = @fragment features = SUPPORTED_FEATURES ((res, blur, reference, uv) -> res[] =
-        compute_blur_2(blur, reference, uv))(::Vec3::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::Vec2::Input)
+        compute_blur_2(blur, reference, uv))(::Vec4::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::Vec2::Input)
       @test unwrap(validate(shader))
 
       shader = @compute features = SUPPORTED_FEATURES step_euler(::BoidAgent::PushConstant, ::Vec2::Input, ::Float32::Input)

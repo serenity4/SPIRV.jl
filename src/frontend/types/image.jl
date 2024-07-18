@@ -192,11 +192,16 @@ sampled_type(T::Type{<:SampledImage}) = Vec{4, component_type(image_type(T))}
 image_type(img::SampledImage) = image_type(typeof(img))
 sampled_type(img::SampledImage) = sampled_type(typeof(img))
 
-(img::SampledImage)(coord::IEEEFloat) = ImageSampleImplicitLod(img, coord)
+convert_truncate(::Type{SampledImage{I}}, value) where {I} = convert_truncate(texel_type(I), value)
+convert_truncate(::Type{T}, value::T) where {T<:Vec} = value
+convert_truncate(::Type{Vec{N,T}}, value::Vec{N}) where {N,T} = convert(Vec{N,T}, value)
+convert_truncate(::Type{Vec{N,T}}, value::Vec{M}) where {N,M,T} = convert_truncate(Vec{N,T}, Vec(ntuple_uint32(i -> value[i], N)))
+
+(img::SampledImage)(coord::IEEEFloat) = convert_truncate(typeof(img), ImageSampleImplicitLod(img, coord))
 (img::SampledImage)(coord::IEEEFloat, coord2::IEEEFloat, coords::IEEEFloat...) = img(Vec(coord, coord2, coords...))
-(img::SampledImage)(coords::Vec{<:Any,<:IEEEFloat}) = ImageSampleImplicitLod(img, coords)
-(img::SampledImage)(coords::Vec{<:Any,<:IEEEFloat}, lod) = ImageSampleExplicitLod(img, coords, ImageOperandsLod, lod)
-(img::SampledImage)(coords::V, dx::V, dy::V) where {V<:Vec{<:Any,<:IEEEFloat}} = ImageSampleExplicitLod(img, coords, ImageOperandsGrad, dx, dy)
+(img::SampledImage)(coords::Vec{<:Any,<:IEEEFloat}) = convert_truncate(typeof(img), ImageSampleImplicitLod(img, coords))
+(img::SampledImage)(coords::Vec{<:Any,<:IEEEFloat}, lod) = convert_truncate(typeof(img), ImageSampleExplicitLod(img, coords, ImageOperandsLod, lod))
+(img::SampledImage)(coords::V, dx::V, dy::V) where {V<:Vec{<:Any,<:IEEEFloat}} = convert_truncate(typeof(img), ImageSampleExplicitLod(img, coords, ImageOperandsGrad, dx, dy))
 
 @noinline ImageSampleImplicitLod(img::SampledImage, coord) = zero(sampled_type(img))
 @noinline ImageSampleExplicitLod(img::SampledImage, coord, lod_operand::SPIRV.ImageOperands, lod::Number) = zero(sampled_type(img))

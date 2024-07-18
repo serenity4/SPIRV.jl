@@ -194,6 +194,10 @@ using StaticArrays
     @test sampled(1f0) == zero(eltype(img))
     @test sampled(1f0, 1f0) == zero(eltype(img))
     @test sampled(zero(Vec2), 1) == zero(eltype(img))
+
+    img = image_type(SPIRV.ImageFormatRg32ui, SPIRV.Dim2D, 0, false, false, 1)(zeros(Vec4U, 32, 32))
+    sampled = SampledImage(img, sampler)
+    @test sampled(1f0, 1f0) == zero(eltype(img))
   end
 
   @testset "Copying" begin
