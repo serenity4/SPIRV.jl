@@ -76,9 +76,10 @@ end
 # This is mostly to work around the fact that array/vector/matrix types
 # are composite types and we do not support looking into their (only) tuple component.
 function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Mat}
-  t = layout[T]::MatrixType
+  t = layout[T]
+  isa(t, MatrixType) || return @invoke serialize!(bytes, data::T, layout::LayoutStrategy)
   vectype = eltype_major(t)
-  payload = data.cols
+  payload = columns(data)
   if !t.is_column_major
     payload = reinterpret(NTuple{nrows(T), NTuple{ncols(T), eltype(T)}}, [payload])[]
   end
@@ -165,13 +166,24 @@ function deserialize(T::Type{Arr{N,AT}}, bytes, from::VulkanLayout) where {N,AT}
   size = datasize(from, AT)
   T(ntuple(i -> deserialize(AT, @view(bytes[(1 + (i - 1) * s):((i - 1) * s + size)]), from), N))
 end
-function deserialize(T::Type{Mat{N,M,MT}}, bytes, from::VulkanLayout) where {N,M,MT}
-  t = from[T]::MatrixType
+function deserialize(T::Type{<:SMatrix{N,M,MT}}, bytes, from::VulkanLayout) where {N,M,MT}
+  t = from[T]
+  isa(t, MatrixType) || return @invoke deserialize(T, bytes, from::LayoutStrategy)
   vectype = eltype_major(t)
   s = stride(from, t)
   size = datasize(from, vectype)
 
-  t.is_column_major && return @force_construct T ntuple(i -> deserialize(NTuple{N,MT}, @view(bytes[1 + (i - 1) * s:(i - 1) * s + size]), NoPadding()), M)
-  tuple = ntuple(i -> deserialize(NTuple{M,MT}, @view(bytes[1 + (i - 1) * s:(i - 1) * s + size]), NoPadding()), N)
-  @force_construct T reinterpret(NTuple{M, NTuple{N, MT}}, [tuple])[]
+  values = MT[]
+  if t.is_column_major
+    for i in 1:M
+      tuple = deserialize(NTuple{N,MT}, @view(bytes[1 + (i - 1) * s:(i - 1) * s + size]), NoPadding())
+      append!(values, tuple)
+    end
+  else
+    for j in 1:N
+      tuple = deserialize(NTuple{M,MT}, @view(bytes[1 + (i - 1) * s:(i - 1) * s + size]), NoPadding())
+      append!(values, tuple)
+    end
+  end
+  T(values)
 end

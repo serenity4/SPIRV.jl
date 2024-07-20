@@ -257,9 +257,9 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
       StructType([spir_type(subt, tmap) for subt in fieldtypes(t)])
     end
     ::Type{<:Pointer} => PointerType(StorageClassPhysicalStorageBuffer, spir_type(eltype(t), tmap))
-    ::Type{<:Vec} => VectorType(spir_type(eltype(t), tmap), length(t))
-    ::Type{<:Mat} => MatrixType(spir_type(Vec{nrows(t),eltype(t)}, tmap), ncols(t))
-    ::Type{<:Arr} => ArrayType(spir_type(eltype(t), tmap), Constant(UInt32(length(t))))
+    ::Type{<:SVector} && GuardBy(is_spirv_vector) => VectorType(spir_type(eltype(t), tmap), length(t))
+    ::Type{<:SVector} => ArrayType(spir_type(eltype(t), tmap), Constant(UInt32(length(t))))
+    ::Type{<:SMatrix} && GuardBy(is_spirv_matrix) => MatrixType(spir_type(Vec{nrows(t),eltype(t)}, tmap), ncols(t))
     ::Type{Sampler} => SamplerType()
     ::Type{<:Image} => ImageType(spir_type(component_type(t), tmap), dim(t), is_depth(t), is_arrayed(t), is_multisampled(t), is_sampled(t), format(t), nothing)
     ::Type{<:SampledImage} => SampledImageType(spir_type(image_type(t), tmap))

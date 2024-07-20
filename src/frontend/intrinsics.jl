@@ -225,30 +225,30 @@ end
 @noinline ConvertFToU(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)
 convert_vec(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = Vec{N,T}(ntuple_uint32(i -> convert(T, @inbounds v[i]), N)...)
 
-@noinline CompositeExtract(v::Vec, index::UInt32) = v.data[index]
+@noinline CompositeExtract(v::SVector, index::UInt32) = v.data[index]
 
-@noinline (@generated function CompositeConstruct(::Type{Vec{N,T}}, data::T...) where {N,T}
-  Expr(:new, Vec{N,T}, :data)
-end)
+@noinline function CompositeConstruct(::Type{SVector{N,T}}, values::T...) where {N,T}
+  @force_construct SVector{N,T} values
+end
 
-@noinline FAdd(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(+, x, y)
+@noinline FAdd(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(+, x, y)
 @noinline IAdd(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(+, x, y)
-@noinline FSub(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(-, x, y)
+@noinline FSub(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(-, x, y)
 @noinline ISub(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(-, x, y)
-@noinline FMul(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(*, x, y)
+@noinline FMul(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(*, x, y)
 @noinline IMul(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(*, x, y)
-@noinline FDiv(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(/, x, y)
+@noinline FDiv(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(/, x, y)
 @noinline IDiv(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(/, x, y)
-@noinline FRem(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(rem, x, y)
+@noinline FRem(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(rem, x, y)
 @noinline IRem(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(rem, x, y)
-@noinline FMod(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(mod, x, y)
+@noinline FMod(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(mod, x, y)
 @noinline IMod(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(mod, x, y)
-@noinline ^(x::V, y::V)     where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(^, x, y)
-@noinline Atan2(x::V, y::V) where {V<:Vec{<:Any,<:IEEEFloat}} = vectorize(atan, x, y)
+@noinline Pow(x::V, y::V)   where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(^, x, y)
+@noinline Atan2(x::V, y::V) where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(atan, x, y)
 
-@noinline Dot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
-@noinline UDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
-@noinline SDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
+@noinline Dot(x::Vec{N}, y::Vec{N})   where {N} = sum(x .* y)
+@noinline UDot(x::Vec{N}, y::Vec{N})  where {N} = sum(x .* y)
+@noinline SDot(x::Vec{N}, y::Vec{N})  where {N} = sum(x .* y)
 @noinline SUDot(x::Vec{N}, y::Vec{N}) where {N} = sum(x .* y)
 
 @noinline Ceil(x::Vec) = vectorize(ceil, x)
@@ -259,3 +259,20 @@ end)
 vectorize(op, v1::T, v2::T) where {T<:Vec} = Vec(op.(v1.data, v2.data))
 vectorize(op, v::T, x::Scalar) where {T<:Vec} = Vec(op.(v.data, x))
 vectorize(op, v::T) where {T<:Vec} = Vec(op.(v.data))
+
+@noinline (@generated function CompositeConstruct(::Type{Mat{N,M,T,L}}, cols::Vec{N,T}...) where {N,M,T,L}
+  2 ≤ N ≤ 4 || throw(ArgumentError("SPIR-V matrices must have between 2 and 4 rows."))
+  2 ≤ M ≤ 4 || throw(ArgumentError("SPIR-V matrices must have between 2 and 4 columns."))
+  values = Expr[]
+  for i in 1:N
+    for j in 1:M
+      push!(values, :(cols[$j][$i]))
+    end
+  end
+  ex = Expr(:new, Mat{N,M,T,L})
+  append!(ex.args, values)
+  ex
+end)
+
+@noinline CompositeExtract(m::Mat, i::UInt32, j::UInt32) = m.data[i + (j - 1)nrows(m)]
+@noinline CompositeExtract(m::Mat{N,M,T}, i::UInt32) where {N,M,T} = Vec{N,T}(ntuple(j -> m.data[j + (i - 1)N], N))

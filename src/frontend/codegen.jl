@@ -162,7 +162,8 @@ function get_field_index(composite_type, field::QuoteNode, tr::Translation, targ
   isa(field.value, Symbol) || throw_compilation_error("`Symbol` value expected in `QuoteNode`, got $(repr(field.value))")
   name = field.value::Symbol
   T = get_type(composite_type, tr, target)
-  T <: Union{Arr, Vec, Mat} && name === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden")
+  t = tr.tmap[T]
+  isa(t, Union{ArrayType, VectorType, MatrixType}) && name === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden")
   index = findfirst(==(name), fieldnames(T))
   !isnothing(index) || throw_compilation_error("symbol $(repr(name)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
   index

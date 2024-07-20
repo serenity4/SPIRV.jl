@@ -9,9 +9,9 @@ struct VecStyle{N} <: StyleOverride end
 struct ArrStyle{N} <: StyleOverride end
 struct MatStyle{N,M} <: StyleOverride end
 
-Base.BroadcastStyle(::Type{<:Vec{N}}) where {N} = VecStyle{N}()
-Base.BroadcastStyle(::Type{<:Arr{N}}) where {N} = ArrStyle{N}()
-Base.BroadcastStyle(::Type{<:Mat{N,M}}) where {N,M} = MatStyle{N,M}()
+# Base.BroadcastStyle(::Type{<:Vec{N}}) where {N} = VecStyle{N}()
+# Base.BroadcastStyle(::Type{<:Arr{N}}) where {N} = ArrStyle{N}()
+# Base.BroadcastStyle(::Type{<:Mat{N,M}}) where {N,M} = MatStyle{N,M}()
 
 Base.BroadcastStyle(style::StyleOverride, ::AbstractArrayStyle{0}) = style
 Base.BroadcastStyle(style::StyleOverride, ::Style{Tuple}) = style

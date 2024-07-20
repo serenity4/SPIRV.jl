@@ -10,9 +10,8 @@ module MathFunctions
 using ..SPIRV: AbstractSPIRVArray, U, F, Vec, Vec3U
 
 using LinearAlgebra: dot
-import LinearAlgebra: norm, normalize
 
-export lerp, slerp_2d, angle_2d, rotate_2d, normalize, distance2, distance, norm, compute_roots, saturated_softmax, linearstep, smoothstep, smootherstep, remap, linear_index, image_index
+export lerp, slerp_2d, angle_2d, rotate_2d, compute_roots, saturated_softmax, linearstep, smoothstep, smootherstep, remap, linear_index, image_index
 
 lerp(x, y, t) = x .* t .+ (1 .- t)y
 
@@ -36,12 +35,6 @@ function rotate_2d(v, angle)
   cv′ = cv * crot
   typeof(v)(real(cv′), imag(cv′))
 end
-
-normalize(x::AbstractSPIRVArray) = ifelse(iszero(x), x, x / norm(x))
-norm(x::AbstractSPIRVArray) = distance(x, zero(x))
-
-distance2(x, y) = sum(x -> x^2, y - x)
-distance(x, y) = sqrt(distance2(x, y))
 
 function compute_roots(a, b, c)
   if isapprox(a, zero(a), atol = 1e-7)

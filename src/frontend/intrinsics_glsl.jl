@@ -78,14 +78,15 @@ end
 
 # Min/max/clamp operations
 
-@noinline FMin(x, y)                                  = ifelse(isless(x, y), x, y)
-@noinline SMin(x, y)                                  = ifelse(isless(x, y), x, y)
-@noinline UMin(x, y)                                  = ifelse(isless(x, y), x, y)
+@noinline SMin(x, y)        = ifelse(isless(x, y), x, y)
+@noinline FMin(x, y)        = ifelse(isless(x, y), x, y)
+@noinline UMin(x, y)        = ifelse(isless(x, y), x, y)
+@noinline FMax(x, y)        = ifelse(isless(y, x), x, y)
+@noinline SMax(x, y)        = ifelse(isless(y, x), x, y)
+@noinline UMax(x, y)        = ifelse(isless(y, x), x, y)
+@noinline FClamp(x, lo, hi) = min(max(x, lo), hi)
+@noinline SClamp(x, lo, hi) = min(max(x, lo), hi)
+@noinline UClamp(x, lo, hi) = min(max(x, lo), hi)
 
-@noinline FMax(x, y)                                  = ifelse(isless(y, x), x, y)
-@noinline SMax(x, y)                                  = ifelse(isless(y, x), x, y)
-@noinline UMax(x, y)                                  = ifelse(isless(y, x), x, y)
-
-@noinline FClamp(x, lo, hi)                                     = min(max(x, lo), hi)
-@noinline SClamp(x, lo, hi)                                     = min(max(x, lo), hi)
-@noinline UClamp(x, lo, hi)                                     = min(max(x, lo), hi)
+@noinline Normalize(x) = x ./ Length(x)
+@noinline Length(x) = sqrt(sum(e -> e^2, x))

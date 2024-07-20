@@ -20,7 +20,7 @@ using ForwardMethods
 using Random
 using StyledStrings
 import Serialization: serialize, deserialize
-using StaticArrays: SVector, MVector, static_vector_gen
+using StaticArrays: StaticArrays, SVector, SMatrix
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
 
 using Core.Compiler: CodeInfo, IRCode, MethodInstance, InferenceResult, InferenceState,
@@ -39,7 +39,7 @@ using Base: Fix1, Fix2,
 const IEEEFloat_types = (Float16, Float32, Float64)
 const SmallFloat = Union{Float16,Float32}
 
-import LinearAlgebra: dot, cross
+import LinearAlgebra: dot, cross, norm, normalize
 
 import SPIRV_Tools_jll
 const spirv_val = SPIRV_Tools_jll.spirv_val()
@@ -118,9 +118,7 @@ include("analysis/control_flow.jl")
 include("frontend/method_table.jl")
 include("frontend/types/abstractarray.jl")
 include("frontend/types/pointer.jl")
-include("frontend/types/vector.jl")
-include("frontend/types/matrix.jl")
-include("frontend/types/array.jl")
+include("frontend/types/arrays.jl")
 include("frontend/types/image.jl")
 include("frontend/intrinsics.jl")
 include("frontend/intrinsics_glsl.jl")
@@ -249,12 +247,14 @@ export
   Vec2, Vec3, Vec4,
   Vec2U, Vec3U, Vec4U,
   Vec2I, Vec3I, Vec4I,
-  MVec,
-  MVec2, MVec3, MVec4,
-  MVec2U, MVec3U, MVec4U,
-  MVec2I, MVec3I, MVec4I,
-  Mat, Mat2, Mat3, Mat4, @mat,
   Arr,
+  Mat, Mat2, Mat3, Mat4,
+  Mat23, Mat32, Mat24, Mat42, Mat34, Mat43,
+  MatU, Mat2U, Mat3U, Mat4U,
+  Mat23U, Mat32U, Mat24U, Mat42U, Mat34U, Mat43U,
+  MatI, Mat2I, Mat3I, Mat4I,
+  Mat23I, Mat32I, Mat24I, Mat42I, Mat34I, Mat43I,
+  @vec, @arr, @mat,
   @load, @store,
   Image, image_type, Sampler,
   SampledImage,

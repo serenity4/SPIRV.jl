@@ -42,8 +42,8 @@ Base.setindex!(img::Image, value, coord::BitInteger) = ImageWrite(img, coord, va
 "Read the texel at the provided coordinates from an image using zero-based indexing."
 Base.setindex!(img::Image, value, coord::BitInteger, coord2::BitInteger, coords::BitInteger...) = setindex!(img, value, Vec(coord, coord2, coords...))
 "Read the texel at the coordinates given by `coord` from an image using zero-based indexing."
-Base.setindex!(img::_Image{T}, value::T, coords::Vec{<:Any,UInt32}) where {T} = ImageWrite(img, coords, value)
-Base.setindex!(img::_Image{T}, value::T, coords::Vec{N,<:Signed}) where {N,T} = setindex!(img, value, convert(Vec{N,UInt32}, coords))
+Base.setindex!(img::_Image{T}, value::T, coords::Vec{N,UInt32}) where {N,T} = ImageWrite(img, coords, value)
+Base.setindex!(img::_Image{T}, value::T, coords::Vec{N}) where {N,T} = setindex!(img, value, convert(Vec{N,UInt32}, coords))
 Base.setindex!(img::_Image{T}, value, coords::Vec) where {T} = setindex!(img, convert(T, value), coords)
 
 Base.size(image::Image) = ImageQuerySize(image)
@@ -192,8 +192,10 @@ sampled_type(T::Type{<:SampledImage}) = Vec{4, component_type(image_type(T))}
 image_type(img::SampledImage) = image_type(typeof(img))
 sampled_type(img::SampledImage) = sampled_type(typeof(img))
 
-convert_truncate(::Type{SampledImage{I}}, value) where {I} = convert_truncate(texel_type(I), value)
-convert_truncate(::Type{T}, value::T) where {T<:Vec} = value
+convert_truncate(::Type{SampledImage{I}}, value::Vec{4}) where {I} = convert_truncate(texel_type(I), value)
+convert_truncate(::Type{T}, value::T) where {T<:Number} = value
+convert_truncate(::Type{T}, value::Vec) where {T} = convert(T, value.x)
+convert_truncate(::Type{T}, value) where {T} = convert(T, value)
 convert_truncate(::Type{Vec{N,T}}, value::Vec{N}) where {N,T} = convert(Vec{N,T}, value)
 convert_truncate(::Type{Vec{N,T}}, value::Vec{M}) where {N,M,T} = convert_truncate(Vec{N,T}, Vec(ntuple_uint32(i -> value[i], N)))
 

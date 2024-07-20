@@ -11,14 +11,6 @@ function operation(ex; mod = SPIRV)
   end
 end
 
-function store(x)
-  x[3] = x[1] + x[2]
-end
-
-function store(mat::Mat)
-  mat[1, 2] = mat[1, 1] + mat[3, 3]
-end
-
 macro test_code(code, args...)
   maxlength = nothing; minlength = nothing; spirv_chunk = true; spirv_chunk_broken = false
   for arg in args
@@ -49,15 +41,17 @@ macro test_code(code, args...)
     minlength = $minlength
     spirv_chunk = $spirv_chunk
     $(test(:(unwrap(SPIRV.validate(code)))))
-    !isnothing(maxlength) && $(test(:(length(code.code) ≤ maxlength)))
-    !isnothing(minlength) && $(test(:(length(code.code) ≥ minlength)))
+    code = filter(!isnothing, code.code)
+    !isnothing(maxlength) && $(test(:(length(code) ≤ maxlength)))
+    !isnothing(minlength) && $(test(:(length(code) ≥ minlength)))
     if spirv_chunk !== false
-      sts = code.code[1:(end - 1)]
+      sts = code[1:(end - 1)]
       is_spirv_chunk = all(sts) do st
         Meta.isexpr(st, :call) && st.args[1] == GlobalRef(Base, :getfield) && return true
         Meta.isexpr(st, :new) && return true
         isa(st, GlobalRef) && return true
         Meta.isexpr(st, :boundscheck) && return true
+        isnothing(st) && return true
         Meta.isexpr(st, :invoke) || ($(log(:("Expected `invoke` expression, got `$st`"))); return false)
         mi = st.args[1]::Core.MethodInstance
         (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || ($(log(:("Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`")); false))
@@ -188,27 +182,6 @@ end
       @test ssavaluetypes[1:(end - 1)] == fill(Vec{3,Float64}, 3)
     end
 
-    @testset "Arrays" begin
-      (; code, ssavaluetypes) = SPIRV.@code_typed store(::Arr{3, Float64})
-      @test operation.(code[1:(end - 1)]) ==
-            [:UConvert, :AccessChain, :Load, :UConvert, :AccessChain, :Load, :FAdd, :UConvert, :AccessChain, :Store]
-
-      (; code, ssavaluetypes) = SPIRV.@code_typed store(::Vector{Float64})
-      # There may be three more `OpUConvert` + `OpISub` to convert Int64s to UInt32s at runtime.
-      # On a few recent versions of Julia, this conversion is optimized away.
-      # So we just test that the first 5 instructions and last 2 are correct.
-      @test in(length(code), (8, 11)) # 11 is if the conversions are present.
-      @test filter!(x -> !in(x, (:UConvert,)), operation.(code))[1:5] ==
-            [:AccessChain, :Load, :AccessChain, :Load, :FAdd]
-      @test operation.(code[end-2:end-1]) == [:AccessChain, :Store]
-    end
-
-    @testset "Matrix" begin
-      (; code, ssavaluetypes) = SPIRV.@code_typed store(::Mat{4, 4, Float64})
-      @test operation.(code[1:(end - 1)]) ==
-            [:UConvert, :UConvert, :AccessChain, :Load, :UConvert, :UConvert, :AccessChain, :Load, :FAdd, :UConvert, :UConvert, :AccessChain, :Store]
-    end
-
     @testset "Image" begin
       function sample_some_image(img, sampler, uv)
         sampled_image = combine(img, sampler)
@@ -217,8 +190,8 @@ end
 
       T = image_type(SPIRV.ImageFormatR16f, SPIRV.Dim2D, 0, false, false, 1)
       (; code, ssavaluetypes) = SPIRV.@code_typed sample_some_image(::T, ::Sampler, ::Vec2)
-      @test operation.(code[1:(end - 1)]) == [:SampledImage, :ImageSampleImplicitLod]
-      @test ssavaluetypes[1:(end - 1)] == [SampledImage{T}, Vec{4, Float32}]
+      @test operation.(code[1:(end - 1)]) == [:SampledImage, :ImageSampleImplicitLod, :CompositeExtract]
+      @test ssavaluetypes[1:(end - 1)] == [SampledImage{T}, Vec{4, Float32}, Float32]
 
       T = image_type(SPIRV.ImageFormatRg16f, SPIRV.Dim2D, 0, false, false, 1)
       (; code, ssavaluetypes) = SPIRV.@code_typed sample_some_image(::T, ::Sampler, ::Vec2)
@@ -284,22 +257,22 @@ end
     @test_code ci minlength = 8 maxlength = 8 # 4 accesses, 3 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source sum(::Arr{10,Float32})
-    @test_code ci minlength = 30 maxlength = 30 # 5 accesses, 9 additions, 1 return
+    @test_code ci minlength = 20 maxlength = 20 # 10 accesses, 9 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source ((x, y) -> x .+ y)(::Vec2, ::Vec2)
     @test_code ci minlength = 2 maxlength = 2 # 1 addition, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source ((arr, x) -> getindex.(arr .+ Ref(x), 1U))(::Arr{3,Vec2}, ::Vec2)
-    @test_code ci minlength = 12 maxlength = 30 # Just make sure broadcast results in a single instruction chunk.
+    @test_code ci minlength = 11 maxlength = 13 # Two `UConvert`s may be present.
 
-    ci = SPIRV.@code_typed debuginfo=:source (arr -> (arr .+= arr))(::Arr{3,Vec2})
-    @test_code ci minlength = 18 maxlength = 28 spirv_chunk = false
+    ci = SPIRV.@code_typed debuginfo=:source (+)(::Arr{3,Vec2}, ::Arr{3, Vec2})
+    @test_code ci minlength = 11 maxlength = 11
 
-    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float32}}, ::Arr{3,Float32})
+    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{5,Float32}}, ::Arr{5,Float32})
     @test_code ci minlength = 1 maxlength = 1 # 1 return
 
-    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{3,Float64}}, ::Arr{3,Float32})
-    @test_code ci minlength = 11 maxlength = 30 # 3 accesses, 3 conversions, 1 construct, 1 return
+    ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{5,Float64}}, ::Arr{5,Float32})
+    @test_code ci minlength = 12 maxlength = 12 # 5 accesses, 5 conversions, 1 construct, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Vec2}, ::Vec{2,Float16})
     @test_code ci minlength = 2 maxlength = 2 # 1 FConvert on vectors, 1 return
@@ -314,7 +287,7 @@ end
     @test_code ci minlength = 7 maxlength = 28 spirv_chunk = false # A bunch of math operations, code length is variable due to broadcasting and the possible construction of intermediate vectors.
 
     ci = SPIRV.@code_typed debuginfo=:source slerp_2d(::Vec2, ::Vec2, ::Float32)
-    @test_code ci minlength = 30
+    @test_code ci maxlength = 30
 
     ci = SPIRV.@code_typed debuginfo=:source rotate_2d(::Vec2, ::Float32)
     @test_code ci minlength = 30
@@ -332,12 +305,12 @@ end
     @test_code ci minlength = 30 maxlength = 50 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
-    @test_code ci minlength = 100 maxlength = 150 spirv_chunk = false
+    @test_code ci minlength = 75 maxlength = 100 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source compute_blur_2(::GaussianBlur, ::SampledImage{IT}, ::Vec2)
-    @test_code ci minlength = 100 maxlength = 400 spirv_chunk = false
+    @test_code ci minlength = 100 maxlength = 150 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source step_euler(::BoidAgent, ::Vec2, ::Float32)
-    @test_code ci minlength = 44 maxlength = 70 spirv_chunk = false # Assumes that `wrap_around` is inlined, otherwise should be fewer lines.
+    @test_code ci minlength = 30 maxlength = 40 spirv_chunk = false # Assumes that `wrap_around` is inlined, otherwise should be fewer lines.
   end
 end;

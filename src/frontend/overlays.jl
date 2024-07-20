@@ -205,130 +205,154 @@ end
 
 # Vectors/arrays/matrices/pointers.
 
+@override function SVector{N,T}(values::NTuple{N,T}) where {N,T}
+  CompositeConstruct(SVector{N,T}, values...)
+end
+
+@override function SVector{N,T}(values::NTuple{N,Any}) where {N,T}
+  SVector{N,T}(ntuple_uint32(i -> convert(T, values[i]), N))
+end
+
 @override getindex(v::Vector, index::Integer) = AccessChain(v, unsigned_index(index))[]
 @override setindex!(v::Vector{T}, value::T, index::Integer) where {T} = Store(AccessChain(v, unsigned_index(index)), value)
 
-@override Base.:(==)(x::T, y::T) where {VT<:IEEEFloat,T<:Vec{<:Any,VT}} = All(FOrdEqual(x, y))
-@override Base.:(==)(x::T, y::T) where {VT<:BitInteger,T<:Vec{<:Any,VT}} = All(IEqual(x, y))
-@override Base.:(==)(x::Vec{N}, y::Vec{N}) where {N} = (==)(promote(x, y)...)
-@override Base.:(==)(::Vec, ::Vec) = false
-@override Base.:(==)(x::Vec, y::AbstractVector) = (==)(promote(x, y)...)
-@override Base.:(==)(x::AbstractVector, y::Vec) = (==)(promote(x, y)...)
-@override Base.any(x::Vec{<:Any,Bool}) = Any(x)
-@override Base.all(x::Vec{<:Any,Bool}) = All(x)
+@override Base.getindex(v::SVector, i::Integer) = CompositeExtract(v, unsigned_index(i))
+@override Base.getindex(v::SVector, i::Int) = CompositeExtract(v, UInt32(i))
 
-@override Tuple(x::Vec) = ntuple_uint32(i -> x[i], length(x))
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:IEEEFloat}) where {N,T<:IEEEFloat} = FConvert(Vec{N,T}, v)
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:BitSigned}) where {N,T<:BitSigned} = SConvert(Vec{N,T}, v)
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:BitUnsigned}) where {N,T<:BitUnsigned} = UConvert(Vec{N,T}, v)
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:BitSigned}) where {N,T<:IEEEFloat} = ConvertSToF(Vec{N,T}, v)
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:BitUnsigned}) where {N,T<:IEEEFloat} = ConvertUToF(Vec{N,T}, v)
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:IEEEFloat}) where {N,T<:BitSigned} = ConvertFToS(Vec{N,T}, v)
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,<:IEEEFloat}) where {N,T<:BitUnsigned} = ConvertFToU(Vec{N,T}, v)
-@override Base.convert(::Type{Vec{N,T1}}, v::Vec{N,T2}) where {N,T1,T2} = Vec{N,T1}(ntuple_uint32(i -> convert(T1, @inbounds v[i]), N)...)
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T} = v
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T<:Union{IEEEFloat}} = v
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T<:Union{BitSigned}} = v
-@override Base.convert(::Type{Vec{N,T}}, v::Vec{N,T}) where {N,T<:Union{BitUnsigned}} = v
+# Loop over 2 ≤ N ≤ 4 to avoid overriding methods for regular SVectors that don't map to SPIR-V vectors.
+for N in 2:4
+  @eval begin
+    @override Base.:(==)(x::T, y::T) where {VT<:IEEEFloat,T<:Vec{$N,VT}} = All(FOrdEqual(x, y))
+    @override Base.:(==)(x::T, y::T) where {VT<:BitInteger,T<:Vec{$N,VT}} = All(IEqual(x, y))
+    @override Base.:(==)(x::Vec{$N}, y::Vec{$N}) = (==)(promote(x, y)...)
+    @override Base.:(==)(x::Vec{$N}, y::AbstractVector) = (==)(promote(x, y)...)
+    @override Base.:(==)(x::AbstractVector, y::Vec{$N}) = (==)(promote(x, y)...)
+    @override Base.any(x::Vec{$N,Bool}) = Any(x)
+    @override Base.all(x::Vec{$N,Bool}) = All(x)
 
-@override Base.getindex(v::Vec, i::Integer) = CompositeExtract(v, unsigned_index(i))
-@override Base.getindex(v::Vec, i::Int) = CompositeExtract(v, UInt32(i))
-@override Vec{N,T}(components::NTuple{N,T}) where {N,T} = CompositeConstruct(Vec{N,T}, components...)
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,<:IEEEFloat}) where {T<:IEEEFloat} = FConvert(Vec{$N,T}, v)
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,<:BitSigned}) where {T<:BitSigned} = SConvert(Vec{$N,T}, v)
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,<:BitUnsigned}) where {T<:BitUnsigned} = UConvert(Vec{$N,T}, v)
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,<:BitSigned}) where {T<:IEEEFloat} = ConvertSToF(Vec{$N,T}, v)
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,<:BitUnsigned}) where {T<:IEEEFloat} = ConvertUToF(Vec{$N,T}, v)
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,<:IEEEFloat}) where {T<:BitSigned} = ConvertFToS(Vec{$N,T}, v)
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,<:IEEEFloat}) where {T<:BitUnsigned} = ConvertFToU(Vec{$N,T}, v)
+    @override Base.convert(::Type{Vec{$N,T1}}, v::Vec{$N,T2}) where {T1,T2} = Vec{$N,T1}(ntuple_uint32(i -> convert(T1, @inbounds v[i]), $N)...)
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,T}) where {T} = v
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,T}) where {T<:Union{IEEEFloat}} = v
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,T}) where {T<:Union{BitSigned}} = v
+    @override Base.convert(::Type{Vec{$N,T}}, v::Vec{$N,T}) where {T<:Union{BitUnsigned}} = v
 
-@override function Base.getproperty(v::Vec, name::Symbol)
-  name === :x && return v[1]
-  name === :y && return v[2]
-  name === :z && return v[3]
-  name === :w && return v[4]
-  getfield(v, name)
+    @override function Base.getproperty(v::Vec{$N}, name::Symbol)
+      name === :x && return v[1U]
+      name === :y && return v[2U]
+      @static if $N > 2
+        name === :z && return v[3U]
+        @static if $N > 3
+          name === :w && return v[4U]
+        end
+      end
+      getfield(v, name)
+    end
+
+    @override (+)(x::Vec{$N}, y::Vec{$N})  = (+)(promote(x, y)...)
+    @override (-)(x::Vec{$N}, y::Vec{$N})  = (-)(promote(x, y)...)
+    @override (*)(x::Vec{$N}, y::Vec{$N})  = (*)(promote(x, y)...)
+    @override (/)(x::Vec{$N}, y::Vec{$N})  = (/)(promote(x, y)...)
+    @override rem(x::Vec{$N}, y::Vec{$N})  = rem(promote(x, y)...)
+    @override mod(x::Vec{$N}, y::Vec{$N})  = mod(promote(x, y)...)
+    @override ^(x::Vec{$N}, y::Vec{$N})    = ^(promote(x, y)...)
+    @override atan(x::Vec{$N}, y::Vec{$N}) = atan(promote(x, y)...)
+
+    @override (+)(x::V, y::V)  where {V<:Vec{$N,<:IEEEFloat}}  = FAdd(x, y)
+    @override (+)(x::V, y::V)  where {V<:Vec{$N,<:BitInteger}} = IAdd(x, y)
+    @override (-)(x::V, y::V)  where {V<:Vec{$N,<:IEEEFloat}}  = FSub(x, y)
+    @override (-)(x::V, y::V)  where {V<:Vec{$N,<:BitInteger}} = ISub(x, y)
+    @override (*)(x::V, y::V)  where {V<:Vec{$N,<:IEEEFloat}}  = FMul(x, y)
+    @override (*)(x::V, y::V)  where {V<:Vec{$N,<:BitInteger}} = IMul(x, y)
+    @override (/)(x::V, y::V)  where {V<:Vec{$N,<:IEEEFloat}}  = FDiv(x, y)
+    @override (/)(x::V, y::V)  where {V<:Vec{$N,<:BitInteger}} = IDiv(x, y)
+    @override rem(x::V, y::V)  where {V<:Vec{$N,<:IEEEFloat}}  = FRem(x, y)
+    @override rem(x::V, y::V)  where {V<:Vec{$N,<:BitInteger}} = IRem(x, y)
+    @override mod(x::V, y::V)  where {V<:Vec{$N,<:IEEEFloat}}  = FMod(x, y)
+    @override mod(x::V, y::V)  where {V<:Vec{$N,<:BitInteger}} = IMod(x, y)
+    @override ^(x::V, y::V)    where {V<:Vec{$N,<:IEEEFloat}}  = Pow(x, y)
+    @override atan(x::V, y::V) where {V<:Vec{$N,<:IEEEFloat}}  = Atan2(x, y)
+
+    @override ceil(x::Vec{$N}) = Ceil(x)
+    @override exp(x::Vec{$N}) = Exp(x)
+    @override (-)(x::Vec{$N}) = FNegate(x)
+
+    # Define broadcasting rules so that broadcasting eagerly uses the vector instruction when applicable.
+    @override Broadcast.broadcasted(::typeof(+), x::V, y::V) where {V<:Vec{$N,<:IEEEFloat}}          = FAdd(x, y)
+    @override Broadcast.broadcasted(::typeof(+), x::V, y::V) where {V<:Vec{$N,<:BitInteger}}         = IAdd(x, y)
+    @override Broadcast.broadcasted(::typeof(+), x::Vec{$N,<:BitInteger}, y::Vec{$N,<:BitInteger})   = IAdd(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(+), x::Vec{$N,<:IEEEFloat}, y::Vec{$N,<:IEEEFloat})     = FAdd(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(-), x::V, y::V) where {V<:Vec{$N,<:IEEEFloat}}          = FSub(x, y)
+    @override Broadcast.broadcasted(::typeof(-), x::V, y::V) where {V<:Vec{$N,<:BitInteger}}         = ISub(x, y)
+    @override Broadcast.broadcasted(::typeof(-), x::Vec{$N,<:BitInteger}, y::Vec{$N,<:BitInteger})   = ISub(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(-), x::Vec{$N,<:IEEEFloat}, y::Vec{$N,<:IEEEFloat})     = FSub(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(*), x::V, y::V) where {V<:Vec{$N,<:IEEEFloat}}          = FMul(x, y)
+    @override Broadcast.broadcasted(::typeof(*), x::V, y::V) where {V<:Vec{$N,<:BitInteger}}         = IMul(x, y)
+    @override Broadcast.broadcasted(::typeof(*), x::Vec{$N,<:BitInteger}, y::Vec{$N,<:BitInteger})   = IMul(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(*), x::Vec{$N,<:IEEEFloat}, y::Vec{$N,<:IEEEFloat})     = FMul(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(/), x::V, y::V) where {V<:Vec{$N,<:IEEEFloat}}          = FDiv(x, y)
+    @override Broadcast.broadcasted(::typeof(/), x::V, y::V) where {V<:Vec{$N,<:BitInteger}}         = IDiv(x, y)
+    @override Broadcast.broadcasted(::typeof(/), x::Vec{$N,<:BitInteger}, y::Vec{$N,<:BitInteger})   = IDiv(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(/), x::Vec{$N,<:IEEEFloat}, y::Vec{$N,<:IEEEFloat})     = FDiv(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(rem), x::V, y::V) where {V<:Vec{$N,<:IEEEFloat}}        = FRem(x, y)
+    @override Broadcast.broadcasted(::typeof(rem), x::V, y::V) where {V<:Vec{$N,<:BitInteger}}       = IRem(x, y)
+    @override Broadcast.broadcasted(::typeof(rem), x::Vec{$N,<:BitInteger}, y::Vec{$N,<:BitInteger}) = IRem(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(rem), x::Vec{$N,<:IEEEFloat}, y::Vec{$N,<:IEEEFloat})   = FRem(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(mod), x::V, y::V) where {V<:Vec{$N,<:IEEEFloat}}        = FMod(x, y)
+    @override Broadcast.broadcasted(::typeof(mod), x::V, y::V) where {V<:Vec{$N,<:BitInteger}}       = IMod(x, y)
+    @override Broadcast.broadcasted(::typeof(mod), x::Vec{$N,<:BitInteger}, y::Vec{$N,<:BitInteger}) = IMod(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(mod), x::Vec{$N,<:IEEEFloat}, y::Vec{$N,<:IEEEFloat})   = FMod(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(^), x::V, y::V) where {V<:Vec{$N,<:IEEEFloat}}          = Pow(x, y)
+    @override Broadcast.broadcasted(::typeof(^), x::Vec{$N,<:IEEEFloat}, y::Vec{$N,<:IEEEFloat})     = Pow(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(atan), x::V, y::V) where {V<:Vec{$N,<:IEEEFloat}}       = Atan2(x, y)
+    @override Broadcast.broadcasted(::typeof(atan), x::Vec{$N,<:IEEEFloat}, y::Vec{$N,<:IEEEFloat})  = Atan2(promote(x, y)...)
+    @override Broadcast.broadcasted(::typeof(ceil), x::Vec{$N}) = vectorize(ceil, x)
+    @override Broadcast.broadcasted(::typeof(exp), x::Vec{$N})  = vectorize(exp, x)
+    @override Broadcast.broadcasted(::typeof(-), x::Vec{$N})    = vectorize(-, x)
+
+    @override dot(x::T, y::T) where {T<:Vec{$N,<:IEEEFloat}} = Dot(x, y)
+    @override dot(x::T, y::T) where {T<:Vec{$N,<:BitUnsigned}} = UDot(x, y)
+    @override dot(x::T, y::T) where {T<:Vec{$N,<:BitSigned}} = SDot(x, y)
+    @override dot(x::Vec{$N,<:BitSigned}, y::Vec{$N,<:BitUnsigned}) = SUDot(x, y)
+
+    @override @generated foldl(f::F, xs::Vec{$N}) where {F<:Function} =
+      foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex_uint32(xs)[2:end]; init = :(xs[$(firstindex_uint32(xs))]))
+    @override @generated foldl(f::F, xs::Vec{$N}, init) where {F <: Function} =
+      foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex_uint32(xs); init = :init)
+    @override @generated foldr(f::F, xs::Vec{$N}) where {F<:Function} =
+      foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex_uint32(xs)[1:(end - 1)]; init = :(xs[$(lastindex_uint32(xs))]))
+    @override @generated foldr(f::F, xs::Vec{$N}, init) where {F <: Function} =
+      foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex_uint32(xs); init = :init)
+    @override any(f::F, xs::Vec{$N}) where {F<:Function} = foldl((x, y) -> x | f(y), xs, false)
+    @override all(f::F, xs::Vec{$N}) where {F<:Function} = foldl((x, y) -> x & f(y), xs, true)
+    @override @generated sum(f::F, xs::Vec{$N}) where {F<:Function} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
+    @override @generated prod(f::F, xs::Vec{$N}) where {F<:Function} = Expr(:call, :*, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
+    @override sum(xs::Vec{$N}) = sum(identity, xs)
+    @override prod(xs::Vec{$N}) = prod(identity, xs)
+
+    @override_glsl norm(x::Vec{$N,<:IEEEFloat}) = Length(x)
+    @override_glsl normalize(x::Vec{$N,<:IEEEFloat}) = Normalize(x)
+  end
 end
 
-@override (+)(x::Vec{N}, y::Vec{N})  where {N} = (+)(promote(x, y)...)
-@override (-)(x::Vec{N}, y::Vec{N})  where {N} = (-)(promote(x, y)...)
-@override (*)(x::Vec{N}, y::Vec{N})  where {N} = (*)(promote(x, y)...)
-@override (/)(x::Vec{N}, y::Vec{N})  where {N} = (/)(promote(x, y)...)
-@override rem(x::Vec{N}, y::Vec{N})  where {N} = rem(promote(x, y)...)
-@override mod(x::Vec{N}, y::Vec{N})  where {N} = mod(promote(x, y)...)
-@override ^(x::Vec{N}, y::Vec{N})    where {N} = ^(promote(x, y)...)
-@override atan(x::Vec{N}, y::Vec{N}) where {N} = atan(promote(x, y)...)
+@override Tuple(x::SVector) = ntuple_uint32(i -> x[i], length(x))
 
-@override (+)(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = FAdd(x, y)
-@override (+)(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = IAdd(x, y)
-@override (-)(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = FSub(x, y)
-@override (-)(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = ISub(x, y)
-@override (*)(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = FMul(x, y)
-@override (*)(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = IMul(x, y)
-@override (/)(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = FDiv(x, y)
-@override (/)(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = IDiv(x, y)
-@override rem(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = FRem(x, y)
-@override rem(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = IRem(x, y)
-@override mod(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}} = FMod(x, y)
-@override mod(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = IMod(x, y)
-@override ^(x::V, y::V)    where {V<:Vec{<:Any,<:IEEEFloat}} = Pow(x, y)
-@override atan(x::V, y::V) where {V<:Vec{<:Any,<:IEEEFloat}} = Atan2(x, y)
-
-@override ceil(x::Vec) = Ceil(x)
-@override exp(x::Vec) = Exp(x)
-@override (-)(x::Vec) = FNegate(x)
-
-# Define broadcasting rules so that broadcasting eagerly uses the vector instruction when applicable.
-@override Broadcast.broadcasted(::typeof(+), x::V, y::V)   where {V<:Vec{<:Any,IEEEFloat}} = FAdd(x, y)
-@override Broadcast.broadcasted(::typeof(+), x::V, y::V)   where {V<:Vec{<:Any,BitInteger}} = IAdd(x, y)
-@override Broadcast.broadcasted(::typeof(+), x::Vec{N,<:BitInteger}, y::Vec{N,<:BitInteger}) where {N} = IAdd(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(+), x::Vec{N,<:IEEEFloat}, y::Vec{N,<:IEEEFloat})   where {N} = FAdd(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(-), x::V, y::V)   where {V<:Vec{<:Any,IEEEFloat}} = FSub(x, y)
-@override Broadcast.broadcasted(::typeof(-), x::V, y::V)   where {V<:Vec{<:Any,BitInteger}} = ISub(x, y)
-@override Broadcast.broadcasted(::typeof(-), x::Vec{N,<:BitInteger}, y::Vec{N,<:BitInteger}) where {N} = ISub(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(-), x::Vec{N,<:IEEEFloat}, y::Vec{N,<:IEEEFloat})   where {N} = FSub(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(*), x::V, y::V)   where {V<:Vec{<:Any,IEEEFloat}} = FMul(x, y)
-@override Broadcast.broadcasted(::typeof(*), x::V, y::V)   where {V<:Vec{<:Any,BitInteger}} = IMul(x, y)
-@override Broadcast.broadcasted(::typeof(*), x::Vec{N,<:BitInteger}, y::Vec{N,<:BitInteger}) where {N} = IMul(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(*), x::Vec{N,<:IEEEFloat}, y::Vec{N,<:IEEEFloat})   where {N} = FMul(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(/), x::V, y::V)   where {V<:Vec{<:Any,IEEEFloat}} = FDiv(x, y)
-@override Broadcast.broadcasted(::typeof(/), x::V, y::V)   where {V<:Vec{<:Any,BitInteger}} = IDiv(x, y)
-@override Broadcast.broadcasted(::typeof(/), x::Vec{N,<:BitInteger}, y::Vec{N,<:BitInteger}) where {N} = IDiv(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(/), x::Vec{N,<:IEEEFloat}, y::Vec{N,<:IEEEFloat})   where {N} = FDiv(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(rem), x::V, y::V)  where {V<:Vec{<:Any,IEEEFloat}} = FRem(x, y)
-@override Broadcast.broadcasted(::typeof(rem), x::V, y::V)  where {V<:Vec{<:Any,BitInteger}} = IRem(x, y)
-@override Broadcast.broadcasted(::typeof(rem), x::Vec{N,<:BitInteger}, y::Vec{N,<:BitInteger}) where {N} = IRem(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(rem), x::Vec{N,<:IEEEFloat}, y::Vec{N,<:IEEEFloat})   where {N} = FRem(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(mod), x::V, y::V)  where {V<:Vec{<:Any,IEEEFloat}} = FMod(x, y)
-@override Broadcast.broadcasted(::typeof(mod), x::V, y::V)  where {V<:Vec{<:Any,BitInteger}} = IMod(x, y)
-@override Broadcast.broadcasted(::typeof(mod), x::Vec{N,<:BitInteger}, y::Vec{N,<:BitInteger}) where {N} = IMod(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(mod), x::Vec{N,<:IEEEFloat}, y::Vec{N,<:IEEEFloat})   where {N} = FMod(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(^), x::V, y::V)   where {V<:Vec{<:Any,IEEEFloat}} = Pow(x, y)
-@override Broadcast.broadcasted(::typeof(^), x::Vec{N,<:IEEEFloat}, y::Vec{N,<:IEEEFloat})     where {N} = Pow(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(atan), x::V, y::V) where {V<:Vec{<:Any,IEEEFloat}} = Atan2(x, y)
-@override Broadcast.broadcasted(::typeof(atan), x::Vec{N,<:IEEEFloat}, y::Vec{N,<:IEEEFloat})  where {N} = Atan2(promote(x, y)...)
-@override Broadcast.broadcasted(::typeof(ceil), x::Vec) = vectorize(ceil, x)
-@override Broadcast.broadcasted(::typeof(exp), x::Vec) = vectorize(exp, x)
-@override Broadcast.broadcasted(::typeof(-), x::Vec) = vectorize(-, x)
-
-@override dot(x::T, y::T) where {T<:Vec{<:Any,<:IEEEFloat}} = Dot(x, y)
-@override dot(x::T, y::T) where {T<:Vec{<:Any,<:BitUnsigned}} = UDot(x, y)
-@override dot(x::T, y::T) where {T<:Vec{<:Any,<:BitSigned}} = SDot(x, y)
-@override dot(x::Vec{N,<:BitSigned}, y::Vec{N,<:BitUnsigned}) where {N} = SUDot(x, y)
-
-@override @generated foldl(f::F, xs::Vec) where {F<:Function} =
-  foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex_uint32(xs)[2:end]; init = :(xs[$(firstindex_uint32(xs))]))
-@override @generated foldl(f::F, xs::Vec, init) where {F <: Function} =
-  foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex_uint32(xs); init = :init)
-@override @generated foldr(f::F, xs::Vec) where {F<:Function} =
-  foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex_uint32(xs)[1:(end - 1)]; init = :(xs[$(lastindex_uint32(xs))]))
-@override @generated foldr(f::F, xs::Vec, init) where {F <: Function} =
-  foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex_uint32(xs); init = :init)
-@override any(f::F, xs::Vec) where {F<:Function} = foldl((x, y) -> x | f(y), xs, false)
-@override all(f::F, xs::Vec) where {F<:Function} = foldl((x, y) -> x & f(y), xs, true)
-@override @generated sum(f::F, xs::Vec) where {F<:Function} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
-@override @generated prod(f::F, xs::Vec) where {F<:Function} = Expr(:call, :*, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
-@override sum(xs::Vec) = sum(identity, xs)
-@override prod(xs::Vec) = prod(identity, xs)
+@override function Mat{N,M,T,L}(x::NTuple{L,T}) where {N,M,T,L}
+  !is_spirv_matrix(Mat{N,M,T,L}) && return @force_construct Mat{N,M,T,L} x
+  cols = ntuple_uint32(i -> Vec{N,T}(ntuple_uint32(j -> x[j + (i - 1)N], M)...))
+  CompositeConstruct(Mat{N,M,T,L}, cols...)
+end
 
 # Ranges.
 
-@override getindex(r::Union{StepRangeLen,LinRange}, i::Integer) = unsafe_getindex(r, i)
 @override getindex(v::Base.OneTo{T}, i::Integer) where {T} = convert(T, i)
-@override getindex(v::UnitRange{T}, i::Integer) where {T} = (v.start + (i - oneunit(i))) % T
+@override getindex(v::UnitRange{T}, i::Integer) where {T} = clamp((v.start + (i - oneunit(i))) % T, v.start, v.stop)
 
 ##### GLSL intrinsics.
 
@@ -340,17 +364,17 @@ end
 @override_glsl log(x::SmallFloat)  = Log(x)
 @override_glsl log2(x::SmallFloat) = Log2(x)
 
-@override_glsl sin(x::SmallFloat) = Sin(x)
-@override_glsl cos(x::SmallFloat) = Cos(x)
-@override_glsl tan(x::SmallFloat) = Tan(x)
-@override_glsl asin(x::SmallFloat) = Asin(x)
-@override_glsl acos(x::SmallFloat) = Acos(x)
-@override_glsl atan(x::SmallFloat) = Atan(x)
-@override_glsl cosh(x::SmallFloat) = Cosh(x)
-@override_glsl tanh(x::SmallFloat) = Tanh(x)
-@override_glsl asinh(x::SmallFloat) = Asinh(x)
-@override_glsl acosh(x::SmallFloat) = Acosh(x)
-@override_glsl atanh(x::SmallFloat) = Atanh(x)
+@override_glsl sin(x::SmallFloat)    = Sin(x)
+@override_glsl cos(x::SmallFloat)    = Cos(x)
+@override_glsl tan(x::SmallFloat)    = Tan(x)
+@override_glsl asin(x::SmallFloat)   = Asin(x)
+@override_glsl acos(x::SmallFloat)   = Acos(x)
+@override_glsl atan(x::SmallFloat)   = Atan(x)
+@override_glsl cosh(x::SmallFloat)   = Cosh(x)
+@override_glsl tanh(x::SmallFloat)   = Tanh(x)
+@override_glsl asinh(x::SmallFloat)  = Asinh(x)
+@override_glsl acosh(x::SmallFloat)  = Acosh(x)
+@override_glsl atanh(x::SmallFloat)  = Atanh(x)
 @override_glsl sincos(x::SmallFloat) = (sin(x), cos(x))
 @override_glsl atan(y::T, x::T) where {T<:SmallFloat} = Atan2(y, x)
 @override_glsl atan(y::Float32, x::Float32) = Atan2(y, x)

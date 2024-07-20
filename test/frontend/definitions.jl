@@ -18,7 +18,7 @@ struct GaussianBlur
 end
 
 function compute_blur(blur::GaussianBlur, reference, direction, uv)
-  weights = Arr{Float32}(0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216)
+  weights = @arr Float32[0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216]
   tex_offset = 1.0 ./ size(Image(reference), 0) .* blur.scale
   res = zero(Vec4)
   for i in eachindex(weights)
