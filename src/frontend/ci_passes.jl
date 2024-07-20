@@ -76,27 +76,54 @@ function code_info(code::NewCodeInfo)
   ssavaluetypes = isa(from.ssavaluetypes, Vector{Any}) ? from.ssavaluetypes[code.from_ssavalues] : from.ssavaluetypes
   ssaflags = from.ssaflags[code.from_ssavalues]
 
-  new_code = _CodeInfo(
-    code.insts,
-    debuginfo,
-    ssavaluetypes,
-    ssaflags,
-    from.slotnames,
-    from.slotflags,
-    from.slottypes,
-    from.parent,
-    from.method_for_inference_limit_heuristics,
-    from.edges,
-    from.min_world,
-    from.max_world,
-    from.propagate_inbounds,
-    from.has_fcall,
-    from.nospecializeinfer,
-    from.inlining,
-    from.constprop,
-    from.purity,
-    from.inlining_cost,
-  )
+  @static if VERSION ≥ v"1.12.0-DEV.512"
+    new_code = _CodeInfo(
+      code.insts,
+      debuginfo,
+      ssavaluetypes,
+      ssaflags,
+      from.slotnames,
+      from.slotflags,
+      from.slottypes,
+      from.rettype,
+      from.parent,
+      from.edges,
+      from.min_world,
+      from.max_world,
+      from.method_for_inference_limit_heuristics,
+      from.nargs,
+      from.propagate_inbounds,
+      from.has_fcall,
+      from.nospecializeinfer,
+      from.isva,
+      from.inlining,
+      from.constprop,
+      from.purity,
+      from.inlining_cost,
+    )
+  else
+    new_code = _CodeInfo(
+      code.insts,
+      debuginfo,
+      ssavaluetypes,
+      ssaflags,
+      from.slotnames,
+      from.slotflags,
+      from.slottypes,
+      from.parent,
+      from.method_for_inference_limit_heuristics,
+      from.edges,
+      from.min_world,
+      from.max_world,
+      from.propagate_inbounds,
+      from.has_fcall,
+      from.nospecializeinfer,
+      from.inlining,
+      from.constprop,
+      from.purity,
+      from.inlining_cost,
+    )
+  end
   verify(new_code)
   new_code
 end
