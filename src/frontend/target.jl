@@ -49,8 +49,18 @@ function SPIRVTarget(mi::MethodInstance, interp::SPIRVInterpreter)
   # to run inference again.
   !isnothing(code_instance) && !isnothing(code_instance.inferred) && return SPIRVTarget(mi, code_instance, interp)
   # Run type inference on lowered code.
-  infer(mi, interp)
-  SPIRVTarget(mi, interp)
+  code_instance = infer(mi, interp)
+  SPIRVTarget(mi, code_instance, interp)
+end
+
+function simplify_cfg!(code::CodeInfo)
+  mi = code.parent::MethodInstance
+  isnothing(code.slottypes) && (code.slottypes = collect(mi.specTypes.types))
+  ir = CC.inflate_ir!(code, mi)
+  ir.debuginfo.def = mi
+  ir = CC.compact!(CC.cfg_simplify!(CC.copy(ir)))
+  code = CC.ir_to_codeinf!(code, ir)
+  ir, code
 end
 
 inferred_code(ci::CodeInstance) = isa(ci.inferred, CodeInfo) ? ci.inferred : Core.Compiler._uncompressed_ir(ci, ci.inferred)
@@ -70,10 +80,9 @@ end
 
 SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = SPIRVTarget(mi, inferred_code(ci), interp)
 function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter)
-  code = apply_passes(code)
-  cfg_core = compute_basic_blocks(code.code)
-  g = construct_cfg(cfg_core)
-  ranges = block_ranges(cfg_core)
+  ir, code = simplify_cfg!(code)
+  g = construct_cfg(ir.cfg)
+  ranges = block_ranges(ir.cfg)
   insts = [code.code[range] for range in ranges]
 
   # Try to validate the code upon failure to report more helpful errors.
@@ -129,21 +138,19 @@ end
 function infer(mi::MethodInstance, interp::AbstractInterpreter)
   # Reset interpreter state.
   empty!(interp.local_cache)
-
-  inferred_code_instance = Core.Compiler.typeinf_ext_toplevel(interp, mi, CC.SOURCE_MODE_FORCE_SOURCE)
-
+  inferred_ci = CC.typeinf_ext_toplevel(interp, mi, CC.SOURCE_MODE_FORCE_SOURCE)
   cache = code_instance_cache(interp)
-  code_instance = CC.get(cache, mi, nothing)
-  !isnothing(code_instance) || error("Could not get inferred code from cache.")
+  ci = CC.get(cache, mi, nothing)
+  !isnothing(ci) || error("Could not get inferred code from the cache.")
 
   # If src is rettyp_const, the `CodeInfo` is dicarded after type inference
   # (because it is normally not supposed to be used ever again).
   # To avoid the need to re-infer to get the code, store it manually.
-  if code_instance.inferred === nothing
-    CC.setindex!(cache, inferred_code_instance, mi)
-    code_instance = CC.getindex(cache, mi)
+  if ci.inferred === nothing && isdefined(ci, :rettype_const)
+    CC.setindex!(cache, inferred_ci, mi)
+    ci = CC.getindex(cache, mi)
   end
-  code_instance
+  ci
 end
 
 function Base.show(io::IO, target::SPIRVTarget)

@@ -140,9 +140,10 @@ function Base.showerror(io::IO, err::CompilationError)
       color = here ? :red : :default
       weight = here ? :bold : :normal
       file = contractuser(string(mi.def.file))
+      rettype = cached_return_type(codeinst)
       line = !isnothing(frame.line) ? frame.line.line : !iszero(err.jinst_index) && i == lastindex(stacktrace) ? getline(err.target.code, err.jinst_index)[end].line : mi.def.line
       print(io, styled"""
-        \n{$color,$weight: $(here ? '>' : ' ') [$i] $mi::$(mi.cache.rettype)}
+        \n{$color,$weight: $(here ? '>' : ' ') [$i] $mi::$rettype}
              {magenta:@ $(mi.def.module)} {gray:$file:$line}""")
     end
   end

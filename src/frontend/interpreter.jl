@@ -27,8 +27,10 @@ NOverlayMethodTable(world) = NOverlayMethodTable(world, METHOD_TABLES[])
 
 SPIRVToken() = SPIRVToken(METHOD_TABLES[])
 
+Base.show(io::IO, token::SPIRVToken) = print(io, typeof(token), "()")
+
 struct SPIRVInterpreter <: AbstractInterpreter
-  global_cache_token::SPIRVToken
+  token::SPIRVToken
   """
   Custom method table to redirect Julia builtin functions to SPIR-V builtins.
   Can also be used to redirect certain function calls to use extended instruction sets instead.
@@ -93,7 +95,7 @@ Core.Compiler.OptimizationParams(si::SPIRVInterpreter) = si.optimization_paramet
 Core.Compiler.get_world_counter(si::SPIRVInterpreter) = si.world
 Core.Compiler.get_inference_cache(si::SPIRVInterpreter) = si.local_cache
 Core.Compiler.get_inference_world(si::SPIRVInterpreter) = si.world
-Core.Compiler.cache_owner(interp::SPIRVInterpreter) = interp.global_cache_token
+Core.Compiler.cache_owner(interp::SPIRVInterpreter) = interp.token
 Core.Compiler.method_table(si::SPIRVInterpreter) = si.method_table
 
 function Base.show(io::IO, interp::SPIRVInterpreter)
