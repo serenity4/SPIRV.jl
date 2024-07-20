@@ -1,8 +1,20 @@
 using SPIRV, Test
 using SPIRV: component_type, texel_type, sampled_type, column, Pointer
-using StaticArrays
 
 @testset "Frontend types" begin
+  @testset "Mutable" begin
+    mut = Mutable(3)
+    @test mut[] === 3
+    mut[] = 4
+    @test mut[] === 4
+    mut = Mutable(@vec Float32[1, 2])
+    mut[] = @vec [3, 4]
+    @test mut[] === @vec Float32[3, 4]
+    mut.x = 2
+    @test mut.x === 2F
+    @test mut[] === @vec Float32[2, 4]
+  end
+
   @testset "Pointers" begin
     ptr = Pointer(Ref(5))
     @test ptr[] === 5
@@ -37,44 +49,23 @@ using StaticArrays
       end
 
       # Mutable elements.
-      (a, b, c, d) = (Vec2(3, 4), Vec2(5, 6), Vec2(7, 8), Vec2(8, 9))
+      (a, b, c, d) = (Mutable(Vec2(3, 4)), Mutable(Vec2(5, 6)), Mutable(Vec2(7, 8)), Mutable(Vec2(8, 9)))
       arr = [a, b]
       GC.@preserve arr begin
         p = pointer(arr)
         address = convert(UInt64, p)
-        ptr = Pointer{Vector{Vec2}}(address)
-        @test eltype(ptr) == Vector{Vec2}
+        ptr = Pointer{Vector{Mutable{Vec2}}}(address)
+        @test eltype(ptr) == Vector{Mutable{Vec2}}
         @test ptr[1] == a
         @test ptr[2] == b
-        @test (@load address[1]::Vec2) == a
-        @test (@load address[2]::Vec2) == b
-        @store address[2]::Vec2 = c
-        @test (@load address[2]::Vec2) == c
-        @store d address[2]::Vec2
-        @test (@load address[2]::Vec2) == d
+        @test (@load address[1]::Mutable{Vec2}) == a
+        @test (@load address[2]::Mutable{Vec2}) == b
+        @store address[2]::Mutable{Vec2} = c
+        @test (@load address[2]::Mutable{Vec2})[] == c[]
+        @store d address[2]::Mutable{Vec2}
+        @test (@load address[2]::Mutable{Vec2})[] == d[]
       end
     end
-  end
-
-  @testset "Mat" begin
-    m = Mat{2,2}(1.0, 1.0, 3.0, 2.0)
-    @test m[1, 1] === 1.0
-    @test m[1, 2] === 3.0
-    @test column(m, 1) == Vec(1.0, 1.0)
-    @test column(m, 2) == Vec(3.0, 2.0)
-    mz = @mat [0.0 0.0
-               0.0 0.0]
-    m2 = @mat [1.0 3.0
-               1.0 2.0]
-    @test m == m2
-
-    m = @mat Float32[
-      1 2 3 4
-      5 6 7 8
-      9 10 11 12
-    ]
-    @test m[2, 2] === 6f0
-    @test m[3, 2] === 10f0
   end
 
   @testset "Images" begin

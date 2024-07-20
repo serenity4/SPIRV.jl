@@ -210,6 +210,12 @@ end
     ci = SPIRV.@code_typed debuginfo=:source (x -> x == 4)(::UInt32)
     @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 intrinsic, 1 return
 
+    ci = SPIRV.@code_typed debuginfo=:source (mut -> mut.x = 2F)(::Mutable{Vec2})
+    @test_code ci minlength = 5 maxlength = 5 # 1 load, 1 etxract, 1 construct, 1 store, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source (mut -> mut.x = 2)(::Mutable{Vec2})
+    @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 intrinsic, 1 return
+
     ci = SPIRV.@code_typed debuginfo=:source deepcopy(::Vec2)
     @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
 

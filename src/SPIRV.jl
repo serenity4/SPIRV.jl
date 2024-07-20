@@ -116,6 +116,7 @@ include("analysis/deltagraph.jl")
 include("analysis/control_flow.jl")
 
 include("frontend/method_table.jl")
+include("frontend/types/mutable.jl")
 include("frontend/types/pointer.jl")
 include("frontend/types/arrays.jl")
 include("frontend/types/image.jl")
@@ -243,6 +244,7 @@ export
   serialize!, deserialize!,
 
   # SPIR-V array/vector/pointer/image types.
+  Mutable,
   Vec,
   Vec2, Vec3, Vec4,
   Vec2U, Vec3U, Vec4U,
