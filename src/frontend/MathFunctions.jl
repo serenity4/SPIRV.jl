@@ -7,7 +7,7 @@ supported in SPIR-V.
 """
 module MathFunctions
 
-using ..SPIRV: AbstractSPIRVArray, U, F, Vec, Vec3U
+using ..SPIRV: U, F, Vec, Vec3U
 
 using LinearAlgebra: dot
 

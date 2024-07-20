@@ -73,7 +73,5 @@ function compute_broadcast(bc::Broadcasted{<:Union{VecStyle{N},ArrStyle{N}}}) wh
   bc.f.(new_args...)
 end
 
-@inline Base.copyto!(v::AbstractSPIRVArray, bc::Broadcasted{<:StyleOverride}) = copyto!(v, copy(bc))
-
 const VecOrArr{N} = Union{Vec{N},Arr{N}}
 getcomponents(v::VecOrArr{N}) where {N} = ntuple_uint32(i -> v[i], N)
