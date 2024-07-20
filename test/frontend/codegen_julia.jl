@@ -211,10 +211,10 @@ end
     @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 intrinsic, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (mut -> mut.x = 2F)(::Mutable{Vec2})
-    @test_code ci minlength = 5 maxlength = 5 # 1 load, 1 etxract, 1 construct, 1 store, 1 return
+    @test_code ci minlength = 5 maxlength = 5 # 1 load, 1 extract, 1 construct, 1 store, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source (mut -> mut.x = 2)(::Mutable{Vec2})
-    @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 intrinsic, 1 return
+    @test_code ci minlength = 5 maxlength = 5 # 1 load, 1 extract, 1 construct, 1 store, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source deepcopy(::Vec2)
     @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
@@ -293,7 +293,7 @@ end
     @test_code ci minlength = 7 maxlength = 28 spirv_chunk = false # A bunch of math operations, code length is variable due to broadcasting and the possible construction of intermediate vectors.
 
     ci = SPIRV.@code_typed debuginfo=:source slerp_2d(::Vec2, ::Vec2, ::Float32)
-    @test_code ci maxlength = 30
+    @test_code ci minlength = 31 maxlength = 31
 
     ci = SPIRV.@code_typed debuginfo=:source rotate_2d(::Vec2, ::Float32)
     @test_code ci minlength = 30

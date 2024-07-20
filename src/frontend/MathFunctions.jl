@@ -9,9 +9,9 @@ module MathFunctions
 
 using ..SPIRV: U, F, Vec, Vec3U
 
-using LinearAlgebra: dot
+using LinearAlgebra: dot, normalize, norm
 
-export lerp, slerp_2d, angle_2d, rotate_2d, compute_roots, saturated_softmax, linearstep, smoothstep, smootherstep, remap, linear_index, image_index
+export lerp, slerp_2d, angle_2d, rotate_2d, compute_roots, saturated_softmax, linearstep, smoothstep, smootherstep, remap, linear_index, image_index, dot, normalize, norm
 
 lerp(x, y, t) = x .* t .+ (1 .- t)y
 

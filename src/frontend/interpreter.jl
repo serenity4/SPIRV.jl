@@ -22,8 +22,6 @@ struct SPIRVToken
   optimization_parameters::OptimizationParams
 end
 
-Base.show(io::IO, token::SPIRVToken) = print(io, typeof(token), "()")
-
 const METHOD_TABLES = ScopedValue([INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE])
 NOverlayMethodTable(world) = NOverlayMethodTable(world, METHOD_TABLES[])
 
