@@ -8,16 +8,15 @@ When creating a shader, the corresponding method will typically mutate some buil
 
 =#
 
-using SPIRV: Vec3, Vec4
+using SPIRV: Vec3, Vec4, Mutable
 
 struct FragmentData
   color::Vec3
   alpha::Float32
 end
 
-function fragment_shader!(color::Vec4, data)
-  color.rgb = data.color
-  color.a = data.alpha
+function fragment_shader!(color::Mutable{Vec4}, data)
+  color[] = Vec4(data.color..., data.alpha)
 end
 
 #=
@@ -26,12 +25,12 @@ This is a regular Julia function, which we may even test on the CPU to make sure
 
 =#
 
-color = Vec4(0, 0, 0, 0)
+color = Mutable(Vec4(0, 0, 0, 0))
 white = Vec3(1, 1, 1)
 data = FragmentData(white, 1)
 fragment_shader!(color, data)
-@assert color.rgb == data.color
-@assert color.a == data.alpha
+@assert color[1:3] == data.color
+@assert color[4] == data.alpha
 
 #=
 
@@ -48,7 +47,7 @@ We will specify this information using the [`@fragment`](@ref) macro, which acce
 using SPIRV: @fragment
 
 shader = @fragment fragment_shader!(
-  ::Vec4::Output,
+  ::Mutable{Vec4}::Output,
   ::FragmentData::PushConstant
 );
 
@@ -80,7 +79,7 @@ We could setup a storage buffer, but for simplicity, we'll work with a memory ad
 
 =#
 
-using SPIRV: @load, @store, U
+using SPIRV: @load, @store, @vec, U
 using StaticArrays
 using SPIRV.MathFunctions: linear_index
 
@@ -117,8 +116,8 @@ GC.@preserve array begin
   ptr = pointer(array)
   address = UInt64(ptr)
   data = ComputeData(address, length(array))
-  compute_shader!(data, @SVector UInt32[0, 0, 0])
-  compute_shader!(data, @SVector UInt32[5, 0, 0])
+  compute_shader!(data, @vec UInt32[0, 0, 0])
+  compute_shader!(data, @vec UInt32[5, 0, 0])
 end
 
 array
@@ -135,7 +134,7 @@ using SPIRV: @compute, ComputeExecutionOptions
 
 shader = @compute compute_shader!(
   ::ComputeData::PushConstant,
-  ::SVector{3,UInt32}::Input{GlobalInvocationId},
+  ::Vec3U::Input{GlobalInvocationId},
 ) options = ComputeExecutionOptions(local_size = (64, 1, 1))
 
 #-

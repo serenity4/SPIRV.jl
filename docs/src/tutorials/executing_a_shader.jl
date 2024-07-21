@@ -63,7 +63,7 @@ This time, we'll create a [`SPIRV.ShaderSource`](@ref), which represents a [`SPI
 
 source = @compute features = supported_features assemble = true compute_shader!(
   ::ComputeData::PushConstant,
-  ::SVector{3,UInt32}::Input{GlobalInvocationId},
+  ::Vec3U::Input{GlobalInvocationId},
   ) options = ComputeExecutionOptions(local_size = (64, 1, 1))
 
 #=
