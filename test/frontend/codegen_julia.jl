@@ -219,6 +219,12 @@ end
     ci = SPIRV.@code_typed debuginfo=:source (mut -> mut[1] = 2)(::Mutable{Vec2})
     @test_code ci minlength = 4 maxlength = 4 # 1 load, 1 insert, 1 store, 1 return
 
+    ci = SPIRV.@code_typed debuginfo=:source ((mut, value) -> (@swizzle mut.xyz = value))(::Mutable{Vec4}, ::Vec3)
+    @test_code ci minlength = 9 maxlength = 9 # 1 load, 3 extracts, 3 inserts, 1 store, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source (mut -> @swizzle mut.zyx)(::Mutable{Vec4})
+    @test_code ci minlength = 6 maxlength = 6 # 1 load, 3 extracts, 1 construct, 1 return
+
     ci = SPIRV.@code_typed debuginfo=:source deepcopy(::Vec2)
     @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
 

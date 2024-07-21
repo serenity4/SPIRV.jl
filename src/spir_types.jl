@@ -216,14 +216,12 @@ function spir_type(@nospecialize(t::Type), tmap::Optional{TypeMap} = nothing; kw
   error_type_not_known(t)
 end
 
-remap_type(@nospecialize(t::DataType)) = t
-
 """
 Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is provided.
 """
 function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing; storage_class = nothing, fill_tmap = true)
+  t === Core.SSAValue && throw_compilation_error("a `Core.SSAValue` slipped in, while it shouldn't have")
   ismutable = ismutabletype(t)
-  t = remap_type(t)
   !isnothing(tmap) && isnothing(storage_class) && haskey(tmap, t) && return tmap[t]
   type = @match t begin
     &Float16 => FloatType(16)

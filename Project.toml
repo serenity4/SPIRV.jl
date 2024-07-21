@@ -28,9 +28,11 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
 Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
+Swizzles = "60694085-d904-4bfc-95dc-1e0e768e9359"
 
 [extensions]
 SPIRVVulkanExt = "Vulkan"
+SPIRVSwizzlesExt = "Swizzles"
 
 [compat]
 AbstractTrees = "0.4"
@@ -49,6 +51,7 @@ StaticArrays = "1"
 StructEquality = "2"
 StyledStrings = "1"
 SwapStreams = "0.2"
+Swizzles = "0.1, 0.2"
 Vulkan = "0.6"
 julia = "1.9"
 

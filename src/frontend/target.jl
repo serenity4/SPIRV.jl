@@ -141,7 +141,7 @@ function infer(mi::MethodInstance, interp::AbstractInterpreter)
   inferred_ci = CC.typeinf_ext_toplevel(interp, mi, CC.SOURCE_MODE_FORCE_SOURCE)
   cache = code_instance_cache(interp)
   ci = CC.get(cache, mi, nothing)
-  !isnothing(ci) || error("Could not get inferred code from the cache.")
+  !isnothing(ci) || error("Could not get inferred code from the cache for $mi.\n\nThis may be caused by a @generated function body that failed to produce an output.")
 
   # If src is rettyp_const, the `CodeInfo` is dicarded after type inference
   # (because it is normally not supposed to be used ever again).

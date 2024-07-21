@@ -9,7 +9,6 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         from = ResultID(findfirst(Fix1(in, e), block_ranges(target)), tr)
         push!(args, val, from)
       end
-
       (OpPhi, args)
     end
     :($f($(args...))) => @match follow_globalref(f) begin
@@ -248,10 +247,14 @@ end
 "Turn all literals passed in non-literal SPIR-V operands into `Constant`s."
 function literals_to_const!(args, mt::ModuleTarget, tr::Translation, opcode)
   for (i, arg) in enumerate(args)
-    if (isa(arg, Bool) || isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, QuoteNode) || isa(arg, Cenum) || isa(arg, Enum) || isa(arg, BitMask)) && !is_literal(opcode, args, i)
-      isa(arg, QuoteNode) && (arg = arg.value)
-      args[i] = emit_constant!(mt, tr, arg)
+    isa(arg, ResultID) && continue
+    is_literal(opcode, args, i) && continue
+    if isa(arg, Core.SSAValue)
+      @assert opcode == OpPhi
+      continue
     end
+    isa(arg, QuoteNode) && (arg = arg.value)
+    args[i] = emit_constant!(mt, tr, arg)
   end
 end
 
