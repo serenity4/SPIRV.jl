@@ -13,6 +13,11 @@ using SPIRV: component_type, texel_type, sampled_type, column, Pointer
     mut.x = 2
     @test mut.x === 2F
     @test mut[] === @vec Float32[2, 4]
+    mut[2] = 5
+    @test mut[] === @vec Float32[2, 5]
+    mut = Mutable(@arr rand(Float32, 256))
+    mut[1] = -1
+    @test mut[1] === -1f0
   end
 
   @testset "Pointers" begin

@@ -20,7 +20,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
 RAY_TRAYCING_FEATURES = union(SUPPORTED_FEATURES, SupportedFeatures(["SPV_KHR_ray_tracing"], [SPIRV.CapabilityRayTracingKHR]))
 
 shader!(position) = (position[] = Vec(1f0, 1f0, 1f0, 1f0))
-shader2!(color) = color.a = 1F
+shader2!(color) = @swizzle color.a = 1F
 
 @testset "Shaders" begin
   @testset "Shader execution options" begin
@@ -36,7 +36,7 @@ shader2!(color) = color.a = 1F
   end
 
   @testset "Basic construction" begin
-    target = @target shader2!(::Vec4)
+    target = @target shader2!(::Mutable{Vec4})
     ir = compile(target, AllSupported())
     @test unwrap(validate(ir))
     interface = ShaderInterface(SPIRV.ExecutionModelVertex; storage_classes = [SPIRV.StorageClassOutput])
@@ -48,31 +48,27 @@ shader2!(color) = color.a = 1F
         Capability(VulkanMemoryModel)
         Capability(Shader)
         MemoryModel(Logical, Vulkan)
-        EntryPoint(Vertex, %14, "main", %4)
-        Name(%6, "$shader2!(::Vec4)")
+        EntryPoint(Vertex, %13, "main", %4)
+        Name(%6, "shader2!(::Mutable{SVector{4,Float32}})")
         Name(%4, "color")
    %1 = TypeFloat(0x00000020)
    %2 = TypeVector(%1, 0x00000004)
    %3 = TypePointer(Output, %2)
    %4 = Variable(Output)::%3
    %5 = TypeFunction(%1)
-   %8 = TypeInt(0x00000020, 0x00000000)
-   %9 = Constant(0x00000004)::%8
-  %11 = Constant(0x3f800000)::%1
-  %12 = TypeVoid()
-  %13 = TypeFunction(%12)
-  %17 = Constant(0x00000001)::%8
-  %19 = Constant(0x00000003)::%8
-  %20 = TypePointer(Output, %1)
+   %9 = Constant(0x3f800000)::%1
+  %11 = TypeVoid()
+  %12 = TypeFunction(%11)
    %6 = Function(None, %5)::%1
    %7 = Label()
-  %10 = AccessChain(%4, %19)::%20
-        Store(%10, %11)
-        ReturnValue(%11)
+   %8 = Load(%4)::%2
+  %10 = CompositeInsert(%9, %8, 0x00000003)::%2
+        Store(%4, %10)
+        ReturnValue(%9)
         FunctionEnd()
-  %14 = Function(None, %13)::%12
-  %15 = Label()
-  %16 = FunctionCall(%6)::%1
+  %13 = Function(None, %12)::%11
+  %14 = Label()
+  %15 = FunctionCall(%6)::%1
         Return()
         FunctionEnd()
   """,
@@ -84,7 +80,7 @@ shader2!(color) = color.a = 1F
     shader = Shader(ShaderInfo(target.mi, interface))
     @test unwrap(validate(shader))
 
-    shader = @vertex (color -> color[] = Vec(0.1F, 0.1F, 0.1F, 1F))(::Vec4::Output)
+    shader = @vertex (color -> color[] = Vec(0.1F, 0.1F, 0.1F, 1F))(::Mutable{Vec4}::Output)
     @test unwrap(validate(shader))
   end
 
@@ -114,8 +110,8 @@ shader2!(color) = color.a = 1F
       3 => Decorations(SPIRV.DecorationLocation, 1),
     ])
 
-    argtypes, scs, vardecs = shader_decorations(:(any_shader(::Vec3::Output, ::GaussianBlur::Input, ::UInt32::Input{@Flat}, ::Vec2::Input)))
-    @test argtypes == [:Vec3, :GaussianBlur, :UInt32, :Vec2]
+    argtypes, scs, vardecs = shader_decorations(:(any_shader(::Mutable{Vec3}::Output, ::GaussianBlur::Input, ::UInt32::Input{@Flat}, ::Vec2::Input)))
+    @test argtypes == [:(Mutable{Vec3}), :GaussianBlur, :UInt32, :Vec2]
     @test scs == [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassInput, SPIRV.StorageClassInput]
     # XXX: Implement a more clever `Location` assignment strategy, currently we just bump by 1 after assignment.
     # Here we need the first bump to be by 2.
@@ -127,10 +123,10 @@ shader2!(color) = color.a = 1F
       2 => Decorations(SPIRV.DecorationLocation, 3),
     ])
 
-    frag_shader = @fragment features = SUPPORTED_FEATURES shader!(::Vec4::Output)
+    frag_shader = @fragment features = SUPPORTED_FEATURES shader!(::Mutable{Vec4}::Output)
     @test isa(frag_shader, Shader)
 
-    any_hit_shader = Base.@with SPIRV.METHOD_TABLES => [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE] @any_hit features = RAY_TRAYCING_FEATURES shader!(::Vec4::Output)
+    any_hit_shader = Base.@with SPIRV.METHOD_TABLES => [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE] @any_hit features = RAY_TRAYCING_FEATURES shader!(::Mutable{Vec4}::Output)
     @test isa(any_hit_shader, Shader)
 
     compute_shader = @compute features = SUPPORTED_FEATURES assemble = true Returns(nothing)()
@@ -146,7 +142,7 @@ shader2!(color) = color.a = 1F
     @test argtypes == [:Vec3U, :UInt32, :Vec2]
     @test scs == [SPIRV.StorageClassSpecConstantINTERNAL, SPIRV.StorageClassConstantINTERNAL, SPIRV.StorageClassSpecConstantINTERNAL]
     @test vardecs == dictionary([
-      1 => Decorations(SPIRV.DecorationInternal, :local_size => one(Vec3U)),
+      1 => Decorations(SPIRV.DecorationInternal, :local_size => Vec3U(1, 1, 1)),
       2 => Decorations(SPIRV.DecorationInternal, 1U),
       3 => Decorations(SPIRV.DecorationInternal, :uv => zero(Vec2)),
     ])
@@ -155,20 +151,20 @@ shader2!(color) = color.a = 1F
       cache = ShaderCompilationCache()
       @test cache.diagnostics.misses == cache.diagnostics.hits == 0
       SPIRV.HAS_WARNED_ABOUT_CACHE[] = false
-      @test_logs (:warn, r"will not be cached") @fragment cache shader!(::Vec4::Output)
-      @test_logs @fragment cache shader!(::Vec4::Output)
+      @test_logs (:warn, r"will not be cached") @fragment cache shader!(::Mutable{Vec4}::Output)
+      @test_logs @fragment cache shader!(::Mutable{Vec4}::Output)
 
-      @fragment cache assemble = true shader!(::Vec4::Output)
+      @fragment cache assemble = true shader!(::Mutable{Vec4}::Output)
       @test cache.diagnostics.hits == 0
       @test cache.diagnostics.misses == 1
       @test !isempty(cache)
 
-      @fragment cache assemble = true shader!(::Vec4::Output)
+      @fragment cache assemble = true shader!(::Mutable{Vec4}::Output)
       @test cache.diagnostics.hits == 1
       @test cache.diagnostics.misses == 1
       @test length(cache) == 1
 
-      @fragment cache assemble = true shader!(::Vec{4,Float64}::Output)
+      @fragment cache assemble = true shader!(::Mutable{Vec{4,Float64}}::Output)
       @test cache.diagnostics.hits == 1
       @test cache.diagnostics.misses == 2
       @test length(cache) == 2
@@ -187,14 +183,14 @@ shader2!(color) = color.a = 1F
     shader = @vertex (function (out_pos, point)
         out_pos.x = point.x
         out_pos.y = point.y
-      end)(::Vec4::Output, ::Point::Uniform{@DescriptorSet(0), @Binding(0)})
+      end)(::Mutable{Vec4}::Output, ::Point::Uniform{@DescriptorSet(0), @Binding(0)})
     @test unwrap(validate(shader))
 
     # With built-ins.
     shader = @vertex (function (frag_color, index, position)
         frag_color.x = index
         position.x = index
-      end)(::Vec4::Output, ::UInt32::Input{VertexIndex}, ::Vec4::Output{Position})
+      end)(::Mutable{Vec4}::Output, ::UInt32::Input{VertexIndex}, ::Mutable{Vec4}::Output{Position})
     @test unwrap(validate(shader))
 
     # Loading data from phyiscal storage buffers.
@@ -212,15 +208,15 @@ shader2!(color) = color.a = 1F
         (; pos, color) = vd
         position[] = Vec(pos.x, pos.y, 0F, 1F)
         frag_color[] = Vec(color[1U], color[2U], color[3U], 1F)
-      end)(::Vec4::Output, ::Vec4::Output{Position}, ::UInt32::Input{VertexIndex}, ::DrawData::PushConstant)
+      end)(::Mutable{Vec4}::Output, ::Mutable{Vec4}::Output{Position}, ::UInt32::Input{VertexIndex}, ::DrawData::PushConstant)
     @test unwrap(validate(shader))
 
-    shader = @fragment features = SUPPORTED_FEATURES ((out_color, frag_color) -> out_color[] = frag_color)(::Vec4::Output, ::Vec4::Input)
+    shader = @fragment features = SUPPORTED_FEATURES ((out_color, frag_color) -> out_color[] = frag_color)(::Mutable{Vec4}::Output, ::Vec4::Input)
     @test unwrap(validate(shader))
 
     shader = @compute features = SUPPORTED_FEATURES (function (buffer, index)
         buffer[index] = buffer[index] + 1U
-      end)(::Arr{128, Float32}::Workgroup, ::UInt32::Input{LocalInvocationIndex})
+      end)(::Mutable{Arr{128, Float32}}::Workgroup, ::UInt32::Input{LocalInvocationIndex})
     @test unwrap(validate(shader))
 
     shader = @compute features = SUPPORTED_FEATURES ((size, val, uv) -> nothing)(::Vec3U::Input{WorkgroupSize}, ::UInt32::Constant{8U}, ::Vec2::Constant{uv = zero(Vec2)}) options = ComputeExecutionOptions(local_size = (3, 5, 10))
@@ -243,17 +239,17 @@ shader2!(color) = color.a = 1F
       shader = @vertex features = SUPPORTED_FEATURES (function (out, x)
           y = x > 0F ? x + 1F : x - 1F
           out.x = y
-        end)(::Vec4::Output, ::Float32::Input)
+        end)(::Mutable{Vec4}::Output, ::Float32::Input)
       @test unwrap(validate(shader))
 
       IT = SampledImage{SPIRV.image_type(SPIRV.ImageFormatRgba16f,SPIRV.Dim2D,0,false,false,1)}
 
       shader = @fragment features = SUPPORTED_FEATURES ((res, blur, reference, direction, uv) -> res[] =
-        compute_blur(blur, reference, direction, uv))(::Vec4::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::UInt32::Input{@Flat}, ::Vec2::Input)
+        compute_blur(blur, reference, direction, uv))(::Mutable{Vec4}::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::UInt32::Input{@Flat}, ::Vec2::Input)
       @test unwrap(validate(shader))
 
       shader = @fragment features = SUPPORTED_FEATURES ((res, blur, reference, uv) -> res[] =
-        compute_blur_2(blur, reference, uv))(::Vec4::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::Vec2::Input)
+        compute_blur_2(blur, reference, uv))(::Mutable{Vec4}::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::Vec2::Input)
       @test unwrap(validate(shader))
 
       shader = @compute features = SUPPORTED_FEATURES step_euler(::BoidAgent::PushConstant, ::Vec2::Input, ::Float32::Input)

@@ -219,6 +219,9 @@ end
 @override Base.getindex(v::SVector, i::Integer) = CompositeExtract(v, unsigned_index(i))
 @override Base.getindex(v::SVector, i::Int) = CompositeExtract(v, UInt32(i))
 
+@override Base.setindex(v::SVector{N,T}, value, i::Int) where {N,T} = Base.setindex(v, convert(T, value), unsigned_index(i))
+@override Base.setindex(v::SVector{N,T}, value::T, i::UInt32) where {N,T} = CompositeInsert(value, v, i)
+
 # Loop over 2 ≤ N ≤ 4 to avoid overriding methods for regular SVectors that don't map to SPIR-V vectors.
 for N in 2:4
   @eval begin

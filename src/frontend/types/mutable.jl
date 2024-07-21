@@ -2,7 +2,10 @@ mutable struct Mutable{T}
   value::T
 end
 
+const Mut{T} = Mutable{T}
+
 Base.getindex(mut::Mutable) = Load(mut)
+Base.getindex(mut::Mutable, index) = Load(mut)[index]
 
 @noinline Load(mut) = mut.value
 
@@ -11,6 +14,11 @@ function Base.setindex!(mut::Mutable{T}, value::T) where {T}
 end
 
 Base.setindex!(mut::Mutable{T}, value) where {T} = setindex!(mut, convert(T, value))
+
+function Base.setindex!(mut::Mutable{T}, value, index) where {T}
+  current = mut[]
+  mut[] = @set current[index] = value
+end
 
 @noinline function Store(mut::Mutable{T}, value::T) where {T}
   mut.value = value

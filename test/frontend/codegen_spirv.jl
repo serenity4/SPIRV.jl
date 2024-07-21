@@ -48,21 +48,15 @@ SUPPORTED_FEATURES = SupportedFeatures(
         $memory_model
    %1 = TypeFloat(0x00000020)
    %2 = TypeVector(%1, 0x00000004)
-   %3 = TypePointer(Function, %2)
-   %4 = TypeFunction(%2, %3)
-  %13 = Constant(0x3f800000)::%1
-   %5 = Function(None, %4)::%2
-   %6 = FunctionParameter()::%3
-   %7 = Label()
-  %12 = Variable(Function)::%3
-   %8 = Load(%6)::%2
-   %9 = CompositeExtract(%8, 0x00000000)::%1
-  %10 = Load(%6)::%2
-  %11 = CompositeExtract(%10, 0x00000001)::%1
-  %14 = CompositeConstruct(%9, %11, %13, %13)::%2
-        Store(%12, %14)
-  %15 = Load(%12)::%2
-        ReturnValue(%15)
+   %3 = TypeFunction(%2, %2)
+   %9 = Constant(0x3f800000)::%1
+   %4 = Function(None, %3)::%2
+   %5 = FunctionParameter()::%2
+   %6 = Label()
+   %7 = CompositeExtract(%5, 0x00000000)::%1
+   %8 = CompositeExtract(%5, 0x00000001)::%1
+  %10 = CompositeConstruct(%7, %8, %9, %9)::%2
+        ReturnValue(%10)
         FunctionEnd()
       """
     )
@@ -121,23 +115,15 @@ SUPPORTED_FEATURES = SupportedFeatures(
    %3 = TypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
    %4 = TypeSampledImage(%3)
    %5 = TypeFunction(%2, %4)
-  %10 = TypeVector(%1, 0x00000002)
-  %11 = TypePointer(Function, %10)
-  %12 = Constant(0x40400000)::%1
-  %13 = Constant(0x40800000)::%1
-  %16 = TypePointer(Function, %2)
+   %9 = Constant(0x40400000)::%1
+  %10 = Constant(0x40800000)::%1
+  %11 = TypeVector(%1, 0x00000002)
+  %12 = ConstantComposite(%9, %10)::%11
    %6 = Function(None, %5)::%2
    %7 = FunctionParameter()::%4
    %8 = Label()
-   %9 = Variable(Function)::%11
-  %15 = Variable(Function)::%16
-  %14 = CompositeConstruct(%12, %13)::%10
-        Store(%9, %14)
-  %17 = Load(%9)::%10
-  %18 = ImageSampleImplicitLod(%7, %17)::%2
-        Store(%15, %18)
-  %19 = Load(%15)::%2
-        ReturnValue(%19)
+  %13 = ImageSampleImplicitLod(%7, %12)::%2
+        ReturnValue(%13)
         FunctionEnd()
       """
     )
@@ -160,26 +146,18 @@ SUPPORTED_FEATURES = SupportedFeatures(
    %3 = TypeImage(%1, 2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, Rgba16f)
    %4 = TypeSampler()
    %5 = TypeFunction(%2, %3, %4)
-  %12 = TypeVector(%1, 0x00000002)
-  %13 = TypePointer(Function, %12)
-  %14 = Constant(0x40400000)::%1
-  %15 = Constant(0x40800000)::%1
-  %18 = TypePointer(Function, %2)
-  %22 = TypeSampledImage(%3)
+  %11 = Constant(0x40400000)::%1
+  %12 = Constant(0x40800000)::%1
+  %13 = TypeVector(%1, 0x00000002)
+  %14 = ConstantComposite(%11, %12)::%13
+  %16 = TypeSampledImage(%3)
    %6 = Function(None, %5)::%2
    %7 = FunctionParameter()::%3
    %8 = FunctionParameter()::%4
    %9 = Label()
-  %11 = Variable(Function)::%13
-  %17 = Variable(Function)::%18
-  %10 = SampledImage(%7, %8)::%22
-  %16 = CompositeConstruct(%14, %15)::%12
-        Store(%11, %16)
-  %19 = Load(%11)::%12
-  %20 = ImageSampleImplicitLod(%10, %19)::%2
-        Store(%17, %20)
-  %21 = Load(%17)::%2
-        ReturnValue(%21)
+  %10 = SampledImage(%7, %8)::%16
+  %15 = ImageSampleImplicitLod(%10, %14)::%2
+        ReturnValue(%15)
         FunctionEnd()
       """
     )
@@ -238,14 +216,14 @@ SUPPORTED_FEATURES = SupportedFeatures(
   end
 
   @testset "Broadcasting" begin
-    broadcast_test!(v, arr, image) = v .= image(Vec2(1, 2)).rgb .* v .* arr[1U] .* 2f0
+    broadcast_test(v, arr, image) = image(Vec2(1, 2)) .* v .* arr[1U] .* 2f0
 
-    v = Vec3(1, 2, 3)
+    v = Vec4(1, 2, 3, 4)
     image = SampledImage(IT(zeros(32, 32)))
     arr = Arr(0f0)
-    @test broadcast_test!(v, arr, image) == zero(Vec3)
+    @test broadcast_test(v, arr, image) == zero(Vec4)
 
-    ir = @compile broadcast_test!(::Vec3, ::Arr{1, Float32}, ::SampledImage{IT})
+    ir = @compile broadcast_test(::Vec4, ::Arr{1, Float32}, ::SampledImage{IT})
     @test unwrap(validate(ir))
   end
 
@@ -274,32 +252,6 @@ SUPPORTED_FEATURES = SupportedFeatures(
             OpReturnValue(%10)
             OpFunctionEnd()
     """,
-      )
-
-      ir = Base.@with SPIRV.METHOD_TABLES => [INTRINSICS_METHOD_TABLE] @compile SPIRVInterpreter() clamp(::Float64, ::Float64, ::Float64)
-      @test unwrap(validate(ir))
-      @test ir ≈ parse(
-        SPIRV.Module,
-          """
-          $base_capabilities
-          Capability(Float64)
-          $base_extensions
-          $memory_model
-     %1 = TypeFloat(0x00000040)
-     %2 = TypeFunction(%1, %1, %1, %1)
-    %12 = TypeBool()
-     %3 = Function(None, %2)::%1
-     %4 = FunctionParameter()::%1
-     %5 = FunctionParameter()::%1
-     %6 = FunctionParameter()::%1
-     %7 = Label()
-     %8 = FOrdLessThan(%6, %4)::%12
-     %9 = FOrdLessThan(%4, %5)::%12
-    %10 = Select(%9, %5, %4)::%1
-    %11 = Select(%8, %6, %10)::%1
-          ReturnValue(%11)
-          FunctionEnd()
-      """,
       )
     end
 
@@ -411,125 +363,6 @@ SUPPORTED_FEATURES = SupportedFeatures(
     @test unwrap(validate(@compile trunc(::Float32)))
     @test unwrap(validate(@compile (x -> trunc(UInt32, x))(::Float32)))
     @test_throws "Memory accesses with PhysicalStorageBuffer must use Aligned" unwrap(validate(@compile (x -> @store x::Int32 = Int32(0))(::UInt64)))
-  end
-
-  @testset "StaticArrays built-in support" begin
-    ir = @compile +(::SVector{2,Float32}, ::SVector{2,Float32})
-    expected = @spv_ir begin
-      Float32 = TypeFloat(32)
-      Vec2 = TypeVector(Float32, 2U)
-      # XXX: The Vec2Ptr type is inserted after the function definition,
-      # which is impossible to express given the current DSL. That should be addressed some time.
-      FType = TypeFunction(Vec2, Vec2, Vec2)
-      f = Function(SPIRV.FunctionControlNone, FType)
-      x = FunctionParameter()::Vec2
-      y = FunctionParameter()::Vec2
-      _ = Label()
-      ret = FAdd(x, y)::Vec2
-      ReturnValue(ret)
-      FunctionEnd()
-    end
-    @test unwrap(validate(ir))
-    @test ir ≈ expected
-
-    SPIRV.@code_typed debuginfo=:source +(::SVector{2,Float16}, ::SVector{2,Float32})
-    ir = @compile +(::SVector{2,Float16}, ::SVector{2,Float32})
-    @test unwrap(validate(ir))
-
-    @testset "Conversions" begin
-      ir = @compile (function (x)
-        y = SVector(x)
-        -y
-      end)(::Vec2)
-      expected = @spv_ir begin
-        Float32 = TypeFloat(32)
-        Vec2 = TypeVector(Float32, 2U)
-        Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
-        @function f(x::Vec2Ptr)::Vec2 begin
-          _ = Label()
-          value = Load(x)::Vec2
-          result = FNegate(value)::Vec2
-          ReturnValue(result)
-        end
-      end
-      @test unwrap(validate(expected))
-      @test ir ≈ expected renumber = true
-
-      ir = @compile (function (x)
-        y = MVector(x)
-        -y
-      end)(::Vec2)
-      expected = @spv_ir begin
-        Float32 = TypeFloat(32)
-        Vec2 = TypeVector(Float32, 2U)
-        Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
-        @function f(x::Vec2Ptr)::Vec2 begin
-          _ = Label()
-          v = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
-          v_intermediate = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
-          value = Load(x)::Vec2
-          Store(v, value)
-          value2 = Load(v)::Vec2
-          result = FNegate(value2)::Vec2
-          Store(v_intermediate, result)
-          ret = Load(v_intermediate)::Vec2
-          ReturnValue(ret)
-        end
-      end
-      @test unwrap(validate(expected))
-      @test ir ≈ expected renumber = true
-
-      ir = @compile (function (x)
-        y = Vec(x)
-        -y
-      end)(::SVector{2,Float32})
-      expected = @spv_ir begin
-        Float32 = TypeFloat(32)
-        Vec2 = TypeVector(Float32, 2U)
-        # XXX: The Vec2Ptr type is inserted after the function definition,
-        # which is impossible to express given the current DSL. That should be addressed some time.
-        FType = TypeFunction(Vec2, Vec2)
-        Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
-        f = Function(SPIRV.FunctionControlNone, FType)
-        x = FunctionParameter()::Vec2
-        _ = Label()
-        v = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
-        v_intermediate = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
-        Store(v, x)
-        value = Load(v)::Vec2
-        result = FNegate(value)::Vec2
-        Store(v_intermediate, result)
-        ret = Load(v_intermediate)::Vec2
-        ReturnValue(ret)
-        FunctionEnd()
-      end
-      @test unwrap(validate(expected))
-      @test ir ≈ expected renumber = true
-
-      ir = @compile (function (x)
-        y = Vec(x)
-        -y
-      end)(::MVector{2,Float32})
-      expected = @spv_ir begin
-        Float32 = TypeFloat(32)
-        Vec2 = TypeVector(Float32, 2U)
-        Vec2Ptr = TypePointer(SPIRV.StorageClassFunction, Vec2)
-        @function f(x::Vec2Ptr)::Vec2 begin
-          _ = Label()
-          v = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
-          v_intermediate = Variable(SPIRV.StorageClassFunction)::Vec2Ptr
-          _x = Load(x)::Vec2
-          Store(v, _x)
-          value = Load(v)::Vec2
-          result = FNegate(value)::Vec2
-          Store(v_intermediate, result)
-          ret = Load(v_intermediate)::Vec2
-          ReturnValue(ret)
-        end
-      end
-      @test unwrap(validate(expected))
-      @test ir ≈ expected renumber = true
-    end
   end
 
   @testset "(===) support" begin

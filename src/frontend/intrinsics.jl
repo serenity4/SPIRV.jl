@@ -231,6 +231,10 @@ convert_vec(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = Vec{N,T}(ntuple_uint32(i 
   @force_construct SVector{N,T} values
 end
 
+@noinline function CompositeInsert(value::T, v::SVector{N,T}, i::UInt32) where {N,T}
+  SVector(T[ifelse(i == j, value, v[j]) for j in eachindex(v)])
+end
+
 @noinline FAdd(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(+, x, y)
 @noinline IAdd(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(+, x, y)
 @noinline FSub(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(-, x, y)

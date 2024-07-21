@@ -83,16 +83,10 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         ::GlobalRef => f
         _ => throw_compilation_error("call to function argument `$f` detected. All function calls must be made to globally defined symbols")
       end
-      if f.name === :convert_native && nameof(f.mod) === :SPIRVStaticArraysExt
-        # Ignore conversions that only occur in a native code generation context
-        # such as Vec <-> SVector conversions.
-        @assert length(args) == 2
-        _, x = args # ignore first argument `::Type{...}`
-        (OpNop, (x,))
-      elseif f.mod == @__MODULE__() || !in(f.mod, (Base, Core))
+      if f.mod == @__MODULE__() || !in(f.mod, (Base, Core))
         opcode = lookup_opcode(f.name)
         if !isnothing(opcode)
-          !isempty(args) && isa(first(args), DataType) && (args = args[2:end])
+          !isempty(args) && isa(follow_globalref(first(args)), DataType) && (args = args[2:end])
           @switch opcode begin
             @case ::OpCode
             (opcode, args)
@@ -118,7 +112,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
 
   args = collect(Any, args)
 
-  if opcode in (OpCompositeExtract, OpVectorShuffle, OpAccessChain)
+  if opcode in (OpCompositeExtract, OpCompositeInsert, OpVectorShuffle, OpAccessChain)
     for (i, arg) in enumerate(args)
       isa(arg, Integer) || continue
       # Turn literal 1-based indexing into 0-based literal indexing.
@@ -130,12 +124,6 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
   end
 
   type = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier)) ? nothing : spir_type(jtype, tr.tmap)
-
-  if in(opcode, (OpControlBarrier, OpMemoryBarrier))
-    for i in eachindex(args)
-      args[i] = emit_constant!(mt, tr, follow_globalref(args[i]))
-    end
-  end
 
   isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = PointerType(StorageClassFunction, type))
   if isa(type, PointerType) && opcode in (OpAccessChain, OpPtrAccessChain)
@@ -149,7 +137,6 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
     end
   end
 
-  load_variables!(args, blk, mt, tr, fdef, opcode)
   remap_args!(args, mt, tr, opcode)
 
   result = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier)) ? nothing : next!(mt.idcounter)
@@ -190,25 +177,13 @@ function get_type(arg, tr::Translation, target::SPIRVTarget)
   end
 end
 
-load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, var::Variable, id::ResultID) = load_variable!(blk, mt, tr, var.type, id)
-function load_variable!(blk::Block, mt::ModuleTarget, tr::Translation, type::PointerType, id::ResultID)
-  load = @ex next!(mt.idcounter) = OpLoad(id)::type.type
-  add_expression!(blk, tr, load)
-  load.result
-end
-
 function storage_class(arg, mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition)
   var_or_type = @match arg begin
     ::Core.SSAValue => get(tr.variables, arg, nothing)
     ::Core.Argument => begin
       id = tr.args[arg]
       lvar_idx = findfirst(==(id), fdef.args)
-      if !isnothing(lvar_idx)
-        fdef.type.argtypes[lvar_idx]
-      else
-        gvar = get(fdef.global_vars, tr.argmap[arg], nothing)
-        isnothing(gvar) ? nothing : mt.global_vars[gvar]
-      end
+      !isnothing(lvar_idx) ? fdef.type.argtypes[lvar_idx] : nothing
     end
     ::ResultID => get(mt.global_vars, arg, nothing)
     _ => nothing
@@ -244,42 +219,8 @@ function remap_args!(args, mt::ModuleTarget, tr::Translation, opcode)
   replace_ssa!(args, tr, opcode)
   replace_globalrefs!(args)
   literals_to_const!(args, mt, tr, opcode)
+  const_to_literals!(args, mt, tr, opcode)
   args
-end
-
-function load_variables!(args, blk::Block, mt::ModuleTarget, tr::Translation, fdef, opcode)
-  for (i, arg) in enumerate(args)
-    # Don't load pointers in pointer operations.
-    if i == 1 && opcode in (OpStore, OpAccessChain)
-      continue
-    end
-    # OpPhi must use variables directly (loading cannot happen before OpPhi instructions).
-    opcode == OpPhi && continue
-    # OpFunctionCall must use variables directly, as mutable argument types will wrapped in pointers.
-    opcode == OpFunctionCall && continue
-    loaded_arg = load_if_variable!(blk, mt, tr, fdef, arg)
-    !isnothing(loaded_arg) && (args[i] = loaded_arg)
-  end
-end
-
-function load_if_variable!(blk::Block, mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition, arg)
-  @trymatch arg begin
-    ::Core.SSAValue => @trymatch get(tr.variables, arg, nothing) begin
-        var::Variable => load_variable!(blk, mt, tr, var, tr.results[arg])
-      end
-    ::Core.Argument => begin
-        id = tr.args[arg]
-        var = get(mt.global_vars, id, nothing)
-        !isnothing(var) && return load_variable!(blk, mt, tr, var, id)
-        index = findfirst(==(id), fdef.args)
-        if !isnothing(index)
-          type = fdef.type.argtypes[index]
-          if isa(type, PointerType)
-            load_variable!(blk, mt, tr, type, id)
-          end
-        end
-      end
-  end
 end
 
 "Replace `Core.Argument` by `ResultID`."
@@ -307,9 +248,20 @@ end
 "Turn all literals passed in non-literal SPIR-V operands into `Constant`s."
 function literals_to_const!(args, mt::ModuleTarget, tr::Translation, opcode)
   for (i, arg) in enumerate(args)
-    if isa(arg, Bool) || (isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, QuoteNode)) && !is_literal(opcode, args, i)
+    if (isa(arg, Bool) || isa(arg, AbstractFloat) || isa(arg, Integer) || isa(arg, QuoteNode) || isa(arg, Cenum) || isa(arg, Enum) || isa(arg, BitMask)) && !is_literal(opcode, args, i)
       isa(arg, QuoteNode) && (arg = arg.value)
       args[i] = emit_constant!(mt, tr, arg)
+    end
+  end
+end
+
+"Turn all literals passed in non-literal SPIR-V operands into `Constant`s."
+function const_to_literals!(args, mt::ModuleTarget, tr::Translation, opcode)
+  for (i, arg) in enumerate(args)
+    if isa(arg, ResultID) && is_literal(opcode, args, i)
+      c = get(mt.constants, arg, nothing)
+      isnothing(c) && continue
+      args[i] = c.value
     end
   end
 end

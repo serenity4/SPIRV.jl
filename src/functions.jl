@@ -71,8 +71,6 @@ branch!(from::Block, cond::ResultID, yes::Block, no::Block) = push!(from, @ex Br
   local_vars::Vector{Expression}
   blocks::ResultDict{Block}
   block_ids::Vector{ResultID}
-  "Arguments promoted to global variables."
-  global_vars::Vector{ResultID}
 end
 
 @forward_interface FunctionDefinition field = :blocks interface = [indexing, iteration]
@@ -82,7 +80,7 @@ Base.getindex(fdef::FunctionDefinition, id::ResultID) = fdef.blocks[id]
 Base.getindex(fdef::FunctionDefinition, idx::Integer) = fdef[fdef.block_ids[idx]]
 
 function FunctionDefinition(type::FunctionType, control::FunctionControl = FunctionControlNone)
-  FunctionDefinition(type, control, [], [], ResultDict(), [], [])
+  FunctionDefinition(type, control, [], [], ResultDict(), [])
 end
 
 block_index(fdef::FunctionDefinition, blk::Block) = findfirst(==(blk.id), fdef.block_ids)::Int

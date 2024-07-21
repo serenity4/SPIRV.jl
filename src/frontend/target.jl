@@ -82,7 +82,7 @@ SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) =
 function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter)
   ir, code = simplify_cfg!(code)
   g = construct_cfg(ir.cfg)
-  ranges = block_ranges(ir.cfg)
+  ranges = block_ranges(ir.cfg, code)
   insts = [code.code[range] for range in ranges]
 
   # Try to validate the code upon failure to report more helpful errors.
@@ -157,9 +157,9 @@ function Base.show(io::IO, target::SPIRVTarget)
   print(io, "SPIRVTarget ($(nv(target.cfg)) nodes, $(ne(target.cfg)) edges, $(sum(length, target.instructions)) instructions)")
 end
 
-function block_ranges(cfg::Core.Compiler.CFG)
-  indices = [1; cfg.index]
-  map(Base.splat(UnitRange), zip(indices[1:(end - 1)], indices[2:end] .- 1))
+function block_ranges(cfg::Core.Compiler.CFG, code::CodeInfo)
+  indices = [1; cfg.index; 1 + length(code.code)]
+  ranges = map(Base.splat(UnitRange), zip(indices[1:(end - 1)], indices[2:end] .- 1))
 end
 block_ranges(target::SPIRVTarget) = target.block_ranges
 block_index(cfg::Core.Compiler.CFG, i::Integer) = findfirst(>(i), cfg.index)

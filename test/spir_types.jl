@@ -40,15 +40,14 @@ primitive type TestPrimitiveTypeDisallowed 32 end
     pt = spir_type(Pointer{Tuple{Int64,Float64}}, tmap)
     @test pt.type === t
 
-    # Mutable objects will give immutable SPIR-V types, unless `wrap_mutable` is set to true,
-    # in which case a pointer type (which is the only way to express mutability in SPIR-V) will be returned.
     rt = spir_type(Base.RefValue{Tuple{Int64,Float64}}, tmap)
     @test isa(rt, StructType)
     @test rt.members == [t]
     @test rt.members[1] === t
-    pt = spir_type(Base.RefValue{Tuple{Int64,Float64}}, tmap; wrap_mutable = true)
-    @test isa(pt, PointerType)
-    @test pt.type === rt
+
+    rt = spir_type(Mutable{Tuple{Int64,Float64}}, tmap)
+    @test isa(rt, PointerType)
+    @test rt.type == t
   end
 
   @testset "Primitive types" begin

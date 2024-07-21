@@ -62,7 +62,7 @@ function SPIRVInterpreter(
   inference_parameters = InferenceParams(
     # XXX: this prevents `Base.getproperty(::Vec{2, Float64}, ::Symbol)` from being inlined for some reason.
     aggressive_constant_propagation = false,
-    assume_bindings_static = true,
+    assume_bindings_static = false,
   ),
   optimization_parameters = OptimizationParams(inlining = true, inline_cost_threshold = 10000)
 )

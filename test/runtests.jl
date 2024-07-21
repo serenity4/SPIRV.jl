@@ -2,6 +2,7 @@ using SPIRV, Test
 using SPIRV: @compute, @vertex, @fragment, @compute, @any_hit, @mesh, Sampler, Image, Pointer
 using SPIRV.MathFunctions
 using StaticArrays
+using Swizzles
 using Vulkan: Vk
 
 resource(filename) = joinpath(@__DIR__, "resources", filename)

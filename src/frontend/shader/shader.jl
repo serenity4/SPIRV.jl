@@ -124,7 +124,7 @@ function shader_decorations(ex::Expr, __module__ = @__MODULE__)
     @switch arg begin
       @case :(::$T::$C)
       if C == :(Input{WorkgroupSize})
-        C = :(Constant{local_size = $(one(Vec3U))})
+        C = :(Constant{local_size = $(Vec3U(1, 1, 1))})
         is_user_defined_specialization_constant = false
       end
       name, decs = @match C begin

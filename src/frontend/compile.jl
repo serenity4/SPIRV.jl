@@ -90,8 +90,8 @@ function IR(mt::ModuleTarget, tr::Translation)
   # and subtractions coming from Int64 1-based vs UInt32 0-based indexing.
   propagate_constants!(ir)
   composite_extract_to_vector_extract_dynamic!(ir)
-  composite_extract_to_access_chain_load!(ir)
   composite_extract_dynamic_to_literal!(ir)
+  composite_extract_to_access_chain_load!(ir)
   remove_op_nops!(ir)
 end
 
@@ -140,7 +140,8 @@ function Base.showerror(io::IO, err::CompilationError)
       color = here ? :red : :default
       weight = here ? :bold : :normal
       file = contractuser(string(mi.def.file))
-      rettype = cached_return_type(codeinst)
+      ci = retrieve_code_instance(err.target.interp, mi)
+      rettype = cached_return_type(ci)
       line = !isnothing(frame.line) ? frame.line.line : !iszero(err.jinst_index) && i == lastindex(stacktrace) ? getline(err.target.code, err.jinst_index)[end].line : mi.def.line
       print(io, styled"""
         \n{$color,$weight: $(here ? '>' : ' ') [$i] $mi::$rettype}
@@ -170,16 +171,16 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals =
   fid = emit!(mt, tr, fdef)
   set_name!(mt, fid, mangled_name(target.mi))
   arg_idx = 0
-  gvar_idx = 0
   for (i, argument) in pairs(tr.argmap)
     x = get(globals, i, nothing)
+    T = target.mi.specTypes.parameters[i + 1]
     argid = @match x begin
-      ::Variable => fdef.global_vars[gvar_idx += 1]
+      ::Variable && if isa(spir_type(T, tr.tmap), PointerType) end => mt.global_vars[x]
       ::Constant => mt.constants[x]
-      nothing => fdef.args[arg_idx += 1]
+      _ => fdef.args[arg_idx += 1]
     end
     insert!(tr.args, argument, argid)
-    set_name!(mt, argid, target.code.slotnames[argument.n])
+    in(argument.n, eachindex(target.code.slotnames)) && set_name!(mt, argid, target.code.slotnames[argument.n])
   end
 
   try
@@ -200,13 +201,12 @@ end
 
 function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals::Dictionary{Int,Union{Constant,Variable}})
   argtypes = SPIRType[]
-  global_vars = ResultID[]
   (; mi) = target
 
   for (i, T) in enumerate(tr.argtypes)
     x = get(globals, i, nothing)
     isa(x, Constant) && continue
-    t = spir_type(T, tr.tmap; wrap_mutable = true)
+    t = spir_type(T, tr.tmap)
     @switch x begin
       @case ::Nothing
       push!(argtypes, t)
@@ -215,13 +215,19 @@ function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         @case &StorageClassFunction
         push!(argtypes, t)
         @case ::StorageClass
-        push!(global_vars, emit!(mt, tr, x))
+        if !isa(t, PointerType)
+          # The Variable does not originate from a pointer type, so we'll need
+          # the function to be called with the result of a corresponding Load.
+          # If the variable had originated from a pointer type, code that uses
+          # it would have explicitly loaded and stored as appropriate.
+          push!(argtypes, t)
+        end
       end
     end
   end
   code_instance = retrieve_code_instance(target.interp, mi)
   ftype = FunctionType(spir_type(code_instance.rettype, tr.tmap), argtypes)
-  FunctionDefinition(ftype, FunctionControlNone, [], [], ResultDict(), [], global_vars)
+  FunctionDefinition(ftype, FunctionControlNone, [], [], ResultDict(), [])
 end
 
 function emit!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition)
@@ -335,7 +341,6 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
           ::Nothing => @ex OpReturn()
           val => begin
             args = Any[val]
-            load_variables!(args, blk, mt, tr, fdef, OpReturnValue)
             remap_args!(args, mt, tr, OpReturnValue)
             @ex OpReturnValue(only(args))
           end

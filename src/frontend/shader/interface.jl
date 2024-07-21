@@ -61,6 +61,7 @@ function IR(target::SPIRVTarget, interface::ShaderInterface, specializations)
   mt = ModuleTarget()
   tr = Translation(target)
   globals = Dictionary{Int,Union{Constant,Variable}}()
+  readonly_variables = Variable[]
   for (i, storage_class) in enumerate(interface.storage_classes)
     if represents_constant(storage_class)
       T = tr.argtypes[i]
@@ -77,17 +78,20 @@ function IR(target::SPIRVTarget, interface::ShaderInterface, specializations)
       insert!(globals, i, constant)
     elseif storage_class ≠ StorageClassFunction
       t = spir_type(tr.argtypes[i], tr.tmap; storage_class)
-      if storage_class in (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer)
+      if in(storage_class, (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer))
         decorate!(mt, emit!(mt, tr, t), DecorationBlock)
       end
-      ptr_type = PointerType(storage_class, t)
-      var = Variable(ptr_type)
-      insert!(globals, i, var)
+      readonly = !isa(t, PointerType)
+      ptr_t = readonly ? PointerType(storage_class, t) : @set(t.storage_class = storage_class)
+      variable = Variable(ptr_t)
+      readonly && push!(readonly_variables, variable)
+      insert!(globals, i, variable)
+      emit!(mt, tr, variable)
     end
   end
   compile!(mt, tr, target, globals)
   fdef = FunctionDefinition(mt, target.mi)
-  ep = define_entry_point!(mt, tr, specializations, fdef, interface.execution_model, interface.execution_options)
+  ep = define_entry_point!(mt, tr, specializations, fdef, globals, readonly_variables, interface.execution_model, interface.execution_options)
   ir = IR(mt, tr)
   insert!(ir.entry_points, ep.func, ep)
   make_shader!(ir, fdef, interface, globals)
@@ -113,18 +117,35 @@ function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterfa
   ir
 end
 
-function define_entry_point!(mt::ModuleTarget, tr::Translation, specializations, fdef::FunctionDefinition, model::ExecutionModel, options::ShaderExecutionOptions)
+function define_entry_point!(mt::ModuleTarget, tr::Translation, specializations, fdef::FunctionDefinition, globals, readonly_variables, model::ExecutionModel, options::ShaderExecutionOptions)
   main = FunctionDefinition(FunctionType(VoidType(), []))
-  ep = EntryPoint(:main, emit!(mt, tr, main), model, [], fdef.global_vars)
+  ep = EntryPoint(:main, emit!(mt, tr, main), model, [], ResultID[])
 
   # Fill function body.
   blk = new_block!(main, next!(mt.idcounter))
   # The dictionary loses some of its elements to #undef values.
-  #TODO: fix this hack in Dictionaries.jl if it still exists.
+  #TODO: fix this hack in Dictionaries.jl if it is still needed.
   fid = findfirst(==(fdef), mt.fdefs.forward)
-  push!(blk, @ex next!(mt.idcounter) = OpFunctionCall(fid)::fdef.type.rettype)
+  arguments = ResultID[]
+  for x in globals
+    isa(x, Variable) || continue
+    id = mt.global_vars[x]
+    push!(ep.interfaces, id)
+    if in(x, readonly_variables)
+      t = x.type.type
+      loaded_id = next!(mt.idcounter)
+      push!(blk, @ex loaded_id = Load(id)::t)
+      push!(arguments, loaded_id)
+    end
+  end
+  push!(blk, @ex next!(mt.idcounter) = OpFunctionCall(fid, arguments...)::fdef.type.rettype)
   push!(blk, @ex OpReturn())
 
+  add_options!(ep, mt, tr, options, specializations)
+end
+
+function add_options!(ep, mt, tr, options, specializations)
+  (; model) = ep
   model == ExecutionModelFragment && return add_options!(ep, options::FragmentExecutionOptions)
   model == ExecutionModelGeometry && return add_options!(ep, options::GeometryExecutionOptions)
   model in (ExecutionModelTessellationControl, ExecutionModelTessellationEvaluation) && return add_options!(ep, options::TessellationExecutionOptions)

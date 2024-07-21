@@ -220,13 +220,10 @@ remap_type(@nospecialize(t::DataType)) = t
 
 """
 Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is provided.
-
-If `wrap_mutable` is set to true, then a pointer with class `StorageClassFunction` will wrap the result.
 """
-function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing; wrap_mutable = false, storage_class = nothing, fill_tmap = true)
+function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing; storage_class = nothing, fill_tmap = true)
   ismutable = ismutabletype(t)
   t = remap_type(t)
-  wrap_mutable && ismutable && return PointerType(StorageClassFunction, spir_type(t, tmap))
   !isnothing(tmap) && isnothing(storage_class) && haskey(tmap, t) && return tmap[t]
   type = @match t begin
     &Float16 => FloatType(16)
@@ -242,6 +239,7 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
     &Int16 => IntegerType(16, true)
     &Int32 => IntegerType(32, true)
     &Int64 => IntegerType(64, true)
+    ::Type{<:Mutable} => PointerType(something(storage_class, StorageClassFunction), spir_type(t.parameters[1], tmap))
     ::Type{<:Array} => begin
       eltype, n = t.parameters
       @match n begin

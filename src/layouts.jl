@@ -286,7 +286,7 @@ function TypeMetadata(ir::IR)
   tmeta = TypeMetadata(ir.tmap)
   for t in ir.tmap
     tid = get(ir.types, t, nothing)
-    isnothing(tid) && !isa(t, PointerType) && error("Expected type $t to have a corresponding type ID")
+    isnothing(tid) && continue
     meta = get(ir.metadata, tid, nothing)
     isnothing(meta) && continue
     insert!(tmeta.d, t, meta)

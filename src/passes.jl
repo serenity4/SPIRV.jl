@@ -193,7 +193,7 @@ function (::CompositeExtractDynamicToLiteral)(ir::IR, fdef::FunctionDefinition)
           index = ex[2]::Union{UInt32, ResultID}
           if isa(index, ResultID)
             c = get(ir.constants, index, nothing)
-            isnothing(c) && throw_compilation_error("In CompositeExtractDynamicToLiteral pass, expected a constant dynamic index, got reference to non-constant $index for ", sprintc_mime(show, Instruction(ex, ir.types)))
+            isnothing(c) && break
             c.type == IntegerType(32, false) || throw_compilation_error("Expected 32-bit unsigned integer type for index constant, got $(c.type)")
             ex[2] = c.value
           end
@@ -380,7 +380,12 @@ function (::CompositeExtractToAccessChainLoad)(ir::IR, fdef::FunctionDefinition)
       patch = Expression[]
       # 1. Create a Variable if `composite` does not result from a load instruction.
       def = definition(composite, fdef, ir)
-      def_id = isa(def, ResultID) ? def : def.result
+      def_id = @match def begin
+        ::ResultID => def
+        ::Constant => ir.constants[def]
+        ::Variable => ir.global_vars[def]
+        ::Expression => def.result
+      end
       storage_class, ptr_id = if isa(def, Expression) && def.op == OpLoad
         from = def[1]::ResultID
         if haskey(ir.global_vars, from)
@@ -420,8 +425,6 @@ function definition(id::ResultID, fdef::FunctionDefinition, ir::IR)
 end
 
 function definition(id::ResultID, fdef::FunctionDefinition)
-  # Look for the global variable instead.
-  in(id, fdef.global_vars) && return nothing
   i = findfirst(==(id), fdef.args)
   !isnothing(i) && return fdef.args[i]
   i = findfirst(==(id), fdef.block_ids)

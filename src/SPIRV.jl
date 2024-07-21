@@ -150,7 +150,7 @@ include("analysis/restructuring.jl")
 include("frontend/shader/analysis.jl")
 
 include("spirv_dsl.jl")
-# include("precompile.jl")
+include("precompile.jl")
 
 export
   MathFunctions,
@@ -244,7 +244,7 @@ export
   serialize!, deserialize!,
 
   # SPIR-V array/vector/pointer/image types.
-  Mutable,
+  Mutable, Mut,
   Vec,
   Vec2, Vec3, Vec4,
   Vec2U, Vec3U, Vec4U,
