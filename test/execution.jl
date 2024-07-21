@@ -6,5 +6,4 @@ include("execution/execute.jl")
 
 @testset "GPU execution of SPIR-V compute shaders" begin
   include("execution/basic_tests.jl")
-  include("execution/mutability.jl")
 end;

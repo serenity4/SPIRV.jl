@@ -7,8 +7,8 @@
   @test execute(:(3.2^11.4)) === 3.2^11.4
   @test execute(:(exp(10f0))) === exp(10f0)
   @test execute(:(cos(10f0))) === cos(10f0)
-  @test execute(:(one(Vec3) == one(Vec3))) === true
-  @test execute(:(one(Vec3) != one(Vec3))) === false
+  @test execute(:(@vec(Float32[1, 2, 3]) == @vec(Float32[1, 2, 3]))) === true
+  @test execute(:(@vec(Float32[1, 2, 3]) != @vec(Float32[1, 2, 3]))) === false
   @test execute(:(convert(Float32, true))) === 1f0
   @test execute(:(zero(SVector{3,Float32}))) === zero(SVector{3,Float32})
 
