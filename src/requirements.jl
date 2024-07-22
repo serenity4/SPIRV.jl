@@ -62,7 +62,7 @@ function find_supported(supported::FeatureSupport, extensions, capabilities, req
   (extension, capability)
 end
 
-function find_supported(supported::FeatureSupport, support::RequiredSupport, required_by; required = true)
+function find_supported(supported::FeatureSupport, support::RequiredSupport, @nospecialize(required_by); required = true)
   version = assume_version(supported)
   if !in(version, support.version)
     required && error("SPIR-V version requirements could not be satisfied for $version (required: $(support.version)) for `$required_by`")
@@ -71,7 +71,7 @@ function find_supported(supported::FeatureSupport, support::RequiredSupport, req
   find_supported(supported, support.extensions, support.capabilities, required_by; required)
 end
 
-function find_supported(supported::FeatureSupport, requirements::AbstractVector{RequiredSupport}, required_by)
+function find_supported(supported::FeatureSupport, requirements::AbstractVector{RequiredSupport}, @nospecialize(required_by))
   for required in reverse(requirements) # try the last ones first, as they should have lower extension/capability requirements.
     found = find_supported(supported, required, required_by; required = false)
     !isnothing(found) && all(!ismissing, found) && return found
@@ -84,7 +84,7 @@ function find_supported(supported::FeatureSupport, requirements::AbstractVector{
   find_supported(supported, required, required_by; required = true)
 end
 
-function add_requirements!(required_exts, required_caps, supported::FeatureSupport, requirements, required_by)
+function add_requirements!(required_exts, required_caps, supported::FeatureSupport, requirements, @nospecialize(required_by))
   extension, capability = find_supported(supported, requirements, required_by)
   !isnothing(extension) && push!(required_exts, extension)
   !isnothing(capability) && push!(required_caps, capability)
@@ -115,7 +115,7 @@ function FeatureRequirements(instructions, supported::FeatureSupport)
     add_requirements!(required_exts, required_caps, supported, inst_info.required, inst)
     !variable_pointers_spotted && @when &OpPhi = inst.opcode begin
       for arg in @view inst.arguments[1:2:end]
-        if in(arg, variables)
+        if in(arg::ResultID, variables)
           push!(required_caps, CapabilityVariablePointers)
           variable_pointers_spotted = true
           break

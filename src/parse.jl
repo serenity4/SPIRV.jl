@@ -9,7 +9,7 @@ function defines_extra_operands(arg)
   !isnothing(val) && !isempty(val.parameters)
 end
 
-function add_extra_operands!(op_infos, i, arg, info)
+function add_extra_operands!(op_infos, i, @nospecialize(arg), info)
   if defines_extra_operands(arg) || kind_to_category[info.kind] == "BitEnum"
     if kind_to_category[info.kind] == "BitEnum"
       extra_infos = [(enum_infos[flag].parameters for flag in enabled_flags(arg))...;]
@@ -29,8 +29,15 @@ function info(opcode::Union{OpCode,OpCodeGLSL}, skip_ids::Bool = true)
     ::OpCode => instruction_infos[opcode]
     ::OpCodeGLSL => instruction_infos_glsl[opcode]
   end
-  skip_ids && @reset info.operands = filter(x -> !in(x.kind, (IdResultType, IdResult)), info.operands)
-  info
+  !skip_ids && return info
+  operands = OperandInfo[]
+  for operand in info.operands
+    (operand.kind === IdResultType || operand.kind === IdResult) && continue
+    push!(operands, operand)
+  end
+  # XXX: use `@set` when ConstructionBase performance is fixed.
+  # https://github.com/JuliaObjects/ConstructionBase.jl/issues/55
+  InstructionInfo(info.class, operands, info.required)
 end
 info(opcode::Integer, args...) = info(OpCode(opcode), args...)
 info(inst::AbstractInstruction, args...) = info(inst.opcode, args...)
@@ -43,7 +50,6 @@ function is_literal(opcode::OpCode, args, i)
 end
 
 operand_infos(args...) = info(args...).operands
-operand_kinds(args...) = getproperty.(operand_infos(args...), :kind)
 
 """
 SPIR-V module, as a series of headers followed by a stream of instructions.
@@ -97,23 +103,24 @@ function Base.read(io::SwapStream, ::Type{PhysicalModule})
   PhysicalModule(magic_number, generator_magic_number, version, bound, schema, insts)
 end
 
-function next_id(io::IO, read_word, op_kinds, id_type)
-  @match id_type begin
-    &IdResultType => begin
-      if length(op_kinds) ≠ 0 && id_type == first(op_kinds)
-        read_word(io)
-      else
-        nothing
-      end
-    end
-    &IdResult => begin
-      if length(op_kinds) == 1 && id_type == first(op_kinds) || length(op_kinds) > 1 && id_type in op_kinds[1:2]
-        read_word(io)
-      else
-        nothing
-      end
-    end
-  end
+function type_id(io::IO, read_word, opcode::OpCode)
+  info = instruction_infos[opcode]
+  isempty(info.operands) && return nothing
+  operand = info.operands[1]
+  operand.kind === IdResultType && return read_word(io)
+  nothing
+end
+
+function result_id(io::IO, read_word, opcode::OpCode)
+  info = instruction_infos[opcode]
+  isempty(info.operands) && return nothing
+  operand = info.operands[1]
+  operand.kind === IdResult && return read_word(io)
+  length(info.operands) == 1 && return nothing
+  operand.kind !== IdResultType && return nothing
+  operand = info.operands[2]
+  operand.kind === IdResult && return read_word(io)
+  nothing
 end
 
 function next_instruction(io::IO, read_word)
@@ -123,22 +130,26 @@ function next_instruction(io::IO, read_word)
   iszero(word_count) && invalid_format("SPIR-V instructions cannot consume 0 words")
 
   opcode = OpCode(op_data & 0xffff)
-  op_kinds = operand_kinds(opcode, false)
 
-  type_id = next_id(io, read_word, op_kinds, IdResultType)
-  result_id = next_id(io, read_word, op_kinds, IdResult)
+  tid = type_id(io, read_word, opcode)
+  rid = result_id(io, read_word, opcode)
 
   operands = Word[]
-  for i = 1:(word_count - start_idx(type_id, result_id))
+  for i = 1:(word_count - start_idx(tid, rid))
     push!(operands, read_word(io))
   end
 
-  PhysicalInstruction(word_count, opcode, type_id, result_id, operands)
+  PhysicalInstruction(word_count, opcode, tid, rid, operands)
 end
 
 function info(opcode::OpCode, arguments::AbstractVector, skip_ids::Bool = true)
-  inst_info = deepcopy(info(opcode, skip_ids))
-  op_infos = inst_info.operands
+  ref = info(opcode, skip_ids)
+
+  op_infos = OperandInfo[]
+  append!(op_infos, ref.operands)
+  # XXX: use `@set` when ConstructionBase performance is fixed.
+  # https://github.com/JuliaObjects/ConstructionBase.jl/issues/55
+  inst_info = InstructionInfo(ref.class, op_infos, ref.required)
 
   # Repeat the last info if there is a variable number of arguments.
   if !isempty(op_infos)
@@ -200,7 +211,7 @@ function Instruction(inst::PhysicalInstruction)
   Instruction(opcode, inst.type_id, inst.result_id, arguments)
 end
 
-function next_argument(operands, kind, category, consumes_remaining_words::Bool)
+function next_argument(operands::Vector{Word}, kind, category, consumes_remaining_words::Bool)
   (nwords, val) = if kind == LiteralString
     bytes = reinterpret(UInt8, operands)
     i, chars = parse_bytes_for_utf8_string(bytes)
