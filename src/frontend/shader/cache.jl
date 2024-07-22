@@ -72,6 +72,6 @@ end
 # However the supported features would have to be taken as the intersection of all the supported
 # ones on each hypothetical device.
 
-ShaderSource(cache::ShaderCompilationCache, info::ShaderInfo) = get!(cache, info)
-ShaderSource(cache::Nothing, info::ShaderInfo) = ShaderSource(info)
-Base.get!(cache::ShaderCompilationCache, info::ShaderInfo) = get!(() -> ShaderSource(info), cache, cache_token(info))
+ShaderSource(cache::ShaderCompilationCache, info::ShaderInfo; validate = true, optimize = false) = get!(cache, info; validate, optimize)
+ShaderSource(cache::Nothing, info::ShaderInfo; validate = true, optimize = false) = ShaderSource(info; validate, optimize)
+Base.get!(cache::ShaderCompilationCache, info::ShaderInfo; validate = true, optimize = false) = get!(() -> ShaderSource(info; validate, optimize), cache, cache_token(info))

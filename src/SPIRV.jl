@@ -22,6 +22,7 @@ using StyledStrings
 import Serialization: serialize, deserialize
 using StaticArrays: StaticArrays, SVector, SMatrix
 @reexport using ResultTypes: iserror, unwrap, unwrap_error
+using ResultTypes: @try
 
 using Core.Compiler: CodeInfo, IRCode, MethodInstance, InferenceResult, InferenceState,
   retrieve_code_info, lock_mi_inference, AbstractInterpreter, OptimizationParams, InferenceParams, get_world_counter, CodeInstance, WorldView,
@@ -43,6 +44,7 @@ import LinearAlgebra: dot, cross, norm, normalize
 
 import SPIRV_Tools_jll
 const spirv_val = SPIRV_Tools_jll.spirv_val()
+const spirv_opt = SPIRV_Tools_jll.spirv_opt()
 
 const Optional{T} = Union{Nothing,T}
 
@@ -139,6 +141,7 @@ include("frontend/shader/source.jl")
 include("frontend/shader/cache.jl")
 include("frontend/shader/shader.jl")
 include("frontend/shader/api.jl")
+include("optimize.jl")
 
 include("analysis/call_tree.jl")
 include("analysis/structural_analysis.jl")
@@ -236,6 +239,20 @@ export
   ShaderInfo, ShaderSource,
   specialize_shader,
   ShaderCompilationCache,
+  @vertex,
+  @geometry,
+  @tessellation_control,
+  @tessellation_evaluation,
+  @fragment,
+  @compute,
+  @ray_generation,
+  @intersection,
+  @closest_hit,
+  @any_hit,
+  @miss,
+  @callable,
+  @task,
+  @mesh,
 
   # Layouts.
   LayoutStrategy, NoPadding, NativeLayout, LayoutInfo, ExplicitLayout, VulkanAlignment, VulkanLayout, ShaderLayout, TypeMetadata,

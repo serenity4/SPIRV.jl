@@ -33,8 +33,6 @@ const spirv_types = Set([
   OpCode, OpCodeGLSL,
 ])
 
-validate_khronos(mod::Module; kwargs...) = validate_khronos(PhysicalModule(mod); kwargs...)
-
 validate(pmod::PhysicalModule) = validate_khronos(pmod; flags = ["--target-env", "spv1.6"])
 
 """
@@ -87,5 +85,6 @@ function validate_shader(ir::IR; flags = [])
   ret = validate_types(mod)
   iserror(ret) && return ret
   union!(flags, ["--target-env", "vulkan1.3"])
-  validate_khronos(mod; flags)
+  pmod = PhysicalModule(mod)
+  validate_khronos(pmod; flags)
 end

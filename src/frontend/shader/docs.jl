@@ -43,15 +43,15 @@ let red = Base.text_colors[:red]
 
   Here are a few examples using the described syntax:
 
-  `@vertex [parameters] f($(arg("Vec4", "Output", "Position")), $(arg("UInt32", "Input", "VertexIndex")))`
+  `@vertex [parameters] f($(arg("Mutable{Vec4}", "Output", "Position")), $(arg("UInt32", "Input", "VertexIndex")))`
 
   `@fragment [parameters] f($(arg("Vec4", "Input")), $(arg("InvocationData", "PushConstant")))`
 
-  `@fragment [parameters] f($(arg("Vec4", "Output")), $(arg("Vec4", "Input", "FragCoord")), $(arg("Vec2", "Input", "", ["@Flat"])))`
+  `@fragment [parameters] f($(arg("Mutable{Vec4}", "Output")), $(arg("Vec4", "Input", "FragCoord")), $(arg("Vec2", "Input", "", ["@Flat"])))`
 
   `@compute [parameters] f($(arg("UInt32", "Workgroup")))`
 
-  `@compute [parameters] f($(arg("Arr{256, Float32}", "Workgroup")), $(arg("UInt32", "Input", "LocalInvocationIndex")))`
+  `@compute [parameters] f($(arg("Mutable{Arr{256, Float32}}", "Workgroup")), $(arg("UInt32", "Input", "LocalInvocationIndex")))`
   """
   @eval function macro_docstring(stage)
     execution_opts = ShaderExecutionOptions(EXECUTION_MODELS[stage])

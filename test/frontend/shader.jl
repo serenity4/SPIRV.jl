@@ -247,6 +247,9 @@ shader2!(color) = @swizzle color.a = 1F
       shader = @fragment features = SUPPORTED_FEATURES ((res, blur, reference, direction, uv) -> res[] =
         compute_blur(blur, reference, direction, uv))(::Mutable{Vec4}::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::UInt32::Input{@Flat}, ::Vec2::Input)
       @test unwrap(validate(shader))
+      optimized = unwrap(optimize(shader))
+      @test unwrap(validate(optimized))
+      @test length(assemble(optimized)) < length(assemble(shader))
 
       shader = @fragment features = SUPPORTED_FEATURES ((res, blur, reference, uv) -> res[] =
         compute_blur_2(blur, reference, uv))(::Mutable{Vec4}::Output, ::GaussianBlur::PushConstant, ::IT::UniformConstant{@DescriptorSet(0), @Binding(0)}, ::Vec2::Input)

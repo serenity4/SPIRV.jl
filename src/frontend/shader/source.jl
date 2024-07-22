@@ -32,4 +32,4 @@ function Base.show(io::IO, source::ShaderSource)
   print(io, typeof(source), '(', source.info.interface.execution_model, ", ", length(source.code), " bytes, ", length(source.specializations), " specialization constants)")
 end
 
-ShaderSource(info::ShaderInfo; validate::Bool = true) = ShaderSource(Shader(info); validate)
+ShaderSource(info::ShaderInfo; validate::Bool = true, optimize::Bool = false) = ShaderSource(Shader(info); validate, optimize)

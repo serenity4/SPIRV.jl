@@ -1,5 +1,5 @@
 using SPIRV, Test
-using SPIRV: @compute, @vertex, @fragment, @compute, @any_hit, @mesh, Sampler, Image, Pointer
+using SPIRV: @compute, @vertex, @fragment, @compute, @any_hit, @mesh, Sampler, Image, Pointer, optimize
 using SPIRV.MathFunctions
 using StaticArrays
 using Swizzles

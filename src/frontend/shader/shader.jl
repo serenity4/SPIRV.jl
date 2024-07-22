@@ -49,7 +49,9 @@ function Base.show(io::IO, mime::MIME"text/plain", shader::Shader)
   end
 end
 
-function ShaderSource(shader::Shader; validate::Bool = true)
+function ShaderSource(shader::Shader; validate::Bool = true, optimize = false)
+  # Validate if we are going to optimize, otherwise the optimizer may fail.
+  validate |= optimize
   if validate
     ret = @__MODULE__().validate(shader)
     if iserror(ret)
@@ -58,7 +60,18 @@ function ShaderSource(shader::Shader; validate::Bool = true)
       throw(err)
     end
   end
-  ShaderSource(reinterpret(UInt8, assemble(shader)), shader.info, shader.specializations)
+  bytes = if optimize
+    ret = @__MODULE__().optimize(shader; binary = true)
+    if iserror(ret)
+      show_debug_spirv_code(stdout, shader.ir)
+      err = unwrap_error(err)
+      throw(err)
+    end
+    unwrap(ret)
+  else
+    reinterpret(UInt8, assemble(shader))
+  end
+  ShaderSource(bytes, shader.info, shader.specializations)
 end
 
 """
@@ -74,7 +87,7 @@ For the documentation of the remaining arguments, see [`compile_shader`](@ref).
 
 $DOCSTRING_SYNTAX_REFERENCE
 """
-function compile_shader_ex(ex::Expr, __module__, execution_model::ExecutionModel; options = nothing, features = nothing, cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
+function compile_shader_ex(ex::Expr, __module__, execution_model::ExecutionModel; options = nothing, features = nothing, cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing, validate = nothing, optimize = nothing)
   f, args = @match ex begin
     :($f($(args...))) => (f, args)
   end
@@ -87,7 +100,7 @@ function compile_shader_ex(ex::Expr, __module__, execution_model::ExecutionModel
     features = something($features, $AllSupported()),
   ))
   !isnothing(options) && push!(interface.args[2].args, :(execution_options = $options))
-  compile_shader_ex(f, :($Tuple{$(argtypes...)}), interface; cache, assemble, layout, interpreter)
+  compile_shader_ex(f, :($Tuple{$(argtypes...)}), interface; cache, assemble, layout, interpreter, validate, optimize)
 end
 
 function tryeval(__module__, ex)
@@ -229,19 +242,21 @@ A cache may be provided as a [`ShaderCompilationCache`](@ref), caching the resul
 
 A custom layout and interpreter may be provided. If using a custom interpreter and providing a cache at the same time, make sure that cache entries were created with the same interpreter.
 """
-function compile_shader(f, args, interface::ShaderInterface; cache::Optional{ShaderCompilationCache} = nothing, assemble::Optional{Bool} = nothing, layout::Optional{VulkanLayout} = nothing, interpreter::Optional{SPIRVInterpreter} = nothing)
+function compile_shader(f, args, interface::ShaderInterface; cache::Optional{ShaderCompilationCache} = nothing, assemble::Optional{Bool} = nothing, layout::Optional{VulkanLayout} = nothing, interpreter::Optional{SPIRVInterpreter} = nothing, validate::Optional{Bool} = nothing, optimize::Optional{Bool} = nothing)
   layout = @something(layout, VulkanLayout())
   interpreter = @something(interpreter, SPIRVInterpreter())
   assemble = something(assemble, false)
+  validate = something(validate, true)
+  optimize = something(optimize, false)
   if !assemble && !isnothing(cache) && !HAS_WARNED_ABOUT_CACHE[]
     HAS_WARNED_ABOUT_CACHE[] = true
     @warn "A cache was provided, but the `assemble` option has not been set to `true`; the shader will not be cached."
   end
   info = ShaderInfo(f, args, interface; interp = interpreter, layout)
   !assemble && return Shader(info)
-  ShaderSource(cache, info)
+  ShaderSource(cache, info; validate, optimize)
 end
 
-function compile_shader_ex(f, args, interface; cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing)
-  :($compile_shader($f, $args, $interface; cache = $cache, assemble = $assemble, layout = $layout, interpreter = $interpreter))
+function compile_shader_ex(f, args, interface; cache = nothing, assemble = nothing, layout = nothing, interpreter = nothing, validate = nothing, optimize = nothing)
+  :($compile_shader($f, $args, $interface; cache = $cache, assemble = $assemble, layout = $layout, interpreter = $interpreter, validate = $validate, optimize = $optimize))
 end
