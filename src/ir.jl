@@ -32,14 +32,14 @@ end
 Base.getindex(ir::IR, i::Int) = collect(ir.fdefs)[i]
 Base.:(==)(x::IR, y::IR) = Module(x) == Module(y)
 
-IR(source; satisfy_requirements = true, features = AllSupported()) = IR(Module(source); satisfy_requirements, features)
+IR(source) = IR(Module(source))
 
 function IR(; ir_meta::ModuleMetadata = ModuleMetadata(), addressing_model::AddressingModel = AddressingModelLogical, memory_model::MemoryModel = MemoryModelVulkan)
   IR(ir_meta, [], [], BijectiveMapping(), addressing_model, memory_model, ResultDict(), ResultDict(),
     BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), DebugInfo(), IDCounter(0), TypeMap())
 end
 
-function IR(mod::Module; satisfy_requirements = true, features = AllSupported()) #= ::FeatureSupport =#
+function IR(mod::Module)
   ir = IR(; ir_meta = mod.meta)
   (; debug, metadata, types) = ir
   max_id = 0
@@ -173,13 +173,9 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
         push!(current_function, Block(ex.result))
       end
       @case "Miscellaneous"
-      if opcode == OpUndef
-        ex = Expression(inst, types)
-        # TODO: Handle `Undef`
-        # This currently breaks because `Undef` instructions are not `Variable`s.
-        # insert!(ir.global_vars, result_id, Variable(ex))
-        @warn "OpUndef instructions at top-level are not yet supported; skipping"
-      end
+      # TODO: Handle global `Undef`s.
+      # This currently breaks because `Undef` instructions are not `Variable`s.
+      # insert!(ir.global_vars, result_id, Variable(ex))
     end
     if !isnothing(current_function) && !isempty(current_function.blocks) && opcode ≠ OpVariable
       ex = Expression(inst, types)
@@ -190,7 +186,6 @@ function IR(mod::Module; satisfy_requirements = true, features = AllSupported())
   end
 
   set!(ir.idcounter, ResultID(max_id))
-  satisfy_requirements && satisfy_requirements!(ir, features)
   ir
 end
 

@@ -49,26 +49,26 @@ shader2!(color) = @swizzle color.a = 1F
         Capability(Shader)
         MemoryModel(Logical, Vulkan)
         EntryPoint(Vertex, %13, "main", %4)
-        Name(%6, "shader2!(::Mutable{SVector{4,Float32}})")
+        Name(%6, "$(SPIRV.function_name(target.mi))")
         Name(%4, "color")
    %1 = TypeFloat(0x00000020)
    %2 = TypeVector(%1, 0x00000004)
    %3 = TypePointer(Output, %2)
    %4 = Variable(Output)::%3
-   %5 = TypeFunction(%1)
+   %5 = TypeFunction(%2)
    %9 = Constant(0x3f800000)::%1
   %11 = TypeVoid()
   %12 = TypeFunction(%11)
-   %6 = Function(None, %5)::%1
+   %6 = Function(None, %5)::%2
    %7 = Label()
    %8 = Load(%4)::%2
   %10 = CompositeInsert(%9, %8, 0x00000003)::%2
         Store(%4, %10)
-        ReturnValue(%9)
+        ReturnValue(%10)
         FunctionEnd()
   %13 = Function(None, %12)::%11
   %14 = Label()
-  %15 = FunctionCall(%6)::%1
+  %15 = FunctionCall(%6)::%2
         Return()
         FunctionEnd()
   """,

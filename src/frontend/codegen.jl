@@ -94,12 +94,10 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
             (OpExtInst, args)
           end
         else
-          args, variables = peel_global_vars(args, mt, tr, fdef)
-          (OpFunctionCall, (emit_new!(mt, tr, target, mi, fdef, variables), args...))
+          (OpFunctionCall, (emit_new!(mt, tr, target, mi, fdef), args...))
         end
       else
-        args, variables = peel_global_vars(args, mt, tr, fdef)
-        (OpFunctionCall, (emit_new!(mt, tr, target, mi, fdef, variables), args...))
+        (OpFunctionCall, (emit_new!(mt, tr, target, mi, fdef), args...))
       end
     end
     Expr(:foreigncall, f, _...) => begin
@@ -193,21 +191,6 @@ function storage_class(arg, mt::ModuleTarget, tr::Translation, fdef::FunctionDef
   end
 end
 
-function peel_global_vars(args, mt::ModuleTarget, tr::Translation, fdef)
-  fargs = []
-  globals = Dictionary{Int,Union{Constant,Variable}}()
-  for (i, arg) in enumerate(args)
-    @switch storage_class(arg, mt, tr, fdef) begin
-      @case ::Nothing || &StorageClassFunction
-      push!(fargs, arg)
-      @case ::StorageClass
-      isa(arg, Core.Argument) && (arg = ResultID(arg, tr))
-      insert!(globals, i, mt.global_vars[arg::ResultID])
-    end
-  end
-  fargs, globals
-end
-
 function try_getopcode(name, prefix = "")
   maybe_opname = Symbol(:Op, prefix, name)
   isdefined(@__MODULE__, maybe_opname) ? getproperty(@__MODULE__, maybe_opname) : nothing
@@ -269,7 +252,7 @@ function const_to_literals!(args, mt::ModuleTarget, tr::Translation, opcode)
   end
 end
 
-function emit_new!(mt::ModuleTarget, tr::Translation, from::SPIRVTarget, mi::MethodInstance, fdef::FunctionDefinition, variables)
+function emit_new!(mt::ModuleTarget, tr::Translation, from::SPIRVTarget, mi::MethodInstance, fdef::FunctionDefinition)
   (; interp) = from
   target = SPIRVTarget(mi, interp)
   add_frame_lineno!(interp.debug, tr, from)

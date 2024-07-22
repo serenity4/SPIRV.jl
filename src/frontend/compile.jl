@@ -169,7 +169,7 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals =
     throw_compilation_error(e, (; target))
   end
   fid = emit!(mt, tr, fdef)
-  set_name!(mt, fid, mangled_name(target.mi))
+  set_name!(mt, fid, function_name(target.mi))
   arg_idx = 0
   for (i, argument) in pairs(tr.argmap)
     x = get(globals, i, nothing)
@@ -192,11 +192,6 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals =
   end
   pop!(target.interp.debug.stacktrace)
   fid
-end
-
-function mangled_name(mi::MethodInstance)
-  sig = string(mi.def.name, '(', join("::" .* string.(mi.specTypes.parameters[2:end]), ","), ')')
-  Symbol(replace(sig, ' ' => ""))
 end
 
 function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals::Dictionary{Int,Union{Constant,Variable}})
@@ -525,4 +520,6 @@ function FunctionDefinition(mt::ModuleTarget, name::Symbol)
   error("No function named '$name' could be found.")
 end
 
-FunctionDefinition(mt::ModuleTarget, mi::MethodInstance) = FunctionDefinition(mt, mangled_name(mi))
+function_name(mi::MethodInstance) = Symbol((mi.def::Method).name, :_, repr(hash(mi.specTypes)))
+
+FunctionDefinition(mt::ModuleTarget, mi::MethodInstance) = FunctionDefinition(mt, function_name(mi))

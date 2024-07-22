@@ -2,7 +2,7 @@ using SPIRV, Test, Graphs, AbstractTrees, MetaGraphs
 using AbstractTrees: parent, nodevalue, Leaves
 using SPIRV: traverse, postdominator, DominatorTree, common_ancestor, flow_through, AbstractInterpretation, InterpretationFrame, interpret, instructions, StackTrace, StackFrame, UseDefChain, EdgeClassification, backedges, dominators, node_index, cyclic_region, acyclic_region
 using SPIRV: REGION_BLOCK, REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION, REGION_PROPER, REGION_SELF_LOOP, REGION_WHILE_LOOP, REGION_NATURAL_LOOP, REGION_IMPROPER
-using SPIRV: definition
+using SPIRV: definition, satisfy_requirements!
 
 # All the following graphs are rooted in 1.
 
@@ -75,7 +75,8 @@ end
 
 @testset "Function analysis" begin
   @testset "Static call graph traversal" begin
-    ir = IR(SPIRV.Module(resource("comp.spv")); satisfy_requirements = false)
+    ir = IR(SPIRV.Module(resource("comp.spv")))
+    satisfy_requirements!(ir, AllSupported())
     fdefs = dependent_functions(ir, ResultID(4)) # main
 
     @test Set(fdefs) == Set(ir.fdefs)

@@ -229,7 +229,8 @@ function generate_ir(ex::Expr)
     mod = Module(ModuleMetadata(), mod_insts)
     # Renumbering is necessary to make sure IDs are recomputed properly according to control-flow.
     mod = renumber_ssa(mod)
-    IR(mod)
+    ir = IR(mod)
+    satisfy_requirements!(ir, AllSupported())
   end
 end
 

@@ -14,7 +14,7 @@ using SPIRV, Test, Graphs
   @testset "Conversion between modules and IR" begin
     pmod = SPIRV.PhysicalModule(resource("vert.spv"))
     mod = SPIRV.Module(pmod)
-    ir = IR(mod; satisfy_requirements = false)
+    ir = IR(mod)
     mod2 = SPIRV.Module(ir)
     @test mod ≈ mod2
     pmod2 = PhysicalModule(mod2)
@@ -24,7 +24,7 @@ using SPIRV, Test, Graphs
 
     pmod = SPIRV.PhysicalModule(resource("comp.spv"))
     mod = SPIRV.Module(pmod)
-    ir = IR(mod; satisfy_requirements = false)
+    ir = IR(mod)
     mod2 = SPIRV.Module(ir)
     @test mod ≈ mod2
     pmod2 = PhysicalModule(mod2)
