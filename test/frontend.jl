@@ -1,6 +1,7 @@
 using SPIRV, Test
 
 @testset "Front-end" begin
+  include("frontend/utility.jl")
   include("frontend/math.jl");
   include("frontend/definitions.jl");
   include("frontend/method_table.jl");

@@ -12,7 +12,7 @@ function operation(ex; mod = SPIRV)
 end
 
 macro test_code(code, args...)
-  maxlength = nothing; minlength = nothing; spirv_chunk = true; spirv_chunk_broken = false
+  maxlength = nothing; minlength = nothing; spirv_chunk = true; spirv_chunk_broken = false; blocks = nothing
   for arg in args
     Meta.isexpr(arg, :(=)) || isa(arg, Symbol) || throw(ArgumentError("Expected parameter expression, got $arg"))
     name, value = isa(arg, Symbol) ? (arg, arg) : arg.args
@@ -23,10 +23,13 @@ macro test_code(code, args...)
     elseif name == :spirv_chunk
       value === QuoteNode(:broken) && (spirv_chunk_broken = true)
       spirv_chunk = esc(value)
+    elseif name == :blocks
+      blocks = esc(value)
     else
       throw(ArgumentError("Parameter name expected to be one of :maxlength, :minlength, :spirv_chunk; got :$name"))
     end
   end
+  !isnothing(blocks) && (spirv_chunk = spirv_chunk_broken = false)
   code = esc(code)
   test(ex; broken = false) = begin
     ex = :(@test $ex broken = $broken)
@@ -57,6 +60,10 @@ macro test_code(code, args...)
         (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || ($(log(:("Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`")); false))
       end
       $(test(:is_spirv_chunk, broken = spirv_chunk_broken))
+    end
+    if !isnothing($blocks)
+      blocks = length(Core.Compiler.compute_basic_blocks(code).blocks)
+      @test blocks == $blocks
     end
     nothing
   end
@@ -319,11 +326,26 @@ end
     ci = SPIRV.@code_typed debuginfo=:source compute_roots(::Float32, ::Float32, ::Float32)
     @test_code ci minlength = 30 maxlength = 50 spirv_chunk = false
 
+    ci = SPIRV.@code_typed debuginfo=:source loop1_macro(::StepRange{UInt32,UInt32})
+    @test_code ci minlength = 15 maxlength = 20 blocks = 4
+
+    ci = SPIRV.@code_typed debuginfo=:source loop1_macro(::StepRange{Float32, Float32})
+    @test_code ci minlength = 20 maxlength = 25 blocks = 4
+
+    ci = SPIRV.@code_typed debuginfo=:source loop2_macro(::StepRange{UInt32,UInt32})
+    @test_code ci minlength = 20 maxlength = 25 blocks = 7
+
+    ci = SPIRV.@code_typed debuginfo=:source loop3_macro(::StepRange{UInt32,UInt32})
+    @test_code ci minlength = 20 maxlength = 25 blocks = 6
+
     ci = SPIRV.@code_typed debuginfo=:source compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
     @test_code ci minlength = 75 maxlength = 100 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source compute_blur_2(::GaussianBlur, ::SampledImage{IT}, ::Vec2)
-    @test_code ci minlength = 100 maxlength = 150 spirv_chunk = false
+    @test_code ci minlength = 100 maxlength = 150 spirv_chunk = false # blocks = 25
+
+    ci = SPIRV.@code_typed debuginfo=:source compute_blur_3(::GaussianBlur, ::SampledImage{IT}, ::Vec2)
+    @test_code ci minlength = 85 maxlength = 100 spirv_chunk = false blocks = 13
 
     ci = SPIRV.@code_typed debuginfo=:source step_euler(::BoidAgent, ::Vec2, ::Float32)
     @test_code ci minlength = 30 maxlength = 40 spirv_chunk = false # Assumes that `wrap_around` is inlined, otherwise should be fewer lines.

@@ -158,9 +158,12 @@ include("precompile.jl")
 export
   MathFunctions,
 
-  # Conversion character literals.
+  # Utilities.
+  ## Conversion character literals.
   U, F,
   πF,
+
+  @for,
 
   # Parsing, assembly, disassembly.
   PhysicalInstruction, PhysicalModule,

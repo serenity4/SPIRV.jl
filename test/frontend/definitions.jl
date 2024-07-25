@@ -45,6 +45,22 @@ function compute_blur_2(blur::GaussianBlur, reference, uv)
   res
 end
 
+function compute_blur_3(blur::GaussianBlur, reference, uv)
+  res = zero(Vec4)
+  imsize = size(SPIRV.Image(reference), 0U)
+  pixel_size = 1F ./ imsize # Size of one pixel in UV coordinates.
+  radius = Int32.(ceil.(imsize .* 0.5F .* blur.scale))
+  rx, ry = radius
+  @for i in -rx:rx begin
+    @for j in -ry:ry begin
+      uv_offset = Vec(i, j) .* pixel_size
+      weight = 0.25F .* rx .^ 2 .* ry .^ 2
+      res += reference(uv .+ uv_offset) .* weight
+    end
+  end
+  res
+end
+
 IT = image_type(SPIRV.ImageFormatRgba16f, SPIRV.Dim2D, 0, false, false, 1)
 
 # from Lava.jl
@@ -83,6 +99,7 @@ wrap_around(position::Vec2) = Base.mod.(position .+ 1F, 2F) .- 1F
   blur = GaussianBlur(1.0, 1.0)
   @test compute_blur(blur, image, 1U, zero(Vec2)) == zero(Vec4)
   @test compute_blur_2(blur, image, zero(Vec2)) == zero(Vec4)
+  @test compute_blur_3(blur, image, zero(Vec2)) === compute_blur_2(blur, image, zero(Vec2))
   agent = BoidAgent(zero(Vec2), Vec2(1, 1), 1.0)
   @test isa(step_euler(agent, rand(Vec2), rand(Float32)), BoidAgent)
 end;
