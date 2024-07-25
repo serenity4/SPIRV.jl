@@ -9,7 +9,7 @@ Blocks that branch to more than one target will either branch with a `BranchCond
 The selectors for conditionals or switches are exposed as function arguments. Note that the argument will be a `Bool` for conditionals and `Int32`
 for switches.
 """
-function ir_from_cfg(cfg)
+function ir_from_cfg(cfg; structured = false)
   global_decls = quote
     Bool = TypeBool()
     Float32 = TypeFloat(32)
@@ -49,7 +49,12 @@ function ir_from_cfg(cfg)
   end)
 
   ex = Expr(:block, global_decls.args..., func)
-  load_ir(ex)
+  ir = load_ir(ex)
+  !structured && return ir
+  push!(empty!(ir.capabilities), SPIRV.CapabilityShader)
+  # For some reason, we need the GLSL memory model to trigger CFG validation errors.
+  ir.memory_model = SPIRV.MemoryModelGLSL450
+  ir
 end
 
 @testset "Restructuring utilities" begin
@@ -167,13 +172,16 @@ end
   add_merge_headers!(ir)
   @test unwrap(validate(ir))
 
-  ir = ir_from_cfg(g18())
-  # For some reason, we need the GLSL memory model to trigger the validation error.
-  push!(empty!(ir.capabilities), SPIRV.CapabilityShader)
-  ir.memory_model = SPIRV.MemoryModelGLSL450
+  ir = ir_from_cfg(g18(); structured = true)
   restructure_merge_blocks!(ir)
   add_merge_headers!(ir)
   @test_throws "Selection must be structured" unwrap(validate(ir))
+  restructure_loop_header_conditionals!(ir)
+  @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g20(); structured = true)
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
   restructure_loop_header_conditionals!(ir)
   @test unwrap(validate(ir))
 end;

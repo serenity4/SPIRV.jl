@@ -107,6 +107,7 @@ restructure_merge_blocks!(ir::IR) = RestructureMergeBlocks(ir)(ir)
 function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
   cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
+  back_edges = backedges(cfg)
   # Control-flow structures become outdated as the function is modified.
   # Instead of reconstructing the CFG and control trees after every modification
   # (which is done here by re-applying the pass), we only do it when it is really needed.
@@ -120,7 +121,16 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
     outer_construct = find_parent(p -> is_selection(p) || is_loop(p), ctree)
     isnothing(outer_construct) && continue
     merge_inner, merge_outer = merge_candidate.((ctree, outer_construct), cfg)
-    merge_inner ≠ merge_outer && continue
+    if merge_inner ≠ merge_outer
+      is_loop(ctree) && is_loop(outer_construct) || continue
+      # If `merge_inner` is the continue target of the outer loop,
+      # we also need to introduce a new block right before that continue block.
+      o = node_index(outer_construct)
+      local_back_edges = filter!(in(back_edges), [Edge(u, o) for u in inneighbors(cfg, o)])
+      length(local_back_edges) > 1 && throw_compilation_error("there is more than one backedge to a loop")
+      continue_target = src(only(local_back_edges))
+      merge_inner ≠ continue_target && continue
+    end
     in(node_index(ctree), reapply_on) && return pass!(fdef)
     merge_blk = fdef[merge_inner]
 

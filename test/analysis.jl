@@ -44,6 +44,8 @@ g17() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 2, 2 => 5, 5 => 6)
 g18() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 5 => 6, 5 => 2)
 "CFG with a loop and a merge block consisting of multiple sub-blocks."
 g19() = DeltaGraph(1 => 2, 2 => 3, 3 => 2, 2 => 4, 4 => 5, 5 => 6)
+"CFG with two loops, the inner merging at the continue target of the outer one."
+g20() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 4 => 5, 5 => 6, 6 => 5, 5 => 7, 7 => 2)
 
 test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
 
