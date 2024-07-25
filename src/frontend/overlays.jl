@@ -22,7 +22,7 @@ end
 
 ##### Core SPIR-V intrinsics.
 
-@override reinterpret(::Type{T}, x) where {T} = Bitcast(T, x)
+@override reinterpret(::Type{T}, x) where {T<:Union{IEEEFloat, UInt8, UInt16, UInt32, UInt64, Int8, Int16, Int32, Int64, Bool}} = Bitcast(T, x)
 @override reinterpret(::Type{T}, x::T) where {T} = x
 
 @override (-)(x::FloatScalarOrVec)                     = FNegate(x)
@@ -104,32 +104,39 @@ end
 @override rem(x::Int64, ::Type{Int16}) = SConvert(Int16, x)
 @override rem(x::Int64, ::Type{Int32}) = SConvert(Int32, x)
 
-
+@override rem(x::Int8,  ::Type{UInt8})  = Bitcast(UInt8, x)
 @override rem(x::Int8,  ::Type{UInt16}) = UConvert(UInt16, x)
 @override rem(x::Int8,  ::Type{UInt32}) = UConvert(UInt32, x)
 @override rem(x::Int8,  ::Type{UInt64}) = UConvert(UInt64, x)
 @override rem(x::Int16, ::Type{UInt8})  = UConvert(UInt8, x)
+@override rem(x::Int16, ::Type{UInt16}) = Bitcast(UInt16, x)
 @override rem(x::Int16, ::Type{UInt32}) = UConvert(UInt32, x)
 @override rem(x::Int16, ::Type{UInt64}) = UConvert(UInt64, x)
 @override rem(x::Int32, ::Type{UInt8})  = UConvert(UInt8, x)
 @override rem(x::Int32, ::Type{UInt16}) = UConvert(UInt16, x)
+@override rem(x::Int32, ::Type{UInt32}) = Bitcast(UInt32, x)
 @override rem(x::Int32, ::Type{UInt64}) = UConvert(UInt64, x)
 @override rem(x::Int64, ::Type{UInt8})  = UConvert(UInt8, x)
 @override rem(x::Int64, ::Type{UInt16}) = UConvert(UInt16, x)
 @override rem(x::Int64, ::Type{UInt32}) = UConvert(UInt32, x)
+@override rem(x::Int64, ::Type{UInt64}) = Bitcast(UInt64, x)
 
+@override rem(x::UInt8,  ::Type{Int8})  = Bitcast(Int8, x)
 @override rem(x::UInt8,  ::Type{Int16}) = SConvert(Int16, x)
 @override rem(x::UInt8,  ::Type{Int32}) = SConvert(Int32, x)
 @override rem(x::UInt8,  ::Type{Int64}) = SConvert(Int64, x)
 @override rem(x::UInt16, ::Type{Int8})  = SConvert(Int8, x)
+@override rem(x::UInt16, ::Type{Int16}) = Bitcast(Int16, x)
 @override rem(x::UInt16, ::Type{Int32}) = SConvert(Int32, x)
 @override rem(x::UInt16, ::Type{Int64}) = SConvert(Int64, x)
 @override rem(x::UInt32, ::Type{Int8})  = SConvert(Int8, x)
 @override rem(x::UInt32, ::Type{Int16}) = SConvert(Int16, x)
+@override rem(x::UInt32, ::Type{Int32}) = Bitcast(Int32, x)
 @override rem(x::UInt32, ::Type{Int64}) = SConvert(Int64, x)
 @override rem(x::UInt64, ::Type{Int8})  = SConvert(Int8, x)
 @override rem(x::UInt64, ::Type{Int16}) = SConvert(Int16, x)
 @override rem(x::UInt64, ::Type{Int32}) = SConvert(Int32, x)
+@override rem(x::UInt64, ::Type{Int64}) = Bitcast(Int64, x)
 
 @override rem(x::T, y::T) where {T<:BitSigned} = SRem(x, y)
 @override rem(x::T, y::T) where {T<:BitUnsigned} = SRem(x, y)
