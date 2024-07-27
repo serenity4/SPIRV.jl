@@ -326,6 +326,9 @@ end
     ci = SPIRV.@code_typed debuginfo=:source compute_roots(::Float32, ::Float32, ::Float32)
     @test_code ci minlength = 30 maxlength = 50 spirv_chunk = false
 
+    ci = SPIRV.@code_typed debuginfo=:source loop1_macro(::UnitRange{UInt32})
+    @test_code ci minlength = 11 maxlength = 11 blocks = 4
+
     ci = SPIRV.@code_typed debuginfo=:source loop1_macro(::StepRange{UInt32,UInt32})
     @test_code ci minlength = 15 maxlength = 20 blocks = 4
 
@@ -337,6 +340,15 @@ end
 
     ci = SPIRV.@code_typed debuginfo=:source loop3_macro(::StepRange{UInt32,UInt32})
     @test_code ci minlength = 20 maxlength = 25 blocks = 6
+
+    ci = SPIRV.@code_typed debuginfo=:source loop4_macro(::StepRange{UInt32,UInt32})
+    @test_code ci minlength = 30 maxlength = 35 blocks = 7
+
+    ci = SPIRV.@code_typed debuginfo=:source loop5_macro(::StepRange{UInt32,UInt32})
+    @test_code ci minlength = 35 maxlength = 40 blocks = 9
+
+    ci = SPIRV.@code_typed debuginfo=:source loop6_macro(::StepRange{UInt32,UInt32})
+    @test_code ci minlength = 35 maxlength = 40 blocks = 9
 
     ci = SPIRV.@code_typed debuginfo=:source compute_blur(::GaussianBlur, ::SampledImage{IT}, ::UInt32, ::Vec2)
     @test_code ci minlength = 75 maxlength = 100 spirv_chunk = false

@@ -39,15 +39,47 @@ macro _for(ex, body)
   @when :(in($x, $y)) = ex begin
     ex = Expr(:(=), x, y)
   end
+  # Evaluate nested `@for` loops first.
+  body = expand_for_macros(body, __module__)
   @trymatch ex begin
-    :($(x::Symbol) = $(iterable::Expr)) => begin
-      @trymatch iterable begin
-        Expr(:call, :(:), _...) || Expr(:(::), iterable, :Range) => return for_loop_range(esc(x), body, iterable)
+    # One-dimensional loop `@for x in iterable ... end`.
+    :($(x::Symbol) = $iterable) => return for_loop(esc(x), esc(body), esc(iterable)).ex
+    # Multi-dimensional loops `@for x in iterable1, y in iterable2 ... end`.
+    Expr(:tuple, iters...) => if all(iters) do iter
+        isa(iter, Expr) || return false
+        @trymatch iter begin
+          :(in($(_::Symbol), $_)) || :($(_::Symbol) = $_) => true
+          _ => false
+        end
       end
+      body = shield_continue_and_breaks(body)
+      continue_target = Ref{Symbol}()
+      merge_target = Ref{Symbol}()
+      loop = foldr(iters; init = esc(body)) do iter, body
+        x, iterable = @match iter begin
+          :(in($x, $y)) => (x::Symbol, y)
+          :($x = $y) => (x::Symbol, y)
+        end
+        loop = for_loop(esc(x), body, esc(iterable))
+        continue_target[] = loop.continue_target
+        merge_target[] = loop.merge_target
+        loop.ex
+      end
+      return apply_outer_continue_and_breaks(loop, continue_target[], merge_target[])
     end
-    Expr(:block) && if count(x -> isa(x, Expr), ex.args) == 3 end => for_loop_cstyle(filter(x -> isa(x, Expr), ex.args), body)
+    # C-style loop `@for (i = 0; i < 10; i += 1)`
+    Expr(:block) && if count(x -> isa(x, Expr), ex.args) == 3 end => return for_loop_cstyle(filter(x -> isa(x, Expr), ex.args), body)
+    # XXX: Fallback to normal loop?
+    _ => error("The provided `@for` loop was not recognized: `@for $ex $body`")
   end
-  Expr(:for, esc(ex), esc(body))
+end
+
+function expand_for_macros(body, __module__)
+  postwalk(body) do ex
+    Meta.isexpr(ex, :macrocall) || return ex
+    in(ex.args[1], (Symbol("@for"), Symbol("@_for"))) || return ex
+    macroexpand(__module__, ex)
+  end
 end
 
 var"@for" = var"@_for"
@@ -58,19 +90,61 @@ walk(ex, inner, outer) = outer(ex)
 postwalk(f, ex) = walk(ex, x -> postwalk(f, x), f)
 prewalk(f, ex) = walk(f(ex), x -> prewalk(f, x), identity)
 
-function for_loop_range(i, body, iterable)
-  pre = quote
-    range = $(esc(iterable))
-    start = first(range)
-    stop = last(range)
-    increment = step(range)
-    $i = convert(typeof(increment), start)
-    sgn = ifelse(increment > zero(increment), Int32(1), -Int32(1))
+function shield_continue_and_breaks(body)
+  postwalk(body) do ex
+    Meta.isexpr(ex, :continue) && return @set ex.head = :continue_outer
+    Meta.isexpr(ex, :break) && return @set ex.head = :break_outer
+    ex
   end
-  cond = :(with_sign($i, sgn) ≤ with_margin(with_sign(stop, sgn), increment))
-  post = :($i += increment)
-  body = esc(body)
+end
+
+function apply_outer_continue_and_breaks(body, continue_target, merge_target)
+  postwalk(body) do ex
+    Meta.isexpr(ex, :continue_outer) && return :(@goto $continue_target)
+    Meta.isexpr(ex, :break_outer) && return :(@goto $merge_target)
+    ex
+  end
+end
+
+struct ForLoop
+  ex::Expr
+  continue_target::Symbol
+  merge_target::Symbol
+end
+
+function for_loop(i, body, iterable)
+  _iterable, _loop_data = gensym.((:iterable, :loop_data))
+  pre = quote
+    $_iterable = $iterable
+    ($i, $_loop_data) = pre_loop($_iterable)
+  end
+  cond = :(cond_loop($_iterable, $i, $_loop_data))
+  post = :($i = post_loop($_iterable, $i, $_loop_data))
   for_loop_cstyle((pre, cond, post), body; escape = false)
+end
+
+pre_loop(range::Base.UnitRange) = (first(range), last(range))
+pre_loop(range::Base.OneTo) = (first(range), last(range))
+function pre_loop(range::AbstractRange)
+  start = first(range)
+  stop = last(range)
+  increment = step(range)
+  i = convert(typeof(increment), start)
+  sgn = ifelse(increment > zero(increment), Int32(1), -Int32(1))
+  (i, (stop, increment, sgn))
+end
+
+cond_loop(::Base.UnitRange{<:AbstractFloat}, i, stop) = with_margin(stop, oneunit(i))
+cond_loop(::Base.UnitRange{<:Integer}, i, stop) = i ≤ stop
+cond_loop(::Base.OneTo, i, stop) = i ≤ stop
+function cond_loop(::AbstractRange, i, (stop, increment, sgn))
+  with_sign(i, sgn) ≤ with_margin(with_sign(stop, sgn), increment)
+end
+
+post_loop(::Base.UnitRange, i, _) = i + oneunit(i)
+post_loop(::Base.OneTo, i, _) = i + oneunit(i)
+function post_loop(::AbstractRange, i, (_, increment, _))
+  i + increment
 end
 
 function for_loop_cstyle((pre, cond, post), body; escape = true)
@@ -82,7 +156,7 @@ function for_loop_cstyle((pre, cond, post), body; escape = true)
     ex
   end
   _esc(ex) = escape ? esc(ex) : ex
-  quote
+  loop = quote
     $(_esc(pre))
     while $(_esc(cond))
       $lbody
@@ -92,6 +166,7 @@ function for_loop_cstyle((pre, cond, post), body; escape = true)
     end
     $lmerge
   end
+  ForLoop(loop, continue_block, merge_block)
 end
 
 with_margin(bound, increment::Integer) = bound
