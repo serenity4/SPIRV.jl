@@ -29,7 +29,7 @@ using Core.Compiler: CodeInfo, IRCode, MethodInstance, InferenceResult, Inferenc
   WorldRange, OverlayMethodTable, cached_return_type
 const CC = Core.Compiler
 using Base: ScopedValue
-using Base.Experimental: @overlay, @MethodTable
+using Base.Experimental: @overlay, @consistent_overlay, @MethodTable
 using Base.IRShow: LineInfoNode
 using Base: Fix1, Fix2,
             IEEEFloat,

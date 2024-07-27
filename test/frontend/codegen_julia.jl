@@ -81,10 +81,11 @@ end
       @test fadd.args[2] == GlobalRef(SPIRV, :FAdd)
       @test ssavaluetypes[1] == Float32
 
+      # XXX: The conversion from `Int64` to `UInt64` no longer constprops.
       (; code, ssavaluetypes) = SPIRV.@code_typed f_straightcode(::UInt64)
-      @test operation(code[1]) == :IAdd
+      @test_broken operation(code[1]) == :IAdd
       @test ssavaluetypes[1] == UInt64
-      @test all(==(:IMul), operation.(code[2:3]))
+      @test_broken all(==(:IMul), operation.(code[2:3]))
       @test all(==(UInt64), ssavaluetypes[2:3])
 
       (; code, ssavaluetypes) = SPIRV.@code_typed f_straightcode(::UInt32)

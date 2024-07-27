@@ -13,10 +13,18 @@ consists of one or more calls to declared intrinsic functions (see [`@intrinsic`
 The method will always be inlined.
 """
 macro override(ex)
-  esc(:($SPIRV.@overlay $SPIRV.INTRINSICS_METHOD_TABLE @inline $ex))
+  esc(:($SPIRV.@consistent_overlay $SPIRV.INTRINSICS_METHOD_TABLE @inline $ex))
 end
 
 macro override_glsl(ex)
+  esc(:($SPIRV.@consistent_overlay $SPIRV.INTRINSICS_GLSL_METHOD_TABLE @inline $ex))
+end
+
+macro _override(ex)
+  esc(:($SPIRV.@overlay $SPIRV.INTRINSICS_METHOD_TABLE @inline $ex))
+end
+
+macro _override_glsl(ex)
   esc(:($SPIRV.@overlay $SPIRV.INTRINSICS_GLSL_METHOD_TABLE @inline $ex))
 end
 
@@ -186,7 +194,7 @@ end
 ## mutable objects are treated in SPIR-V (as pointers to immutable objects).
 
 # Deepcopy has only one implementation and relies on `deepcopy_internal` with consistent semantics.
-@override deepcopy(x) = CopyObject(x)
+@_override deepcopy(x) = CopyObject(x)
 # XXX: This overrides all definitions of `copy` for the purpose of method lookup and therefore breaks a few things.
 # @override copy(x) = CopyObject(x)
 
@@ -331,20 +339,20 @@ for N in 2:4
     @override dot(x::T, y::T) where {T<:Vec{$N,<:BitSigned}} = SDot(x, y)
     @override dot(x::Vec{$N,<:BitSigned}, y::Vec{$N,<:BitUnsigned}) = SUDot(x, y)
 
-    @override @generated foldl(f::F, xs::Vec{$N}) where {F<:Function} =
+    @_override @generated foldl(f::F, xs::Vec{$N}) where {F<:Function} =
       foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex_uint32(xs)[2:end]; init = :(xs[$(firstindex_uint32(xs))]))
-    @override @generated foldl(f::F, xs::Vec{$N}, init) where {F <: Function} =
+    @_override @generated foldl(f::F, xs::Vec{$N}, init) where {F <: Function} =
       foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex_uint32(xs); init = :init)
-    @override @generated foldr(f::F, xs::Vec{$N}) where {F<:Function} =
+    @_override @generated foldr(f::F, xs::Vec{$N}) where {F<:Function} =
       foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex_uint32(xs)[1:(end - 1)]; init = :(xs[$(lastindex_uint32(xs))]))
-    @override @generated foldr(f::F, xs::Vec{$N}, init) where {F <: Function} =
+    @_override @generated foldr(f::F, xs::Vec{$N}, init) where {F <: Function} =
       foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex_uint32(xs); init = :init)
-    @override any(f::F, xs::Vec{$N}) where {F<:Function} = foldl((x, y) -> x | f(y), xs, false)
-    @override all(f::F, xs::Vec{$N}) where {F<:Function} = foldl((x, y) -> x & f(y), xs, true)
-    @override @generated sum(f::F, xs::Vec{$N}) where {F<:Function} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
-    @override @generated prod(f::F, xs::Vec{$N}) where {F<:Function} = Expr(:call, :*, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
-    @override sum(xs::Vec{$N}) = sum(identity, xs)
-    @override prod(xs::Vec{$N}) = prod(identity, xs)
+    @_override any(f::F, xs::Vec{$N}) where {F<:Function} = foldl((x, y) -> x | f(y), xs, false)
+    @_override all(f::F, xs::Vec{$N}) where {F<:Function} = foldl((x, y) -> x & f(y), xs, true)
+    @_override @generated sum(f::F, xs::Vec{$N}) where {F<:Function} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
+    @_override @generated prod(f::F, xs::Vec{$N}) where {F<:Function} = Expr(:call, :*, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
+    @_override sum(xs::Vec{$N}) = sum(identity, xs)
+    @_override prod(xs::Vec{$N}) = prod(identity, xs)
 
     @override_glsl norm(x::Vec{$N,<:IEEEFloat}) = Length(x)
     @override_glsl normalize(x::Vec{$N,<:IEEEFloat}) = Normalize(x)

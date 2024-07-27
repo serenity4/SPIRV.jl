@@ -101,12 +101,3 @@ Core.Compiler.method_table(si::SPIRVInterpreter) = si.method_table
 function Base.show(io::IO, interp::SPIRVInterpreter)
   print(io, SPIRVInterpreter, '(', interp.inference_parameters, ", ", interp.optimization_parameters, ')')
 end
-
-function CC.concrete_eval_eligible(interp::SPIRVInterpreter, @nospecialize(f), result::CC.MethodCallResult, arginfo::CC.ArgInfo, sv::CC.InferenceState)
-  # XXX: We are currently lying to the compiler.
-  # TODO: Use the `:consistent_overlay` introduced in https://github.com/JuliaLang/julia/pull/54322.
-  nonoverlayed = @static VERSION ≥ v"1.12.0-DEV.745" ? CC.ALWAYS_TRUE : true
-  neweffects = CC.Effects(result.effects; nonoverlayed)
-  result = CC.MethodCallResult(result.rt, result.exct, result.edgecycle, result.edgelimited, result.edge, neweffects)
-  @invoke CC.concrete_eval_eligible(interp::CC.AbstractInterpreter, f::Any, result::CC.MethodCallResult, arginfo::CC.ArgInfo, sv::CC.InferenceState)
-end
