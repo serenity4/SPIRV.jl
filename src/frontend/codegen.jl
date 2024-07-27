@@ -54,6 +54,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       &Core.tuple => (OpCompositeConstruct, args)
       &(===) => begin
         x, y = args
+        x, y = follow_globalref.((x, y))
         type = BooleanType()
         Tx, Ty = retrieve_type(target, tr, x), retrieve_type(target, tr, y)
         if Tx !== Ty
@@ -155,6 +156,7 @@ function get_field_index(composite_type, field::QuoteNode, tr::Translation, targ
   index
 end
 
+retrieve_type(target::SPIRVTarget, tr::Translation, x::GlobalRef) = retrieve_type(target, tr, follow_globalref(x))
 retrieve_type(target::SPIRVTarget, tr::Translation, x::Core.SSAValue) = target.code.ssavaluetypes[x.id]
 retrieve_type(target::SPIRVTarget, tr::Translation, x::Core.Argument) = tr.argtypes[x.n - 1]
 retrieve_type(target::SPIRVTarget, tr::Translation, x::Number) = typeof(x)

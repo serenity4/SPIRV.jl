@@ -173,7 +173,7 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals =
   arg_idx = 0
   for (i, argument) in pairs(tr.argmap)
     x = get(globals, i, nothing)
-    T = target.mi.specTypes.parameters[i + 1]
+    T = target.mi.specTypes.parameters[argument.n]
     argid = @match x begin
       ::Variable && if isa(spir_type(T, tr.tmap), PointerType) end => mt.global_vars[x]
       ::Constant => mt.constants[x]

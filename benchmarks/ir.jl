@@ -35,6 +35,7 @@ shader = @fragment ((res, blur, reference, direction, uv) -> res[] =
 
 bytes = assemble(shader)
 SPIRV.Module(bytes); @profview for _ in 1:10000; SPIRV.Module(bytes); end
+@btime SPIRV.Module($bytes)
 
 # Compiling shaders.
 
