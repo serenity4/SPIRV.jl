@@ -129,6 +129,11 @@ end
 PointerType(inst::Instruction, type::SPIRType) = PointerType(first(inst.arguments), type)
 Base.:(≈)(x::PointerType, y::PointerType) = x.storage_class == y.storage_class && x.type ≈ y.type
 
+is_descriptor_backed(t::StructType) = any(is_descriptor_backed, t.members)
+is_descriptor_backed(t::ArrayType) = is_descriptor_backed(t.eltype)
+is_descriptor_backed(::Union{ImageType, SamplerType, SampledImageType}) = true
+is_descriptor_backed(::SPIRType) = false
+
 @struct_hash_equal struct FunctionType <: SPIRType
   rettype::SPIRType
   argtypes::Vector{SPIRType}

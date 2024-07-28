@@ -386,7 +386,9 @@ function (::CompositeExtractToAccessChainLoad)(ir::IR, fdef::FunctionDefinition)
         ::Variable => ir.global_vars[def]
         ::Expression => def.result
       end
-      storage_class, ptr_id = if isa(def, Expression) && def.op == OpLoad
+      storage_class, ptr_id = if isa(def, Variable)
+        def.storage_class, composite
+      elseif isa(def, Expression) && def.op == OpLoad
         from = def[1]::ResultID
         if haskey(ir.global_vars, from)
           var = definition(from, fdef, ir)::Variable
@@ -398,30 +400,11 @@ function (::CompositeExtractToAccessChainLoad)(ir::IR, fdef::FunctionDefinition)
           var_ex[1], from
         end
       else
-        storage_class, ptr_id = nothing, nothing
-        if isa(def, ResultID) && in(def, fdef.args)
-          j = findfirst(==(def), fdef.args)::Int
-          variables = find_sources_in_callers(ir, fdef) do ex2, fdef2
-            composite2 = ex2[1 + j]
-            def2 = definition(composite2, fdef2, ir)
-            isa(def2, Expression) && opcode(def2) === OpLoad || return nothing
-            haskey(ir.global_vars, def2[1]) && return def2[1]
-            nothing
-          end
-          if length(variables) == 1
-            var = ir.global_vars[variables[1]]
-            storage_class, ptr_id = var.storage_class, variables[1]
-          end
-        end
-        if isnothing(ptr_id)
-          var = Variable(composite_t)
-          allocation = create_variable!(ir, fdef, var, next!(ir.idcounter))
-          # Store to Variable.
-          composite_t.size.value ≥ 128 && isa(composite_t.eltype, ImageType) && @debug "A large array of images is stored, this has been known to cause hangs in Vulkan drives during pipeline creation"
-          push!(patch, @ex Store(allocation.result, def_id))
-          storage_class, ptr_id = var.storage_class, allocation.result
-        end
-        storage_class, ptr_id
+        var = Variable(composite_t)
+        allocation = create_variable!(ir, fdef, var, next!(ir.idcounter))
+        # Store to Variable.
+        push!(patch, @ex Store(allocation.result, def_id))
+        var.storage_class, allocation.result
       end
       # 2. Construct AccessChain pointer.
       access_chain_t = PointerType(storage_class, ex.type)
@@ -435,26 +418,6 @@ function (::CompositeExtractToAccessChainLoad)(ir::IR, fdef::FunctionDefinition)
       insert!(blk, i, patch)
     end
   end
-end
-
-# XXX: This analysis is shallow and will not work with nested function calls.
-# XXX: This is also very inefficient, looping over the whole IR.
-# Abstract interpretation would be more robust and more efficient, but for now, we do the easy thing.
-function find_sources_in_callers(f, ir, fdef)
-  sources = ResultID[]
-  fid = findfirst(==(fdef), ir.fdefs.forward)
-  for fdef2 in ir.fdefs
-    for blk2 in fdef2
-      for ex2 in blk2
-        opcode(ex2) === OpFunctionCall || continue
-        ex2[1] === fid || continue
-        ret = f(ex2, fdef2)::Optional{ResultID}
-        isnothing(ret) && continue
-        push!(sources, ret)
-      end
-    end
-  end
-  unique(sources)
 end
 
 function definition(id::ResultID, fdef::FunctionDefinition, ir::IR)

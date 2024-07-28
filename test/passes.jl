@@ -232,14 +232,17 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
   end
 
   @testset "Array dynamic indices in `CompositeExtract` conversion to Variable/AccessChain/Load" begin
-    number_of_access_chains(fdef) = sum(blk -> count(x -> x.op == SPIRV.OpAccessChain, blk), fdef)
+    count_operations(fdef, opcode) = sum(blk -> count(x -> x.op == opcode, blk), fdef)
+    number_of_access_chains(fdef) = count_operations(fdef, SPIRV.OpAccessChain)
+    number_of_stores(fdef) = count_operations(fdef, SPIRV.OpStore)
+
     ir = @spv_ir begin
       F32 = TypeFloat(32)
-      I32 = TypeInt(32, false)
-      c_I32_2 = Constant(2U)::I32
-      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      U32 = TypeInt(32, false)
+      c_U32_2 = Constant(2U)::U32
+      ArrayF32_2 = TypeArray(F32, c_U32_2)
 
-      @function f(arr::ArrayF32_2, index::I32)::F32 begin
+      @function f(arr::ArrayF32_2, index::U32)::F32 begin
         _ = Label()
         x = CompositeExtract(arr, index)::F32
         ReturnValue(x)
@@ -259,17 +262,17 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
 
     expected = @spv_ir begin
       F32 = TypeFloat(32)
-      I32 = TypeInt(32, false)
-      c_I32_2 = Constant(2U)::I32
-      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      U32 = TypeInt(32, false)
+      c_U32_2 = Constant(2U)::U32
+      ArrayF32_2 = TypeArray(F32, c_U32_2)
       # XXX: The const-proped result is inserted after function types,
       # which is impossible to express given the current DSL. That should be addressed some time.
-      ft = TypeFunction(F32, ArrayF32_2, I32)
+      ft = TypeFunction(F32, ArrayF32_2, U32)
       PtrArrayF32_2 = TypePointer(SPIRV.StorageClassFunction, ArrayF32_2)
       PtrF32 = TypePointer(SPIRV.StorageClassFunction, F32)
       f = Function(SPIRV.FunctionControlNone, ft)
       arr = FunctionParameter()::ArrayF32_2
-      index = FunctionParameter()::I32
+      index = FunctionParameter()::U32
       _ = Label()
       var = Variable(SPIRV.StorageClassFunction)::PtrArrayF32_2
       Store(var, arr)
@@ -283,13 +286,13 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
 
     ir = @spv_ir begin
       F32 = TypeFloat(32)
-      I32 = TypeInt(32, false)
-      c_I32_2 = Constant(2U)::I32
-      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      U32 = TypeInt(32, false)
+      c_U32_2 = Constant(2U)::U32
+      ArrayF32_2 = TypeArray(F32, c_U32_2)
       PtrArrayF32_2 = TypePointer(SPIRV.StorageClassFunction, ArrayF32_2)
       PtrF32 = TypePointer(SPIRV.StorageClassFunction, F32)
 
-      @function f(arr_ptr::PtrArrayF32_2, index::I32)::F32 begin
+      @function f(arr_ptr::PtrArrayF32_2, index::U32)::F32 begin
         _ = Label()
         arr = Load(arr_ptr)::ArrayF32_2
         x = CompositeExtract(arr, index)::F32
@@ -301,13 +304,13 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
 
     ir = @spv_ir begin
       F32 = TypeFloat(32)
-      I32 = TypeInt(32, false)
-      c_I32_2 = Constant(2U)::I32
-      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      U32 = TypeInt(32, false)
+      c_U32_2 = Constant(2U)::U32
+      ArrayF32_2 = TypeArray(F32, c_U32_2)
       PtrArrayF32_2 = TypePointer(SPIRV.StorageClassFunction, ArrayF32_2)
       PtrF32 = TypePointer(SPIRV.StorageClassFunction, F32)
 
-      @function f(arr::ArrayF32_2, index::I32)::F32 begin
+      @function f(arr::ArrayF32_2, index::U32)::F32 begin
         _ = Label()
         var = Variable(SPIRV.StorageClassFunction)::PtrArrayF32_2
         Store(var, arr)
@@ -323,13 +326,13 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
 
     ir = @spv_ir begin
       F32 = TypeFloat(32)
-      I32 = TypeInt(32, false)
-      c_I32_2 = Constant(2U)::I32
-      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      U32 = TypeInt(32, false)
+      c_U32_2 = Constant(2U)::U32
+      ArrayF32_2 = TypeArray(F32, c_U32_2)
       PtrArrayF32_2 = TypePointer(SPIRV.StorageClassPushConstant, ArrayF32_2)
       arr_ptr = Variable(SPIRV.StorageClassPushConstant)::PtrArrayF32_2
 
-      @function f(index::I32)::F32 begin
+      @function f(index::U32)::F32 begin
         _ = Label()
         arr = Load(arr_ptr)::ArrayF32_2
         x = CompositeExtract(arr, index)::F32
@@ -343,13 +346,13 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
 
     ir = @spv_ir begin
       F32 = TypeFloat(32)
-      I32 = TypeInt(32, false)
-      c_I32_2 = Constant(2U)::I32
-      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      U32 = TypeInt(32, false)
+      c_U32_2 = Constant(2U)::U32
+      ArrayF32_2 = TypeArray(F32, c_U32_2)
       PtrArrayF32_2 = TypePointer(SPIRV.StorageClassPushConstant, ArrayF32_2)
       arr_ptr = Variable(SPIRV.StorageClassPushConstant)::PtrArrayF32_2
 
-      @function f(index::I32, arr::ArrayF32_2)::F32 begin
+      @function f(index::U32, arr::ArrayF32_2)::F32 begin
         _ = Label()
         x = CompositeExtract(arr, index)::F32
         ReturnValue(x)
@@ -357,19 +360,56 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
       @function main()::F32 begin
         _ = Label()
         arr = Load(arr_ptr)::ArrayF32_2
-        ret = FunctionCall(f, c_I32_2, arr)::F32
+        ret = FunctionCall(f, c_U32_2, arr)::F32
         ReturnValue(ret)
       end
     end
     @test_throws "Array access is out of bounds" unwrap(validate(ir))
     fdef = ir[1]
     @test number_of_access_chains(fdef) == 0
+    @test number_of_stores(fdef) == 0
     @test length(fdef.local_vars) == 0
 
     composite_extract_to_access_chain_load!(ir)
     @test unwrap(validate(ir))
 
     @test number_of_access_chains(fdef) == 1
+    @test number_of_stores(fdef) == 1
+    @test length(fdef.local_vars) == 1
+
+    ir = @spv_ir begin
+      F32 = TypeFloat(32)
+      U32 = TypeInt(32, false)
+      Vec2 = TypeVector(F32, 2U)
+      c_F32_05 = Constant(0.5F)::F32
+      uv = ConstantComposite(c_F32_05, c_F32_05)::Vec2
+      c_U32_4 = Constant(4U)::U32
+      Vec4 = TypeVector(F32, 4U)
+      c_U32_256 = Constant(256U)::U32
+      _IT = TypeImage(F32, SPIRV.Dim2D, 0x00000000, 0x00000000, 0x00000000, 0x00000001, SPIRV.ImageFormatRgba16f)
+      IT = TypeSampledImage(_IT)
+      ArrayIT_256 = TypeArray(IT, c_U32_256)
+      PtrArrayIT_256 = TypePointer(SPIRV.StorageClassUniformConstant, ArrayIT_256)
+      arr_ptr = Variable(SPIRV.StorageClassUniformConstant)::PtrArrayIT_256
+
+      @function f(index::U32)::Vec4 begin
+        _ = Label()
+        img = CompositeExtract(arr_ptr, index)::IT
+        x = ImageSampleImplicitLod(img, uv)::Vec4
+        ReturnValue(x)
+      end
+    end
+    @test_throws "Reached non-composite type while indexes still remain to be traversed" unwrap(validate(ir))
+    fdef = ir[1]
+    @test number_of_access_chains(fdef) == 0
+    @test number_of_stores(fdef) == 0
+    @test length(fdef.local_vars) == 0
+
+    composite_extract_to_access_chain_load!(ir)
+    @test unwrap(validate(ir))
+
+    @test number_of_access_chains(fdef) == 1
+    @test number_of_stores(fdef) == 0
     @test length(fdef.local_vars) == 0
   end
 
@@ -464,9 +504,9 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
     ir = @spv_ir begin
       B = TypeBool()
       F32 = TypeFloat(32)
-      I32 = TypeInt(32, false)
-      c_I32_2 = Constant(2U)::I32
-      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      U32 = TypeInt(32, false)
+      c_U32_2 = Constant(2U)::U32
+      ArrayF32_2 = TypeArray(F32, c_U32_2)
       @function (===)(x::ArrayF32_2, y::ArrayF32_2)::B begin
         _ = Label()
         same = Egal(x, y)::B

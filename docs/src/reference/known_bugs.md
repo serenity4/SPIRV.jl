@@ -12,4 +12,4 @@ Bugs triggered using the Vulkan API.
 
 The final compilation of shaders into machine code occurs at pipeline creation, i.e. `vkCreateGraphicsPipelines`, `vkCreateComputePipelines` and similar functions for more advanced pipelines such as ray-tracing pipelines.
 
-- **Writing large arrays of images to a `Variable` with storage class `Function`**: Most shader code compiled with GLSL or HLSL will most likely only ever index into global variables for arrays of descriptors. However, using SPIRV.jl we currently may end up with such arrays that are non-global in certain situations. We try to eventually update any use of local descriptor arrays in the `CompositeExtractToAccessChainLoad` pass to use the corresponding global variable. Possibly any descriptor array would exhibit a similar bug. Only tested with NVIDIA proprietary drivers.
+TODO

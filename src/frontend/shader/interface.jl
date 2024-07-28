@@ -61,7 +61,7 @@ function IR(target::SPIRVTarget, interface::ShaderInterface, specializations)
   mt = ModuleTarget()
   tr = Translation(target)
   globals = Dictionary{Int,Union{Constant,Variable}}()
-  readonly_variables = Variable[]
+  variables_to_load = Variable[]
   for (i, storage_class) in enumerate(interface.storage_classes)
     if represents_constant(storage_class)
       T = tr.argtypes[i]
@@ -84,14 +84,14 @@ function IR(target::SPIRVTarget, interface::ShaderInterface, specializations)
       readonly = !isa(t, PointerType)
       ptr_t = readonly ? PointerType(storage_class, t) : @set(t.storage_class = storage_class)
       variable = Variable(ptr_t)
-      readonly && push!(readonly_variables, variable)
+      readonly && !(isa(t, ArrayType) && is_descriptor_backed(ptr_t.type)) && push!(variables_to_load, variable)
       insert!(globals, i, variable)
       emit!(mt, tr, variable)
     end
   end
   compile!(mt, tr, target, globals)
   fdef = FunctionDefinition(mt, target.mi)
-  ep = define_entry_point!(mt, tr, specializations, fdef, globals, readonly_variables, interface.execution_model, interface.execution_options)
+  ep = define_entry_point!(mt, tr, specializations, fdef, globals, variables_to_load, interface.execution_model, interface.execution_options)
   ir = IR(mt, tr)
   insert!(ir.entry_points, ep.func, ep)
   make_shader!(ir, fdef, interface, globals)
@@ -117,7 +117,7 @@ function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterfa
   ir
 end
 
-function define_entry_point!(mt::ModuleTarget, tr::Translation, specializations, fdef::FunctionDefinition, globals, readonly_variables, model::ExecutionModel, options::ShaderExecutionOptions)
+function define_entry_point!(mt::ModuleTarget, tr::Translation, specializations, fdef::FunctionDefinition, globals, variables_to_load, model::ExecutionModel, options::ShaderExecutionOptions)
   main = FunctionDefinition(FunctionType(VoidType(), []))
   ep = EntryPoint(:main, emit!(mt, tr, main), model, [], ResultID[])
 
@@ -131,7 +131,7 @@ function define_entry_point!(mt::ModuleTarget, tr::Translation, specializations,
     isa(x, Variable) || continue
     id = mt.global_vars[x]
     push!(ep.interfaces, id)
-    if in(x, readonly_variables)
+    if in(x, variables_to_load)
       t = x.type.type
       loaded_id = next!(mt.idcounter)
       push!(blk, @ex loaded_id = Load(id)::t)

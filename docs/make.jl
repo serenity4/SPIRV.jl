@@ -32,7 +32,6 @@ makedocs(;
     "Reference" => [
       "reference/shader_compilation.md",
       "reference/bit_width.md",
-      "reference/known_bugs.md",
     ],
     "features.md",
     "api.md",

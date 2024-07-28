@@ -175,7 +175,10 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals =
     x = get(globals, i, nothing)
     T = target.mi.specTypes.parameters[argument.n]
     argid = @match x begin
-      ::Variable && if isa(spir_type(T, tr.tmap), PointerType) end => mt.global_vars[x]
+      ::Variable && if begin
+        t = spir_type(T, tr.tmap)
+        isa(t, PointerType) || isa(t, ArrayType) && is_descriptor_backed(t)
+    end end => mt.global_vars[x]
       ::Constant => mt.constants[x]
       _ => fdef.args[arg_idx += 1]
     end
@@ -210,7 +213,7 @@ function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         @case &StorageClassFunction
         push!(argtypes, t)
         @case ::StorageClass
-        if !isa(t, PointerType)
+        if !isa(t, PointerType) && (!isa(t, ArrayType) || !is_descriptor_backed(t))
           # The Variable does not originate from a pointer type, so we'll need
           # the function to be called with the result of a corresponding Load.
           # If the variable had originated from a pointer type, code that uses
