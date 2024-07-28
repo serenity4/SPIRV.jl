@@ -235,6 +235,8 @@ end
   SVector(T[ifelse(i == j, value, v[j]) for j in eachindex(v)])
 end
 
+CompositeInsert(value, v::SVector{N,T}, i) where {N,T} = CompositeInsert(convert(T, value), v, convert(UInt32, i))
+
 @noinline FAdd(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(+, x, y)
 @noinline IAdd(x::V, y::V)  where {V<:Vec{<:Any,<:BitInteger}} = vectorize(+, x, y)
 @noinline FSub(x::V, y::V)  where {V<:Vec{<:Any,<:IEEEFloat}}  = vectorize(-, x, y)

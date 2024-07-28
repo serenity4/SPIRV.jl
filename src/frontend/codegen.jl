@@ -202,9 +202,11 @@ function peel_global_vars(args, mt::ModuleTarget, tr::Translation, fdef)
     @switch storage_class(arg, mt, tr, fdef) begin
       @case ::Nothing || &StorageClassFunction
       push!(fargs, arg)
-      @case ::StorageClass
-      isa(arg, Core.Argument) && (arg = ResultID(arg, tr))
-      insert!(globals, i, mt.global_vars[arg::ResultID])
+      @case sc::StorageClass
+      id = isa(arg, Core.Argument) ? ResultID(arg, tr) : arg::ResultID
+      variable = get(mt.global_vars, id, nothing)
+      isnothing(variable) && throw_compilation_error("expected $id with storage class $sc to point to a global variable")
+      insert!(globals, i, variable)
     end
   end
   fargs, globals

@@ -232,6 +232,7 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
   end
 
   @testset "Array dynamic indices in `CompositeExtract` conversion to Variable/AccessChain/Load" begin
+    number_of_access_chains(fdef) = sum(blk -> count(x -> x.op == SPIRV.OpAccessChain, blk), fdef)
     ir = @spv_ir begin
       F32 = TypeFloat(32)
       I32 = TypeInt(32, false)
@@ -246,7 +247,15 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
     end
     # The validator confuses `index` for a literal.
     @test_throws "Array access is out of bounds" unwrap(validate(ir))
+    fdef = ir[1]
+    @test length(fdef.local_vars) == 0
+    @test number_of_access_chains(fdef) == 0
+
     composite_extract_to_access_chain_load!(ir)
+    @test unwrap(validate(ir))
+
+    @test length(fdef.local_vars) == 1
+    @test number_of_access_chains(fdef) == 1
 
     expected = @spv_ir begin
       F32 = TypeFloat(32)
@@ -308,6 +317,7 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
       end
     end
     @test_throws "Array access is out of bounds" unwrap(validate(ir))
+
     composite_extract_to_access_chain_load!(ir)
     @test unwrap(validate(ir))
 
@@ -327,8 +337,40 @@ using SPIRV: renumber_ssa, compute_id_bound, id_bound, fill_phi_branches!, remap
       end
     end
     @test_throws "Array access is out of bounds" unwrap(validate(ir))
+
     composite_extract_to_access_chain_load!(ir)
     @test unwrap(validate(ir))
+
+    ir = @spv_ir begin
+      F32 = TypeFloat(32)
+      I32 = TypeInt(32, false)
+      c_I32_2 = Constant(2U)::I32
+      ArrayF32_2 = TypeArray(F32, c_I32_2)
+      PtrArrayF32_2 = TypePointer(SPIRV.StorageClassPushConstant, ArrayF32_2)
+      arr_ptr = Variable(SPIRV.StorageClassPushConstant)::PtrArrayF32_2
+
+      @function f(index::I32, arr::ArrayF32_2)::F32 begin
+        _ = Label()
+        x = CompositeExtract(arr, index)::F32
+        ReturnValue(x)
+      end
+      @function main()::F32 begin
+        _ = Label()
+        arr = Load(arr_ptr)::ArrayF32_2
+        ret = FunctionCall(f, c_I32_2, arr)::F32
+        ReturnValue(ret)
+      end
+    end
+    @test_throws "Array access is out of bounds" unwrap(validate(ir))
+    fdef = ir[1]
+    @test number_of_access_chains(fdef) == 0
+    @test length(fdef.local_vars) == 0
+
+    composite_extract_to_access_chain_load!(ir)
+    @test unwrap(validate(ir))
+
+    @test number_of_access_chains(fdef) == 1
+    @test length(fdef.local_vars) == 0
   end
 
   @testset "Constant propagation" begin

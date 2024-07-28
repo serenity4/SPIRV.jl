@@ -364,25 +364,9 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
             jtype === Any && throw_compilation_error("got a `GlobalRef` inferred as `Any`; the global might not have been declared as `const`")
           end
         end
-        if ismutabletype(jtype)
-          # OpPhi will reuse existing variables, no need to allocate a new one.
-          !isa(jinst, Core.PhiNode) && allocate_variable!(mt, tr, fdef, jtype, core_ssaval)
-        end
         ret, stype = emit_expression!(mt, tr, target, fdef, jinst, jtype, blk)
         if isa(ret, Expression)
-          if ismutabletype(jtype)
-            if isa(jinst, Core.PhiNode)
-              insert!(tr.variables, core_ssaval, Variable(stype, StorageClassFunction))
-              add_expression!(blk, tr, ret, core_ssaval)
-            else
-              # The current core ResultID has already been assigned (to the variable).
-              add_expression!(blk, tr, ret, nothing)
-              # Store to the new variable.
-              add_expression!(blk, tr, @ex Store(tr.results[core_ssaval], ret.result::ResultID))
-            end
-          else
-            add_expression!(blk, tr, ret, core_ssaval)
-          end
+          add_expression!(blk, tr, ret, core_ssaval)
         elseif isa(ret, ResultID)
           # The value references one that has already been inserted,
           # possibly a SPIR-V global (e.g. a constant).
