@@ -27,6 +27,7 @@ makedocs(;
     "Tutorials" => [
       "tutorials/manipulating_spirv.md",
       "tutorials/creating_a_shader.md",
+      "tutorials/executing_a_shader.md",
     ],
     "Reference" => [
       "reference/shader_compilation.md",

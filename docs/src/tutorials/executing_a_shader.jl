@@ -17,24 +17,24 @@ using Vulkan: Vk, VkCore, unwrap
 debug_callback_c = @cfunction(Vk.default_debug_callback, UInt32, (Vk.DebugUtilsMessageSeverityFlagEXT, Vk.DebugUtilsMessageTypeFlagEXT, Ptr{VkCore.VkDebugUtilsMessengerCallbackDataEXT}, Ptr{Cvoid}))
 
 function create_device()
-  # Use the validation layers.
+  ## Use the validation layers.
   layers = String["VK_LAYER_KHRONOS_validation"]
-  # Enable logging.
+  ## Enable logging.
   extensions = String["VK_EXT_debug_utils"]
   instance = Vk.Instance(layers, extensions; application_info = Vk.ApplicationInfo(v"0.1", v"0.1", v"1.3"))
   debug_messenger = Vk.DebugUtilsMessengerEXT(instance, debug_callback_c)
 
-  # Pick the first physical device that we find.
+  ## Pick the first physical device that we find.
   physical_device = first(unwrap(Vk.enumerate_physical_devices(instance)))
   @info "Selected $(Vk.get_physical_device_properties(physical_device))"
 
-  # Request Vulkan API features necessary for the usage with SPIRV.jl
+  ## Request Vulkan API features necessary for the usage with SPIRV.jl
   device_features_1_1 = Vk.PhysicalDeviceVulkan11Features(:variable_pointers, :variable_pointers_storage_buffer)
   device_features_1_2 = Vk.PhysicalDeviceVulkan12Features(:buffer_device_address, :vulkan_memory_model; next = device_features_1_1)
   device_features_1_3 = Vk.PhysicalDeviceVulkan13Features(:synchronization2, :dynamic_rendering, :shader_integer_dot_product, :maintenance4; next = device_features_1_2)
   device_features = Vk.PhysicalDeviceFeatures2(Vk.PhysicalDeviceFeatures(:shader_float_64, :shader_int_64); next = device_features_1_3)
 
-  # Create the device requesting a queue that supports graphics and compute operations.
+  ## Create the device requesting a queue that supports graphics and compute operations.
   device_extensions = String[]
   queue_family_index = Vk.find_queue_family(physical_device, Vk.QUEUE_GRAPHICS_BIT | Vk.QUEUE_COMPUTE_BIT)
   device = Vk.Device(
@@ -43,9 +43,9 @@ function create_device()
     [], device_extensions; next = device_features
   )
 
-  # Query all of the supported SPIR-V features, to be communicated to the Julia → SPIR-V compiler.
+  ## Query all of the supported SPIR-V features, to be communicated to the Julia → SPIR-V compiler.
   supported_features = SupportedFeatures(physical_device, v"1.3", device_extensions, device_features)
-  # Check that we have the basic features that the compiler will require.
+  ## Check that we have the basic features that the compiler will require.
   check_compiler_feature_requirements(supported_features)
 
   (; debug_messenger, device, queue_family_index, supported_features)
@@ -84,59 +84,59 @@ using SPIRV: ShaderSource, serialize
 Execute a shader on the provided device and return the result, which **must** be of type `T`.
 """
 function execute_shader(source::ShaderSource, device::Vk.Device, queue_family_index, array::Vector{Float32})
-  # Provide Vulkan with our shader.
+  ## Provide Vulkan with our shader.
   stage = Vk.ShaderStageFlag(source.info.interface.execution_model)
   @assert stage == Vk.SHADER_STAGE_COMPUTE_BIT
   shader = Vk.ShaderModule(device, source)
 
-  # Construct a buffer on the device.
+  ## Construct a buffer on the device.
   buffer = Vk.Buffer(device, sizeof(array), Vk.BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, Vk.SHARING_MODE_EXCLUSIVE, [queue_family_index])
-  # Allocate memory for it, selecting a memory that is host-visible and host-coherent.
+  ## Allocate memory for it, selecting a memory that is host-visible and host-coherent.
   memory_requirements = Vk.get_buffer_memory_requirements(device, buffer)
   memory_index = find_memory_type(device.physical_device, memory_requirements.memory_type_bits, Vk.MEMORY_PROPERTY_HOST_VISIBLE_BIT | Vk.MEMORY_PROPERTY_HOST_COHERENT_BIT)
   memory = Vk.DeviceMemory(device, memory_requirements.size, memory_index; next = Vk.MemoryAllocateFlagsInfo(0; flags = Vk.MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT))
   unwrap(Vk.bind_buffer_memory(device, buffer, memory, 0))
 
-  # Get a pointer to this memory, so we can write to it.
+  ## Get a pointer to this memory, so we can write to it.
   memory_ptr = unwrap(Vk.map_memory(device, memory, 0, sizeof(array)))
   GC.@preserve array begin
     data_ptr = pointer(array)
     unsafe_copyto!(Ptr{Float32}(memory_ptr), data_ptr, length(array))
   end
 
-  # Get its device address while we're at it.
-  # Note that this is a device address, not a host address; it should only be used inside a shader.
+  ## Get its device address while we're at it.
+  ## Note that this is a device address, not a host address; it should only be used inside a shader.
   buffer_address = Vk.get_buffer_device_address(device, Vk.BufferDeviceAddressInfo(buffer))
 
-  # Create the compute pipeline our shader will be executed with.
+  ## Create the compute pipeline our shader will be executed with.
   push_constant_range = Vk.PushConstantRange(stage, 0, 12)
   pipeline_layout = Vk.PipelineLayout(device, [], [push_constant_range])
-  # Note: the name of the entry point of any shader compiled with SPIRV.jl will always be "main".
+  ## Note: the name of the entry point of any shader compiled with SPIRV.jl will always be "main".
   pipeline_info = Vk.ComputePipelineCreateInfo(Vk.PipelineShaderStageCreateInfo(stage, shader, "main"), pipeline_layout, 0)
   ((pipeline, _...), _) = unwrap(Vk.create_compute_pipelines(device, [pipeline_info]))
 
-  # Build the command buffer and record the appropriate commands to invoke our compute shader.
+  ## Build the command buffer and record the appropriate commands to invoke our compute shader.
   command_pool = Vk.CommandPool(device, queue_family_index)
   (command_buffer, _...) = unwrap(Vk.allocate_command_buffers(device, Vk.CommandBufferAllocateInfo(command_pool, Vk.COMMAND_BUFFER_LEVEL_PRIMARY, 1)))
   Vk.begin_command_buffer(command_buffer, Vk.CommandBufferBeginInfo())
   Vk.cmd_bind_pipeline(command_buffer, Vk.PIPELINE_BIND_POINT_COMPUTE, pipeline)
-  # --> This is where we provide our `ComputeData` argument.
+  ## --> This is where we provide our `ComputeData` argument.
   push_constant = serialize(ComputeData(buffer_address, length(array)), source.info.layout)
   push_constant_ptr = pointer(push_constant)
   Vk.cmd_push_constants(command_buffer, pipeline_layout, push_constant_range.stage_flags, push_constant_range.offset, push_constant_range.size, Ptr{Cvoid}(push_constant_ptr))
-  # --------------------------------------------------------
-  # Dispatch as many workgroups as necessary to cover all array elements.
+  ## --------------------------------------------------------
+  ## Dispatch as many workgroups as necessary to cover all array elements.
   workgroup_invocations = prod(source.info.interface.execution_options.local_size)
   Vk.cmd_dispatch(command_buffer, cld(length(array), workgroup_invocations), 1, 1)
   Vk.end_command_buffer(command_buffer)
 
-  # Get a queue for submission, then submit the command buffer.
+  ## Get a queue for submission, then submit the command buffer.
   queue = Vk.get_device_queue(device, queue_family_index, 0)
   unwrap(Vk.queue_submit(queue, [Vk.SubmitInfo([], [], [command_buffer], [])]))
 
-  # Wait for all operations to finish, making sure none of the
-  # required resources are cleaned up by the GC before then.
-  # Finally, retrieve the data.
+  ## Wait for all operations to finish, making sure none of the
+  ## required resources are cleaned up by the GC before then.
+  ## Finally, retrieve the data.
   GC.@preserve array buffer memory pipeline_layout pipeline command_pool command_buffer push_constant queue begin
     unwrap(Vk.queue_wait_idle(queue))
     data_ptr = pointer(array)
@@ -152,8 +152,8 @@ function find_memory_type(physical_device::Vk.PhysicalDevice, type, properties::
   memory_properties = Vk.get_physical_device_memory_properties(physical_device)
   memory_types = memory_properties.memory_types[1:(memory_properties.memory_type_count)]
   candidate_indices = findall(i -> type & (1 << i) ≠ 0, 0:(memory_properties.memory_type_count - 1))
-  # Make sure we get a host-coherent memory, because we don't want
-  #  to bother with flushing and invalidating memory.
+  ## Make sure we get a host-coherent memory, because we don't want
+  ##  to bother with flushing and invalidating memory.
   index = findfirst(i -> in(Vk.MEMORY_PROPERTY_HOST_COHERENT_BIT, memory_types[i].property_flags), candidate_indices)
   index - 1
 end

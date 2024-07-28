@@ -91,8 +91,8 @@ struct ComputeData
 end
 
 function compute_shader!((; buffer, size)::ComputeData, global_id::Vec3U)
-  # `global_id` is zero-based, coming from Vulkan; but we're now in Julia,
-  # where everything is one-based.
+  ## `global_id` is zero-based, coming from Vulkan; but we're now in Julia,
+  ## where everything is one-based.
   index = global_id.x + 1U
   value = @load buffer[index]::Float32
   result = exp(value)
