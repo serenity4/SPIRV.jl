@@ -1,23 +1,24 @@
 #=
 
-# Creating a shader
+# [Creating a shader](@id tutorial-creating-a-shader)
 
 This tutorial will show you how to create a SPIR-V shader using the experimental [Julia → SPIR-V compiler](@ref compiler).
 
-When creating a shader, the corresponding method will typically mutate some built-in output variables, and may interact with GPU memory. Let's for example define a fragment shader that colors all pixels with the same color.
+When creating a shader, the corresponding method will typically mutate some built-in output variables, and may interact with GPU memory. Let's for example define a fragment shader that colors all pixels with the same color. We'll be using [Swizzles.jl](https://github.com/serenity4/Swizzles.jl), which allows us to conveniently use color-related property names and store to various subparts of a vector efficiently.
 
 =#
 
-using SPIRV: Vec3, Vec4
+using SPIRV: Vec3, Vec4, Mutable
+using Swizzles: @swizzle
 
 struct FragmentData
   color::Vec3
   alpha::Float32
 end
 
-function fragment_shader!(color::Vec4, data)
-  color.rgb = data.color
-  color.a = data.alpha
+function fragment_shader!(color::Mutable{Vec4}, data::FragmentData)
+  @swizzle color.rgb = data.color
+  @swizzle color.a = data.alpha
 end
 
 #=
@@ -26,12 +27,12 @@ This is a regular Julia function, which we may even test on the CPU to make sure
 
 =#
 
-color = Vec4(0, 0, 0, 0)
+color = Mutable(Vec4(0, 0, 0, 0))
 white = Vec3(1, 1, 1)
 data = FragmentData(white, 1)
 fragment_shader!(color, data)
-@assert color.rgb == data.color
-@assert color.a == data.alpha
+@assert color[1:3] == data.color
+@assert color[4] == data.alpha
 
 #=
 
@@ -48,7 +49,7 @@ We will specify this information using the [`@fragment`](@ref) macro, which acce
 using SPIRV: @fragment
 
 shader = @fragment fragment_shader!(
-  ::Vec4::Output,
+  ::Mutable{Vec4}::Output,
   ::FragmentData::PushConstant
 );
 
@@ -80,21 +81,30 @@ We could setup a storage buffer, but for simplicity, we'll work with a memory ad
 
 =#
 
-using SPIRV: @load, @store
+using SPIRV: @load, @store, @vec, U, Vec3U
+using StaticArrays
+using SPIRV.MathFunctions: linear_index
 
 struct ComputeData
   buffer::UInt64 # memory address of a buffer
   size::UInt32 # buffer size
 end
 
-function compute_shader!((; buffer, size)::ComputeData, index)
+function compute_shader!((; buffer, size)::ComputeData, global_id::Vec3U)
+  ## `global_id` is zero-based, coming from Vulkan; but we're now in Julia,
+  ## where everything is one-based.
+  index = global_id.x + 1U
   value = @load buffer[index]::Float32
   result = exp(value)
-  index < size && @store result buffer[index]::Float32
+  1U ≤ index ≤ size && @store result buffer[index]::Float32
   nothing
 end
 
 #=
+
+For the index into our vector of values, we'll rely on using one-dimensional workgroups to then use the current index among all dispatched invocations. SPIR-V provides the `GlobalInvocationId` built-in, which will be fed with this value.
+
+You may notice that we use `1U`, which is simply some sugar syntax for `UInt32(1)`. We don't use the plain literal `1`. because we don't want `index` to widen to an `Int64`. See [Integer and float bit widths](@ref) for more details.
 
 We can run this shader on the CPU to test it first, but it's a bit more hacky this time since we chose to work with a memory address.
 
@@ -108,25 +118,29 @@ GC.@preserve array begin
   ptr = pointer(array)
   address = UInt64(ptr)
   data = ComputeData(address, length(array))
-  compute_shader!(data, 2)
-  compute_shader!(data, 6)
+  compute_shader!(data, @vec UInt32[0, 0, 0])
+  compute_shader!(data, @vec UInt32[5, 0, 0])
 end
 
 array
 
 #=
 
-All good! Let's now turn it into a SPIR-V shader. Same as before, let's assume we'll provide the `ComputeData` with a push constant. As for the index, we'll want to use the linearized index of the current invocation. For this, SPIR-V defines a special `LocalInvocationIndex` built-in input, that will be fed with this exact value.
+All good! Let's now turn it into a SPIR-V shader. Same as before, let's assume we'll provide the `ComputeData` with a push constant.
+
+We'll also specify the workgroup size (or local invocation size, in SPIR-V terms, from the `LocalSize` [execution mode](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_execution_mode)). Let's set it to 64 x 1 x 1, and rely on it being later invoked with at least 4 workgroups to cover all 256 array elements. We could also go with a two-dimensional pattern, such as 8 x 8 x 1, but then we'd need to do extra math in our shader to derive a linear index from a two-dimensional index, needlessly complicating things.
 
 =#
 
-using SPIRV: @compute
+using SPIRV: @compute, ComputeExecutionOptions
 
 shader = @compute compute_shader!(
   ::ComputeData::PushConstant,
-  ::UInt32::Input{LocalInvocationIndex}
-)
+  ::Vec3U::Input{GlobalInvocationId},
+) options = ComputeExecutionOptions(local_size = (64, 1, 1))
 
 #-
 
 validate(shader)
+
+# Et voilà! Notice the `LocalSizeId` execution mode pointing to the constants `(64, 1, 1)` in the corresponding IR.
