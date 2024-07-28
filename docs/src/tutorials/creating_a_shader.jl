@@ -4,19 +4,21 @@
 
 This tutorial will show you how to create a SPIR-V shader using the experimental [Julia → SPIR-V compiler](@ref compiler).
 
-When creating a shader, the corresponding method will typically mutate some built-in output variables, and may interact with GPU memory. Let's for example define a fragment shader that colors all pixels with the same color.
+When creating a shader, the corresponding method will typically mutate some built-in output variables, and may interact with GPU memory. Let's for example define a fragment shader that colors all pixels with the same color. We'll be using [Swizzles.jl](https://github.com/serenity4/Swizzles.jl), which allows us to conveniently use color-related property names and store to various subparts of a vector efficiently.
 
 =#
 
 using SPIRV: Vec3, Vec4, Mutable
+using Swizzles: @swizzle
 
 struct FragmentData
   color::Vec3
   alpha::Float32
 end
 
-function fragment_shader!(color::Mutable{Vec4}, data)
-  color[] = Vec4(data.color..., data.alpha)
+function fragment_shader!(color::Mutable{Vec4}, data::FragmentData)
+  @swizzle color.rgb = data.color
+  @swizzle color.a = data.alpha
 end
 
 #=
@@ -79,7 +81,7 @@ We could setup a storage buffer, but for simplicity, we'll work with a memory ad
 
 =#
 
-using SPIRV: @load, @store, @vec, U
+using SPIRV: @load, @store, @vec, U, Vec3U
 using StaticArrays
 using SPIRV.MathFunctions: linear_index
 
@@ -88,7 +90,7 @@ struct ComputeData
   size::UInt32 # buffer size
 end
 
-function compute_shader!((; buffer, size)::ComputeData, global_id)
+function compute_shader!((; buffer, size)::ComputeData, global_id::Vec3U)
   # `global_id` is zero-based, coming from Vulkan; but we're now in Julia,
   # where everything is one-based.
   index = global_id.x + 1U

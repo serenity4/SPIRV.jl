@@ -5,6 +5,7 @@ DocumenterTools = "35a29f4d-8980-5a13-9543-d66fff28ecb8"
 GitHubActions = "6b79fd1a-b13a-48ab-b6b0-aaee1fee41df"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
 SPIRV = "84138a67-b342-4d33-8200-33cfcca52eb2"
+Swizzles = "60694085-d904-4bfc-95dc-1e0e768e9359"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]
