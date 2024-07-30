@@ -177,7 +177,7 @@ function Base.read(::Type{Module}, io::IO)
         end
         push!(arguments, arg)
         add_extra_operands!(op_infos, i, arg, op_info)
-        op_info.quantifier == "*" && length(operands) ≠ length(arguments) && push!(op_infos, last(op_infos))
+        length(operands) ≠ length(arguments) && push!(op_infos, last(op_infos))
       end
     end
     push!(insts, Instruction(opcode, type_id, result_id, arguments))

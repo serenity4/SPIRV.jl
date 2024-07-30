@@ -31,4 +31,4 @@ end
 
   mod2 = read(SPIRV.Module, spvasm("test2"))
   test_module(mod2)
-end
+end;

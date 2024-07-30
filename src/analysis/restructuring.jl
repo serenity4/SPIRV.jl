@@ -122,7 +122,7 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
     isnothing(outer_construct) && continue
     merge_inner, merge_outer = merge_candidate.((ctree, outer_construct), cfg)
     if merge_inner ≠ merge_outer
-      is_loop(ctree) && is_loop(outer_construct) || continue
+      is_loop(outer_construct) || continue
       # If `merge_inner` is the continue target of the outer loop,
       # we also need to introduce a new block right before that continue block.
       o = node_index(outer_construct)

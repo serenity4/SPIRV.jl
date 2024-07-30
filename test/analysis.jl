@@ -46,6 +46,14 @@ g18() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 4 => 5, 5 => 6, 5 => 2)
 g19() = DeltaGraph(1 => 2, 2 => 3, 3 => 2, 2 => 4, 4 => 5, 5 => 6)
 "CFG with two loops, the inner merging at the continue target of the outer one."
 g20() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 4 => 5, 5 => 6, 6 => 5, 5 => 7, 7 => 2)
+"CFG with a proper region."
+g21() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 4 => 5, 2 => 6, 4 => 6, 5 => 7, 6 => 7)
+"Another CFG with a proper region."
+g22() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 3 => 5, 4 => 6, 5 => 6, 2 => 5)
+"Large CFG with two large and nested proper regions."
+g23() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 8, 3 => 6, 4 => 5, 4 => 6, 5 => 7, 6 => 7, 7 => 8, 8 => 9, 8 => 10, 9 => 19, 10 => 11, 10 => 12, 11 => 16, 12 => 13, 12 => 14, 13 => 15, 14 => 15, 15 => 16, 16 => 17, 16 => 18, 17 => 19, 18 => 20, 19 => 20)
+
+plotcfg(g22())
 
 test_coverage(g::AbstractGraph, ctree::ControlTree) = Set([node_index(c) for c in Leaves(ctree)]) == Set(vertices(g))
 
@@ -529,6 +537,72 @@ end
           ControlTree(4, REGION_BLOCK),
           ControlTree(5, REGION_BLOCK),
           ControlTree(6, REGION_BLOCK),
+        ])
+
+        g = g21()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_PROPER, [
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
+            ControlTree(5, REGION_BLOCK),
+            ControlTree(6, REGION_BLOCK),
+            ControlTree(7, REGION_BLOCK),
+          ]),
+        ])
+
+        g = g22()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_PROPER, [
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
+            ControlTree(5, REGION_BLOCK),
+            ControlTree(6, REGION_BLOCK),
+          ]),
+        ])
+
+        g = g23()
+        plotcfg(g)
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_BLOCK),
+          ControlTree(2, REGION_PROPER, [
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
+            ControlTree(5, REGION_BLOCK),
+            ControlTree(6, REGION_BLOCK),
+            ControlTree(7, REGION_BLOCK),
+            ControlTree(8, REGION_PROPER, [
+              ControlTree(8, REGION_BLOCK),
+              ControlTree(9, REGION_BLOCK),
+              ControlTree(10, REGION_IF_THEN_ELSE, [
+                ControlTree(10, REGION_BLOCK),
+                ControlTree(11, REGION_BLOCK),
+                ControlTree(12, REGION_BLOCK, [
+                  ControlTree(12, REGION_IF_THEN_ELSE, [
+                    ControlTree(12, REGION_BLOCK),
+                    ControlTree(13, REGION_BLOCK),
+                    ControlTree(14, REGION_BLOCK),
+                  ]),
+                  ControlTree(15, REGION_BLOCK),
+                ]),
+              ]),
+              ControlTree(16, REGION_BLOCK),
+              ControlTree(17, REGION_BLOCK),
+              ControlTree(18, REGION_BLOCK),
+              ControlTree(19, REGION_BLOCK),
+              ControlTree(20, REGION_BLOCK),
+            ]),
+          ]),
         ])
       end
     end

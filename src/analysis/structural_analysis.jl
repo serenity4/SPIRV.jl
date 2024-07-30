@@ -143,14 +143,17 @@ function acyclic_region(g, v, ec, doms, domtrees, backedges)
   any(u -> in(Edge(u, v), backedges), inneighbors(g, v)) && return
   domtree = domtrees[v]
   pdom_indices = findall(children(domtree)) do tree
-    w = nodevalue(tree)
-    in(w, vertices(g)) && !in(w, outneighbors(g, nodevalue(domtree)))
+    w = node_index(tree)
+    in(w, vertices(g)) && !in(w, outneighbors(g, node_index(domtree)))
   end
-  length(pdom_indices) == 1 || return
-  pdom = domtree[only(pdom_indices)]
-  vs = vertices_between(v, nodevalue(pdom))
-  delete!(vs, v)
-  delete!(vs, nodevalue(pdom))
+  length(pdom_indices) ≥ 1 || return
+  vs = Int64[]
+  for i in pdom_indices
+    pdomtree = domtree[i]
+    append!(vs, vertices_between(g, v, node_index(pdomtree)))
+  end
+  sort!(vs)
+  unique!(vs)
   (REGION_PROPER, vs)
 end
 
