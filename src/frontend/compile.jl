@@ -224,7 +224,8 @@ function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
     end
   end
   code_instance = retrieve_code_instance(target.interp, mi)
-  ftype = FunctionType(spir_type(code_instance.rettype, tr.tmap), argtypes)
+  return_t = code_instance.rettype === Nothing ? VoidType() : spir_type(code_instance.rettype, tr.tmap)
+  ftype = FunctionType(return_t, argtypes)
   FunctionDefinition(ftype, FunctionControlNone, [], [], ResultDict(), [])
 end
 

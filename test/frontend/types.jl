@@ -87,6 +87,9 @@ using SPIRV: component_type, texel_type, sampled_type, column, Pointer
     img[4, 4] = @vec ones(Float32, 4)
     @test img[4, 4] == @vec ones(Float32, 4)
 
+    img = image_type(SPIRV.ImageFormatRg32f, SPIRV.Dim2D, 0, false, false, 1)(zeros(Vec2, 32, 32))
+    @test img[1, 1] == @vec zeros(Float32, 2)
+
     sampler = Sampler()
     sampled = SampledImage(img, sampler)
     @test sampled_type(sampled) === Vec4

@@ -133,7 +133,7 @@ function IR(mod::Module)
             &Float64 || &UInt64 || &Int64 => only(reinterpret(T, [arguments[1]::Word, arguments[2]::Word]))
             _ => error("Unexpected literal of type $T found in constant instruction with arguments $arguments")
           end
-          Constant(literal, t, ifelse(opcode === OpSpecConstant, IS_SPEC_CONST_TRUE, IS_SPEC_CONST_FALSE))
+          Constant(literal, t, ifelse(opcode === OpSpecConstant, Ref(true), IS_SPEC_CONST_FALSE))
         end
         &OpConstantFalse || &OpConstantTrue => Constant(opcode == OpConstantTrue, BooleanType())
         &OpSpecConstantFalse || &OpSpecConstantTrue => Constant(opcode == OpSpecConstantTrue, BooleanType(), true)

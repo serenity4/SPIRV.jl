@@ -31,11 +31,11 @@ is_depth(T::Type{<:Image}) = depth(T) == 2 ? nothing : Bool(depth(T))
 is_sampled(T::Type{<:Image}) = sample_mode(T) == 0 ? nothing : Bool(2 - sample_mode(T))
 
 "Read the texel at coordinate `coord` from a one-dimensional image using zero-based indexing."
-Base.getindex(img::Image, coord::BitInteger) = ImageRead(img, coord)
+Base.getindex(img::Image, coord::BitInteger) = convert_truncate(typeof(img), ImageRead(img, coord))
 "Read the texel at the provided coordinates from an image using zero-based indexing."
 Base.getindex(img::Image, coord::BitInteger, coord2::BitInteger, coords::BitInteger...) = getindex(img, Vec(coord, coord2, coords...))
 "Read the texel at the coordinates given by `coord` from an image using zero-based indexing."
-Base.getindex(img::Image, coords::Vec) = ImageRead(img, coords)
+Base.getindex(img::Image, coords::Vec) = convert_truncate(typeof(img), ImageRead(img, coords))
 
 "Read the texel at coordinate `coord` from a one-dimensional image using zero-based indexing."
 Base.setindex!(img::Image, value, coord::BitInteger) = ImageWrite(img, coord, value)
@@ -57,11 +57,15 @@ Base.length(image::Image) = foldl(*, size(image))
 @noinline ImageQuerySizeLod(image::Image{<:Any,Dim2D}, lod)::Vec2U = Vec2U(size(image.data)...)
 @noinline ImageQuerySizeLod(image::Image{<:Any,Dim3D}, lod)::Vec{3,UInt32} = Vec{3,UInt32}(size(image.data)...)
 
-@noinline function ImageRead(img::Image{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,T}, coord::Union{Vec{<:Any,<:BitInteger},BitInteger})::T where {T}
+@noinline function ImageRead(img::Image{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,T}, coord::Union{Vec{<:Any,<:BitInteger},BitInteger}) where {T}
   isa(coord, Integer) && return img.data[coord]
-  img.data[CartesianIndex(coord...)]
+  vec4(img.data[CartesianIndex(coord...)]::T)
 end
 ImageRead(img::Image, coords::Vec{N,<:Union{UInt64,Int64}}) where {N} = ImageRead(img, UInt32.(coords))
+
+vec4(value::Number) = Vec4(value, zero(value), zero(value), zero(value))
+vec4(value::Vec) = Vec4(value..., ntuple(i -> zero(eltype(value)), 4 - length(value))...)
+vec4(value::Vec{4}) = value
 
 @noinline function ImageWrite(img::_Image{T}, coord::Union{Vec{<:Any,<:BitInteger},BitInteger}, texel::T) where {T}
   if isa(coord, Integer)
@@ -192,7 +196,8 @@ sampled_type(T::Type{<:SampledImage}) = Vec{4, component_type(image_type(T))}
 image_type(img::SampledImage) = image_type(typeof(img))
 sampled_type(img::SampledImage) = sampled_type(typeof(img))
 
-convert_truncate(::Type{SampledImage{I}}, value::Vec{4}) where {I} = convert_truncate(texel_type(I), value)
+convert_truncate(::Type{I}, value::Vec{4}) where {I<:Image} = convert_truncate(texel_type(I), value)
+convert_truncate(::Type{SampledImage{I}}, value::Vec{4}) where {I} = convert_truncate(I, value)
 convert_truncate(::Type{T}, value::T) where {T<:Number} = value
 convert_truncate(::Type{T}, value::Vec) where {T} = convert(T, value.x)
 convert_truncate(::Type{T}, value) where {T} = convert(T, value)
