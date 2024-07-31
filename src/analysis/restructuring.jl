@@ -96,7 +96,6 @@ function merge_candidate_loop(ctree::ControlTree, cfg::AbstractGraph)
 end
 
 struct RestructureProperRegions <: FunctionPass end
-RestructureProperRegions() = RestructureProperRegions()
 
 restructure_proper_regions!(ir::IR) = RestructureProperRegions()(ir)
 

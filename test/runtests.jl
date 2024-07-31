@@ -1,4 +1,4 @@
-using SPIRV, Test
+using SPIRV, Test, Dictionaries
 using SPIRV: @compute, @vertex, @fragment, @compute, @any_hit, @mesh, Sampler, Image, Pointer, optimize
 using SPIRV.MathFunctions
 using StaticArrays

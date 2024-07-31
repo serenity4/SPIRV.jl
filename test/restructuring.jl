@@ -1,80 +1,3 @@
-using SPIRV, Test, Dictionaries
-using Graphs
-using SPIRV: nesting_levels, merge_blocks, conflicted_merge_blocks, restructure_proper_regions!, restructure_merge_blocks!, add_merge_headers!, restructure_loop_header_conditionals!, id_bound, nexs, opcode
-
-"""
-Generate a minimal SPIR-V IR or module which contains dummy blocks realizing the provided control-flow graph.
-
-Blocks that terminate will return a constant in line with its block index, e.g. `c23f0 = 23f0` for the block corresponding to the node 23.
-Blocks that branch to more than one target will either branch with a `BranchConditional` (2 targets exactly) or a `Switch` (3 targets or more).
-The selectors for conditionals or switches are exposed as function arguments. Note that the argument will be a `Bool` for conditionals and `Int32`
-for switches.
-"""
-function ir_from_cfg(cfg; structured = false, phi = false)
-  global_decls = quote
-    Bool = TypeBool()
-    Float32 = TypeFloat(32)
-    Int32 = TypeInt(32, 1)
-  end
-
-  label(v) = Symbol(:b, v)
-  constant(v) = Symbol(:c, v, :f0)
-  constant_int(v) = Symbol(:c, v, :i32)
-  condition(v) = Symbol(:x, v)
-
-  append!(global_decls.args, :($(constant(v)) = Constant($(v * 1f0))::Float32) for v in sinks(cfg))
-
-  args = [Expr(:(::), condition(v), length(outneighbors(cfg, v)) > 2 ? :Int32 : :Bool) for v in vertices(cfg) if length(outneighbors(cfg, v)) > 1]
-
-  phi_counter = 0
-
-  blocks = map(vertices(cfg)) do v
-    insts = [:($(label(v)) = OpLabel())]
-    if phi
-      ins = inneighbors(cfg, v)
-      if length(ins) ≥ 2
-        identifier = Symbol(:phi_, v)
-        arguments = []
-        for u in ins
-          phi_counter += 1
-          x = Symbol(identifier, :_, u)
-          push!(global_decls.args, :($x = Constant($(Int32(phi_counter)))::Int32))
-          push!(arguments, x, label(u))
-        end
-        inst = :($identifier = Phi($(arguments...))::Int32)
-        push!(insts, inst)
-      end
-    end
-    out = outneighbors(cfg, v)
-    if length(out) == 0
-      push!(insts, :(ReturnValue($(constant(v)))))
-    elseif length(out) == 1
-      push!(insts, :(Branch($(label(only(out))))))
-    elseif length(out) == 2
-      push!(insts, :(BranchConditional($(condition(v)), $(label(out[1])), $(label(out[2])))))
-    else
-      inst = Expr(:call, :Switch, condition(v), label(first(out)))
-      for w in out
-        push!(global_decls.args, :($(constant_int(w)) = Constant($(Int32(w)))::Int32))
-        push!(inst.args, constant_int(w), label(w))
-      end
-      push!(insts, inst)
-    end
-  end
-
-  func = :(@function f($(args...))::Float32 begin
-    $(foldl(append!, blocks; init = Expr[])...)
-  end)
-
-  ex = Expr(:block, global_decls.args..., func)
-  ir = load_ir(ex)
-  !structured && return ir
-  push!(empty!(ir.capabilities), SPIRV.CapabilityShader)
-  # For some reason, we need the GLSL memory model to trigger CFG validation errors.
-  ir.memory_model = SPIRV.MemoryModelGLSL450
-  ir
-end
-
 @testset "Restructuring utilities" begin
   for i in 1:13
     # Skip a few tricky cases for now.
@@ -216,7 +139,8 @@ end
     ]),
   ])
   restructure_proper_regions!(ir)
-  ctree = ControlTree(ControlFlowGraph(ir[1]))
+  fdef = ir[1]
+  ctree = ControlTree(ControlFlowGraph(fdef))
   @test ctree == ControlTree(1, REGION_BLOCK, [
     ControlTree(1, REGION_BLOCK),
     ControlTree(2, REGION_IF_THEN, [
@@ -232,6 +156,30 @@ end
       ]),
     ControlTree(6, REGION_BLOCK),
   ])
+  phi_values(ex) = [haskey(ir.constants, id) ? ir.constants[id].value : id for id in @view ex[1:2:end]]
+  node(i) = fdef[i].id
+  phi_pairs(exs) = map((x, y) -> x .=> y, phi_sources.(exs), phi_values.(exs))
+
+  phis = phi_expressions.(fdef)
+  @test all(==([]), phis[1:4])
+
+  @test length(phis[7]) == 3
+  exs7 = phis[7]
+  possibilities = phi_pairs(exs7)
+  @test issubset([node(2) => 1, node(3) => 2], possibilities[1])
+  @test issubset([node(4) => 4], possibilities[2])
+  @test issubset([node(2) => 5, node(3) => 5, node(4) => 6], possibilities[3])
+
+  @test length(phis[5]) == 1
+  exs5 = phis[5]
+  possibilities = phi_pairs(exs5)
+  @test issubset([node(7) => exs7[1].result], possibilities[1])
+
+  @test length(phis[6]) == 1
+  exs6 = phis[6]
+  possibilities = phi_pairs(exs6)
+  @test issubset([node(7) => exs7[2].result, node(5) => 3], possibilities[1])
+
   restructure_merge_blocks!(ir)
   add_merge_headers!(ir)
   @test unwrap(validate(ir))
