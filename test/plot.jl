@@ -1,6 +1,6 @@
 # For prototyping; not used during actual tests.
 using SPIRV: SPIRV, IR, ControlFlowGraph, DeltaGraph
-using Graphs: Graphs, SimpleDiGraph
+using Graphs: Graphs, edges, src, dst, SimpleDiGraph
 using Plots: plot
 import GraphRecipes
 

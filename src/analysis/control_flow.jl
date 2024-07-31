@@ -219,21 +219,22 @@ function control_flow_graph(amod::AnnotatedModule, af::AnnotatedFunction)
   cfg
 end
 
-function dominators(g::AbstractGraph{T}) where {T}
-  doms = Set{T}[Set{T}() for _ in 1:nv(g)]
-  source = entry_node(g)
+dominators(g::AbstractGraph{T}) where {T} = dominators(g, vertices(g), entry_node(g))
+function dominators(g::AbstractGraph{T}, vs, source) where {T}
+  doms = dictionary(v => Set{T}() for v in vs)
   push!(doms[source], source)
-  vs = filter(≠(source), vertices(g))
-  for v in vs
-    union!(doms[v], vertices(g))
+  vs_excluding_source = filter(≠(source), vs)
+  for v in vs_excluding_source
+    union!(doms[v], vs)
   end
+  vs_set = Set(vs)
 
   converged = false
   while !converged
     converged = true
-    for v in vs
+    for v in vs_excluding_source
       h = hash(doms[v])
-      set = intersect((doms[u] for u in inneighbors(g, v))...)
+      set = intersect((doms[u] for u in inneighbors(g, v) if in(u, vs_set))...)
       doms[v] = set
       push!(set, v)
       h ≠ hash(set) && (converged &= false)
@@ -248,7 +249,7 @@ function backedges(cfg::ControlFlowGraph)
   backedges(cfg.g, cfg.ec)
 end
 
-function backedges(g::AbstractGraph{T}, ec::EdgeClassification = EdgeClassification(g), domsets::AbstractVector{Set{T}} = dominators(g)) where {T}
+function backedges(g::AbstractGraph{T}, ec::EdgeClassification = EdgeClassification(g), domsets::Dictionary{T,Set{T}} = dominators(g)) where {T}
   filter(ec.retreating_edges) do e
     in(dst(e), domsets[src(e)])
   end
@@ -323,7 +324,9 @@ immediate_dominator(tree::DominatorTree) = node_index(@something(parent(tree), r
 DominatorTree(fdef::FunctionDefinition) = DominatorTree(control_flow_graph(fdef))
 DominatorTree(cfg::AbstractGraph) = DominatorTree(dominators(cfg))
 
-function DominatorTree(domsets::AbstractVector{Set{T}}) where {T}
+DominatorTree(node::Integer, children = DominatorNode[]) = DominatorTree(DominatorNode(node), children)
+
+function DominatorTree(domsets::Dictionary{T,Set{T}}) where {T}
   root = nothing
   idoms = Dictionary{T, T}()
 

@@ -7,7 +7,12 @@ function emit(io::IO, inst::Instruction)
     print(io, " = ")
   end
 
-  printstyled(io, replace(string(inst.opcode), r"^Op" => ""); color = :light_cyan)
+  color = @match inst.opcode begin
+    &OpLabel => 202
+    GuardBy(in(termination_instructions)) => 210
+    _ => :light_cyan
+  end
+  printstyled(io, replace(string(inst.opcode), r"^Op" => ""); color)
 
   print(io, '(')
 

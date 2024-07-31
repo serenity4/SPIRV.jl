@@ -5,7 +5,7 @@ Single-entry control-flow structure which is classified according to well-specif
   REGION_BLOCK
   REGION_IF_THEN
   REGION_IF_THEN_ELSE
-  REGION_CASE
+  REGION_SWITCH
   REGION_TERMINATION
   REGION_PROPER
   REGION_SELF_LOOP
@@ -20,8 +20,8 @@ REGION_BLOCK
 REGION_IF_THEN
 "Conditional with two symmetric branches `u` ─→ `v` and `u` ─→ `w` and a single merge block reachable by `v` ─→ x or `w` ─→ x."
 REGION_IF_THEN_ELSE
-"Conditional with any number of symmetric branches [`u` ─→ `vᵢ`, `u` ─→ `vᵢ₊₁`, ...] and a single merge block reachable by [`vᵢ` ─→ `w`, `vᵢ₊₁` ─→ `w`, ...]."
-REGION_CASE
+"Conditional with any number of branches [`u` ─→ `vᵢ`, `u` ─→ `vᵢ₊₁`, ...] and a single merge block reachable by [`vᵢ` ─→ `w`, `vᵢ₊₁` ─→ `w`, ...]."
+REGION_SWITCH
 """
 Acyclic region which contains a block `v` with multiple branches, including one or multiple branches to blocks `wᵢ` which end with a function termination instruction.
 The region is composed of `v` and all the `wᵢ`.
@@ -103,7 +103,7 @@ end
   end
 end
 
-@active case_region(args) begin
+@active switch_region(args) begin
   @when (g, v) = args begin
     candidate = nothing
     length(outneighbors(g, v)) > 1 || return
@@ -132,28 +132,34 @@ function acyclic_region(g, v, ec, doms, domtrees, backedges)
     block_region(vs) => return (REGION_BLOCK, vs)
     if_then_region(v, t, m) => return (REGION_IF_THEN, [v, t])
     if_then_else_region(v, t, e, m) => return (REGION_IF_THEN_ELSE, [v, t, e])
-    case_region(branches, target) => return (REGION_CASE, [v; branches; target])
+    switch_region(branches, target) => return (REGION_SWITCH, [v; branches; target])
   end
   @trymatch (g, v, backedges) begin
     termination_region(termination_blocks) => return (REGION_TERMINATION, [v; termination_blocks])
   end
 
-  # Possibly a proper region
+  # Possibly a proper region.
   # Test that we don't have a loop or improper region.
   any(u -> in(Edge(u, v), backedges), inneighbors(g, v)) && return
   domtree = domtrees[v]
   pdom_indices = findall(children(domtree)) do tree
     w = node_index(tree)
-    in(w, vertices(g)) && !in(w, outneighbors(g, node_index(domtree)))
+    in(w, vertices(g)) && !in(w, outneighbors(g, v))
   end
   length(pdom_indices) ≥ 1 || return
   vs = Int64[]
+  ws = Int64[]
   for i in pdom_indices
     pdomtree = domtree[i]
-    append!(vs, vertices_between(g, v, node_index(pdomtree)))
+    w = node_index(pdomtree)
+    append!(vs, vertices_between(g, v, w))
+    push!(ws, w)
   end
   sort!(vs)
   unique!(vs)
+  setdiff!(vs, [v; ws])
+  pushfirst!(vs, v)
+  append!(vs, ws)
   (REGION_PROPER, vs)
 end
 
@@ -276,8 +282,9 @@ region_type(tree::ControlTree) = nodevalue(tree).region_type
 ControlTree(v::Integer, region_type::RegionType, children = ControlTree[]) = ControlTree(ControlNode(v, region_type), children)
 
 is_loop(ctree::ControlTree) = in(region_type(ctree), (REGION_NATURAL_LOOP, REGION_WHILE_LOOP))
-is_selection(ctree::ControlTree) = in(region_type(ctree), (REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_CASE, REGION_TERMINATION))
+is_selection(ctree::ControlTree) = in(region_type(ctree), (REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_SWITCH, REGION_TERMINATION))
 is_block(ctree::ControlTree) = region_type(ctree) == REGION_BLOCK
+is_proper_region(ctree::ControlTree) = region_type(ctree) == REGION_PROPER
 
 is_single_entry_single_exit(g::AbstractGraph, v) = length(inneighbors(g, v)) == 1 && length(outneighbors(g, v)) == 1
 is_single_entry_single_exit(g::AbstractGraph) = is_weakly_connected(g) && length(sinks(g)) == length(sources(g)) == 1

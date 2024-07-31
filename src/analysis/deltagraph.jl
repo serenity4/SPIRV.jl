@@ -236,15 +236,15 @@ Return the set of all vertices that one must go through to reach `v` starting fr
 
 `v` should be a post-dominator of `u` for this function to make sense.
 """
-function vertices_between(g::AbstractGraph{T}, u::Integer, v::Integer) where {T}
+function vertices_between(g::AbstractGraph{T}, u::Integer, v::Optional{Integer}) where {T}
   collected = T[u]
   next = copy(outneighbors(g, u))
   while !isempty(next)
     w = popfirst!(next)
     in(w, collected) && continue
     push!(collected, w)
-    w ≠ v && append!(next, outneighbors(g, w))
+    (isnothing(v) || w ≠ v) && append!(next, outneighbors(g, w))
   end
-  in(v, collected) || error("`v` could not be reached from `u`.")
+  !isnothing(v) && !in(v, collected) && error("`v` could not be reached from `u`.")
   collected
 end

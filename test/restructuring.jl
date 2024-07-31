@@ -1,5 +1,6 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: nesting_levels, merge_blocks, conflicted_merge_blocks, restructure_merge_blocks!, add_merge_headers!, restructure_loop_header_conditionals!, id_bound, nexs, opcode
+using Graphs
+using SPIRV: nesting_levels, merge_blocks, conflicted_merge_blocks, restructure_proper_regions!, restructure_merge_blocks!, add_merge_headers!, restructure_loop_header_conditionals!, id_bound, nexs, opcode
 
 """
 Generate a minimal SPIR-V IR or module which contains dummy blocks realizing the provided control-flow graph.
@@ -9,7 +10,7 @@ Blocks that branch to more than one target will either branch with a `BranchCond
 The selectors for conditionals or switches are exposed as function arguments. Note that the argument will be a `Bool` for conditionals and `Int32`
 for switches.
 """
-function ir_from_cfg(cfg; structured = false)
+function ir_from_cfg(cfg; structured = false, phi = false)
   global_decls = quote
     Bool = TypeBool()
     Float32 = TypeFloat(32)
@@ -25,8 +26,25 @@ function ir_from_cfg(cfg; structured = false)
 
   args = [Expr(:(::), condition(v), length(outneighbors(cfg, v)) > 2 ? :Int32 : :Bool) for v in vertices(cfg) if length(outneighbors(cfg, v)) > 1]
 
+  phi_counter = 0
+
   blocks = map(vertices(cfg)) do v
     insts = [:($(label(v)) = OpLabel())]
+    if phi
+      ins = inneighbors(cfg, v)
+      if length(ins) ≥ 2
+        identifier = Symbol(:phi_, v)
+        arguments = []
+        for u in ins
+          phi_counter += 1
+          x = Symbol(identifier, :_, u)
+          push!(global_decls.args, :($x = Constant($(Int32(phi_counter)))::Int32))
+          push!(arguments, x, label(u))
+        end
+        inst = :($identifier = Phi($(arguments...))::Int32)
+        push!(insts, inst)
+      end
+    end
     out = outneighbors(cfg, v)
     if length(out) == 0
       push!(insts, :(ReturnValue($(constant(v)))))
@@ -184,4 +202,64 @@ end
   add_merge_headers!(ir)
   restructure_loop_header_conditionals!(ir)
   @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g24(); structured = true, phi = true)
+  ctree = ControlTree(ControlFlowGraph(ir[1]))
+  @test ctree == ControlTree(1, REGION_BLOCK, [
+    ControlTree(1, REGION_BLOCK),
+    ControlTree(2, REGION_PROPER, [
+      ControlTree(2, REGION_BLOCK),
+      ControlTree(3, REGION_BLOCK),
+      ControlTree(4, REGION_BLOCK),
+      ControlTree(5, REGION_BLOCK),
+      ControlTree(6, REGION_BLOCK),
+    ]),
+  ])
+  restructure_proper_regions!(ir)
+  ctree = ControlTree(ControlFlowGraph(ir[1]))
+  @test ctree == ControlTree(1, REGION_BLOCK, [
+    ControlTree(1, REGION_BLOCK),
+    ControlTree(2, REGION_IF_THEN, [
+      ControlTree(2, REGION_BLOCK),
+      ControlTree(3, REGION_IF_THEN, [
+        ControlTree(3, REGION_BLOCK),
+        ControlTree(4, REGION_BLOCK),
+      ]),
+    ]),
+    ControlTree(7, REGION_IF_THEN, [
+      ControlTree(7, REGION_BLOCK),
+      ControlTree(5, REGION_BLOCK),
+      ]),
+    ControlTree(6, REGION_BLOCK),
+  ])
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g21(); structured = true, phi = true)
+  restructure_proper_regions!(ir)
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g22(); structured = true, phi = true)
+  restructure_proper_regions!(ir)
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g23(); structured = true, phi = true)
+  # FIXME: Switch regions are not recognized by the structural analysis.
+  @test_broken begin
+    restructure_proper_regions!(ir)
+    restructure_merge_blocks!(ir)
+    add_merge_headers!(ir)
+    @test unwrap(validate(ir))
+  end
+
+  # ir = IR(read(SPIRV.Module, "issue.spvasm"))
+  # ir = IR(read(SPIRV.Module, "issue2.spvasm"))
+  # # ctree = ControlTree(g21())
+  # restructure_merge_blocks!(ir)
+  # plotcfg(ir[1])
 end;

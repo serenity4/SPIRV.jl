@@ -89,16 +89,21 @@ function (::FillPhiBranches)(ir::IR, fdef::FunctionDefinition)
   cfg = ControlFlowGraph(fdef)
   for v in traverse(cfg)
     blk = fdef[v]
-    exs = phi_expressions(blk)
-    for ex in exs
-      length(ex) == 2length(inneighbors(cfg, v)) && continue
-      missing_branches = filter(u -> !in(fdef.block_ids[u], phi_sources(ex)), inneighbors(cfg, v))
-      for u in missing_branches
-        blkin = fdef[u]
-        id = next!(ir.idcounter)
-        insert!(blkin, lastindex(blkin), @ex id = OpUndef()::ex.type)
-        push!(ex, id, fdef.block_ids[u])
-      end
+    fill_phi_branches!(blk, ir, fdef, inneighbors(cfg, v))
+  end
+end
+
+function fill_phi_branches!(blk::Block, ir::IR, fdef::FunctionDefinition, from)
+  exs = phi_expressions(blk)
+  for ex in exs
+    length(ex) == 2length(from) && continue
+    sources = phi_sources(ex)
+    for u in from
+      blkin = fdef[u]
+      in(blkin.id, sources) && continue
+      id = next!(ir.idcounter)
+      insert!(blkin, lastindex(blkin), @ex id = OpUndef()::ex.type)
+      push!(ex, id, blkin.id)
     end
   end
 end

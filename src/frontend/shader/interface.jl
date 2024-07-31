@@ -110,6 +110,8 @@ function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterfa
   emit_types!(ir)
   add_type_metadata!(ir, interface)
 
+  restructure_proper_regions!(ir)
+  fill_phi_branches!(ir)
   restructure_merge_blocks!(ir)
   add_merge_headers!(ir)
   restructure_loop_header_conditionals!(ir)

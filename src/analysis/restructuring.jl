@@ -95,6 +95,100 @@ function merge_candidate_loop(ctree::ControlTree, cfg::AbstractGraph)
   outneighbors(cfg, node)[i]
 end
 
+struct RestructureProperRegions <: FunctionPass end
+RestructureProperRegions() = RestructureProperRegions()
+
+restructure_proper_regions!(ir::IR) = RestructureProperRegions()(ir)
+
+function (pass!::RestructureProperRegions)(ir::IR, fdef::FunctionDefinition)
+  (; idcounter) = ir
+  cfg = ControlFlowGraph(fdef)
+  ctree_global = ControlTree(cfg)
+  T = eltype(cfg)
+  for ctree in PostOrderDFS(ctree_global)
+    is_proper_region(ctree) || continue
+    U32 = IntegerType(32, false)
+    v = node_index(ctree)
+    region = node_index.(Leaves(ctree))
+    continuation_edges = Edge{T}[]
+    domsets = dominators(cfg, region, v)
+    domtree = DominatorTree(domsets)
+    for w in outneighbors(cfg, v)
+      edge = Edge(v, w)
+      if length(inneighbors(cfg, w)) > 1 && count(u -> !in(Edge(u, w), cfg.ec.retreating_edges), inneighbors(cfg, w)) > 1
+        # The branch edge doesn't dominate anything.
+        push!(continuation_edges, edge)
+        continue
+      end
+      immediate_pdoms = children(domtree)
+      index = findfirst(x -> node_index(x) == w, immediate_pdoms)
+      domsubtree = immediate_pdoms[index]
+      subgraph = node_index.(PreOrderDFS(domsubtree))
+      for w′ in subgraph
+        for c in outneighbors(cfg, w′)
+          in(c, subgraph) && continue
+          in(c, region) || continue
+          continuation_edge = Edge(w′, c)
+          push!(continuation_edges, continuation_edge)
+        end
+      end
+    end
+    tail = unique!(dst.(continuation_edges))
+    @assert length(tail) > 1 "A proper region has a tail consisting of only one node; this region appears to be already structured"
+
+    new = new_block!(fdef, next!(idcounter))
+    us = unique!(src.(continuation_edges))
+    from = [fdef[u] for u in us]
+    to = [fdef[w] for w in tail]
+
+    redirect_branches!(from, to, new)
+    intercept_phi_instructions!!(idcounter, from, new, to)
+    fill_phi_branches!(new, ir, fdef, us)
+
+    # Setup `Switch` target.
+    branch = @ex Switch()
+    selection = @ex next!(idcounter) = Phi()::U32
+    push!(branch, selection.result)
+    default = to[1].id
+    push!(branch, default)
+    for (w, blk) in zip(tail, to)
+      push!(branch, (w)U, blk.id)
+    end
+
+    # Generate Phi selector arguments.
+    for (u, blk) in zip(us, from)
+      ws = outneighbors(cfg, u)
+      selection_value = nothing
+      if length(ws) == 1
+        a = ws[1]
+        selection_value = emit_constant!(ir, Constant((a)U))
+      elseif length(ws) == 2
+        a, b = ws
+        if in(a, tail) && in(b, tail)
+          select_ex = @ex next!(idcounter) = OpSelect(emit_constant!.(ir, Constant.(((a)U, (b)U)))...)::U32
+          blk[end] = select_ex
+          selection_value = select_ex.result
+          push!(blk, @ex Branch(new.id))
+        elseif in(a, tail) || in(b, tail)
+          c = ifelse(in(a, tail), a, b)
+          selection_value = emit_constant!(ir, Constant((c)U))
+        else
+          error("A node that is part of a continuation edge actually has no edge to a continuation vertex.")
+        end
+      else
+        error("Switch constructs not yet supported for proper region restructuring.")
+      end
+      push!(selection, selection_value::ResultID, blk.id)
+    end
+
+    push!(new, selection)
+    push!(new, branch)
+
+    # Continue until no proper regions are left.
+    return pass!(ir, fdef)
+  end
+end
+
 struct RestructureMergeBlocks <: FunctionPass
   restructured::Set{Int}
   idcounter::IDCounter
@@ -190,21 +284,41 @@ function redirect_branches!(from::AbstractVector{Block}, to::Block, new::Block)
   end
 end
 
+function redirect_branches!(from::AbstractVector{Block}, to::AbstractVector{Block}, new::Block)
+  for blk in to
+    redirect_branches!(from, blk, new)
+  end
+end
+
 "Modify the branching instruction of `from` such that any branches to `to` are remapped to target `new` instead."
 function redirect_branches!(from::Block, to::Block, new::Block)
   ex = termination_expression(from)
   @tryswitch ex.op begin
     @case &OpBranch
+    ex[1] == to.id || return
     ex[1] = new.id
 
     @case &OpBranchConditional
     index = findfirst(==(to.id), ex)
+    !isnothing(index) || return
     ex[index] = new.id
 
     @case &OpSwitch
     indices = findall(==(to.id), ex)
+    !isempty(indices) || return
     ex[indices] .= new.id
   end
+end
+
+function intercept_phi_instructions!!(idcounter::IDCounter, from::AbstractVector{Block}, intercepter::Block, to::AbstractVector{Block})
+  exs = foldl((x, block) -> append!(x, phi_expressions(block)), to; init = Expression[])
+  intercepts = IdDict{Expression,Expression}()
+
+  for blk in from
+    intercept_phi_instructions!!(idcounter, blk, intercepter, exs, intercepts)
+  end
+
+  foreach(remove_phi_duplicates!, exs)
 end
 
 """
@@ -218,33 +332,38 @@ target be fully covered by the branching blocks, it will be transformed into a s
 Noting that the target block may have several `OpPhi` instructions involving all or part of the branching blocks, the intercepting block will end up
 with possibly more than one corresponding `OpPhi` instructions.
 """
-function intercept_phi_instructions!!(idcounter::IDCounter, from::AbstractVector{Block}, intercepter::Block, to::Block)
+function intercept_phi_instructions!!(idcounter::IDCounter, from::AbstractVector{Block}, intercepter::Block, to::Block, intercepts = nothing)
+  remove_duplicates = isnothing(intercepts)
+  intercepts = @something(intercepts, IdDict{Expression,Expression}())
   exs = phi_expressions(to)
 
-  # Mapping from original Phi instructions to Phi instructions in the intercepter.
-  intercepts = IdDict{Expression,Expression}()
-
   for blk in from
-    for ex in exs
-      i = findfirst(==(blk.id), ex)
-      if !isnothing(i)
-        # A phi instruction from the target block used <block>. This will trigger the use of a dummy variable
-        # in the intercepting block, along with an update for that phi instruction to use the dummy variable instead.
-        new_ex = get!(intercepts, ex) do
-          intercept = @ex next!(idcounter) = Phi()::ex.type
-          push!(intercepter, intercept)
-          intercept
-        end
-        push!(new_ex, ex[i - 1], blk.id)
-        ex[i] = intercepter.id
-        ex[i - 1] = new_ex.result::ResultID
+    intercept_phi_instructions!!(idcounter, blk, intercepter, exs, intercepts)
+  end
+
+  remove_duplicates && foreach(remove_phi_duplicates!, exs)
+end
+
+function intercept_phi_instructions!!(idcounter::IDCounter, from::Block, intercepter::Block, exs, intercepts = nothing)
+  remove_duplicates = isnothing(intercepts)
+  # Mapping from original Phi instructions to Phi instructions in the intercepter.
+  intercepts = @something(intercepts, IdDict{Expression,Expression}())
+  for ex in exs
+    i = findfirst(==(from.id), ex)
+    if !isnothing(i)
+      # A phi instruction from the target block used <block>. This will trigger the use of a dummy variable
+      # in the intercepting block, along with an update for that phi instruction to use the dummy variable instead.
+      new_ex = get!(intercepts, ex) do
+        intercept = @ex next!(idcounter) = Phi()::ex.type
+        push!(intercepter, intercept)
+        intercept
       end
+      push!(new_ex, ex[i - 1], from.id)
+      ex[i] = intercepter.id
+      ex[i - 1] = new_ex.result::ResultID
     end
   end
-
-  for ex in exs
-    remove_phi_duplicates!(ex)
-  end
+  remove_duplicates && foreach(remove_phi_duplicates!, exs)
 end
 
 "Remove duplicates of the form `%val1 => %parent1`, `%val1 => %parent1`."
