@@ -38,6 +38,9 @@ function (::AddMergeHeaders)(fdef::FunctionDefinition)
         header = @ex OpSelectionMerge(fdef[vmerge].id, SelectionControlNone)
         insert!(blk, lastindex(blk), header)
       end
+
+      @case _
+      error("Unstructured region $(region_type(ctree)) detected (node $(node_index(ctree))); the IR must go through restructuring passes before applying this one.")
     end
   end
 end
@@ -63,10 +66,22 @@ function merge_candidate(ctree::ControlTree, cfg::AbstractGraph)
   error("A loop or selection node is expected.")
 end
 
-function merge_candidate_selection(ctree::ControlTree, cfg::AbstractGraph)
+function merge_candidate_selection(ctree::ControlTree, cfg::AbstractGraph{T}) where {T}
   is_selection(ctree) || error("Cannot determine merge candidate for a node that is not a selection construct.")
-  p = find_parent(p -> is_selection(p) || is_loop(p) || is_block(p) && !is_last_in_block(p, ctree), ctree)
-  # If the selection is a top-level construct, we can choose an arbitrary children, but we still need to provide a merge header.
+  if is_switch(ctree)
+    # First look whether any of the switch targets is a merge block itself.
+    target_nodes = [node_index(target) for target in children(ctree) if node_index(target) ≠ node_index(ctree)]
+    candidate = nothing
+    for target in target_nodes
+      for v in outneighbors(cfg, target)
+        !in(v, target_nodes) && (isnothing(candidate) ? (candidate = target; break) : @goto no_candidate_found)
+      end
+    end
+    !isnothing(candidate) && return candidate
+    @label no_candidate_found
+  end
+  p = find_parent(p -> (is_selection(p) && !is_switch(p)) || is_loop(p) || is_block(p) && !is_last_in_block(p, ctree), ctree)
+  # If the selection is a top-level construct, we can choose an arbitrary child, but we still need to provide a merge header.
   isnothing(p) && return node_index(last(ctree))
   is_selection(p) && return merge_candidate(p, cfg)
   i = findfirst(c -> !isnothing(find_subtree(==(node_index(ctree)) ∘ node_index, c)), p.children)
@@ -125,7 +140,7 @@ function (pass!::RestructureProperRegions)(ir::IR, fdef::FunctionDefinition)
       subgraph = node_index.(PreOrderDFS(domsubtree))
       for w′ in subgraph
         for c in outneighbors(cfg, w′)
-          in(c, subgraph) && continue
+          in(c, subgraph) && !isempty(outneighbors(cfg, c)) && continue
           in(c, region) || continue
           continuation_edge = Edge(w′, c)
           push!(continuation_edges, continuation_edge)
@@ -133,7 +148,7 @@ function (pass!::RestructureProperRegions)(ir::IR, fdef::FunctionDefinition)
       end
     end
     tail = unique!(dst.(continuation_edges))
-    @assert length(tail) > 1 "A proper region has a tail consisting of only one node; this region appears to be already structured"
+    length(tail) > 1 || error("A proper region has a tail consisting of a single node; this region therefore appears to be structured already.")
 
     new = new_block!(fdef, next!(idcounter))
     us = unique!(src.(continuation_edges))
@@ -164,7 +179,10 @@ function (pass!::RestructureProperRegions)(ir::IR, fdef::FunctionDefinition)
       elseif length(ws) == 2
         a, b = ws
         if in(a, tail) && in(b, tail)
-          select_ex = @ex next!(idcounter) = OpSelect(emit_constant!.(ir, Constant.(((a)U, (b)U)))...)::U32
+          ex = termination_expression(blk)
+          assert_opcode(OpBranchConditional, ex)
+          cond = ex[1]::ResultID
+          select_ex = @ex next!(idcounter) = OpSelect(cond, emit_constant!.(ir, Constant.(((a)U, (b)U)))...)::U32
           blk[end] = select_ex
           selection_value = select_ex.result
           push!(blk, @ex Branch(new.id))
@@ -182,6 +200,7 @@ function (pass!::RestructureProperRegions)(ir::IR, fdef::FunctionDefinition)
 
     push!(new, selection)
     push!(new, branch)
+    @debug "Restructured proper region $region with merge target $(lastindex(fdef.block_ids)) branched to by nodes $us"
 
     # Continue until no proper regions are left.
     return pass!(ir, fdef)
@@ -198,6 +217,7 @@ new_function!(pass!::RestructureMergeBlocks, fdef::FunctionDefinition) = empty!(
 restructure_merge_blocks!(ir::IR) = RestructureMergeBlocks(ir)(ir)
 
 function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
+  @debug "Starting RestructureMergeBlocks pass"
   cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
   back_edges = backedges(cfg)
@@ -214,6 +234,7 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
     outer_construct = find_parent(p -> is_selection(p) || is_loop(p), ctree)
     isnothing(outer_construct) && continue
     merge_inner, merge_outer = merge_candidate.((ctree, outer_construct), cfg)
+    @debug "Evaluating merge candidates for node $(node_index(ctree)) (parent: $(node_index(outer_construct))): merge_inner = $merge_inner, merge_outer = $merge_outer"
     if merge_inner ≠ merge_outer
       is_loop(outer_construct) || continue
       # If `merge_inner` is the continue target of the outer loop,
@@ -244,6 +265,7 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
     intercept_phi_instructions!!(pass!.idcounter, branching_blks, new, merge_blk)
 
     push!(new, @ex OpBranch(merge_blk.id))
+    @debug "Restructured node $(node_index(ctree)) by creating merge node $(lastindex(fdef.block_ids)) (pass to be reapplied on: $(node_index(outer_construct)))"
     push!(pass!.restructured, node_index(ctree))
     push!(reapply_on, node_index(outer_construct))
   end

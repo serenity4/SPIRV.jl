@@ -105,15 +105,29 @@ end
 
 @active switch_region(args) begin
   @when (g, v) = args begin
-    candidate = nothing
-    length(outneighbors(g, v)) > 1 || return
-    for w in outneighbors(g, v)
-      !is_single_entry_single_exit(g, w) && return
-      isnothing(candidate) && (candidate = only(outneighbors(g, w)))
-      candidate == v && return
-      only(outneighbors(g, w)) ≠ candidate && return
+    ws = outneighbors(g, v)
+    length(ws) ≥ 2 || return
+    break_candidate = nothing
+    for w in ws
+      us = inneighbors(g, w)
+      length(us) ≤ 2 || return
+      for u in us
+        u == v || in(u, ws) && u ≠ w || return
+      end
+      out = outneighbors(g, w)
+      length(out) ≤ 2 || return
+      # Consider that a termination region instead.
+      length(ws) == 2 && isempty(out) && return
+      for w′ in out
+        in(w′, ws) && continue
+        if isnothing(break_candidate)
+          w′ == v && return
+          break_candidate = w′
+        end
+        w′ == break_candidate || return
+      end
     end
-    (outneighbors(g, v), candidate)
+    Some(ws)
   end
 end
 
@@ -132,7 +146,7 @@ function acyclic_region(g, v, ec, doms, domtrees, backedges)
     block_region(vs) => return (REGION_BLOCK, vs)
     if_then_region(v, t, m) => return (REGION_IF_THEN, [v, t])
     if_then_else_region(v, t, e, m) => return (REGION_IF_THEN_ELSE, [v, t, e])
-    switch_region(branches, target) => return (REGION_SWITCH, [v; branches; target])
+    switch_region(branches) => return (REGION_SWITCH, [v; branches])
   end
   @trymatch (g, v, backedges) begin
     termination_region(termination_blocks) => return (REGION_TERMINATION, [v; termination_blocks])
@@ -285,11 +299,13 @@ is_loop(ctree::ControlTree) = in(region_type(ctree), (REGION_NATURAL_LOOP, REGIO
 is_selection(ctree::ControlTree) = in(region_type(ctree), (REGION_IF_THEN, REGION_IF_THEN_ELSE, REGION_SWITCH, REGION_TERMINATION))
 is_block(ctree::ControlTree) = region_type(ctree) == REGION_BLOCK
 is_proper_region(ctree::ControlTree) = region_type(ctree) == REGION_PROPER
+is_switch(ctree::ControlTree) = region_type(ctree) == REGION_SWITCH
 
 is_single_entry_single_exit(g::AbstractGraph, v) = length(inneighbors(g, v)) == 1 && length(outneighbors(g, v)) == 1
 is_single_entry_single_exit(g::AbstractGraph) = is_weakly_connected(g) && length(sinks(g)) == length(sources(g)) == 1
 
 ControlTree(cfg::ControlFlowGraph) = ControlTree(cfg.g)
+ControlTree(fdef::FunctionDefinition) = ControlTree(control_flow_graph(fdef))
 
 function ControlTree(cfg::AbstractGraph{T}) where {T}
   dfst = SpanningTreeDFS(cfg)

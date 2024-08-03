@@ -30,6 +30,7 @@ load_module(file) = load_module(load_module_expr(file))
   include("passes.jl");
   include("codegen.jl");
   include("graphs.jl")
+  # include("plot.jl")
   include("analysis.jl");
   include("restructuring.jl");
   include("frontend.jl");

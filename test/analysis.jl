@@ -208,13 +208,13 @@ end
         @test acyclic_region(g, 1) == (REGION_IF_THEN_ELSE, [1, 2, 3])
 
         g = DeltaGraph(5, 1 => 2, 1 => 3, 1 => 4, 2 => 5, 3 => 5, 4 => 5)
-        @test acyclic_region(g, 1) == (REGION_SWITCH, [1, 2, 3, 4, 5])
+        @test acyclic_region(g, 1) == (REGION_SWITCH, [1, 2, 3, 4])
+
+        g = DeltaGraph(4, 1 => 2, 1 => 3, 1 => 4)
+        @test acyclic_region(g, 1) == (REGION_SWITCH, [1, 2, 3, 4])
 
         g = DeltaGraph(3, 1 => 2, 1 => 3)
         @test acyclic_region(g, 1) == (REGION_TERMINATION, [1, 2, 3])
-
-        g = DeltaGraph(4, 1 => 2, 1 => 3, 1 => 4)
-        @test acyclic_region(g, 1) == (REGION_TERMINATION, [1, 2, 3, 4])
 
         g = DeltaGraph(4, 1 => 2, 2 => 3, 2 => 4, 3 => 2)
         @test cyclic_region(g, 2) == (REGION_WHILE_LOOP, [2, 3])
@@ -590,6 +590,44 @@ end
               ControlTree(20, REGION_BLOCK),
             ]),
           ]),
+        ])
+
+        g = g25()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_SWITCH, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
+          ]),
+          ControlTree(5, REGION_BLOCK),
+        ])
+
+        g = g26()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_SWITCH, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+            ControlTree(4, REGION_BLOCK),
+          ]),
+          ControlTree(5, REGION_BLOCK),
+        ])
+
+        g = g27()
+        ctree = ControlTree(g)
+        test_coverage(g, ctree)
+        @test ctree == ControlTree(1, REGION_BLOCK, [
+          ControlTree(1, REGION_SWITCH, [
+            ControlTree(1, REGION_BLOCK),
+            ControlTree(2, REGION_BLOCK),
+            ControlTree(3, REGION_BLOCK),
+            ]),
+          ControlTree(4, REGION_BLOCK),
         ])
       end
     end

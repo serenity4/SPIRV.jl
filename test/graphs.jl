@@ -53,6 +53,18 @@ g22() = DeltaGraph(1 => 2, 2 => 3, 3 => 4, 3 => 5, 4 => 6, 5 => 6, 2 => 5)
 g23() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 8, 3 => 6, 4 => 5, 4 => 6, 5 => 7, 6 => 7, 7 => 8, 8 => 9, 8 => 10, 9 => 19, 10 => 11, 10 => 12, 11 => 16, 12 => 13, 12 => 14, 13 => 15, 14 => 15, 15 => 16, 16 => 17, 16 => 18, 17 => 19, 18 => 20, 19 => 20)
 "CFG with a proper region made of unstructured selections."
 g24() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 4, 3 => 5, 4 => 6, 5 => 6)
+"CFG that consists of a simple switch region without fall-through."
+g25() = DeltaGraph(1 => 2, 1 => 3, 1 => 4, 2 => 5, 3 => 5, 4 => 5)
+"CFG that consists of a simple switch region with fall-through."
+g26() = DeltaGraph(1 => 2, 1 => 3, 1 => 4, 2 => 3, 2 => 5, 3 => 4, 3 => 5, 4 => 5)
+"CFG that consists of a simple switch region with fall-through with only 2 branches."
+g27() = DeltaGraph(1 => 2, 1 => 3, 2 => 3, 2 => 4, 3 => 4)
+"Proper region in which one branch contains a termination node, with only one standard continuation node."
+g28() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 3 => 7, 4 => 6, 5 => 6, 5 => 7)
+# FIXME: Restructuring fails.
+g29() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 7, 4 => 6, 4 => 8, 6 => 8, 8 => 7, 6 => 5, 5 => 7)
+# FIXME: ControlTree construction fails.
+g30() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 4 => 6, 4 => 7, 6 => 7, 7 => 3, 6 => 5, 5 => 3)
 
 """
 Generate a minimal SPIR-V IR or module which contains dummy blocks realizing the provided control-flow graph.
@@ -67,6 +79,7 @@ function ir_from_cfg(cfg; structured = false, phi = false)
     Bool = TypeBool()
     Float32 = TypeFloat(32)
     Int32 = TypeInt(32, 1)
+    Int16 = TypeInt(16, 1)
   end
 
   label(v) = Symbol(:b, v)
@@ -90,10 +103,10 @@ function ir_from_cfg(cfg; structured = false, phi = false)
         for u in ins
           phi_counter += 1
           x = Symbol(identifier, :_, u)
-          push!(global_decls.args, :($x = Constant($(Int32(phi_counter)))::Int32))
+          push!(global_decls.args, :($x = Constant($(Int16(phi_counter)))::Int16))
           push!(arguments, x, label(u))
         end
-        inst = :($identifier = Phi($(arguments...))::Int32)
+        inst = :($identifier = Phi($(arguments...))::Int16)
         push!(insts, inst)
       end
     end
@@ -121,7 +134,7 @@ function ir_from_cfg(cfg; structured = false, phi = false)
   ex = Expr(:block, global_decls.args..., func)
   ir = load_ir(ex)
   !structured && return ir
-  push!(empty!(ir.capabilities), SPIRV.CapabilityShader)
+  push!(empty!(ir.capabilities), SPIRV.CapabilityShader, SPIRV.CapabilityInt16)
   # For some reason, we need the GLSL memory model to trigger CFG validation errors.
   ir.memory_model = SPIRV.MemoryModelGLSL450
   ir

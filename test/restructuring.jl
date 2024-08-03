@@ -196,18 +196,15 @@
   add_merge_headers!(ir)
   @test unwrap(validate(ir))
 
-  ir = ir_from_cfg(g23(); structured = true, phi = true)
-  # FIXME: Switch regions are not recognized by the structural analysis.
-  @test_broken begin
-    restructure_proper_regions!(ir)
-    restructure_merge_blocks!(ir)
-    add_merge_headers!(ir)
-    @test unwrap(validate(ir))
-  end
+  ir = ir_from_cfg(g24(); structured = true, phi = true)
+  restructure_proper_regions!(ir)
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test unwrap(validate(ir))
 
-  # ir = IR(read(SPIRV.Module, "issue.spvasm"))
-  # ir = IR(read(SPIRV.Module, "issue2.spvasm"))
-  # # ctree = ControlTree(g21())
-  # restructure_merge_blocks!(ir)
-  # plotcfg(ir[1])
+  ir = ir_from_cfg(g28(); structured = true, phi = true)
+  restructure_proper_regions!(ir)
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test unwrap(validate(ir))
 end;

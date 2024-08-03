@@ -13,22 +13,22 @@ function edgecolors(cfg::ControlFlowGraph)
     in(edge, classification.retreating_edges) && insert!(colors, key, :green)
     in(edge, classification.tree_edges) && insert!(colors, key, :gray)
     in(edge, classification.forward_edges) && insert!(colors, key, "#55aaaa")
-    in(edge, classification.cross_edges) && insert!(colors, key, :red)
+    in(edge, classification.cross_edges) && insert!(colors, key, "#aa22aa")
     haskey(colors, key) || error("Unclassified edge: $edge")
   end
   colors
 end
 
-plotcfg(g; names = Graphs.vertices(g), nodesize = 0.3, size = (1000, 1000), nodeshape = :circle, nodecolor = "#ffbb00", background_color = "rgb(10, 10, 12)", edgecolor=:gray, kwargs...) = plot(g; names, nodesize, size, nodeshape, nodecolor, background_color, edgecolor, kwargs...)
+plotcfg(g; names = Graphs.vertices(g), nodesize = 0.3, size = (1000, 1000), nodeshape = :circle, nodecolor = ["#ffabff"; fill("#ffbb00", Graphs.nv(g) - 1)], background_color = "rgb(10, 10, 12)", edgecolor=:gray, curvature = 0.01, kwargs...) = plot(g; names, nodesize, size, nodeshape, nodecolor, background_color, edgecolor, curvature, kwargs...)
 plotcfg(g::DeltaGraph; kwargs...) = plotcfg(SimpleDiGraph(g); kwargs...)
 plotcfg(tgt::SPIRV.SPIRVTarget; kwargs...) = plotcfg(tgt.cfg; kwargs...)
 plotcfg(cfg::ControlFlowGraph; kwargs...) = plotcfg(cfg.g; edgecolor=edgecolors(cfg), kwargs...)
 plotcfg(mod::SPIRV.Module; kwargs...) = plotcfg(IR(mod); kwargs...)
 plotcfg(ir::IR; kwargs...) = plotcfg(only(ir); kwargs...)
 plotcfg(shader::SPIRV.Shader; kwargs...) = plotcfg(shader.ir; kwargs...)
-function plotcfg(fdef::SPIRV.FunctionDefinition; ssa_indices = true, kwargs...)
+function plotcfg(fdef::SPIRV.FunctionDefinition; ssa = true, kwargs...)
   isa(fdef, Integer) && (fdef = collect(ir.fdefs)[fdef])
-  if ssa_indices
+  if ssa
     names = fdef.block_ids
     plotcfg(ControlFlowGraph(fdef); names, nodesize = 0.2, kwargs...)
   else

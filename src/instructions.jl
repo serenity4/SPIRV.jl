@@ -33,7 +33,7 @@ Instruction(opcode, type_id, result_id, arguments...) = Instruction(opcode, type
 
 const InstructionCursor = ArrayCursor{Instruction}
 
-assert_opcode(opcode, inst) = opcode == inst.opcode || error("Expected $opcode instruction, got ", sprintc(emit, inst))
+assert_opcode(op, inst) = op == opcode(inst) || error("Expected $op instruction, got ", sprintc(emit, inst))
 
 has_result_id(inst::AbstractInstruction, id::ResultID) = result_id(inst) === id
 has_result_id(id::ResultID) = Fix2(has_result_id, id)
