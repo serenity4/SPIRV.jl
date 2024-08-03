@@ -207,4 +207,18 @@
   restructure_merge_blocks!(ir)
   add_merge_headers!(ir)
   @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g29(); structured = true, phi = true)
+  restructure_proper_regions!(ir)
+  restructure_merge_blocks!(ir)
+  add_merge_headers!(ir)
+  @test unwrap(validate(ir))
+
+  ir = ir_from_cfg(g30(); structured = true, phi = true)
+  @test_broken begin
+    restructure_proper_regions!(ir)
+    restructure_merge_blocks!(ir)
+    add_merge_headers!(ir)
+    @test unwrap(validate(ir))
+  end
 end;

@@ -153,8 +153,10 @@ function acyclic_region(g, v, ec, doms, domtrees, backedges)
   end
 
   # Possibly a proper region.
+
   # Test that we don't have a loop or improper region.
   any(u -> in(Edge(u, v), backedges), inneighbors(g, v)) && return
+
   domtree = domtrees[v]
   pdom_indices = findall(children(domtree)) do tree
     w = node_index(tree)

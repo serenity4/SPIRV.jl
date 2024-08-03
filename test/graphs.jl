@@ -59,9 +59,9 @@ g25() = DeltaGraph(1 => 2, 1 => 3, 1 => 4, 2 => 5, 3 => 5, 4 => 5)
 g26() = DeltaGraph(1 => 2, 1 => 3, 1 => 4, 2 => 3, 2 => 5, 3 => 4, 3 => 5, 4 => 5)
 "CFG that consists of a simple switch region with fall-through with only 2 branches."
 g27() = DeltaGraph(1 => 2, 1 => 3, 2 => 3, 2 => 4, 3 => 4)
-"Proper region in which one branch contains a termination node, with only one standard continuation node."
+"CFG containing a proper region in which one branch contains a termination node, with only one standard continuation node."
 g28() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 5, 3 => 7, 4 => 6, 5 => 6, 5 => 7)
-# FIXME: Restructuring fails.
+"CFG with a proper region that consists of unstructured selections where the part to be restructured lies further down the proper region's entry point."
 g29() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 3 => 7, 4 => 6, 4 => 8, 6 => 8, 8 => 7, 6 => 5, 5 => 7)
 # FIXME: ControlTree construction fails.
 g30() = DeltaGraph(1 => 2, 2 => 3, 2 => 4, 4 => 6, 4 => 7, 6 => 7, 7 => 3, 6 => 5, 5 => 3)

@@ -3,6 +3,8 @@ Result ID used in a SPIR-V context, following single static assignment rules for
 """
 primitive type ResultID 32 end
 
+Base.broadcastable(id::ResultID) = Ref(id)
+
 ResultID(id::UInt32) = reinterpret(ResultID, id)
 ResultID(id::Integer) = ResultID(UInt32(id))
 

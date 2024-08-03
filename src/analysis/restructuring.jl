@@ -119,36 +119,10 @@ function (pass!::RestructureProperRegions)(ir::IR, fdef::FunctionDefinition)
   cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
   T = eltype(cfg)
+  U32 = IntegerType(32, false)
   for ctree in PostOrderDFS(ctree_global)
     is_proper_region(ctree) || continue
-    U32 = IntegerType(32, false)
-    v = node_index(ctree)
-    region = node_index.(Leaves(ctree))
-    continuation_edges = Edge{T}[]
-    domsets = dominators(cfg, region, v)
-    domtree = DominatorTree(domsets)
-    for w in outneighbors(cfg, v)
-      edge = Edge(v, w)
-      if length(inneighbors(cfg, w)) > 1 && count(u -> !in(Edge(u, w), cfg.ec.retreating_edges), inneighbors(cfg, w)) > 1
-        # The branch edge doesn't dominate anything.
-        push!(continuation_edges, edge)
-        continue
-      end
-      immediate_pdoms = children(domtree)
-      index = findfirst(x -> node_index(x) == w, immediate_pdoms)
-      domsubtree = immediate_pdoms[index]
-      subgraph = node_index.(PreOrderDFS(domsubtree))
-      for w′ in subgraph
-        for c in outneighbors(cfg, w′)
-          in(c, subgraph) && !isempty(outneighbors(cfg, c)) && continue
-          in(c, region) || continue
-          continuation_edge = Edge(w′, c)
-          push!(continuation_edges, continuation_edge)
-        end
-      end
-    end
-    tail = unique!(dst.(continuation_edges))
-    length(tail) > 1 || error("A proper region has a tail consisting of a single node; this region therefore appears to be structured already.")
+    tail, continuation_edges = find_continuation_edges(cfg, ctree)
 
     new = new_block!(fdef, next!(idcounter))
     us = unique!(src.(continuation_edges))
@@ -200,11 +174,61 @@ function (pass!::RestructureProperRegions)(ir::IR, fdef::FunctionDefinition)
 
     push!(new, selection)
     push!(new, branch)
-    @debug "Restructured proper region $region with merge target $(lastindex(fdef.block_ids)) branched to by nodes $us"
+    @debug "Restructured proper region with merge target $(lastindex(fdef.block_ids)) branched to by nodes $us"
 
     # Continue until no proper regions are left.
     return pass!(ir, fdef)
   end
+end
+
+function find_continuation_edges!(continuation_edges, cfg::ControlFlowGraph, ctree::ControlTree, domtree::DominatorTree, region)
+  v = node_index(ctree)
+  for w in outneighbors(cfg, v)
+    edge = Edge(v, w)
+    if length(inneighbors(cfg, w)) > 1 && count(u -> !in(Edge(u, w), cfg.ec.retreating_edges), inneighbors(cfg, w)) > 1
+      # The branch edge doesn't dominate anything.
+      push!(continuation_edges, edge)
+      continue
+    end
+    immediate_pdoms = children(domtree)
+    index = findfirst(x -> node_index(x) == w, immediate_pdoms)
+    isnothing(index) && return
+    domsubtree = immediate_pdoms[index]
+    subgraph = node_index.(PreOrderDFS(domsubtree))
+    for w′ in subgraph
+      for c in outneighbors(cfg, w′)
+        in(c, subgraph) && !isempty(outneighbors(cfg, c)) && continue
+        in(c, region) || continue
+        continuation_edge = Edge(w′, c)
+        push!(continuation_edges, continuation_edge)
+      end
+    end
+  end
+  continuation_edges
+end
+
+function find_continuation_edges(cfg::ControlFlowGraph, rtree::ControlTree)
+  T = eltype(cfg)
+  region = node_index.(Leaves(rtree))
+  continuation_edges = Edge{T}[]
+  tail = T[]
+  v = node_index(rtree)
+  domsets = dominators(cfg, region, v)
+  domtree = DominatorTree(domsets)
+  # A proper region may be identified as such by a subregion that prevents from
+  # recognizing structured constructs elsewhere; this subregion may not start at `v`.
+  for ctree in children(rtree)
+    empty!(continuation_edges)
+    empty!(tail)
+    domsubtree = node_index(ctree) == v ? domtree : find_subtree(x -> node_index(x) == node_index(ctree), domtree)::DominatorTree
+    find_continuation_edges!(continuation_edges, cfg, ctree, domsubtree, region)
+    for edge in continuation_edges
+      push!(tail, dst(edge))
+    end
+    unique!(tail)
+    length(tail) > 1 && return (tail, continuation_edges)
+  end
+  error("A proper region has a tail consisting of a single node; this region therefore appears to be structured already.")
 end
 
 struct RestructureMergeBlocks <: FunctionPass
@@ -217,7 +241,6 @@ new_function!(pass!::RestructureMergeBlocks, fdef::FunctionDefinition) = empty!(
 restructure_merge_blocks!(ir::IR) = RestructureMergeBlocks(ir)(ir)
 
 function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
-  @debug "Starting RestructureMergeBlocks pass"
   cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
   back_edges = backedges(cfg)
@@ -245,7 +268,10 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
       continue_target = src(only(local_back_edges))
       merge_inner ≠ continue_target && continue
     end
-    in(node_index(ctree), reapply_on) && return pass!(fdef)
+    if in(node_index(ctree), reapply_on)
+      @debug "Restarting RestructureMergeBlocks pass"
+      return pass!(fdef)
+    end
     merge_blk = fdef[merge_inner]
 
     # We will in general have only one branching block for selection constructs
@@ -265,7 +291,7 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
     intercept_phi_instructions!!(pass!.idcounter, branching_blks, new, merge_blk)
 
     push!(new, @ex OpBranch(merge_blk.id))
-    @debug "Restructured node $(node_index(ctree)) by creating merge node $(lastindex(fdef.block_ids)) (pass to be reapplied on: $(node_index(outer_construct)))"
+    @debug "Restructured node $(node_index(ctree)) by creating merge node $(lastindex(fdef.block_ids)) branched to by nodes $(block_index.(Ref(fdef), branching_blks)) (pass to be reapplied on: $(node_index(outer_construct)))"
     push!(pass!.restructured, node_index(ctree))
     push!(reapply_on, node_index(outer_construct))
   end
@@ -325,7 +351,7 @@ function redirect_branches!(from::Block, to::Block, new::Block)
     ex[index] = new.id
 
     @case &OpSwitch
-    indices = findall(==(to.id), ex)
+    indices = findall(x -> x === to.id, ex)
     !isempty(indices) || return
     ex[indices] .= new.id
   end

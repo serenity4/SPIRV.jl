@@ -276,6 +276,12 @@ end
     ci = SPIRV.@code_typed debuginfo=:source exp(::Float32)
     @test_code ci minlength = 2 maxlength = 2 # 1 intrinsic, 1 return
 
+    ci = SPIRV.@code_typed debuginfo=:source (^)(::Float32, ::UInt32)
+    @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 intrinsic, 1 return
+
+    ci = SPIRV.@code_typed debuginfo=:source (^)(::UInt32, ::Float64)
+    @test_code ci minlength = 3 maxlength = 3 # 1 conversion, 1 intrinsic, 1 return
+
     ci = SPIRV.@code_typed debuginfo=:source sum(::Vec4)
     @test_code ci minlength = 8 maxlength = 8 # 4 accesses, 3 additions, 1 return
 

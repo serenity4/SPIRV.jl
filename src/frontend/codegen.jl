@@ -28,9 +28,10 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
           idx::Integer => idx
           idx::Core.SSAValue => @match spir_type(target, tr, args[1]) begin
             # Dynamic accesses into arrays are supported, but not via
-            # OpCompositeExtract; we'll need to convert this instruction
-            # to an OpVariable + OpStore + OpAccessChain + OpLoad chain.
+            # CompositeExtract; we'll need to convert this instruction
+            # to a suitable AccessChain + Load chain.
             # We do this in the pass `composite_extract_to_access_chain_load!`.
+            # XXX: `idx` may be an `Int64`.
             ::ArrayType => idx
             _ => throw_compilation_error("dynamic access into inhomogeneous tuple or struct members is not supported")
           end

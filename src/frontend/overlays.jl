@@ -206,6 +206,12 @@ end
 
 @override getindex(x::Number, i::Integer) = x
 
+## Avoid spurious branching.
+
+@override in(x, itr::NTuple{N,T}) where {N,T} = in(x, SVector{N,T}(itr))
+@override in(x, itr::Tuple) = mapreduce(==(x), |, itr; init = false)
+@override in(x, itr::Tuple{}) = false
+
 # Miscellaneous Base methods which use intrinsics that don't map well to SPIR-V.
 
 # Math functions using intrinsics directly.
@@ -407,6 +413,8 @@ end
 @override_glsl sign(x::IEEEFloat) = FSign(x)
 @override_glsl sign(x::BitSigned) = SSign(x)
 @override_glsl ^(x::T, y::T) where {T<:IEEEFloat} = Pow(x, y)
+@override_glsl ^(x::IEEEFloat, y::IEEEFloat) = Pow(promote(x, y)...)
+@override_glsl ^(x::IEEEFloat, y::Integer) = Pow(promote(x, Float32(y))...)
 
 @override_glsl min(x::T, y::T) where {T<:IEEEFloat}   = FMin(x, y)
 @override_glsl min(x::T, y::T) where {T<:BitSigned}   = SMin(x, y)

@@ -145,7 +145,7 @@ function (::RemapDynamic1BasedIndices)(ir::IR, fdef::FunctionDefinition)
             get!(() -> next!(ir.idcounter), ir.types, c.type)
             one = get!(() -> next!(ir.idcounter), ir.constants, c)
             ret = next!(ir.idcounter)
-            decrement = @ex ret = OpISub(arg, one)::IntegerType(32, false)
+            decrement = @ex ret = ISub(arg, one)::IntegerType(32, false)
             push!(insert, j => decrement)
             ex[i] = ret
           end

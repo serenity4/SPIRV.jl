@@ -13,7 +13,7 @@ Semantically, `Expression`s do not express type declarations.
 end
 
 @forward_interface Expression field = :args interface = [iteration, indexing]
-@forward_methods Expression field = :args Base.view(_, range) Base.push!(_, args...) Base.keys
+@forward_methods Expression field = :args Base.view(_, range) Base.dotview(_, range) Base.push!(_, args...) Base.keys
 
 opcode(ex::Expression) = ex.op
 result_id(ex::Expression) = ex.result
