@@ -8,6 +8,7 @@ SPIRV = "84138a67-b342-4d33-8200-33cfcca52eb2"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Swizzles = "60694085-d904-4bfc-95dc-1e0e768e9359"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
 
 [sources]
 About = {url = "https://github.com/tecosaur/About.jl"}
