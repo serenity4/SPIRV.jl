@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Creating a shader · SPIRV.jl</title><meta name="title" content="Creating a shader · SPIRV.jl"/><meta property="og:title" content="Creating a shader · SPIRV.jl"/><meta property="twitter:title" content="Creating a shader · SPIRV.jl"/><meta name="description" content="Documentation for SPIRV.jl."/><meta property="og:description" content="Documentation for SPIRV.jl."/><meta property="twitter:description" content="Documentation for SPIRV.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">SPIRV.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">SPIRV.jl</a></li><li><a class="tocitem" href="../../intro/">Introduction</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../manipulating_spirv/">Manipulating SPIR-V binaries</a></li><li class="is-active"><a class="tocitem" href>Creating a shader</a></li><li><a class="tocitem" href="../executing_a_shader/">Executing a shader</a></li></ul></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../../reference/shader_compilation/">Julia → SPIR-V compiler</a></li><li><a class="tocitem" href="../../reference/bit_width/">Integer and float bit widths</a></li></ul></li><li><a class="tocitem" href="../../features/">Features</a></li><li><a class="tocitem" href="../../api/">API</a></li><li><a class="tocitem" href="../../devdocs/">Developer documentation</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Creating a shader</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Creating a shader</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/serenity4/SPIRV.jl/blob/main/docs/src/tutorials/creating_a_shader.jl#L" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="tutorial-creating-a-shader"><a class="docs-heading-anchor" href="#tutorial-creating-a-shader">Creating a shader</a><a id="tutorial-creating-a-shader-1"></a><a class="docs-heading-anchor-permalink" href="#tutorial-creating-a-shader" title="Permalink"></a></h1><p>This tutorial will show you how to create a SPIR-V shader using the experimental <a href="../../reference/shader_compilation/#compiler">Julia → SPIR-V compiler</a>.</p><p>When creating a shader, the corresponding method will typically mutate some built-in output variables, and may interact with GPU memory. Let&#39;s for example define a fragment shader that colors all pixels with the same color. We&#39;ll be using <a href="https://github.com/serenity4/Swizzles.jl">Swizzles.jl</a>, which allows us to conveniently use color-related property names and store to various subparts of a vector efficiently.</p><pre><code class="language-julia hljs">using SPIRV: Vec3, Vec4, Mutable
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Creating a shader · SPIRV.jl</title><meta name="title" content="Creating a shader · SPIRV.jl"/><meta property="og:title" content="Creating a shader · SPIRV.jl"/><meta property="twitter:title" content="Creating a shader · SPIRV.jl"/><meta name="description" content="Documentation for SPIRV.jl."/><meta property="og:description" content="Documentation for SPIRV.jl."/><meta property="twitter:description" content="Documentation for SPIRV.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">SPIRV.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">SPIRV.jl</a></li><li><a class="tocitem" href="../../intro/">Introduction</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../manipulating_spirv/">Manipulating SPIR-V binaries</a></li><li class="is-active"><a class="tocitem" href>Creating a shader</a><ul class="internal"><li><a class="tocitem" href="#tutorial-compiling-a-shader"><span>Compiling a shader</span></a></li><li class="toplevel"><a class="tocitem" href="#Executing-a-shader-with-Vulkan"><span>Executing a shader with Vulkan</span></a></li></ul></li></ul></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../../reference/shader_compilation/">Julia → SPIR-V compiler</a></li><li><a class="tocitem" href="../../reference/bit_width/">Integer and float bit widths</a></li></ul></li><li><a class="tocitem" href="../../features/">Features</a></li><li><a class="tocitem" href="../../api/">API</a></li><li><a class="tocitem" href="../../devdocs/">Developer documentation</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Creating a shader</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Creating a shader</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/serenity4/SPIRV.jl/blob/main/docs/src/tutorials/creating_a_shader.jl#L" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="tutorial-creating-a-shader"><a class="docs-heading-anchor" href="#tutorial-creating-a-shader">Creating a shader</a><a id="tutorial-creating-a-shader-1"></a><a class="docs-heading-anchor-permalink" href="#tutorial-creating-a-shader" title="Permalink"></a></h1><p>This tutorial will show you how to:</p><ul><li>Create a SPIR-V shader using the experimental <a href="../../reference/shader_compilation/#compiler">Julia → SPIR-V compiler</a>.</li><li>Execute it using <a href="https://github.com/JuliaGPU/Vulkan.jl">Vulkan.jl</a>.</li></ul><h2 id="tutorial-compiling-a-shader"><a class="docs-heading-anchor" href="#tutorial-compiling-a-shader">Compiling a shader</a><a id="tutorial-compiling-a-shader-1"></a><a class="docs-heading-anchor-permalink" href="#tutorial-compiling-a-shader" title="Permalink"></a></h2><p>To create a shader, a method is to be defined that will typically mutate some built-in output variables, and may interact with GPU memory.</p><p>We will first quickly show how to compile a simplistic fragment shader, then move on to compiling a compute shader that we will execute in the second part of this tutorial.</p><p>Let&#39;s for example define a fragment shader that colors all pixels with the same color. We&#39;ll be using <a href="https://github.com/serenity4/Swizzles.jl">Swizzles.jl</a>, which allows us to conveniently use color-related property names and store to various subparts of a vector efficiently.</p><pre><code class="language-julia hljs">using SPIRV: Vec3, Vec4, Mutable
 using Swizzles: @swizzle
 
 struct FragmentData
@@ -10,12 +10,12 @@ end
 function fragment_shader!(color::Mutable{Vec4}, data::FragmentData)
   @swizzle color.rgb = data.color
   @swizzle color.a = data.alpha
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">fragment_shader! (generic function with 1 method)</code></pre><p>This is a regular Julia function, which we may even test on the CPU to make sure it does what we want.</p><pre><code class="language-julia hljs">color = Mutable(Vec4(0, 0, 0, 0))
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">fragment_shader! (generic function with 1 method)</code></pre><p>This is a regular Julia function, which we may quickly test on the CPU first.</p><pre><code class="language-julia hljs">color = Mutable(Vec4(0, 0, 0, 0))
 white = Vec3(1, 1, 1)
 data = FragmentData(white, 1)
 fragment_shader!(color, data)
 @assert color[1:3] == data.color
-@assert color[4] == data.alpha</code></pre><p>Let&#39;s compile this shader now. We&#39;ll also need to specify where the arguments will come from at the time of execution, as we can&#39;t provide it with values as we would a Julia function.</p><p>In Vulkan, the value of the current pixel <a href="https://registry.khronos.org/vulkan/specs/1.3-extensions/html/chap15.html#interfaces-fragmentoutput">is encoded as a variable in the <code>Output</code> storage class</a>, assuming we want to write to the first (and usually the only one) color attachment of the render pass that this shader will be executed within.</p><p>As for the <code>FragmentData</code>, there are a couple of possibilities; we can for example put that into a push constant, though a uniform buffer would have worked just as well.</p><p>We will specify this information using the <a href="../../api/#SPIRV.@fragment-Tuple"><code>@fragment</code></a> macro, which accepts a handy syntax to annotate these arguments:</p><pre><code class="language-julia hljs">using SPIRV: @fragment
+@assert color[4] == data.alpha</code></pre><p>Let&#39;s compile this shader. We&#39;ll also need to specify where the arguments will come from at the time of execution, as we can&#39;t provide it with values as we would a Julia function.</p><p>In Vulkan, the value of the current pixel <a href="https://registry.khronos.org/vulkan/specs/1.3-extensions/html/chap15.html#interfaces-fragmentoutput">is encoded as a variable in the <code>Output</code> storage class</a>, assuming we want to write to the first (and usually the only one) color attachment of the render pass that this shader will be executed within.</p><p>As for the <code>FragmentData</code>, there are a couple of possibilities; we can for example put that into a push constant, though a uniform buffer would have worked just as well.</p><p>We will specify this information using the <a href="../../api/#SPIRV.@fragment-Tuple"><code>@fragment</code></a> macro, which accepts a handy syntax to annotate these arguments:</p><pre><code class="language-julia hljs">using SPIRV: @fragment
 
 shader = @fragment fragment_shader!(
   ::Mutable{Vec4}::Output,
@@ -34,7 +34,7 @@ shader = @fragment fragment_shader!(
   <span class="sgr36">│</span>        <span class="sgr96">MemoryModel</span>(<span class="sgr38_5" style="color:#ff8700">Logical</span>, <span class="sgr38_5" style="color:#ff8700">Vulkan</span>)
   <span class="sgr36">│</span>        <span class="sgr96">EntryPoint</span>(<span class="sgr38_5" style="color:#ff8700">Fragment</span>, <span class="sgr33">%26</span>, <span class="sgr38_5" style="color:#afd787">&quot;main&quot;</span>, <span class="sgr33">%color</span>, <span class="sgr33">%8</span>)
   <span class="sgr36">│</span>        <span class="sgr96">ExecutionMode</span>(<span class="sgr33">%26</span>, <span class="sgr38_5" style="color:#ff8700">OriginUpperLeft</span>)
-  <span class="sgr36">│</span>        <span class="sgr96">Name</span>(<span class="sgr33">%fragment_shader!_0xbf50ff5e52dd0c73</span>, <span class="sgr38_5" style="color:#afd787">&quot;fragment_shader!_0xbf50ff5e52dd0c73&quot;</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Name</span>(<span class="sgr33">%fragment_shader!_0xe8812b771516319b</span>, <span class="sgr38_5" style="color:#afd787">&quot;fragment_shader!_0xe8812b771516319b&quot;</span>)
   <span class="sgr36">│</span>        <span class="sgr96">Name</span>(<span class="sgr33">%color</span>, <span class="sgr38_5" style="color:#afd787">&quot;color&quot;</span>)
   <span class="sgr36">│</span>        <span class="sgr96">Name</span>(<span class="sgr33">%data</span>, <span class="sgr38_5" style="color:#afd787">&quot;data&quot;</span>)
   <span class="sgr36">│</span>        <span class="sgr96">Decorate</span>(<span class="sgr33">%6</span>, <span class="sgr38_5" style="color:#ff8700">Block</span>)
@@ -52,7 +52,7 @@ shader = @fragment fragment_shader!(
   <span class="sgr36">│</span>   <span class="sgr33">%9</span> = <span class="sgr96">TypeFunction</span>(<span class="sgr33">%2</span>, <span class="sgr33">%6</span>)
   <span class="sgr36">│</span>  <span class="sgr33">%24</span> = <span class="sgr96">TypeVoid</span>()
   <span class="sgr36">│</span>  <span class="sgr33">%25</span> = <span class="sgr96">TypeFunction</span>(<span class="sgr33">%24</span>)
-  <span class="sgr36">│</span>  <span class="sgr33">%fragment_shader!_0xbf50ff5e52dd0c73</span> = <span class="sgr96">Function</span>(<span class="sgr95">None</span>, <span class="sgr33">%9</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%fragment_shader!_0xe8812b771516319b</span> = <span class="sgr96">Function</span>(<span class="sgr95">None</span>, <span class="sgr33">%9</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
   <span class="sgr36">│</span>  <span class="sgr33">%data</span> = <span class="sgr96">FunctionParameter</span>()<span class="sgr92"><span class="sgr1">::%6</span></span>
   <span class="sgr36">│</span>  <span class="sgr33">%12</span> = <span class="sgr38_5" style="color:#ff5f00">Label</span>()
   <span class="sgr36">│</span>  <span class="sgr33">%13</span> = <span class="sgr96">CompositeExtract</span>(<span class="sgr33">%data</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)<span class="sgr92"><span class="sgr1">::%5</span></span>
@@ -73,11 +73,11 @@ shader = @fragment fragment_shader!(
   <span class="sgr36">│</span>  <span class="sgr33">%26</span> = <span class="sgr96">Function</span>(<span class="sgr95">None</span>, <span class="sgr33">%25</span>)<span class="sgr92"><span class="sgr1">::%24</span></span>
   <span class="sgr36">│</span>  <span class="sgr33">%27</span> = <span class="sgr38_5" style="color:#ff5f00">Label</span>()
   <span class="sgr36">│</span>  <span class="sgr33">%28</span> = <span class="sgr96">Load</span>(<span class="sgr33">%8</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
-  <span class="sgr36">│</span>  <span class="sgr33">%29</span> = <span class="sgr96">FunctionCall</span>(<span class="sgr33">%fragment_shader!_0xbf50ff5e52dd0c73</span>, <span class="sgr33">%28</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%29</span> = <span class="sgr96">FunctionCall</span>(<span class="sgr33">%fragment_shader!_0xe8812b771516319b</span>, <span class="sgr33">%28</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
   <span class="sgr36">│</span>        <span class="sgr38_5" style="color:#ff8787">Return</span>()
   <span class="sgr36">│</span>        <span class="sgr96">FunctionEnd</span>()</code></pre><pre><code class="language-julia hljs">using SPIRV: validate
 
-validate(shader)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Result(true)</code></pre><p>Neat! How should we execute it on the GPU now?</p><p>... Well, we can&#39;t, actually; or at least, not with SPIRV.jl alone. SPIR-V is an IR used by graphics APIs, so you will need a graphics API to run anything. And, as you probably know, we&#39;ll also need a vertex shader to run a fragment shader. This will be covered by another tutorial.</p><p>For fun, let&#39;s now generate a compute shader. We&#39;ll try to make it less trivial than our previous fragment shader. This time, we&#39;ll exponentiate a whole buffer across invocations.</p><p>We could setup a storage buffer, but for simplicity, we&#39;ll work with a memory address and a size instead, C-style, using the <a href="../../api/#SPIRV.@load-Tuple{Any}"><code>@load</code></a> and <a href="../../api/#SPIRV.@store"><code>@store</code></a> utilities provided by SPIRV.jl.</p><pre><code class="language- hljs">using SPIRV: @load, @store, @vec, U, Vec3U
+validate(shader)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Result(true)</code></pre><p>Neat! How should we execute it on the GPU now?</p><p>... Well, we can&#39;t, actually; or at least, not with SPIRV.jl alone. SPIR-V is an IR used by graphics APIs, so you will need a graphics API to run anything. And, as you probably know, we&#39;ll also need a vertex shader to run a fragment shader.</p><p>Let&#39;s now define our compute shdaer. We&#39;ll try to make it less trivial than our previous fragment shader. This time, we&#39;ll exponentiate a buffer where each invocation mutates a specific entry in that buffer.</p><p>We could setup a storage buffer, but for simplicity, we&#39;ll work with a memory address and a size instead, C-style, using the <a href="../../api/#SPIRV.@load-Tuple{Any}"><code>@load</code></a> and <a href="../../api/#SPIRV.@store"><code>@store</code></a> utilities provided by SPIRV.jl.</p><pre><code class="language-julia hljs">using SPIRV: @load, @store, @vec, U, Vec3U
 using StaticArrays
 using SPIRV.MathFunctions: linear_index
 
@@ -94,7 +94,7 @@ function compute_shader!((; buffer, size)::ComputeData, global_id::Vec3U)
   result = exp(value)
   1U ≤ index ≤ size &amp;&amp; @store result buffer[index]::Float32
   nothing
-end</code></pre><p>For the index into our vector of values, we&#39;ll rely on using one-dimensional workgroups to then use the current index among all dispatched invocations. SPIR-V provides the <code>GlobalInvocationId</code> built-in, which will be fed with this value.</p><p>You may notice that we use <code>1U</code>, which is simply some sugar syntax for <code>UInt32(1)</code>. We don&#39;t use the plain literal <code>1</code>. because we don&#39;t want <code>index</code> to widen to an <code>Int64</code>. See <a href="../../reference/bit_width/#Integer-and-float-bit-widths">Integer and float bit widths</a> for more details.</p><p>We can run this shader on the CPU to test it first, but it&#39;s a bit more hacky this time since we chose to work with a memory address.</p><p>Nonetheless, it&#39;s completely valid to take a pointer from an array and convert it to a <code>UInt64</code>, we can therefore proceed!</p><pre><code class="language- hljs">array = ones(Float32, 256)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">compute_shader! (generic function with 1 method)</code></pre><p>For the index into our vector of values, we&#39;ll rely on using one-dimensional workgroups to then use the current index among all dispatched invocations. SPIR-V provides the <code>GlobalInvocationId</code> built-in, which will be fed with this value.</p><p>You may notice that we use <code>1U</code>, which is simply some sugar syntax for <code>UInt32(1)</code>. We don&#39;t use the plain literal <code>1</code>. because we don&#39;t want <code>index</code> to widen to an <code>Int64</code>. See <a href="../../reference/bit_width/#Integer-and-float-bit-widths">Integer and float bit widths</a> for more details.</p><p>We can run this shader on the CPU to test it first, but it&#39;s a bit more hacky this time since we chose to work with a memory address.</p><p>Nonetheless, it&#39;s completely valid to take a pointer from an array and convert it to a <code>UInt64</code>, we can therefore proceed!</p><pre><code class="language-julia hljs">array = ones(Float32, 256)
 
 GC.@preserve array begin
   ptr = pointer(array)
@@ -104,9 +104,257 @@ GC.@preserve array begin
   compute_shader!(data, @vec UInt32[5, 0, 0])
 end
 
-array</code></pre><p>All good! Let&#39;s now turn it into a SPIR-V shader. Same as before, let&#39;s assume we&#39;ll provide the <code>ComputeData</code> with a push constant.</p><p>We&#39;ll also specify the workgroup size (or local invocation size, in SPIR-V terms, from the <code>LocalSize</code> <a href="https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_execution_mode">execution mode</a>). Let&#39;s set it to 64 x 1 x 1, and rely on it being later invoked with at least 4 workgroups to cover all 256 array elements. We could also go with a two-dimensional pattern, such as 8 x 8 x 1, but then we&#39;d need to do extra math in our shader to derive a linear index from a two-dimensional index, needlessly complicating things.</p><pre><code class="language- hljs">using SPIRV: @compute, ComputeExecutionOptions
+array</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">256-element Vector{Float32}:
+ 2.7182817
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 2.7182817
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ ⋮
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0</code></pre><p>All good! Let&#39;s now turn it into a SPIR-V shader. Same as before, let&#39;s assume we&#39;ll provide the <code>ComputeData</code> with a push constant.</p><p>We&#39;ll also specify the workgroup size (or local invocation size, in SPIR-V terms, from the <code>LocalSize</code> <a href="https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_execution_mode">execution mode</a>). Let&#39;s set it to 64 x 1 x 1, and rely on it being later invoked with at least 4 workgroups to cover all 256 array elements. We could also go with a two-dimensional pattern, such as 8 x 8 x 1, but then we&#39;d need to do extra math in our shader to derive a linear index from a two-dimensional index, needlessly complicating things.</p><pre><code class="language-julia hljs">using SPIRV: @compute, ComputeExecutionOptions
 
 shader = @compute compute_shader!(
   ::ComputeData::PushConstant,
   ::Vec3U::Input{GlobalInvocationId},
-) options = ComputeExecutionOptions(local_size = (64, 1, 1))</code></pre><pre><code class="language-julia hljs">validate(shader)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Result(true)</code></pre><p>Et voilà! Notice the <code>LocalSizeId</code> execution mode pointing to the constants <code>(64, 1, 1)</code> in the corresponding IR.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../manipulating_spirv/">« Manipulating SPIR-V binaries</a><a class="docs-footer-nextpage" href="../executing_a_shader/">Executing a shader »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Saturday 3 August 2024 22:12">Saturday 3 August 2024</span>. Using Julia version 1.12.0-DEV.982.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+) options = ComputeExecutionOptions(local_size = (64, 1, 1))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Shader (<span class="sgr38_5" style="color:#ff8700">GLCompute</span>, 35 function instructions):
+  <span class="sgr36">│</span>
+  <span class="sgr36">│</span>  SPIR-V
+  <span class="sgr36">│</span>  Version: 1.6
+  <span class="sgr36">│</span>  Generator: 0x12349876
+  <span class="sgr36">│</span>  Schema: 0
+  <span class="sgr36">│</span>  Bound: 52
+  <span class="sgr36">│</span>  
+  <span class="sgr36">│</span>  
+  <span class="sgr36">│</span>        <span class="sgr96">Capability</span>(<span class="sgr38_5" style="color:#ff8700">VulkanMemoryModel</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Capability</span>(<span class="sgr38_5" style="color:#ff8700">Int64</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Capability</span>(<span class="sgr38_5" style="color:#ff8700">PhysicalStorageBufferAddresses</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Capability</span>(<span class="sgr38_5" style="color:#ff8700">Addresses</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Extension</span>(<span class="sgr38_5" style="color:#afd787">&quot;SPV_EXT_physical_storage_buffer&quot;</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%28</span> = <span class="sgr96">ExtInstImport</span>(<span class="sgr38_5" style="color:#afd787">&quot;GLSL.std.450&quot;</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">MemoryModel</span>(<span class="sgr38_5" style="color:#ff8700">PhysicalStorageBuffer64</span>, <span class="sgr38_5" style="color:#ff8700">Vulkan</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">EntryPoint</span>(<span class="sgr38_5" style="color:#ff8700">GLCompute</span>, <span class="sgr33">%38</span>, <span class="sgr38_5" style="color:#afd787">&quot;main&quot;</span>, <span class="sgr33">%5</span>, <span class="sgr33">%8</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">ExecutionModeId</span>(<span class="sgr33">%38</span>, <span class="sgr38_5" style="color:#ff8700">LocalSizeId</span>, <span class="sgr33">%43</span>, <span class="sgr33">%44</span>, <span class="sgr33">%45</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Name</span>(<span class="sgr33">%compute_shader!_0xb501c7213c4cb00d</span>, <span class="sgr38_5" style="color:#afd787">&quot;compute_shader!_0xb501c7213c4cb00d&quot;</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Name</span>(<span class="sgr33">%12</span>, <span class="sgr38_5" style="color:#afd787">&quot;&quot;</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Name</span>(<span class="sgr33">%global_id</span>, <span class="sgr38_5" style="color:#afd787">&quot;global_id&quot;</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Decorate</span>(<span class="sgr33">%3</span>, <span class="sgr38_5" style="color:#ff8700">Block</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">MemberDecorate</span>(<span class="sgr33">%3</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>, <span class="sgr38_5" style="color:#ff8700">Offset</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">MemberDecorate</span>(<span class="sgr33">%3</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>, <span class="sgr38_5" style="color:#ff8700">Offset</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000008</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Decorate</span>(<span class="sgr33">%43</span>, <span class="sgr38_5" style="color:#ff8700">SpecId</span>, <span class="sgr38_5" style="color:#afd7ff">0x0000002b</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Decorate</span>(<span class="sgr33">%44</span>, <span class="sgr38_5" style="color:#ff8700">SpecId</span>, <span class="sgr38_5" style="color:#afd7ff">0x0000002c</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Decorate</span>(<span class="sgr33">%45</span>, <span class="sgr38_5" style="color:#ff8700">SpecId</span>, <span class="sgr38_5" style="color:#afd7ff">0x0000002d</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Decorate</span>(<span class="sgr33">%8</span>, <span class="sgr38_5" style="color:#ff8700">BuiltIn</span>, <span class="sgr38_5" style="color:#ff8700">GlobalInvocationId</span>)
+  <span class="sgr36">│</span>        <span class="sgr96">Decorate</span>(<span class="sgr33">%49</span>, <span class="sgr38_5" style="color:#ff8700">ArrayStride</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000004</span>)
+  <span class="sgr36">│</span>   <span class="sgr33">%1</span> = <span class="sgr96">TypeInt</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000040</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+  <span class="sgr36">│</span>   <span class="sgr33">%2</span> = <span class="sgr96">TypeInt</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000020</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)
+  <span class="sgr36">│</span>   <span class="sgr33">%3</span> = <span class="sgr96">TypeStruct</span>(<span class="sgr33">%1</span>, <span class="sgr33">%2</span>)
+  <span class="sgr36">│</span>   <span class="sgr33">%4</span> = <span class="sgr96">TypePointer</span>(<span class="sgr38_5" style="color:#ff8700">PushConstant</span>, <span class="sgr33">%3</span>)
+  <span class="sgr36">│</span>   <span class="sgr33">%5</span> = <span class="sgr96">Variable</span>(<span class="sgr38_5" style="color:#ff8700">PushConstant</span>)<span class="sgr92"><span class="sgr1">::%4</span></span>
+  <span class="sgr36">│</span>   <span class="sgr33">%6</span> = <span class="sgr96">TypeVector</span>(<span class="sgr33">%2</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000003</span>)
+  <span class="sgr36">│</span>   <span class="sgr33">%7</span> = <span class="sgr96">TypePointer</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>, <span class="sgr33">%6</span>)
+  <span class="sgr36">│</span>   <span class="sgr33">%8</span> = <span class="sgr96">Variable</span>(<span class="sgr38_5" style="color:#ff8700">Input</span>)<span class="sgr92"><span class="sgr1">::%7</span></span>
+  <span class="sgr36">│</span>   <span class="sgr33">%9</span> = <span class="sgr96">TypeVoid</span>()
+  <span class="sgr36">│</span>  <span class="sgr33">%10</span> = <span class="sgr96">TypeFunction</span>(<span class="sgr33">%9</span>, <span class="sgr33">%3</span>, <span class="sgr33">%6</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%23</span> = <span class="sgr96">Constant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%32</span> = <span class="sgr96">TypeBool</span>()
+  <span class="sgr36">│</span>  <span class="sgr33">%33</span> = <span class="sgr96">ConstantFalse</span>()<span class="sgr92"><span class="sgr1">::%32</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%37</span> = <span class="sgr96">TypeFunction</span>(<span class="sgr33">%9</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%43</span> = <span class="sgr96">SpecConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000040</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%44</span> = <span class="sgr96">SpecConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%45</span> = <span class="sgr96">SpecConstant</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%48</span> = <span class="sgr96">TypeFloat</span>(<span class="sgr38_5" style="color:#afd7ff">0x00000020</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%49</span> = <span class="sgr96">TypeRuntimeArray</span>(<span class="sgr33">%48</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%50</span> = <span class="sgr96">TypePointer</span>(<span class="sgr38_5" style="color:#ff8700">PhysicalStorageBuffer</span>, <span class="sgr33">%49</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%51</span> = <span class="sgr96">TypePointer</span>(<span class="sgr38_5" style="color:#ff8700">PhysicalStorageBuffer</span>, <span class="sgr33">%48</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%compute_shader!_0xb501c7213c4cb00d</span> = <span class="sgr96">Function</span>(<span class="sgr95">None</span>, <span class="sgr33">%10</span>)<span class="sgr92"><span class="sgr1">::%9</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%12</span> = <span class="sgr96">FunctionParameter</span>()<span class="sgr92"><span class="sgr1">::%3</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%global_id</span> = <span class="sgr96">FunctionParameter</span>()<span class="sgr92"><span class="sgr1">::%6</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%14</span> = <span class="sgr38_5" style="color:#ff5f00">Label</span>()
+  <span class="sgr36">│</span>  <span class="sgr33">%20</span> = <span class="sgr96">CompositeExtract</span>(<span class="sgr33">%12</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)<span class="sgr92"><span class="sgr1">::%1</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%21</span> = <span class="sgr96">CompositeExtract</span>(<span class="sgr33">%12</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000001</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%22</span> = <span class="sgr96">CompositeExtract</span>(<span class="sgr33">%global_id</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000000</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%24</span> = <span class="sgr96">IAdd</span>(<span class="sgr33">%22</span>, <span class="sgr33">%23</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%25</span> = <span class="sgr96">ConvertUToPtr</span>(<span class="sgr33">%20</span>)<span class="sgr92"><span class="sgr1">::%50</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%46</span> = <span class="sgr96">ISub</span>(<span class="sgr33">%24</span>, <span class="sgr33">%23</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%26</span> = <span class="sgr96">AccessChain</span>(<span class="sgr33">%25</span>, <span class="sgr33">%46</span>)<span class="sgr92"><span class="sgr1">::%51</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%27</span> = <span class="sgr96">Load</span>(<span class="sgr33">%26</span>, <span class="sgr95">Aligned</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000004</span>)<span class="sgr92"><span class="sgr1">::%48</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%29</span> = <span class="sgr96">ExtInst</span>(<span class="sgr33">%28</span>, <span class="sgr38_5" style="color:#afd7ff">Exp</span>, <span class="sgr33">%27</span>)<span class="sgr92"><span class="sgr1">::%48</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%30</span> = <span class="sgr96">ULessThanEqual</span>(<span class="sgr33">%23</span>, <span class="sgr33">%24</span>)<span class="sgr92"><span class="sgr1">::%32</span></span>
+  <span class="sgr36">│</span>        <span class="sgr96">SelectionMerge</span>(<span class="sgr33">%17</span>, <span class="sgr95">None</span>)
+  <span class="sgr36">│</span>        <span class="sgr38_5" style="color:#ff8787">BranchConditional</span>(<span class="sgr33">%30</span>, <span class="sgr33">%15</span>, <span class="sgr33">%16</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%16</span> = <span class="sgr38_5" style="color:#ff5f00">Label</span>()
+  <span class="sgr36">│</span>        <span class="sgr38_5" style="color:#ff8787">Branch</span>(<span class="sgr33">%17</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%15</span> = <span class="sgr38_5" style="color:#ff5f00">Label</span>()
+  <span class="sgr36">│</span>  <span class="sgr33">%31</span> = <span class="sgr96">ULessThanEqual</span>(<span class="sgr33">%24</span>, <span class="sgr33">%21</span>)<span class="sgr92"><span class="sgr1">::%32</span></span>
+  <span class="sgr36">│</span>        <span class="sgr38_5" style="color:#ff8787">Branch</span>(<span class="sgr33">%17</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%17</span> = <span class="sgr38_5" style="color:#ff5f00">Label</span>()
+  <span class="sgr36">│</span>  <span class="sgr33">%34</span> = <span class="sgr96">Phi</span>(<span class="sgr33">%31</span> =&gt; <span class="sgr33">%15</span>, <span class="sgr33">%33</span> =&gt; <span class="sgr33">%16</span>)<span class="sgr92"><span class="sgr1">::%32</span></span>
+  <span class="sgr36">│</span>        <span class="sgr96">SelectionMerge</span>(<span class="sgr33">%19</span>, <span class="sgr95">None</span>)
+  <span class="sgr36">│</span>        <span class="sgr38_5" style="color:#ff8787">BranchConditional</span>(<span class="sgr33">%34</span>, <span class="sgr33">%18</span>, <span class="sgr33">%19</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%18</span> = <span class="sgr38_5" style="color:#ff5f00">Label</span>()
+  <span class="sgr36">│</span>  <span class="sgr33">%35</span> = <span class="sgr96">ConvertUToPtr</span>(<span class="sgr33">%20</span>)<span class="sgr92"><span class="sgr1">::%50</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%47</span> = <span class="sgr96">ISub</span>(<span class="sgr33">%24</span>, <span class="sgr33">%23</span>)<span class="sgr92"><span class="sgr1">::%2</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%36</span> = <span class="sgr96">AccessChain</span>(<span class="sgr33">%35</span>, <span class="sgr33">%47</span>)<span class="sgr92"><span class="sgr1">::%51</span></span>
+  <span class="sgr36">│</span>        <span class="sgr96">Store</span>(<span class="sgr33">%36</span>, <span class="sgr33">%29</span>, <span class="sgr95">Aligned</span>, <span class="sgr38_5" style="color:#afd7ff">0x00000004</span>)
+  <span class="sgr36">│</span>        <span class="sgr38_5" style="color:#ff8787">Branch</span>(<span class="sgr33">%19</span>)
+  <span class="sgr36">│</span>  <span class="sgr33">%19</span> = <span class="sgr38_5" style="color:#ff5f00">Label</span>()
+  <span class="sgr36">│</span>        <span class="sgr38_5" style="color:#ff8787">Return</span>()
+  <span class="sgr36">│</span>        <span class="sgr96">FunctionEnd</span>()
+  <span class="sgr36">│</span>  <span class="sgr33">%38</span> = <span class="sgr96">Function</span>(<span class="sgr95">None</span>, <span class="sgr33">%37</span>)<span class="sgr92"><span class="sgr1">::%9</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%39</span> = <span class="sgr38_5" style="color:#ff5f00">Label</span>()
+  <span class="sgr36">│</span>  <span class="sgr33">%40</span> = <span class="sgr96">Load</span>(<span class="sgr33">%5</span>)<span class="sgr92"><span class="sgr1">::%3</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%41</span> = <span class="sgr96">Load</span>(<span class="sgr33">%8</span>)<span class="sgr92"><span class="sgr1">::%6</span></span>
+  <span class="sgr36">│</span>  <span class="sgr33">%42</span> = <span class="sgr96">FunctionCall</span>(<span class="sgr33">%compute_shader!_0xb501c7213c4cb00d</span>, <span class="sgr33">%40</span>, <span class="sgr33">%41</span>)<span class="sgr92"><span class="sgr1">::%9</span></span>
+  <span class="sgr36">│</span>        <span class="sgr38_5" style="color:#ff8787">Return</span>()
+  <span class="sgr36">│</span>        <span class="sgr96">FunctionEnd</span>()</code></pre><pre><code class="language-julia hljs">validate(shader)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Result(true)</code></pre><p>Et voilà! Notice the <code>LocalSizeId</code> execution mode pointing to the constants <code>(64, 1, 1)</code> in the corresponding IR.</p><h1 id="Executing-a-shader-with-Vulkan"><a class="docs-heading-anchor" href="#Executing-a-shader-with-Vulkan">Executing a shader with Vulkan</a><a id="Executing-a-shader-with-Vulkan-1"></a><a class="docs-heading-anchor-permalink" href="#Executing-a-shader-with-Vulkan" title="Permalink"></a></h1><p>After <a href="#tutorial-compiling-a-shader">compiling a shader</a>, the next logical step is to execute it. This requires the help of a graphics API that uses SPIR-V, such as Vulkan or OpenGL (with the <a href="https://registry.khronos.org/OpenGL/extensions/ARB/ARB_gl_spirv.txt">corresponding SPIR-V extension</a>). We will use Vulkan via <a href="https://github.com/JuliaGPU/Vulkan.jl">Vulkan.jl</a>.</p><p>As Vulkan usage falls out of scope of this documentation, we will not detail nor comment the steps used to setup everything, beyond inline code comments. Furthermore, note that the code shown is designed to execute this specific compute shader. For resources about Vulkan API usage, please consult the <a href="https://juliagpu.github.io/Vulkan.jl/dev/">Vulkan.jl documentation</a> as well as other Vulkan tutorials out there.</p><p>To proceed, we will need to interface with the Vulkan loader with a <code>Vk.Instance</code>, and pick a device on which to execute our shader.</p><pre><code class="language- hljs">using SPIRV: SupportedFeatures, check_compiler_feature_requirements
+using Vulkan: Vk, VkCore, unwrap</code></pre><p>Create callback for logging and error reporting.</p><pre><code class="language- hljs">debug_callback_c = @cfunction(Vk.default_debug_callback, UInt32, (Vk.DebugUtilsMessageSeverityFlagEXT, Vk.DebugUtilsMessageTypeFlagEXT, Ptr{VkCore.VkDebugUtilsMessengerCallbackDataEXT}, Ptr{Cvoid}))
+
+function create_device()
+  # Use the validation layers.
+  layers = String[&quot;VK_LAYER_KHRONOS_validation&quot;]
+  # Enable logging.
+  extensions = String[&quot;VK_EXT_debug_utils&quot;]
+  instance = Vk.Instance(layers, extensions; application_info = Vk.ApplicationInfo(v&quot;0.1&quot;, v&quot;0.1&quot;, v&quot;1.3&quot;))
+  debug_messenger = Vk.DebugUtilsMessengerEXT(instance, debug_callback_c)
+
+  # Pick the first physical device that we find.
+  physical_device = first(unwrap(Vk.enumerate_physical_devices(instance)))
+  @info &quot;Selected $(Vk.get_physical_device_properties(physical_device))&quot;
+
+  # Request Vulkan API features necessary for the usage with SPIRV.jl
+  device_features_1_1 = Vk.PhysicalDeviceVulkan11Features(:variable_pointers, :variable_pointers_storage_buffer)
+  device_features_1_2 = Vk.PhysicalDeviceVulkan12Features(:buffer_device_address, :vulkan_memory_model; next = device_features_1_1)
+  device_features_1_3 = Vk.PhysicalDeviceVulkan13Features(:synchronization2, :dynamic_rendering, :shader_integer_dot_product, :maintenance4; next = device_features_1_2)
+  device_features = Vk.PhysicalDeviceFeatures2(Vk.PhysicalDeviceFeatures(:shader_float_64, :shader_int_64); next = device_features_1_3)
+
+  # Create the device requesting a queue that supports graphics and compute operations.
+  device_extensions = String[]
+  queue_family_index = Vk.find_queue_family(physical_device, Vk.QUEUE_GRAPHICS_BIT | Vk.QUEUE_COMPUTE_BIT)
+  device = Vk.Device(
+    physical_device,
+    [Vk.DeviceQueueCreateInfo(queue_family_index, [1.0])],
+    [], device_extensions; next = device_features
+  )
+
+  # Query all of the supported SPIR-V features, to be communicated to the Julia → SPIR-V compiler.
+  supported_features = SupportedFeatures(physical_device, v&quot;1.3&quot;, device_extensions, device_features)
+  # Check that we have the basic features that the compiler will require.
+  check_compiler_feature_requirements(supported_features)
+
+  (; debug_messenger, device, queue_family_index, supported_features)
+end
+
+(; debug_messenger, device, queue_family_index, supported_features) = create_device();
+nothing #hide</code></pre><p>Great. We&#39;ll take the one from the previous tutorial, which we already know how to compile.</p><p>However, this time we&#39;ll create a <a href="../../api/#SPIRV.ShaderSource"><code>SPIRV.ShaderSource</code></a>, which represents a <a href="@ref"><code>SPIRV.Shader</code></a> assembled into a word vector, using the macro parameter <code>assemble = true</code>. We&#39;ll also fill in the <code>features</code> parameter, such that we are guaranteed that the Julia → SPIR-V compiler returns a shader that is compatible with our Vulkan API usage.</p><pre><code class="language- hljs">source = @compute features = supported_features assemble = true compute_shader!(
+  ::ComputeData::PushConstant,
+  ::Vec3U::Input{GlobalInvocationId},
+  ) options = ComputeExecutionOptions(local_size = (64, 1, 1))</code></pre><p>Here comes the hard part. To submit our shader for execution, we need to:</p><ul><li>Provide Vulkan with our shader.</li><li>Construct a buffer on the device that holds our <code>Vector</code> data, then get its memory address.</li><li>Build a command buffer and submit the appropriate commands to invoke our compute shader.</li><li>Wait for the computation to finish and copy the results into our original <code>Vector</code>.</li></ul><p>This is all quite verbose, but with Vulkan, this is expected.</p><pre><code class="language- hljs">using SPIRV: ShaderSource, serialize
+
+&quot;&quot;&quot;
+Execute a shader on the provided device and return the result, which **must** be of type `T`.
+&quot;&quot;&quot;
+function execute_shader(source::ShaderSource, device::Vk.Device, queue_family_index, array::Vector{Float32})
+  # Provide Vulkan with our shader.
+  stage = Vk.ShaderStageFlag(source.info.interface.execution_model)
+  @assert stage == Vk.SHADER_STAGE_COMPUTE_BIT
+  shader = Vk.ShaderModule(device, source)
+
+  # Construct a buffer on the device.
+  buffer = Vk.Buffer(device, sizeof(array), Vk.BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, Vk.SHARING_MODE_EXCLUSIVE, [queue_family_index])
+  # Allocate memory for it, selecting a memory that is host-visible and host-coherent.
+  memory_requirements = Vk.get_buffer_memory_requirements(device, buffer)
+  memory_index = find_memory_type(device.physical_device, memory_requirements.memory_type_bits, Vk.MEMORY_PROPERTY_HOST_VISIBLE_BIT | Vk.MEMORY_PROPERTY_HOST_COHERENT_BIT)
+  memory = Vk.DeviceMemory(device, memory_requirements.size, memory_index; next = Vk.MemoryAllocateFlagsInfo(0; flags = Vk.MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT))
+  unwrap(Vk.bind_buffer_memory(device, buffer, memory, 0))
+
+  # Get a pointer to this memory, so we can write to it.
+  memory_ptr = unwrap(Vk.map_memory(device, memory, 0, sizeof(array)))
+  GC.@preserve array begin
+    data_ptr = pointer(array)
+    unsafe_copyto!(Ptr{Float32}(memory_ptr), data_ptr, length(array))
+  end
+
+  # Get its device address.
+  # Note that this is a device address, not a host address; it should only be used from a shader executing on `device`.
+  buffer_address = Vk.get_buffer_device_address(device, Vk.BufferDeviceAddressInfo(buffer))
+
+  # Create the compute pipeline our shader will be executed with.
+  push_constant_range = Vk.PushConstantRange(stage, 0, 12)
+  pipeline_layout = Vk.PipelineLayout(device, [], [push_constant_range])
+  # Note: the name of the entry point of any shader compiled with SPIRV.jl will always be &quot;main&quot;.
+  pipeline_info = Vk.ComputePipelineCreateInfo(Vk.PipelineShaderStageCreateInfo(stage, shader, &quot;main&quot;), pipeline_layout, 0)
+  ((pipeline, _...), _) = unwrap(Vk.create_compute_pipelines(device, [pipeline_info]))
+
+  # Build the command buffer and record the appropriate commands to invoke our compute shader.
+  command_pool = Vk.CommandPool(device, queue_family_index)
+  (command_buffer, _...) = unwrap(Vk.allocate_command_buffers(device, Vk.CommandBufferAllocateInfo(command_pool, Vk.COMMAND_BUFFER_LEVEL_PRIMARY, 1)))
+  Vk.begin_command_buffer(command_buffer, Vk.CommandBufferBeginInfo())
+  Vk.cmd_bind_pipeline(command_buffer, Vk.PIPELINE_BIND_POINT_COMPUTE, pipeline)
+  # --&gt; This is where we provide our `ComputeData` argument.
+  push_constant = serialize(ComputeData(buffer_address, length(array)), source.info.layout)
+  push_constant_ptr = pointer(push_constant)
+  Vk.cmd_push_constants(command_buffer, pipeline_layout, push_constant_range.stage_flags, push_constant_range.offset, push_constant_range.size, Ptr{Cvoid}(push_constant_ptr))
+  # --------------------------------------------------------
+  # Dispatch as many workgroups as necessary to cover all array elements.
+  workgroup_invocations = prod(source.info.interface.execution_options.local_size)
+  Vk.cmd_dispatch(command_buffer, cld(length(array), workgroup_invocations), 1, 1)
+  Vk.end_command_buffer(command_buffer)
+
+  # Get a queue for submission, then submit the command buffer.
+  queue = Vk.get_device_queue(device, queue_family_index, 0)
+  unwrap(Vk.queue_submit(queue, [Vk.SubmitInfo([], [], [command_buffer], [])]))
+
+  # Wait for all operations to finish, making sure none of the
+  # required resources are cleaned up by the GC before then.
+  # Finally, retrieve the data.
+  GC.@preserve array buffer memory pipeline_layout pipeline command_pool command_buffer push_constant queue begin
+    unwrap(Vk.queue_wait_idle(queue))
+    data_ptr = pointer(array)
+    unsafe_copyto!(data_ptr, Ptr{Float32}(memory_ptr), length(array))
+    Vk.free_command_buffers(device, command_pool, [command_buffer])
+    Vk.unmap_memory(device, memory)
+  end
+  array
+end
+
+# Utility function to find a memory that satisfies all our requirements.
+function find_memory_type(physical_device::Vk.PhysicalDevice, type, properties::Vk.MemoryPropertyFlag)
+  memory_properties = Vk.get_physical_device_memory_properties(physical_device)
+  memory_types = memory_properties.memory_types[1:(memory_properties.memory_type_count)]
+  candidate_indices = findall(i -&gt; type &amp; (1 &lt;&lt; i) ≠ 0, 0:(memory_properties.memory_type_count - 1))
+  # Make sure we get a host-coherent memory, because we don&#39;t want
+  # to bother with flushing and invalidating memory.
+  index = findfirst(i -&gt; in(Vk.MEMORY_PROPERTY_HOST_COHERENT_BIT, memory_types[i].property_flags), candidate_indices)
+  index - 1
+end
+
+array .= range(0.0, 1.0, length(array))
+
+execute_shader(source, device, queue_family_index, array)</code></pre><p>I&#39;d like to draw attention to something <em>extremely</em> important. This concerns the following piece of code in <code>execute_shader</code>:</p><pre><code class="language-julia hljs">push_constant = serialize(ComputeData(buffer_address, length(data)), source.info.layout)</code></pre><p>One may have thought instead to construct a <code>Ref</code> to the push constant, and then convert the <code>Ref</code> into a pointer. That would actually work, in the case where:</p><ul><li>No mutable data is stored inside (as Julia stores pointers to these objects, not their data, for mutable struct fields).</li><li>The data layout matches exactly with the data layout declared in the shader.</li></ul><p>Even if we assume that we do not have mutable data, data layouts may not match.</p><p>To better take a look at it, we&#39;ll use <a href="https://github.com/tecosaur/About.jl">About.jl</a>, to display the layout of the Julia structure:</p><pre><code class="language-julia hljs">using About: about
+
+about(ComputeData)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Concrete <span class="sgr90">(padded)</span> DataType defined in <span class="sgr91">Main</span>, 16B
+  Main.ComputeData <span class="sgr34">&lt;:</span> <span class="sgr33">Any</span>
+
+Struct with <span class="sgr1">2</span> fields:
+<span class="sgr34">•</span> <span class="sgr92">buffer</span> <span class="sgr36"> </span>UInt64
+<span class="sgr34">•</span> <span class="sgr93">size</span>   <span class="sgr36"> </span>UInt32
+
+ <span class="sgr92">■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■</span><span class="sgr93">■■■■■■■■■■■■■■■■■</span><span class="sgr90">■■■■■■■■■■■■■■■■■</span>
+                 <span class="sgr92">8B</span>                               <span class="sgr93">4B</span><span class="sgr90">+4B</span></code></pre><p>We have:</p><ul><li>8 bytes for the <code>UInt64</code></li><li>4 bytes for the <code>UInt32</code></li><li>4 extra bytes of padding.</li></ul><p>Totalling a size of 16 bytes.</p><p>The shader we compiled has the following decorations:</p><pre><code class="language-julia hljs"># Note: this snippet uses internals for demonstration purposes.
+using SPIRV: SPIRV
+
+amod = SPIRV.annotate(SPIRV.Module(shader.ir))
+display(amod[amod.annotations])</code></pre><p>The <code>MemberDecorate(..., ..., Offset, ...)</code> decorations provide offset information for each field of a structure (here, the only structure present in the shader is the one that represents our <code>ComputeData</code>).</p><p>We have:</p><ul><li>An offset of 0 bytes for the <code>UInt64</code> whose size is 8 bytes.</li><li>An offset of 8 bytes for the <code>UInt32</code> whose size is 4 bytes.</li><li>In absence of remaining layout information, we may conclude that the total size equals 12 bytes.</li></ul><p>In this case, the data offsets are identical, therefore memory accesses won&#39;t be problematic. But there are cases (notably with non-default layout parameters) where offsets differ, and it is good to be aware of that. To avoid relying on chance, it is advised to <a href="@ref"><code>serialize</code></a> the data using the appropriate layout.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../manipulating_spirv/">« Manipulating SPIR-V binaries</a><a class="docs-footer-nextpage" href="../../reference/shader_compilation/">Julia → SPIR-V compiler »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Tuesday 6 August 2024 14:50">Tuesday 6 August 2024</span>. Using Julia version 1.12.0-DEV.997.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
