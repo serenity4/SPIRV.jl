@@ -136,7 +136,7 @@ array
 
 All good! Let's now turn it into a SPIR-V shader. Same as before, let's assume we'll provide the `ComputeData` with a push constant.
 
-We'll also specify the workgroup size (or local invocation size, in SPIR-V terms, from the `LocalSize` [execution mode](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_execution_mode)). Let's set it to 64 x 1 x 1, and rely on it being later invoked with at least 4 workgroups to cover all 256 array elements. We could also go with a two-dimensional pattern, such as 8 x 8 x 1, but then we'd need to do extra math in our shader to derive a linear index from a two-dimensional index, needlessly complicating things.
+We'll also specify the workgroup size (or local invocation size, in SPIR-V terms, from the `LocalSize` [execution mode](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_execution_mode)). Let's set it to 64 x 1 x 1, and rely on it being later invoked with at least 4 workgroups to cover all 256 array elements. We could also go with a two-dimensional pattern, such as 8 x 8 x 1, but then we'd need to do extra math in our shader to derive a linear index from a two-dimensional index, unnecessarily complicating things.
 
 =#
 
@@ -356,7 +356,7 @@ The shader we compiled has the following decorations:
 using SPIRV: SPIRV
 
 amod = SPIRV.annotate(SPIRV.Module(shader.ir))
-display(amod[amod.annotations])
+amod[amod.annotations]
 
 #=
 
