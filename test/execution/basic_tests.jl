@@ -4,7 +4,10 @@
   @test execute(:(3F + 6F)) === 9F
   @test execute(:(3.0 + 12.0)) === 15.0
   @test execute(:(3 + 11)) === 14
-  @test execute(:(3.2^11.4)) === 3.2^11.4
+  @test execute(:((3.2F) ^ 11.4F)) === (3.2F) ^ 11.4F
+  @test execute(:(norm(@vec(Float32[1, 1]),    1F))) === 2F
+  @test execute(:(norm(@vec(Float32[1, 1])       ))) === sqrt(2F)
+  @test execute(:(norm(@vec(Float32[1, 1]), Inf32))) === 1F
   @test execute(:(exp(10f0))) === exp(10f0)
   @test execute(:(cos(10f0))) === cos(10f0)
   @test execute(:(@vec(Float32[1, 2, 3]) == @vec(Float32[1, 2, 3]))) === true
