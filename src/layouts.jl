@@ -178,13 +178,12 @@ base_alignment(t::ScalarType) = scalar_alignment(t)
 base_alignment(t::VectorType) = (t.n == 2 ? 2 : 4) * scalar_alignment(t.eltype)
 base_alignment(t::ArrayType) = base_alignment(t.eltype)
 function base_alignment(t::StructType)
-  if isempty(t.members)
-    # Requires knowing the smallest scalar type permitted
-    # by the storage class & module capabilities.
-    error("Not implemented.")
-  else
-    maximum(base_alignment, t.members)
-  end
+  # XXX: To lower this would require knowing the smallest scalar type permitted
+  # by the storage class & module capabilities.
+  # E.g. 8-bit and 16-bit alignments are allowed by capabilities
+  # StoragePushConstant8/StoragePushConstant16 and similarly for other storage classes.
+  isempty(t.members) && return 4
+  maximum(base_alignment, t.members)
 end
 base_alignment(t::MatrixType) = t.is_column_major ? base_alignment(t.eltype) : base_alignment(VectorType(t.eltype.eltype, t.n))
 
@@ -225,7 +224,7 @@ element_stride(layout::VulkanLayout, t::StructType) = align(datasize(layout, t),
 datasize(layout::LayoutStrategy, t::ScalarType) = scalar_alignment(t)
 datasize(layout::LayoutStrategy, t::Union{VectorType,MatrixType}) = t.n * datasize(layout, t.eltype)
 datasize(layout::LayoutStrategy, t::ArrayType) = extract_size(t) * stride(layout, t)
-datasize(layout::LayoutStrategy, t::StructType) = dataoffset(layout, t, length(t.members)) + datasize(layout, t.members[end])
+datasize(layout::LayoutStrategy, t::StructType) = isempty(t.members) ? 0 : dataoffset(layout, t, length(t.members)) + datasize(layout, t.members[end])
 dataoffset(layout::VulkanLayout, t::SPIRType, i::Integer) = 0
 dataoffset(layout::VulkanLayout, t::ArrayType, i::Integer) = (i - 1) * stride(layout, t)
 function dataoffset(layout::VulkanLayout, t::StructType, i::Integer)
