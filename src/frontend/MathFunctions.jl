@@ -36,8 +36,8 @@ function rotate_2d(v, angle)
   typeof(v)(real(cv′), imag(cv′))
 end
 
-function compute_roots(a, b, c)
-  if isapprox(a, zero(a), atol = 1e-7)
+function compute_roots(a, b, c; rtol = 1e-6F, atol = 0F)
+  if isapprox(a, zero(a); rtol, atol)
     t₁ = t₂ = c / 2b
     return (t₁, t₂)
   end
