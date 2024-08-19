@@ -126,7 +126,7 @@ shader2!(color) = @swizzle color.a = 1F
     frag_shader = @fragment features = SUPPORTED_FEATURES shader!(::Mutable{Vec4}::Output)
     @test isa(frag_shader, Shader)
 
-    any_hit_shader = Base.@with SPIRV.METHOD_TABLES => [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE] @any_hit features = RAY_TRAYCING_FEATURES shader!(::Mutable{Vec4}::Output)
+    any_hit_shader = @with SPIRV.METHOD_TABLES => [INTRINSICS_GLSL_METHOD_TABLE, INTRINSICS_METHOD_TABLE] @any_hit features = RAY_TRAYCING_FEATURES shader!(::Mutable{Vec4}::Output)
     @test isa(any_hit_shader, Shader)
 
     compute_shader = @compute features = SUPPORTED_FEATURES assemble = true Returns(nothing)()

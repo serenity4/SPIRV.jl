@@ -35,9 +35,7 @@ function info(opcode::Union{OpCode,OpCodeGLSL}, skip_ids::Bool = true)
     (operand.kind === IdResultType || operand.kind === IdResult) && continue
     push!(operands, operand)
   end
-  # XXX: use `@set` when ConstructionBase performance is fixed.
-  # https://github.com/JuliaObjects/ConstructionBase.jl/issues/55
-  InstructionInfo(info.class, operands, info.required)
+  @set info.operands = operands
 end
 info(opcode::Integer, args...) = info(OpCode(opcode), args...)
 info(inst::AbstractInstruction, args...) = info(inst.opcode, args...)
@@ -147,9 +145,7 @@ function info(opcode::OpCode, arguments::AbstractVector, skip_ids::Bool = true)
 
   op_infos = OperandInfo[]
   append!(op_infos, ref.operands)
-  # XXX: use `@set` when ConstructionBase performance is fixed.
-  # https://github.com/JuliaObjects/ConstructionBase.jl/issues/55
-  inst_info = InstructionInfo(ref.class, op_infos, ref.required)
+  inst_info = @set ref.operands = op_infos
 
   # Repeat the last info if there is a variable number of arguments.
   if !isempty(op_infos)

@@ -1,4 +1,5 @@
 using SPIRV, Test, Dictionaries
+using Base.ScopedValues
 using SPIRV: @compute, @vertex, @fragment, @compute, @any_hit, @mesh, Sampler, Image, Pointer, optimize
 using SPIRV.MathFunctions
 using StaticArrays
