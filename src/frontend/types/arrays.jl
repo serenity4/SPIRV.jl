@@ -17,7 +17,7 @@ const Vec4I = SVector{4,Int32}
 @noinline VectorExtractDynamic(v::Vec{<:Any,T}, index::UInt32) where {T} = v.data[index]::T
 
 macro vec(ex)
-  macroexpand(StaticArrays, :(@SVector $ex))
+  esc(macroexpand(StaticArrays, :(@SVector $ex)))
 end
 
 is_spirv_vector(::Type{Vec{N,T}}) where {N,T} = 2 ≤ N ≤ 4 && T <: VecEltype
@@ -39,7 +39,7 @@ is_spirv_vector(::Type{Vec{N,T}}) where {N,T} = 2 ≤ N ≤ 4 && T <: VecEltype
 const Arr{N,T} = SVector{N,T}
 
 macro arr(ex)
-  macroexpand(StaticArrays, :(@SVector $ex))
+  esc(macroexpand(StaticArrays, :(@SVector $ex)))
 end
 
 const Mat{N,M,T<:VecEltype,L} = SMatrix{N,M,T,L}
@@ -75,7 +75,7 @@ const Mat34I = Mat{3,4,UInt32,12}
 const Mat43I = Mat{4,3,UInt32,12}
 
 macro mat(ex)
-  macroexpand(StaticArrays, :(@SMatrix $ex))
+  esc(macroexpand(StaticArrays, :(@SMatrix $ex)))
 end
 
 nrows(::Type{<:Mat{N}}) where {N} = N
