@@ -53,7 +53,7 @@ StyledStrings = "1"
 SwapStreams = "0.2"
 Swizzles = "0.1, 0.2, 0.3"
 Vulkan = "0.6"
-julia = "1.9"
+julia = "1.11"
 
 [extras]
 MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"

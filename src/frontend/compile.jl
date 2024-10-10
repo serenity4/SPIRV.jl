@@ -434,7 +434,13 @@ macro compile(ex)
 end
 
 function getline(code::CodeInfo, i::Int)
-  line = Base.IRShow.buildLineInfoNode(code.debuginfo, code.parent, i)
+  @static if VERSION ≥ v"1.12-DEV"
+    line = Base.IRShow.buildLineInfoNode(code.debuginfo, code.parent, i)
+  else
+    codeloc = code.codelocs[i]
+    iszero(codeloc) && return nothing
+    line = code.linetable[codeloc]
+  end
   line
 end
 
@@ -444,6 +450,8 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
   for (i, ex) in enumerate(code.code)
     ex === nothing && continue
     isa(ex, GlobalRef) && insert!(globalrefs, Core.SSAValue(i), ex)
+    isa(ex, Core.ReturnNode) && ex != Core.ReturnNode() && continue
+    (isa(ex, Core.GotoNode) || isa(ex, Core.GotoIfNot)) && continue
     line = getline(code, i)
     !isnothing(line) || error("No code location was found at code location $i for ex $ex; make sure to provide a `CodeInfo` which was generated with debugging info (`debuginfo = :source`).")
     @trymatch ex begin

@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        julia-version: ["nightly"]
+        julia-version: ["1", "pre", "nightly"]
         julia-arch: [x64]
         os: [ubuntu-latest]
         exclude:

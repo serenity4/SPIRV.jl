@@ -57,7 +57,9 @@ function simplify_cfg!(code::CodeInfo)
   mi = code.parent::MethodInstance
   isnothing(code.slottypes) && (code.slottypes = collect(mi.specTypes.types))
   ir = CC.inflate_ir!(code, mi)
-  ir.debuginfo.def = mi
+  @static if VERSION ≥ v"1.12-DEV"
+    ir.debuginfo.def = mi
+  end
   ir = CC.compact!(CC.cfg_simplify!(CC.copy(ir)))
   code = CC.ir_to_codeinf!(code, ir)
   ir, code
@@ -138,7 +140,11 @@ end
 function infer(mi::MethodInstance, interp::AbstractInterpreter)
   # Reset interpreter state.
   empty!(interp.local_cache)
-  inferred_ci = CC.typeinf_ext_toplevel(interp, mi, CC.SOURCE_MODE_FORCE_SOURCE)
+  @static if VERSION ≥ v"1.12-DEV"
+    inferred_ci = CC.typeinf_ext_toplevel(interp, mi, CC.SOURCE_MODE_FORCE_SOURCE)
+  else
+    inferred_ci = CC.typeinf_ext_toplevel(interp, mi)
+  end
   cache = code_instance_cache(interp)
   ci = CC.get(cache, mi, nothing)
   !isnothing(ci) || error("Could not get inferred code from the cache for $mi.\n\nThis may be caused by a @generated function body that failed to produce an output.")
@@ -146,9 +152,15 @@ function infer(mi::MethodInstance, interp::AbstractInterpreter)
   # If src is rettyp_const, the `CodeInfo` is dicarded after type inference
   # (because it is normally not supposed to be used ever again).
   # To avoid the need to re-infer to get the code, store it manually.
-  if ci.inferred === nothing && isdefined(ci, :rettype_const)
-    CC.setindex!(cache, inferred_ci, mi)
-    ci = CC.getindex(cache, mi)
+  @static if VERSION ≥ v"1.12-DEV"
+    if ci.inferred === nothing && isdefined(ci, :rettype_const)
+      CC.setindex!(cache, inferred_ci, mi)
+      ci = CC.getindex(cache, mi)
+    end
+  else
+    if ci.inferred === nothing
+      @atomic ci.inferred = inferred_ci
+    end
   end
   ci
 end
