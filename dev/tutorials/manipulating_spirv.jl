@@ -64,12 +64,12 @@ ir.types
 
 ir.capabilities
 
-# Let's now assemble it into a sequence of words. Note how the regenerated module slightly differs from the original module.
+# Let's now assemble it into a sequence of instructions. Note that the regenerated module may slightly differ from the original module; extra metadata may be added or removed.
 
-mod_regenerated = SPIRV.Module(ir)
+regenerated = SPIRV.Module(ir)
 
-setdiff(mod, mod_regenerated)
+setdiff(mod, regenerated)
 
 #-
 
-setdiff(mod_regenerated, mod)
+setdiff(regenerated, mod)
