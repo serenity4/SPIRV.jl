@@ -35,7 +35,7 @@ end
   ([f(unsigned_index(i)) for i in 1:n]...,)
 end
 
-macro _for(ex, body)
+macro cfor(ex, body)
   @when :(in($x, $y)) = ex begin
     ex = Expr(:(=), x, y)
   end
@@ -77,12 +77,23 @@ end
 function expand_for_macros(body, __module__)
   postwalk(body) do ex
     Meta.isexpr(ex, :macrocall) || return ex
-    in(ex.args[1], (Symbol("@for"), Symbol("@_for"))) || return ex
+    in(ex.args[1], (Symbol("@for"), Symbol("@cfor"))) || return ex
     macroexpand(__module__, ex)
   end
 end
 
-var"@for" = var"@_for"
+"""
+  @for i in iter begin #= ... do something with i ... =# end
+  @for i in iter1, j in iter2 begin #= ... do something with i and j ... =# end
+
+Define a C-style `for` loop.
+
+This loop does not rely on the standard iteration protocol in Julia, and will instead mimic how loops work in C:
+a loop entry point usually defines loop variables, a condition guards the loop body, and a continue block usually increments loop variables on subsequent iterations.
+
+`iter` must implement [`pre_loop`](@ref), [`cond_loop`](@ref) and [`post_loop`](@ref).
+"""
+var"@for" = var"@cfor"
 
 walk(ex::Expr, inner, outer) = outer(Meta.isexpr(ex, :$) ? ex.args[1] : Expr(ex.head, map(inner, ex.args)...))
 walk(ex, inner, outer) = outer(ex)
