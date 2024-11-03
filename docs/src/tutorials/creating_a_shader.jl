@@ -90,8 +90,6 @@ We could setup a storage buffer, but for simplicity, we'll work with a memory ad
 =#
 
 using SPIRV: @load, @store, @vec, U, Vec3U
-using StaticArrays
-using SPIRV.MathFunctions: linear_index
 
 struct ComputeData
   buffer::UInt64 # memory address of a buffer
