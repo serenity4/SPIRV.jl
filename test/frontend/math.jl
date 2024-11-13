@@ -10,6 +10,9 @@
   @test slerp_2d(x, y, 0.0) == normalize(x)
   x = Vec2(1, 0)
   @test rotate_2d(x, pi/4) ≈ Vec2(sqrt(2)/2, sqrt(2)/2)
+  @test remap(1, 0.5, 2, 6, 9) == 7
+  @test remap(1, 0.5, 2, 10, 10) == 10
+  @test remap(1, 10, 10, 4, 5) == 1
   for f in (linearstep, smoothstep, smootherstep)
     @test 0 < f(-40, 10, -35) < 1
     @test f(500, 600, 500) == 0

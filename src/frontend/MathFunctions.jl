@@ -54,7 +54,8 @@ end
 Remap a value from `(low1, high1)` to `(low2, high2)`.
 """
 function remap(value, low1, high1, low2, high2)
-  low2 + (value - low1) * (high2 - low2) / (high1 - low1)
+  range = high1 - low1
+  ifelse(iszero(range), value, low2 + (value - low1) * (high2 - low2) / range)
 end
 remap(low1, high1, low2, high2) = value -> remap(value, low1, high1, low2, high2)
 
