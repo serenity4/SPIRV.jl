@@ -27,12 +27,12 @@ SwapStreams = "0b152c4a-7e29-418b-9258-223db38db9d9"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
-Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
 Swizzles = "60694085-d904-4bfc-95dc-1e0e768e9359"
+Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
 
 [extensions]
-SPIRVVulkanExt = "Vulkan"
 SPIRVSwizzlesExt = "Swizzles"
+SPIRVVulkanExt = "Vulkan"
 
 [compat]
 AbstractTrees = "0.4"
@@ -45,7 +45,7 @@ ForwardMethods = "1"
 Graphs = "1"
 MLStyle = "^0.4.11"
 Reexport = "1"
-ResultTypes = "3"
+ResultTypes = "3, 4"
 SnoopPrecompile = "1"
 StaticArrays = "1"
 StructEquality = "2"
