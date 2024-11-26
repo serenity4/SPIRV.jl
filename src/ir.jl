@@ -297,6 +297,10 @@ function Base.show(io::IO, mime::MIME"text/plain", (mod, debug)::Pair{Module,Deb
   print(io, join(lines, '\n'))
 end
 
+function Base.show(io::IO, ir::IR)
+  print(io, IR, '(', length(ir.fdefs), " functions, ", length(ir.global_vars), " global variables, ", length(ir.constants), " constants, SSA counter: ", ir.idcounter[], ')')
+end
+
 function Base.show(io::IO, mime::MIME"text/plain", ir::IR)
   mod = Module(ir)
   isnothing(ir.debug) && return show(io, mime, mod)
