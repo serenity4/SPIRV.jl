@@ -112,11 +112,11 @@ layout = VulkanLayout(align_types)
   @testset "Layout types" begin
     for layout in [NoPadding(), NativeLayout(), ExplicitLayout(NativeLayout(), alltypes), layout]
       for T in align_types
-        @test alignment(layout, T) ≥ 0
-        @test datasize(layout, T) ≥ 0
-        @test element_stride(layout, T) ≥ 0
+        @test @inferred(alignment(layout, T)) ≥ 0
+        @test @inferred(datasize(layout, T)) ≥ 0
+        @test @inferred(element_stride(layout, T)) ≥ 0
         if isstructtype(T)
-          @test all(dataoffset(layout, T, i) ≥ 0 for i in 1:fieldcount(T))
+          @test all(@inferred(dataoffset(layout, T, i)) ≥ 0 for i in 1:fieldcount(T))
         end
       end
     end
@@ -125,11 +125,11 @@ layout = VulkanLayout(align_types)
       layout = NativeLayout()
       M = Base.RefValue{Tuple{Float32, Float32, Float32}}
       @test ismutabletype(M)
-      @test datasize(layout, M) == 12
-      @test datasize(layout, Tuple{M}) == 12
-      @test datasize(layout, Tuple{Tuple{M}}) == 12
-      @test datasize(layout, Tuple{M,Int64}) == 20
-      @test datasize(layout, Tuple{Tuple{M,Int64},Int64}) == 28
+      @test @inferred(datasize(layout, M)) == 12
+      @test @inferred(datasize(layout, Tuple{M})) == 12
+      @test @inferred(datasize(layout, Tuple{Tuple{M}})) == 12
+      @test @inferred(datasize(layout, Tuple{M,Int64})) == 20
+      @test @inferred(datasize(layout, Tuple{Tuple{M,Int64},Int64})) == 28
 
       @test datasize(layout, Align12) == 32
       @test stride(layout, Vector{Align12}) == datasize(layout, Align12)
@@ -137,14 +137,15 @@ layout = VulkanLayout(align_types)
 
       data = [rand(32, 32) for _ in 1:6]
       @test_throws "Array dimensions must be provided" datasize(layout, Matrix{Float64})
-      @test datasize(layout, data[1]) == 32*32*8
+      @test @inferred(datasize(layout, data[1])) == 32*32*8
       @test_throws "Array dimensions must be provided" datasize(layout, Tuple(data))
-      @test datasize(layout, data) == 6datasize(layout, data[1])
+      @test @inferred(datasize(layout, data)) == 6datasize(layout, data[1])
 
       data = Vec3[(1, 2, 3), (4, 5, 6)]
-      @test padding(layout, data) == 0
+      @test @inferred(padding(layout, data)) == 0
     end
   end
+
   @testset "Alignments" begin
     tmeta = TypeMetadata([Align1])
     add_type_layouts!(tmeta, layout)

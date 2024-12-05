@@ -46,7 +46,7 @@ function padding(layout::LayoutStrategy, T, i)
 end
 
 padding(layout::LayoutStrategy, x::VecOrMat) = padding(layout, typeof(x))
-padding(layout::LayoutStrategy, T::Type) = error("Padding not defined for `$(typeof(layout))` with type `$T`")
+padding(layout::LayoutStrategy, ::Type{T}) where {T} = error("Padding not defined for `$(typeof(layout))` with type `$T`")
 padding(layout::LayoutStrategy, x::VecOrMat{<:VecOrMat}) = padding(layout, typeof(x), size(x[1]))
 function padding(layout::LayoutStrategy, A::Type{<:VecOrMat{T}}, sizes...) where {T}
   s = stride(layout, Vector{T}, sizes...)
@@ -61,7 +61,7 @@ datasize(layout::LayoutStrategy, x::VecOrMat) = datasize(layout, typeof(x), size
 datasize(layout::LayoutStrategy, x::VecOrMat{<:VecOrMat}) = datasize(layout, typeof(x), size(x), size(x[1]))
 datasize(layout::LayoutStrategy, x) = datasize(layout, typeof(x))
 
-Base.stride(layout::LayoutStrategy, ::Type{<:VecOrMat{T}}) where {T} = element_stride(layout, T)
+Base.stride(layout::LayoutStrategy, ::Type{T}) where {ET,T<:VecOrMat{ET}} = element_stride(layout, ET)
 Base.stride(layout::LayoutStrategy, ::Type{<:VecOrMat{T}}, size_inner) where {T<:VecOrMat} = datasize(layout, T, size_inner)
 
 """"
@@ -75,14 +75,19 @@ The alternative would be to completely disallow structs which contain mutable fi
 struct NativeLayout <: LayoutStrategy end
 
 datasize(layout::NativeLayout, ::Type{<:VecOrMat}) = error("Array dimensions must be provided to know the size of a vector or a matrix. If you intend to get the size of a vector of vectors or a vector of matrices, you must not use a tuple and must either provide a value or extra dimension arguments.")
-function datasize(layout::NativeLayout, T::DataType)
-  isbitstype(T) && return sizeof(T)
+
+Base.@assume_effects :foldable Base.@constprop :aggressive @inline function datasize(layout::NativeLayout, ::Type{T}) where {T}
+  isbitstype(T) && return UInt(sizeof(T))
   isconcretetype(T) || error("A concrete type is required.")
   @assert isstructtype(T)
-  total_padding = sum(dataoffset(layout, T, i) - (dataoffset(layout, T, i - 1) + datasize(layout, fieldtype(T, i - 1))) for i in 2:fieldcount(T); init = 0)
-  sum(datasize(layout, subT) for subT in fieldtypes(T); init = 0) + total_padding
+  n = fieldcount(T)
+  offsets = ntuple(i -> dataoffset(layout, T, i), n)
+  sizes = ntuple(i -> datasize(layout, fieldtype(T, i)), n)
+  total_padding = sum(offsets[2:n] .- (offsets[1:(n - 1)] .+ sizes[1:(n - 1)]); init = 0)
+  sum(sizes; init = UInt(0)) + total_padding
 end
-function dataoffset(layout::NativeLayout, T::DataType, i::Int)
+
+Base.@assume_effects :foldable Base.@constprop :aggressive function dataoffset(layout::NativeLayout, ::Type{T}, i::Int) where {T}
   i == 1 && return fieldoffset(T, 1)
   Tprev = fieldtype(T, i - 1)
   # Account for any padding that might have been inserted between the current and previous members.
@@ -90,8 +95,9 @@ function dataoffset(layout::NativeLayout, T::DataType, i::Int)
   computed_offset = dataoffset(layout, T, i - 1) + datasize(layout, Tprev)
   padding + computed_offset
 end
-field_sizeof(T::Type) = ismutabletype(T) ? 8 : sizeof(T)
-alignment(::NativeLayout, T::Type) = Base.datatype_alignment(T)
+
+field_sizeof(::Type{T}) where {T} = ismutabletype(T) ? UInt(8) : UInt(sizeof(T))
+alignment(::NativeLayout, ::Type{T}) where {T} = Base.datatype_alignment(T)
 
 """
 Layout strategy which assumes no padding is required at all.
@@ -105,7 +111,7 @@ Base.stride(layout::NoPadding, ::Type{<:VecOrMat{T}}) where {T} = element_stride
 element_stride(layout::NoPadding, T) = datasize(layout, T)
 datasize(layout::NoPadding, ::Type{T}) where {T} = isprimitivetype(T) ? sizeof(T) : sum(ntuple(i -> datasize(layout, fieldtype(T, i)), fieldcount(T)); init = 0)::Int64
 dataoffset(layout::NoPadding, ::Type{T}, i::Integer) where {T} = sum(ntuple(i -> datasize(layout, fieldtype(T, i)), i - 1); init = 0)::Int64
-alignment(::NoPadding, ::Type) = 1
+alignment(::NoPadding, ::Type{T}) where {T} = 1
 
 padding(::NoPadding, T, i::Integer) = 0
 padding(::NoPadding, ::Type{Vector{T}}) where {T} = 0
@@ -117,20 +123,20 @@ padding(::NoPadding, ::Type{Vector{T}}) where {T} = 0
   dataoffsets::Optional{Vector{Int}}
 end
 
-LayoutInfo(layout::LayoutStrategy, T::Type) = LayoutInfo(stride_or_element_stride(layout, T), datasize(layout, T), alignment(layout, T), isstructtype(T) ? dataoffset.(layout, T, 1:fieldcount(T)) : nothing)
+LayoutInfo(layout::LayoutStrategy, ::Type{T}) where {T} = LayoutInfo(stride_or_element_stride(layout, T), datasize(layout, T), alignment(layout, T), isstructtype(T) ? dataoffset.(layout, T, 1:fieldcount(T)) : nothing)
 
-stride_or_element_stride(layout::LayoutStrategy, T::Type) = element_stride(layout, T)
+stride_or_element_stride(layout::LayoutStrategy, ::Type{T}) where {T} = element_stride(layout, T)
 stride_or_element_stride(layout::LayoutStrategy, T::Type{<:Vector}) = stride(layout, T)
 
 @struct_hash_equal struct ExplicitLayout <: LayoutStrategy
   d::IdDict{DataType,LayoutInfo}
 end
 
-Base.stride(layout::ExplicitLayout, T::Type) = layout.d[T].stride
-element_stride(layout::ExplicitLayout, T::Type) = layout.d[T].stride
-datasize(layout::ExplicitLayout, T::Type) = layout.d[T].datasize
-dataoffset(layout::ExplicitLayout, T::Type, i::Integer) = (layout.d[T].dataoffsets::Vector{Int})[i]
-alignment(layout::ExplicitLayout, T::Type) = layout.d[T].alignment
+Base.stride(layout::ExplicitLayout, ::Type{T}) where {T} = layout.d[T].stride
+element_stride(layout::ExplicitLayout, ::Type{T}) where {T} = layout.d[T].stride
+datasize(layout::ExplicitLayout, ::Type{T}) where {T} = layout.d[T].datasize
+dataoffset(layout::ExplicitLayout, ::Type{T}, i::Integer) where {T} = (layout.d[T].dataoffsets::Vector{Int})[i]
+alignment(layout::ExplicitLayout, ::Type{T}) where {T} = layout.d[T].alignment
 
 function extract_layouts!(d::IdDict{DataType,LayoutInfo}, layout::LayoutStrategy, T::DataType)
   haskey(d, T) && return
@@ -207,13 +213,13 @@ storage_classes(layout::VulkanLayout, t::SPIRType) = get!(Set{StorageClass}, lay
 isinterface(layout::VulkanLayout, t::StructType) = in(t, layout.interfaces)
 isinterface(layout::VulkanLayout, ::SPIRType) = false
 
-Base.stride(layout::VulkanLayout, T::Type) = stride(layout, layout[T])
-Base.stride(layout::VulkanLayout, T::Type{<:VecOrMat{ET}}) where {ET} = stride(layout, layout[T])
-element_stride(layout::VulkanLayout, T::Type) = element_stride(layout, layout[T])
-datasize(layout::VulkanLayout, T::Type) = datasize(layout, layout[T])
+Base.stride(layout::VulkanLayout, ::Type{T}) where {T} = stride(layout, layout[T])
+Base.stride(layout::VulkanLayout, ::Type{T}) where {ET,T<:VecOrMat{ET}} = stride(layout, layout[T])
+element_stride(layout::VulkanLayout, ::Type{T}) where {T} = element_stride(layout, layout[T])
+datasize(layout::VulkanLayout, ::Type{T}) where {T} = datasize(layout, layout[T])
 datasize(layout::VulkanLayout, data::Matrix{T}) where {T} = element_stride(layout, T) * length(data)
-dataoffset(layout::VulkanLayout, T::Type, i::Integer) = dataoffset(layout, layout[T], i)
-alignment(layout::VulkanLayout, T::Type) = alignment(layout, layout[T])
+dataoffset(layout::VulkanLayout, ::Type{T}, i::Integer) where {T} = dataoffset(layout, layout[T], i)
+alignment(layout::VulkanLayout, ::Type{T}) where {T} = alignment(layout, layout[T])
 
 Base.stride(layout::VulkanLayout, t::ArrayType) = align(element_stride(layout, t.eltype), alignment(layout, t))
 Base.stride(layout::VulkanLayout, t::MatrixType) = align(element_stride(layout, eltype_major(t)), alignment(layout, t))
@@ -357,11 +363,11 @@ end
 Base.getindex(layout::ShaderLayout, T::DataType) = getindex(layout.tmeta, T)
 
 # XXX: This probably doesn't work.
-element_stride(layout::ShaderLayout, T::Type) = element_stride(layout, layout[T])
-Base.stride(layout::ShaderLayout, T::Type) = stride(layout, layout[T])
-datasize(layout::ShaderLayout, T::Type) = datasize(layout, layout[T])
-dataoffset(layout::ShaderLayout, T::Type, i::Integer) = dataoffset(layout, layout[T], i)
-alignment(layout::ShaderLayout, T::Type) = alignment(layout, layout[T])
+element_stride(layout::ShaderLayout, ::Type{T}) where {T} = element_stride(layout, layout[T])
+Base.stride(layout::ShaderLayout, ::Type{T}) where {T} = stride(layout, layout[T])
+datasize(layout::ShaderLayout, ::Type{T}) where {T} = datasize(layout, layout[T])
+dataoffset(layout::ShaderLayout, ::Type{T}, i::Integer) where {T} = dataoffset(layout, layout[T], i)
+alignment(layout::ShaderLayout, ::Type{T}) where {T} = alignment(layout, layout[T])
 
 dataoffset(layout::ShaderLayout, t::StructType, i::Integer) = dataoffset(layout.tmeta, t, i)
 

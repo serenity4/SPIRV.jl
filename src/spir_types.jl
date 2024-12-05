@@ -214,20 +214,18 @@ error_type_not_known(t::Type) = error("Type `$t` does not have a corresponding S
 
 function spir_type(@nospecialize(t::Union{Union, Type{Union{}}}), tmap::Optional{TypeMap} = nothing; kwargs...)
   t === Union{} && return OpaqueType(Symbol("Union{}"))
-  error("Can't get a SPIR-V type for $t; unions are not supported at the moment.")
-end
-function spir_type(@nospecialize(t::Type), tmap::Optional{TypeMap} = nothing; kwargs...)
-  !isconcretetype(t) && throw(ArgumentError("Non-concrete types are not supported in SPIR-V."))
-  error_type_not_known(t)
+  throw(ArgumentError("Can't get a SPIR-V type for $t; unions are not supported at the moment."))
 end
 
 """
 Get a SPIR-V type from a Julia type, caching the mapping in the `IR` if one is provided.
 """
-function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing; storage_class = nothing, fill_tmap = true)
+function spir_type(::Type{t}, tmap::Optional{TypeMap} = nothing; storage_class = nothing, fill_tmap = true) where {t}
   t === Core.SSAValue && throw_compilation_error("a `Core.SSAValue` slipped in, while it shouldn't have")
   ismutable = ismutabletype(t)
-  !isnothing(tmap) && isnothing(storage_class) && haskey(tmap, t) && return tmap[t]
+
+  isa(t, DataType) && !isnothing(tmap) && isnothing(storage_class) && haskey(tmap, t) && return tmap[t]
+
   type = @match t begin
     &Float16 => FloatType(16)
     &Float32 => FloatType(32)
@@ -250,6 +248,8 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
         _ => ArrayType(spir_type(Array{eltype,n - 1}, tmap), nothing)
       end
     end
+    GuardBy(isabstracttype) => throw(ArgumentError("Abstract types cannot be mapped to SPIR-V types (type: $t)."))
+    GuardBy(!isconcretetype) => throw(ArgumentError("Non-concrete types are not supported in SPIR-V."))
     ::Type{Tuple} => error("Unsized tuple types are not supported")
     ::Type{<:Tuple} => if fieldcount(t) > 1 && allequal(fieldtypes(t))
       ArrayType(spir_type(eltype(t), tmap), Constant(UInt32(fieldcount(t))))
@@ -269,8 +269,7 @@ function spir_type(@nospecialize(t::DataType), tmap::Optional{TypeMap} = nothing
       T = primitive_type_to_spirv(t)
       isa(T, SPIRType) ? T : spir_type(T, tmap)
     end
-    ::Type{Any} => error("Type Any is not a valid SPIR-V type; type inference must have failed.")
-    GuardBy(isabstracttype) => error("Abstract types cannot be mapped to SPIR-V types (type: $t).")
+    ::Type{Any} => throw(ArgumentError("Type Any is not a valid SPIR-V type; type inference must have failed."))
     _ => error_type_not_known(t)
   end
 
