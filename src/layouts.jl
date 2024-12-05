@@ -213,13 +213,13 @@ storage_classes(layout::VulkanLayout, t::SPIRType) = get!(Set{StorageClass}, lay
 isinterface(layout::VulkanLayout, t::StructType) = in(t, layout.interfaces)
 isinterface(layout::VulkanLayout, ::SPIRType) = false
 
-Base.stride(layout::VulkanLayout, ::Type{T}) where {T} = stride(layout, layout[T])
-Base.stride(layout::VulkanLayout, ::Type{T}) where {ET,T<:VecOrMat{ET}} = stride(layout, layout[T])
-element_stride(layout::VulkanLayout, ::Type{T}) where {T} = element_stride(layout, layout[T])
-datasize(layout::VulkanLayout, ::Type{T}) where {T} = datasize(layout, layout[T])
+Base.stride(layout::VulkanLayout, ::Type{T}) where {T} = stride(layout, layout[T])::Int
+Base.stride(layout::VulkanLayout, ::Type{T}) where {ET,T<:VecOrMat{ET}} = stride(layout, layout[T]::ArrayType)
+element_stride(layout::VulkanLayout, ::Type{T}) where {T} = element_stride(layout, layout[T])::Int
+datasize(layout::VulkanLayout, ::Type{T}) where {T} = datasize(layout, layout[T])::Int
 datasize(layout::VulkanLayout, data::Matrix{T}) where {T} = element_stride(layout, T) * length(data)
-dataoffset(layout::VulkanLayout, ::Type{T}, i::Integer) where {T} = dataoffset(layout, layout[T], i)
-alignment(layout::VulkanLayout, ::Type{T}) where {T} = alignment(layout, layout[T])
+dataoffset(layout::VulkanLayout, ::Type{T}, i::Integer) where {T} = dataoffset(layout, layout[T], i)::Int
+alignment(layout::VulkanLayout, ::Type{T}) where {T} = alignment(layout, layout[T])::Int
 
 Base.stride(layout::VulkanLayout, t::ArrayType) = align(element_stride(layout, t.eltype), alignment(layout, t))
 Base.stride(layout::VulkanLayout, t::MatrixType) = align(element_stride(layout, eltype_major(t)), alignment(layout, t))

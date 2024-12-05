@@ -2,9 +2,7 @@ abstract type SPIRType end
 
 struct VoidType <: SPIRType end
 
-abstract type ScalarType <: SPIRType end
-
-struct IntegerType <: ScalarType
+struct IntegerType <: SPIRType
   width::Int
   signed::Bool
 end
@@ -14,13 +12,15 @@ function IntegerType(inst::Instruction)
   IntegerType(width, signed)
 end
 
-struct FloatType <: ScalarType
+struct FloatType <: SPIRType
   width::Int
 end
 
 FloatType(inst::Instruction) = FloatType(inst.arguments[])
 
-struct BooleanType <: ScalarType end
+struct BooleanType <: SPIRType end
+
+const ScalarType = Union{IntegerType, FloatType, BooleanType}
 
 struct VectorType <: SPIRType
   eltype::ScalarType
