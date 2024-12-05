@@ -110,11 +110,14 @@ layout = VulkanLayout(align_types)
 
 @testset "Structure layouts" begin
   @testset "Layout types" begin
-    for layout in [NoPadding(), NativeLayout(), ExplicitLayout(NativeLayout(), alltypes), layout]
+    for layout in [NoPadding(), NativeLayout(), ExplicitLayout(NativeLayout(), align_types), layout]
       for T in align_types
         @test @inferred(alignment(layout, T)) ≥ 0
         @test @inferred(datasize(layout, T)) ≥ 0
         @test @inferred(element_stride(layout, T)) ≥ 0
+        if !isa(layout, ExplicitLayout)
+          @test @inferred(stride(layout, Vector{T})) ≥ 0
+        end
         if isstructtype(T)
           @test all(@inferred(dataoffset(layout, T, i)) ≥ 0 for i in 1:fieldcount(T))
         end

@@ -132,6 +132,7 @@ stride_or_element_stride(layout::LayoutStrategy, T::Type{<:Vector}) = stride(lay
   d::IdDict{DataType,LayoutInfo}
 end
 
+Base.stride(layout::ExplicitLayout, ::Type{T}) where {ET,T<:VecOrMat{ET}} = layout.d[T].stride
 Base.stride(layout::ExplicitLayout, ::Type{T}) where {T} = layout.d[T].stride
 element_stride(layout::ExplicitLayout, ::Type{T}) where {T} = layout.d[T].stride
 datasize(layout::ExplicitLayout, ::Type{T}) where {T} = layout.d[T].datasize
@@ -161,7 +162,7 @@ Base.@kwdef struct VulkanAlignment
 end
 
 function alignment(vulkan::VulkanAlignment, t::SPIRType, storage_classes, is_interface::Bool)
-  @match t begin
+  value = @match t begin
     ::VectorType => scalar_alignment(t)
     if vulkan.scalar_block_layout &&
        !isempty(
@@ -173,6 +174,7 @@ function alignment(vulkan::VulkanAlignment, t::SPIRType, storage_classes, is_int
     end => extended_alignment(t)
     _ => base_alignment(t)
   end
+  value::Int
 end
 
 scalar_alignment(::BooleanType) = 0
@@ -221,10 +223,10 @@ datasize(layout::VulkanLayout, data::Matrix{T}) where {T} = element_stride(layou
 dataoffset(layout::VulkanLayout, ::Type{T}, i::Integer) where {T} = dataoffset(layout, layout[T], i)::Int
 alignment(layout::VulkanLayout, ::Type{T}) where {T} = alignment(layout, layout[T])::Int
 
-Base.stride(layout::VulkanLayout, t::ArrayType) = align(element_stride(layout, t.eltype), alignment(layout, t))
+Base.stride(layout::VulkanLayout, t::ArrayType) = align(element_stride(layout, t.eltype)::Int, alignment(layout, t))
 Base.stride(layout::VulkanLayout, t::MatrixType) = align(element_stride(layout, eltype_major(t)), alignment(layout, t))
 element_stride(::VulkanLayout, t::ScalarType) = scalar_alignment(t)
-element_stride(layout::VulkanLayout, t::Union{VectorType, MatrixType}) = t.n * element_stride(layout, t.eltype)
+element_stride(layout::VulkanLayout, t::Union{VectorType, MatrixType}) = t.n * element_stride(layout, t.eltype)::Int
 element_stride(layout::VulkanLayout, t::ArrayType) = extract_size(t) * element_stride(layout, t.eltype)
 element_stride(layout::VulkanLayout, t::StructType) = align(datasize(layout, t), alignment(layout, t))
 datasize(layout::LayoutStrategy, t::ScalarType) = scalar_alignment(t)
@@ -363,7 +365,7 @@ end
 Base.getindex(layout::ShaderLayout, T::DataType) = getindex(layout.tmeta, T)
 
 # XXX: This probably doesn't work.
-element_stride(layout::ShaderLayout, ::Type{T}) where {T} = element_stride(layout, layout[T])
+element_stride(layout::ShaderLayout, ::Type{T}) where {T} = element_stride(layout, layout[T])::Int
 Base.stride(layout::ShaderLayout, ::Type{T}) where {T} = stride(layout, layout[T])
 datasize(layout::ShaderLayout, ::Type{T}) where {T} = datasize(layout, layout[T])
 dataoffset(layout::ShaderLayout, ::Type{T}, i::Integer) where {T} = dataoffset(layout, layout[T], i)
