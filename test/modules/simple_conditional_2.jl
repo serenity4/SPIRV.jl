@@ -1,5 +1,5 @@
 Bool = TypeBool()
-Int32 = TypeInt(32, 1)
+Int32 = TypeInt(32, true)
 Float32 = TypeFloat(32)
 c_1f0 = Constant(1f0)::Float32
 c_1 = Constant(Int32(1))::Int32

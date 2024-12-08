@@ -142,7 +142,7 @@ function Base.showerror(io::IO, err::CompilationError)
       file = contractuser(string(mi.def.file))
       ci = retrieve_code_instance(err.target.interp, mi)
       rettype = cached_return_type(ci)
-      line = !isnothing(frame.line) ? frame.line.line : !iszero(err.jinst_index) && i == lastindex(stacktrace) ? getline(err.target.code, err.jinst_index)[end].line : mi.def.line
+      line = !isnothing(frame.line) ? frame.line.line : !iszero(err.jinst_index) && i == lastindex(stacktrace) ? getline(err.target.code, err.jinst_index) : mi.def.line
       print(io, styled"""
         \n{$color,$weight: $(here ? '>' : ' ') [$i] $mi::$rettype}
              {magenta:@ $(mi.def.module)} {gray:$file:$line}""")
@@ -176,8 +176,8 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals =
     T = target.mi.specTypes.parameters[argument.n]
     argid = @match x begin
       ::Variable && if begin
-        t = spir_type(T, tr.tmap)
-        isa(t, PointerType) || isa(t, ArrayType) && is_descriptor_backed(t)
+        type = spir_type(T, tr.tmap)
+        istype(type, SPIR_TYPE_POINTER) || istype(type, SPIR_TYPE_ARRAY) && is_descriptor_backed(type)
     end end => mt.global_vars[x]
       ::Constant => mt.constants[x]
       _ => fdef.args[arg_idx += 1]
@@ -189,7 +189,7 @@ function emit!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals =
   try
     # Fill the SPIR-V function with instructions generated from the target's inferred code.
     emit!(fdef, mt, tr, target)
-    assert_type_known(fdef.type.rettype)
+    assert_type_known(fdef.type.function.rettype)
   catch e
     throw_compilation_error(e, (; target))
   end
@@ -204,35 +204,35 @@ function define_function!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
   for (i, T) in enumerate(tr.argtypes)
     x = get(globals, i, nothing)
     isa(x, Constant) && continue
-    t = spir_type(T, tr.tmap)
+    type = spir_type(T, tr.tmap)
     @switch x begin
       @case ::Nothing
-      push!(argtypes, t)
+      push!(argtypes, type)
       @case ::Variable
       @switch x.storage_class begin
         @case &StorageClassFunction
-        push!(argtypes, t)
+        push!(argtypes, type)
         @case ::StorageClass
-        if !isa(t, PointerType) && (!isa(t, ArrayType) || !is_descriptor_backed(t))
+        if !istype(type, SPIR_TYPE_POINTER) && (!istype(type, SPIR_TYPE_ARRAY) || !is_descriptor_backed(type))
           # The Variable does not originate from a pointer type, so we'll need
           # the function to be called with the result of a corresponding Load.
           # If the variable had originated from a pointer type, code that uses
           # it would have explicitly loaded and stored as appropriate.
-          push!(argtypes, t)
+          push!(argtypes, type)
         end
       end
     end
   end
   code_instance = retrieve_code_instance(target.interp, mi)
-  return_t = code_instance.rettype === Nothing ? VoidType() : spir_type(code_instance.rettype, tr.tmap)
-  ftype = FunctionType(return_t, argtypes)
+  return_t = code_instance.rettype === Nothing ? void_type() : spir_type(code_instance.rettype, tr.tmap)
+  ftype = function_type(return_t, argtypes)
   FunctionDefinition(ftype, FunctionControlNone, [], [], ResultDict(), [])
 end
 
 function emit!(mt::ModuleTarget, tr::Translation, fdef::FunctionDefinition)
   emit!(mt, tr, fdef.type)
   fid = next!(mt.idcounter)
-  append!(fdef.args, next!(mt.idcounter) for _ = 1:length(fdef.type.argtypes))
+  append!(fdef.args, next!(mt.idcounter) for _ = 1:length(fdef.type.function.argtypes))
   insert!(mt.fdefs, fdef, fid)
   fid
 end
@@ -247,16 +247,16 @@ Constant(value::BitMask, mt::ModuleTarget, tr::Translation; is_specialization_co
 Constant(value::QuoteNode, mt::ModuleTarget, tr::Translation; is_specialization_constant = false) = Constant(value.value, mt, tr; is_specialization_constant)
 
 function Constant(value::T, mt::ModuleTarget, tr::Translation; is_specialization_constant = false) where {T}
-  t = spir_type(T, tr.tmap)
+  type = spir_type(T, tr.tmap)
   is_spec_const = is_specialization_constant ? Ref(true) : IS_SPEC_CONST_FALSE
-  !iscomposite(t) && return Constant(value, t, is_specialization_constant ? Ref(true) : IS_SPEC_CONST_FALSE)
-  ids = @match t begin
-    ::VectorType || ::ArrayType => [emit_constant!(mt, tr, value[i]; is_specialization_constant) for i in 1:length(value)]
-    ::MatrixType => [emit_constant!(mt, tr, col; is_specialization_constant) for col in columns(mat)]
-    ::StructType => [emit_constant!(mt, tr, getproperty(value, name); is_specialization_constant) for name in fieldnames(T)]
-    _ => error("Unexpected composite type `$t`")
+  !iscomposite(type) && return Constant(value, type, is_specialization_constant ? Ref(true) : IS_SPEC_CONST_FALSE)
+  ids = @match type.typename begin
+    &SPIR_TYPE_VECTOR || &SPIR_TYPE_ARRAY => [emit_constant!(mt, tr, value[i]; is_specialization_constant) for i in 1:length(value)]
+    &SPIR_TYPE_MATRIX => [emit_constant!(mt, tr, col; is_specialization_constant) for col in columns(mat)]
+    &SPIR_TYPE_STRUCT => [emit_constant!(mt, tr, getproperty(value, name); is_specialization_constant) for name in fieldnames(T)]
+    _ => error("Unexpected composite type `$type`")
   end
-  Constant(ids, t, ifelse(is_specialization_constant, IS_SPEC_CONST_TRUE, IS_SPEC_CONST_FALSE))
+  Constant(ids, type, ifelse(is_specialization_constant, IS_SPEC_CONST_TRUE, IS_SPEC_CONST_FALSE))
 end
 
 function emit!(mt::ModuleTarget, tr::Translation, var::Variable)

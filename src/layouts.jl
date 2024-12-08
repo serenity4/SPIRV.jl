@@ -161,43 +161,51 @@ Base.@kwdef struct VulkanAlignment
   uniform_buffer_standard_layout::Bool = false
 end
 
-function alignment(vulkan::VulkanAlignment, t::SPIRType, storage_classes, is_interface::Bool)
-  value = @match t begin
-    ::VectorType => scalar_alignment(t)
-    if vulkan.scalar_block_layout &&
-       !isempty(
-      intersect(storage_classes, [StorageClassUniform, StorageClassStorageBuffer,
-        StorageClassPhysicalStorageBuffer, StorageClassPushConstant]),
-    )
-    end => scalar_alignment(t)
-    if !vulkan.uniform_buffer_standard_layout && StorageClassUniform in storage_classes && is_interface
-    end => extended_alignment(t)
-    _ => base_alignment(t)
+function scalar_alignment(type::SPIRType)
+  @match type.typename begin
+    &SPIR_TYPE_BOOLEAN => 0
+    &SPIR_TYPE_INTEGER => type.integer.width ÷ 8
+    &SPIR_TYPE_FLOAT => type.float.width ÷ 8
+    &SPIR_TYPE_VECTOR => scalar_alignment(type.vector.eltype)
+    &SPIR_TYPE_MATRIX => scalar_alignment(type.matrix.eltype)
+    &SPIR_TYPE_ARRAY => scalar_alignment(type.array.eltype)
+    &SPIR_TYPE_STRUCT => maximum(scalar_alignment, type.struct.members; init = 0)
   end
-  value::Int
 end
 
-scalar_alignment(::BooleanType) = 0
-scalar_alignment(t::Union{IntegerType,FloatType}) = t.width ÷ 8
-scalar_alignment(t::Union{VectorType,MatrixType,ArrayType}) = scalar_alignment(t.eltype)
-scalar_alignment(t::StructType) = maximum(scalar_alignment, t.members)
-
-base_alignment(t::ScalarType) = scalar_alignment(t)
-base_alignment(t::VectorType) = (t.n == 2 ? 2 : 4) * scalar_alignment(t.eltype)
-base_alignment(t::ArrayType) = base_alignment(t.eltype)
-function base_alignment(t::StructType)
-  # XXX: To lower this would require knowing the smallest scalar type permitted
-  # by the storage class & module capabilities.
-  # E.g. 8-bit and 16-bit alignments are allowed by capabilities
-  # StoragePushConstant8/StoragePushConstant16 and similarly for other storage classes.
-  isempty(t.members) && return 4
-  maximum(base_alignment, t.members)
+function base_alignment(type::SPIRType)
+  is_scalar(type) && return scalar_alignment(type)
+  @match type.typename begin
+    &SPIR_TYPE_VECTOR => begin
+      (; eltype, n) = type.vector
+      ifelse(n == 2, 2, 4) * scalar_alignment(eltype)
+    end
+    &SPIR_TYPE_MATRIX => base_alignment(eltype_major(type))
+    &SPIR_TYPE_ARRAY => base_alignment(type.array.eltype)
+    &SPIR_TYPE_STRUCT => begin
+      (; members) = type.struct
+      # XXX: To lower this would require knowing the smallest scalar type permitted
+      # by the storage class & module capabilities.
+      # E.g. 8-bit and 16-bit alignments are allowed by capabilities
+      # StoragePushConstant8/StoragePushConstant16 and similarly for other storage classes.
+      isempty(members) && return 4
+      # Equivalent to `maximum(base_alignment, members; init = 0)`, but avoids dyamic dispatch in `mapreduce`.
+      alignment = 0
+      for member in members
+        alignment = max(alignment, base_alignment(member))
+      end
+      alignment
+    end
+  end
 end
-base_alignment(t::MatrixType) = t.is_column_major ? base_alignment(t.eltype) : base_alignment(VectorType(t.eltype.eltype, t.n))
 
-extended_alignment(t::SPIRType) = base_alignment(t)
-extended_alignment(t::Union{ArrayType,StructType}) = align(base_alignment(t), 16)
-extended_alignment(t::MatrixType) = t.is_column_major ? extended_alignment(t.eltype) : extended_alignment(VectorType(t.eltype.eltype, t.n))
+function extended_alignment(type::SPIRType)
+  @match type.typename begin
+    &SPIR_TYPE_MATRIX => extended_alignment(eltype_major(type))
+    &SPIR_TYPE_ARRAY || &SPIR_TYPE_STRUCT => align(base_alignment(type), 16)
+    _ => base_alignment(type)
+  end
+end
 
 """
 Vulkan-compatible layout strategy.
@@ -206,66 +214,125 @@ Vulkan-compatible layout strategy.
   alignment::VulkanAlignment
   tmap::TypeMap
   storage_classes::Dict{SPIRType,Set{StorageClass}}
-  interfaces::Set{StructType}
+  interfaces::Set{SPIRType}
 end
 
 Base.getindex(layout::VulkanLayout, T::DataType) = getindex(layout.tmap, T)
 
-storage_classes(layout::VulkanLayout, t::SPIRType) = get!(Set{StorageClass}, layout.storage_classes, t)
-isinterface(layout::VulkanLayout, t::StructType) = in(t, layout.interfaces)
-isinterface(layout::VulkanLayout, ::SPIRType) = false
+storage_classes(layout::VulkanLayout, type::SPIRType) = get!(Set{StorageClass}, layout.storage_classes, type)
+isinterface(layout::VulkanLayout, type::SPIRType) = istype(type, SPIR_TYPE_STRUCT) && in(type, layout.interfaces)
+
+alignment(layout::VulkanLayout, type::SPIRType) = alignment(layout, layout.alignment, type)
+
+function alignment(layout::VulkanLayout, vulkan::VulkanAlignment, type::SPIRType)
+  istype(type, SPIR_TYPE_VECTOR) && return scalar_alignment(type)
+  istype(type, SPIR_TYPE_STRUCT) || return base_alignment(type)
+  # XXX: Compute storage classes at construction/metadata merging,
+  # to avoid recomputing them here every time.
+  storage_classes = SPIRV.storage_classes(layout, type)
+  isinterface = SPIRV.isinterface(layout, type)
+  if vulkan.scalar_block_layout && any(in(storage_classes), (StorageClassUniform, StorageClassStorageBuffer, StorageClassPhysicalStorageBuffer, StorageClassPushConstant))
+    scalar_alignment(type)
+  elseif !vulkan.uniform_buffer_standard_layout && in(StorageClassUniform, storage_classes) && isinterface
+    extended_alignment(type)
+  else
+    base_alignment(type)
+  end
+end
+
+function alignment(vulkan::VulkanAlignment, type::SPIRType, storage_classes, is_interface::Bool)
+  
+end
 
 Base.stride(layout::VulkanLayout, ::Type{T}) where {T} = stride(layout, layout[T])::Int
-Base.stride(layout::VulkanLayout, ::Type{T}) where {ET,T<:VecOrMat{ET}} = stride(layout, layout[T]::ArrayType)
+Base.stride(layout::VulkanLayout, ::Type{T}) where {ET,T<:VecOrMat{ET}} = stride(layout, layout[T])
 element_stride(layout::VulkanLayout, ::Type{T}) where {T} = element_stride(layout, layout[T])::Int
 datasize(layout::VulkanLayout, ::Type{T}) where {T} = datasize(layout, layout[T])::Int
 datasize(layout::VulkanLayout, data::Matrix{T}) where {T} = element_stride(layout, T) * length(data)
 dataoffset(layout::VulkanLayout, ::Type{T}, i::Integer) where {T} = dataoffset(layout, layout[T], i)::Int
 alignment(layout::VulkanLayout, ::Type{T}) where {T} = alignment(layout, layout[T])::Int
 
-Base.stride(layout::VulkanLayout, t::ArrayType) = align(element_stride(layout, t.eltype)::Int, alignment(layout, t))
-Base.stride(layout::VulkanLayout, t::MatrixType) = align(element_stride(layout, eltype_major(t)), alignment(layout, t))
-element_stride(::VulkanLayout, t::ScalarType) = scalar_alignment(t)
-element_stride(layout::VulkanLayout, t::Union{VectorType, MatrixType}) = t.n * element_stride(layout, t.eltype)::Int
-element_stride(layout::VulkanLayout, t::ArrayType) = extract_size(t) * element_stride(layout, t.eltype)
-element_stride(layout::VulkanLayout, t::StructType) = align(datasize(layout, t), alignment(layout, t))
-datasize(layout::LayoutStrategy, t::ScalarType) = scalar_alignment(t)
-datasize(layout::LayoutStrategy, t::Union{VectorType,MatrixType}) = t.n * datasize(layout, t.eltype)
-datasize(layout::LayoutStrategy, t::ArrayType) = extract_size(t) * stride(layout, t)
-datasize(layout::LayoutStrategy, t::StructType) = isempty(t.members) ? 0 : dataoffset(layout, t, length(t.members)) + datasize(layout, t.members[end])
-dataoffset(layout::VulkanLayout, t::SPIRType, i::Integer) = 0
-dataoffset(layout::VulkanLayout, t::ArrayType, i::Integer) = (i - 1) * stride(layout, t)
-function dataoffset(layout::VulkanLayout, t::StructType, i::Integer)
-  i == 1 && return 0
-  subt = t.members[i]
-  req_alignment = alignment(layout, subt)
-  prevloc = dataoffset(layout, t, i - 1) + datasize(layout, t.members[i - 1])
-  offset = align(prevloc, req_alignment)
-  if isa(subt, VectorType)
-    # Prevent vectors from straddling improperly, as defined per the specification.
-    n = datasize(layout, subt)
-    if n > 16 || offset % 16 + n > 16
-      offset = align(offset, 16)
+function Base.stride(layout::VulkanLayout, type::SPIRType)
+  @match type.typename begin
+    &SPIR_TYPE_ARRAY => align(element_stride(layout, type.array.eltype)::Int, alignment(layout, type))
+    &SPIR_TYPE_MATRIX => align(element_stride(layout, eltype_major(type)), alignment(layout, type))
+  end
+end
+
+function element_stride(layout::VulkanLayout, type::SPIRType)
+  is_scalar(type) && return scalar_alignment(type)
+  @match type.typename begin
+    &SPIR_TYPE_VECTOR => begin
+      (; eltype, n) = type.vector
+      n * element_stride(layout, eltype)::Int
+    end
+    &SPIR_TYPE_MATRIX => begin
+      (; eltype, n) = type.matrix
+      n * element_stride(layout, eltype)::Int
+    end
+    &SPIR_TYPE_ARRAY => extract_size(type) * element_stride(layout, type.array.eltype)
+    &SPIR_TYPE_STRUCT => align(datasize(layout, type), alignment(layout, type))
+  end
+end
+
+function datasize(layout::LayoutStrategy, type::SPIRType)
+  is_scalar(type) && return scalar_alignment(type)
+  value = @match type.typename begin
+    &SPIR_TYPE_VECTOR => begin
+      (; eltype, n) = type.vector
+      n * datasize(layout, eltype)
+    end
+    &SPIR_TYPE_MATRIX => begin
+      (; eltype, n) = type.matrix
+      n * datasize(layout, eltype)
+    end
+    &SPIR_TYPE_ARRAY => extract_size(type) * stride(layout, type)
+    &SPIR_TYPE_STRUCT => begin
+      (; members) = type.struct
+      isempty(members) && return 0
+      dataoffset(layout, type, lastindex(members)) + datasize(layout, members[end])
     end
   end
-  prevsubt = t.members[i - 1]
-  if isa(prevsubt, Union{StructType, ArrayType, MatrixType})
-    # Advance an offset to have some padding in accordance with the specification:
-    #   The `Offset` decoration of a member must not place it between the end of a structure,
-    #   an array or a matrix and the next multiple of the alignment of that structure, array or matrix.
-    # https://registry.khronos.org/vulkan/specs/1.3-extensions/html/chap15.html#interfaces-resources-layout
-    offset = align(offset, alignment(layout, prevsubt))
-  end
-  offset
+  value::Int
 end
-alignment(layout::VulkanLayout, t::SPIRType) = alignment(layout.alignment, t, storage_classes(layout, t), isinterface(layout, t))
 
-function extract_size(t::ArrayType)
-  (; size) = t
-  !isnothing(size) || throw(ArgumentError("Array types must be sized to extract their size."))
+function dataoffset(layout::VulkanLayout, type::SPIRType, i::Integer)
+  @match type.typename begin
+    &SPIR_TYPE_ARRAY => (i - 1) * stride(layout, type)
+    &SPIR_TYPE_STRUCT => begin
+      i == 1 && return 0
+      (; members) = type.struct
+      member_type = members[i]
+      req_alignment = alignment(layout, member_type)
+      prevloc = dataoffset(layout, type, i - 1) + datasize(layout, members[i - 1])
+      offset = align(prevloc, req_alignment)
+      if istype(member_type, SPIR_TYPE_VECTOR)
+        # Prevent vectors from straddling improperly, as defined per the specification.
+        n = datasize(layout, member_type)
+        if n > 16 || offset % 16 + n > 16
+          offset = align(offset, 16)
+        end
+      end
+      prev_member_type = members[i - 1]
+      @match prev_member_type.typename begin
+        # Advance an offset to have some padding in accordance with the specification:
+        #   The `Offset` decoration of a member must not place it between the end of a structure,
+        #   an array or a matrix and the next multiple of the alignment of that structure, array or matrix.
+        # https://registry.khronos.org/vulkan/specs/1.3-extensions/html/chap15.html#interfaces-resources-layout
+        &SPIR_TYPE_MATRIX || &SPIR_TYPE_ARRAY || &SPIR_TYPE_STRUCT => align(offset, alignment(layout, prev_member_type))
+        _ => offset
+      end
+    end
+    _ => 0
+  end
+end
+
+function extract_size(type::SPIRType)
+  assert_type(type, SPIR_TYPE_ARRAY)
+  (; size) = type.array
+  isnothing(size) && throw(ArgumentError("Array types must be sized to extract their size."))
   !size.is_spec_const[] || error("Arrays with a size provided by a specialization constants are not supported for size calculations.")
-  isa(size.value, Integer) || error("Expected an integer array size, got ", size.value)
-  size.value
+  Int(size.value::Union{UInt32, Int})
 end
 
 function Base.merge!(x::VulkanLayout, y::VulkanLayout)
@@ -291,12 +358,12 @@ TypeMetadata(tmap::TypeMap = TypeMap()) = TypeMetadata(tmap, Dictionary())
 
 function TypeMetadata(ir::IR)
   tmeta = TypeMetadata(ir.tmap)
-  for t in ir.tmap
-    tid = get(ir.types, t, nothing)
+  for type in ir.tmap
+    tid = get(ir.types, type, nothing)
     isnothing(tid) && continue
     meta = get(ir.metadata, tid, nothing)
     isnothing(meta) && continue
-    insert!(tmeta.d, t, meta)
+    insert!(tmeta.d, type, meta)
   end
   tmeta
 end
@@ -306,30 +373,31 @@ function TypeMetadata(Ts; storage_classes = Dict(), interfaces = [])
   for T in Ts
     type = spir_type(T, tmeta.tmap)
     for sc in get(Vector{StorageClass}, storage_classes, T)
-      metadata!(tmeta, PointerType(sc, type))
+      metadata!(tmeta, pointer_type(sc, type))
     end
-    in(T, interfaces) && decorate!(tmeta, type::StructType, DecorationBlock)
+    in(T, interfaces) || continue
+    assert_type(type, SPIR_TYPE_STRUCT)
+    decorate!(tmeta, type, DecorationBlock)
   end
   tmeta
 end
 
-function storage_classes(types, t::SPIRType)
-  Set{StorageClass}(type.storage_class for type in types if isa(type, PointerType) && type.type == t)
+function storage_classes(types, type::SPIRType)
+  Set{StorageClass}(t.pointer.storage_class for t in types if istype(t, SPIR_TYPE_POINTER) && t.pointer.type == type)
 end
-storage_classes(tmeta::TypeMetadata, t::SPIRType) = storage_classes(keys(tmeta.d), t)
+storage_classes(tmeta::TypeMetadata, type::SPIRType) = storage_classes(keys(tmeta.d), type)
 
-isinterface(tmeta::TypeMetadata, t::StructType) = has_decoration(tmeta, t, DecorationBlock)
-isinterface(tmeta::TypeMetadata, ::SPIRType) = false
+isinterface(tmeta::TypeMetadata, type::SPIRType) = istype(type, SPIR_TYPE_STRUCT) && has_decoration(tmeta, type, DecorationBlock)
 
-VulkanLayout(alignment::VulkanAlignment) = VulkanLayout(alignment, TypeMap(), Dict{SPIRType, Set{StorageClass}}(), Set{StructType}())
+VulkanLayout(alignment::VulkanAlignment) = VulkanLayout(alignment, TypeMap(), Dict{SPIRType, Set{StorageClass}}(), Set{SPIRType}())
 VulkanLayout(; scalar_block_layout::Bool = false, uniform_buffer_standard_layout::Bool = false) = VulkanLayout(VulkanAlignment(scalar_block_layout, uniform_buffer_standard_layout))
 
 merge_layout!(layout::VulkanLayout, ir::IR) = merge_layout!(layout, TypeMetadata(ir))
 function merge_layout!(layout::VulkanLayout, tmeta::TypeMetadata)
   merge!(layout.tmap, tmeta.tmap)
-  for t in layout.tmap
-    layout.storage_classes[t] = storage_classes(tmeta, t)
-    isa(t, StructType) && isinterface(tmeta, t) && push!(layout.interfaces, t)
+  for type in layout.tmap
+    layout.storage_classes[type] = storage_classes(tmeta, type)
+    istype(type, SPIR_TYPE_STRUCT) && isinterface(tmeta, type) && push!(layout.interfaces, type)
   end
   layout
 end
@@ -342,13 +410,14 @@ VulkanLayout(ir::IR, alignment::VulkanAlignment) = VulkanLayout(TypeMetadata(ir)
 
 function TypeMetadata(layout::VulkanLayout)
   tmeta = TypeMetadata(layout.tmap)
-  for (t, scs) in layout.storage_classes
+  for (type, scs) in layout.storage_classes
     for sc in scs
-      metadata!(tmeta, PointerType(sc, t))
+      metadata!(tmeta, pointer_type(sc, type))
     end
   end
-  for t in layout.interfaces
-    decorate!(tmeta, t::StructType, DecorationBlock)
+  for type in layout.interfaces
+    assert_type(type, SPIR_TYPE_STRUCT)
+    decorate!(tmeta, type, DecorationBlock)
   end
   tmeta
 end
@@ -371,7 +440,7 @@ datasize(layout::ShaderLayout, ::Type{T}) where {T} = datasize(layout, layout[T]
 dataoffset(layout::ShaderLayout, ::Type{T}, i::Integer) where {T} = dataoffset(layout, layout[T], i)
 alignment(layout::ShaderLayout, ::Type{T}) where {T} = alignment(layout, layout[T])
 
-dataoffset(layout::ShaderLayout, t::StructType, i::Integer) = dataoffset(layout.tmeta, t, i)
+dataoffset(layout::ShaderLayout, type::SPIRType, i::Integer) = dataoffset(layout.tmeta, type, i)
 
 function Base.merge!(ir::IR, tmeta::TypeMetadata)
   for (t, meta) in pairs(tmeta.d)
@@ -387,50 +456,53 @@ function add_type_layouts!(ir::IR, layout::LayoutStrategy)
 end
 
 function add_type_layouts!(tmeta::TypeMetadata, layout::LayoutStrategy)
-  for t in tmeta.tmap
-    @tryswitch t begin
-      @case ::ArrayType && if !isa(t.eltype, SampledImageType) && !isa(t.eltype, ImageType) && !isa(t.eltype, SamplerType)
+  for type in tmeta.tmap
+    @tryswitch type.typename begin
+      @case &SPIR_TYPE_ARRAY
+      (; eltype) = type.array
+      if !in(eltype.typename, (SPIR_TYPE_SAMPLED_IMAGE, SPIR_TYPE_IMAGE, SPIR_TYPE_SAMPLER))
+        add_array_stride!(tmeta, type, layout)
       end
-      add_array_stride!(tmeta, t, layout)
 
-      @case ::StructType
-      add_offsets!(tmeta, t, layout)
-      add_matrix_layouts!(tmeta, t, layout)
+      @case &SPIR_TYPE_STRUCT
+      add_offsets!(tmeta, type, layout)
+      add_matrix_layouts!(tmeta, type, layout)
     end
   end
   tmeta
 end
 
-function add_array_stride!(tmeta::TypeMetadata, t::ArrayType, layout::LayoutStrategy)
+function add_array_stride!(tmeta::TypeMetadata, type::SPIRType, layout::LayoutStrategy)
+  assert_type(type, SPIR_TYPE_ARRAY)
+  (; eltype) = type.array
   # Array of shader resources. Must not be decorated.
-  isa(t.eltype, StructType) && has_decoration(tmeta, t.eltype, DecorationBlock) && return
-  decorate!(tmeta, t, DecorationArrayStride, stride(layout, t))
+  istype(eltype, SPIR_TYPE_STRUCT) && has_decoration(tmeta, eltype, DecorationBlock) && return
+  decorate!(tmeta, type, DecorationArrayStride, stride(layout, type))
 end
 
-function add_matrix_layouts!(tmeta::TypeMetadata, t::StructType, layout::LayoutStrategy)
-  for (i, subt) in enumerate(t.members)
-    if isa(subt, MatrixType)
-      add_matrix_stride!(tmeta, t, i, subt, layout)
-      add_matrix_layout!(tmeta, t, i, subt)
-    end
+function add_matrix_layouts!(tmeta::TypeMetadata, type::SPIRType, layout::LayoutStrategy)
+  for (i, member_type) in enumerate(type.struct.members)
+    istype(member_type, SPIR_TYPE_MATRIX) || continue
+    add_matrix_stride!(tmeta, type, i, member_type, layout)
+    add_matrix_layout!(tmeta, type, i, member_type)
   end
 end
 
-function add_matrix_stride!(tmeta::TypeMetadata, t::StructType, i, subt::MatrixType, layout::LayoutStrategy)
-  decorate!(tmeta, t, i, DecorationMatrixStride, stride(layout, subt))
+function add_matrix_stride!(tmeta::TypeMetadata, type::SPIRType, i, member_type::SPIRType, layout::LayoutStrategy)
+  decorate!(tmeta, type, i, DecorationMatrixStride, stride(layout, member_type))
 end
 
 "Follow Julia's column major layout by default, consistently with the `Mat` frontend type."
-add_matrix_layout!(tmeta::TypeMetadata, t::StructType, i, subt::MatrixType) = decorate!(tmeta, t, i, subt.is_column_major ? DecorationColMajor : DecorationRowMajor)
+add_matrix_layout!(tmeta::TypeMetadata, type::SPIRType, i, member_type::SPIRType) = decorate!(tmeta, type, i, member_type.matrix.is_column_major ? DecorationColMajor : DecorationRowMajor)
 
-function add_offsets!(tmeta::TypeMetadata, t::StructType, layout::VulkanLayout)
-  for (i, subt) in enumerate(t.members)
-    decorate!(tmeta, t, i, DecorationOffset, dataoffset(layout, t, i))
+function add_offsets!(tmeta::TypeMetadata, type::SPIRType, layout::VulkanLayout)
+  for (i, member_type) in enumerate(type.struct.members)
+    decorate!(tmeta, type, i, DecorationOffset, dataoffset(layout, type, i))
   end
 end
 
-function dataoffset(tmeta::TypeMetadata, t, i)
-  decs = decorations(tmeta, t, i)
+function dataoffset(tmeta::TypeMetadata, type::SPIRType, i)
+  decs = decorations(tmeta, type, i)
   isnothing(decs) && error("Missing decorations on member ", i, " of the aggregate type ", t)
   has_decoration(decs, DecorationOffset) || error("Missing offset declaration for member ", i, " on ", t)
   decs.offset

@@ -63,7 +63,7 @@ branch!(from::Block, to::Block) = push!(from, @ex Branch(to.id))
 branch!(from::Block, cond::ResultID, yes::Block, no::Block) = push!(from, @ex BranchConditional(cond, yes.id, no.id))
 
 @struct_hash_equal struct FunctionDefinition
-  type::FunctionType
+  type::SPIRType # must always be SPIR_TYPE_FUNCTION
   control::FunctionControl
   "Function arguments, after promoting non-local pointer arguments to global variables. Argument types match the function `type`."
   args::Vector{ResultID}
@@ -79,7 +79,8 @@ end
 Base.getindex(fdef::FunctionDefinition, id::ResultID) = fdef.blocks[id]
 Base.getindex(fdef::FunctionDefinition, idx::Integer) = fdef[fdef.block_ids[idx]]
 
-function FunctionDefinition(type::FunctionType, control::FunctionControl = FunctionControlNone)
+function FunctionDefinition(type::SPIRType, control::FunctionControl = FunctionControlNone)
+  assert_type(type, SPIR_TYPE_FUNCTION)
   FunctionDefinition(type, control, [], [], ResultDict(), [])
 end
 

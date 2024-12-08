@@ -117,15 +117,15 @@ function IR(mod::Module)
         @case &OpTypeFunction
         rettype = types[arguments[1]::ResultID]
         argtypes = [types[id::ResultID] for id in arguments[2:end]]
-        insert!(types, result_id, FunctionType(rettype, argtypes))
+        insert!(types, result_id, function_type(rettype, argtypes))
         @case _
-        insert!(types, result_id, parse(SPIRType, inst, types, ir.constants))
+        insert!(types, result_id, SPIRType(inst, types, ir.constants))
       end
       @case "Constant-Creation"
       c = @match opcode begin
         &OpConstant || &OpSpecConstant => begin
           t = types[type_id]
-          T = julia_type(t)
+          T = scalar_julia_type(t)
           literal = @match T begin
             &UInt8 || &Int8 => reinterpret(T, UInt8(only(arguments)))
             &Float16 || &UInt16 || &Int16 => reinterpret(T, UInt16(only(arguments)))
@@ -135,8 +135,8 @@ function IR(mod::Module)
           end
           Constant(literal, t, ifelse(opcode === OpSpecConstant, Ref(true), IS_SPEC_CONST_FALSE))
         end
-        &OpConstantFalse || &OpConstantTrue => Constant(opcode == OpConstantTrue, BooleanType())
-        &OpSpecConstantFalse || &OpSpecConstantTrue => Constant(opcode == OpSpecConstantTrue, BooleanType(), true)
+        &OpConstantFalse || &OpConstantTrue => Constant(opcode == OpConstantTrue, boolean_type())
+        &OpSpecConstantFalse || &OpSpecConstantTrue => Constant(opcode == OpSpecConstantTrue, boolean_type(), true)
         &OpConstantNull => Constant(nothing, types[type_id])
         &OpConstantComposite || &OpSpecConstantComposite =>
           Constant(convert(Vector{ResultID}, arguments), types[type_id], ifelse(opcode === OpSpecConstant, IS_SPEC_CONST_TRUE, IS_SPEC_CONST_FALSE))
@@ -210,18 +210,18 @@ function GlobalsInfo(ir::IR)
   GlobalsInfo(ir.types, ir.constants, ir.global_vars)
 end
 
-ResultID(ir::IR, t::DataType) = ResultID(ir, spir_type(t, ir.tmap))
-ResultID(ir::IR, t::SPIRType) = ir.types[t]
+ResultID(ir::IR, T::DataType) = ResultID(ir, spir_type(T, ir.tmap))
+ResultID(ir::IR, type::SPIRType) = ir.types[type]
 
 function merge_metadata!(ir::IR, id::ResultID, meta::Metadata)
   if isdefined(meta, :member_metadata) && !isempty(meta.member_metadata)
-    t = get(ir.types, id, nothing)
-    !isnothing(t) && !isa(t, StructType) && error("Trying to set metadata which contains member metadata on a non-aggregate type.")
+    type = get(ir.types, id, nothing)
+    !isnothing(type) && !istype(type, SPIR_TYPE_STRUCT) && error("Trying to set metadata which contains member metadata on a non-aggregate type.")
   end
   merge!(metadata!(ir, id), meta)
 end
 
-emit_type!(ir::IR, t::SPIRType) = emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, t)
+emit_type!(ir::IR, type::SPIRType) = emit_type!(ir.types, ir.idcounter, ir.constants, ir.tmap, type)
 emit_constant!(ir::IR, c::Constant) = emit_constant!(ir.constants, ir.idcounter, ir.types, ir.tmap, c)
 
 function allocate_variable!(ir::IR, fdef::FunctionDefinition, variable::Variable, id::ResultID)

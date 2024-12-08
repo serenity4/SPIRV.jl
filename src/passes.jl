@@ -30,8 +30,7 @@ function add_align_operands!(ir::IR, fdef::FunctionDefinition, layout::LayoutStr
         Some(nothing),
       )
       isnothing(def) && error("Could not retrieve definition for $pointer_id")
-      pointer = def.type
-      (; type, storage_class) = pointer
+      (; type, storage_class) = def.type.pointer
       if storage_class == StorageClassPhysicalStorageBuffer
         # We assume that no other storage class uses the pointer.
         push!(ex, MemoryAccessAligned, UInt32(alignment(layout, type)))
@@ -51,29 +50,6 @@ function find_definition(id::ResultID, insts)
     insts[idx]
   end
 end
-
-function enforce_calling_convention!(ir::IR, fdef::FunctionDefinition)
-  exs = body(fdef)
-  called = FunctionDefinition[]
-  for ex in exs
-    opcode(ex) == OpFunctionCall || continue
-    callee = ir.fdefs[ex[1]::ResultID]
-    !in(callee, called) && push!(called, callee)
-    @assert length(ex) == length(argtypes(callee)) + 1
-    for (arg, t) in zip(@view(ex[2:end]), argtypes(callee))
-      arg.t::SPIRType == t && continue
-      arg.t ≈ t || error("Types don't match between a function call and its defining function type: $(arg.t) ≉ $t")
-      storage_class()
-    end
-  end
-  for fdef in called
-    # Recurse into function calls (but not more than once).
-    enforce_calling_convention!(ir, called)
-  end
-  ir
-end
-
-argtypes(fdef::FunctionDefinition) = fdef.type.argtypes
 
 struct FillPhiBranches <: FunctionPass end
 
@@ -145,7 +121,7 @@ function (::RemapDynamic1BasedIndices)(ir::IR, fdef::FunctionDefinition)
             get!(() -> next!(ir.idcounter), ir.types, c.type)
             one = get!(() -> next!(ir.idcounter), ir.constants, c)
             ret = next!(ir.idcounter)
-            decrement = @ex ret = ISub(arg, one)::IntegerType(32, false)
+            decrement = @ex ret = ISub(arg, one)::integer_type(32, false)
             push!(insert, j => decrement)
             ex[i] = ret
           end
@@ -171,8 +147,8 @@ function (::CompositeExtractToVectorExtractDynamic)(ir::IR, fdef::FunctionDefini
       if ex.op === OpCompositeExtract
         length(ex) == 2 || continue
         x = ex[1]::ResultID
-        t = retrieve_type(x, fdef, ir)
-        isa(t, VectorType) || continue
+        type = retrieve_type(x, fdef, ir)
+        istype(type, SPIR_TYPE_VECTOR) || continue
         index = ex[2]::Union{UInt32, ResultID}
         isa(index, ResultID) || continue
         blk[i] = @set ex.op = OpVectorExtractDynamic
@@ -199,7 +175,7 @@ function (::CompositeExtractDynamicToLiteral)(ir::IR, fdef::FunctionDefinition)
           if isa(index, ResultID)
             c = get(ir.constants, index, nothing)
             isnothing(c) && break
-            c.type == IntegerType(32, false) || throw_compilation_error("Expected 32-bit unsigned integer type for index constant, got $(c.type)")
+            c.type == integer_type(32, false) || throw_compilation_error("Expected 32-bit unsigned integer type for index constant, got $(c.type)")
             ex[2] = c.value
           end
         end
@@ -287,48 +263,35 @@ end
 
 
 error_no_builtin_type_known(t) = error("No built-in Julia type is known for `$t`")
-function builtin_type end
 
-builtin_type(ir::IR, t::SPIRType) = builtin_type(t)
-function builtin_type(ir::IR, t::StructType)
-  for (T, t′) in pairs(ir.tmap.d)
-    t′ == t && return T
-  end
-  error_no_builtin_type_known(t)
-end
-
-function builtin_type(t::IntegerType)
-  if t.signed
-    @match t.width begin
-      8 => Int8
-      16 => Int16
-      32 => Int32
-      64 => Int64
-      _ => error_no_builtin_type_known(t)
+function builtin_type(ir::IR, type::SPIRType)
+  is_scalar(type) && return scalar_julia_type(type)
+  @match type.typename begin
+    &SPIR_TYPE_VECTOR => begin
+      (; eltype, n) = type.vector
+      Vec{n, builtin_type(eltype)}
     end
-  else
-    @match t.width begin
-      8 => UInt8
-      16 => UInt16
-      32 => UInt32
-      64 => UInt64
-      _ => error_no_builtin_type_known(t)
+    &SPIR_TYPE_MATRIX => begin
+      (; eltype, n, is_column_major) = type.matrix
+      m = eltype.vector.n
+      is_column_major && return Mat{m, n, builtin_type(eltype)}
+      Mat{n, m, builtin_type(eltype)}
     end
+    &SPIR_TYPE_ARRAY => begin
+      (; eltype, size) = type.array
+      isnothing(size) && return Vector{builtlin_type(ir, eltype)}
+      Arr{size, builtin_type(ir, eltype)}
+    end
+    &SPIR_TYPE_STRUCT => begin
+      # XXX: Use a bidirectional map if this becomes too slow at scale.
+      for (T, other) in pairs(ir.tmap.d)
+        other == type && return T
+      end
+      error_no_builtin_type_known(type)
+    end
+    &SPIR_TYPE_POINTER => Pointer{builtin_type(ir, type.pointer.type)}
   end
 end
-
-builtin_type(t::FloatType) = @match t.width begin
-  16 => Float16
-  32 => Float32
-  64 => Float64
-  _ => error_no_builtin_type_known(t)
-end
-
-builtin_type(::BooleanType) = Bool
-builtin_type(ir::IR, t::VectorType) = Vec{t.eltype,builtin_type(t.eltype)}
-builtin_type(ir::IR, t::MatrixType) = t.is_column_major ? Mat{t.eltype.n, t.n, builtin_type(t.eltype.eltype)} : Mat{t.n, t.eltype.n, builtin_type(t.eltype.eltype)}
-builtin_type(ir::IR, t::ArrayType) = isnothing(t.size) ? Vector{builtin_type(ir, t.eltype)} : Arr{t.size.value, builtin_type(t.eltype)}
-builtin_type(ir::IR, t::PointerType) = Pointer{builtin_type(ir, t.type)}
 
 """
 Replace `Nop`s by their operands, making it act either as:
@@ -380,7 +343,7 @@ function (::CompositeExtractToAccessChainLoad)(ir::IR, fdef::FunctionDefinition)
       composite, index = ex
       isa(index, ResultID) || continue
       composite_t = retrieve_type(composite, fdef, ir)
-      isa(composite_t, ArrayType) || continue
+      istype(composite_t, SPIR_TYPE_ARRAY) || continue
 
       patch = Expression[]
       # 1. Create a Variable if `composite` does not result from a load instruction.
@@ -412,8 +375,8 @@ function (::CompositeExtractToAccessChainLoad)(ir::IR, fdef::FunctionDefinition)
         var.storage_class, allocation.result
       end
       # 2. Construct AccessChain pointer.
-      access_chain_t = PointerType(storage_class, ex.type)
-      access_chain = @ex next!(ir.idcounter) = AccessChain(ptr_id, index)::access_chain_t
+      access_chain_type = pointer_type(storage_class, ex.type)
+      access_chain = @ex next!(ir.idcounter) = AccessChain(ptr_id, index)::access_chain_type
       push!(patch, access_chain)
       # 3. Load through the pointer.
       load = @ex ex.result = Load(access_chain.result)::ex.type
@@ -462,13 +425,13 @@ function retrieve_type(id::ResultID, fdef::FunctionDefinition, ir::IR)
   def = definition(id, fdef, ir)
   @match def begin
     ::Expression => def.type
-    ::Variable => def.type.type
+    ::Variable => def.type.pointer.type
     ::Constant => def.type
     ::ResultID => begin
       # The definition comes from a function argument.
       # We need to extract the type from the function signature.
       i = findfirst(==(def), fdef.args)::Int
-      fdef.type.argtypes[i]
+      fdef.type.function.argtypes[i]
     end
     ::Block => throw(ArgumentError("Blocks don't have types"))
   end
@@ -503,31 +466,32 @@ function (::EgalToRecursiveEqual)(ir::IR, fdef::FunctionDefinition)
   end
 end
 
-function emit_recursive_equal!(current_blk::Ref{Block}, ir::IR, fdef::FunctionDefinition, blk::Block, x::ResultID, y::ResultID, t::SPIRType)
+function emit_recursive_equal!(current_blk::Ref{Block}, ir::IR, fdef::FunctionDefinition, blk::Block, x::ResultID, y::ResultID, type::SPIRType)
   (; idcounter) = ir
-  B = BooleanType()
-  U32 = IntegerType(32, false)
+  B = boolean_type()
+  U32 = integer_type(32, false)
 
-  @switch t begin
-    @case ::IntegerType || ::FloatType || ::BooleanType
+  @switch type.typename begin
+    @case &SPIR_TYPE_BOOLEAN || &SPIR_TYPE_INTEGER || &SPIR_TYPE_FLOAT
     result = next!(idcounter)
-    ex = @ex result = equality_operator(t)(x, y)::B
+    ex = @ex result = equality_operator(type)(x, y)::B
     push!(blk, ex)
 
-    @case ::VectorType
+    @case &SPIR_TYPE_VECTOR
+    (; eltype, n) = type.vector
     intermediate_result, result = next!(idcounter), next!(idcounter)
-    push!(blk, @ex intermediate_result = equality_operator(t.eltype)(x, y)::VectorType(B, t.n))
+    push!(blk, @ex intermediate_result = equality_operator(eltype)(x, y)::vector_type(B, n))
     push!(blk, @ex result = All(intermediate_result)::B)
 
-    @case ::MatrixType
+    @case &SPIR_TYPE_MATRIX
+    (; eltype, n) = type.matrix
     ids = ResultID[]
-    et = t.eltype
-    for i in 1:t.n
+    for i in 1:n
       cx, cy = next!(idcounter), next!(idcounter)
-      xex = @ex cx = CompositeExtract(x, (i - 1)U)::et
-      yex = @ex cy = CompositeExtract(y, (i - 1)U)::et
+      xex = @ex cx = CompositeExtract(x, (i - 1)U)::eltype
+      yex = @ex cy = CompositeExtract(y, (i - 1)U)::eltype
       push!(blk, xex, yex)
-      ex = emit_recursive_equal!(current_blk, ir, fdef, blk, xex.result, yex.result, t.eltype)
+      ex = emit_recursive_equal!(current_blk, ir, fdef, blk, xex.result, yex.result, eltype)
       push!(ids, ex.result)
     end
     # Unroll all comparisons.
@@ -537,20 +501,21 @@ function emit_recursive_equal!(current_blk::Ref{Block}, ir::IR, fdef::FunctionDe
       ex.result
     end
 
-    @case ::VoidType
+    @case &SPIR_TYPE_VOID
     push!(blk, @ex next!(idcounter) = ConstantTrue()::B)
 
-    @case ::StructType
-    if iszero(length(t.members))
+    @case &SPIR_TYPE_STRUCT
+    (; members) = type.struct
+    if iszero(length(members))
       push!(blk, @ex next!(idcounter) = ConstantTrue()::B)
     else
       ids = ResultID[]
-      for (i, subt) in enumerate(t.members)
+      for (i, member_type) in enumerate(members)
         subx, suby = next!(idcounter), next!(idcounter)
-        xex = @ex subx = CompositeExtract(x, (i - 1)U)::subt
-        yex = @ex suby = CompositeExtract(y, (i - 1)U)::subt
+        xex = @ex subx = CompositeExtract(x, (i - 1)U)::member_type
+        yex = @ex suby = CompositeExtract(y, (i - 1)U)::member_type
         push!(blk, xex, yex)
-        ex = emit_recursive_equal!(current_blk, ir, fdef, blk, xex.result, yex.result, subt)
+        ex = emit_recursive_equal!(current_blk, ir, fdef, blk, xex.result, yex.result, member_type)
         push!(ids, ex.result)
       end
       # Unroll all comparisons.
@@ -561,12 +526,12 @@ function emit_recursive_equal!(current_blk::Ref{Block}, ir::IR, fdef::FunctionDe
       end
     end
 
-    @case ::ArrayType
+    @case &SPIR_TYPE_ARRAY
+    (; eltype, size) = type.array
     # Iterate over all array elements.
     # The array must be statically sized.
-    isnothing(t.size) && error("Arrays must be statically sized for `===` comparisons.")
-    n = Int(t.size.value)
-    et = t.eltype
+    isnothing(size) && error("Arrays must be statically sized for `===` comparisons.")
+    n = Int(size.value)
     header = new_block!(fdef, next!(idcounter))
     body = new_block!(fdef, next!(idcounter))
     merge = new_block!(fdef, next!(idcounter))
@@ -590,9 +555,9 @@ function emit_recursive_equal!(current_blk::Ref{Block}, ir::IR, fdef::FunctionDe
 
     i_load_2, xex, yex, result_load_2, intermediate_result, i_incremented = next!(idcounter, 6)
     push!(body, @ex i_load_2 = Load(i)::U32)
-    push!(body, @ex xex = CompositeExtract(x, i_load_2)::et)
-    push!(body, @ex yex = CompositeExtract(y, i_load_2)::et)
-    comp = emit_recursive_equal!(current_blk, ir, fdef, body, xex, yex, et)
+    push!(body, @ex xex = CompositeExtract(x, i_load_2)::eltype)
+    push!(body, @ex yex = CompositeExtract(y, i_load_2)::eltype)
+    comp = emit_recursive_equal!(current_blk, ir, fdef, body, xex, yex, eltype)
     push!(body, @ex result_load_2 = Load(result)::B)
     push!(body, @ex intermediate_result = LogicalAnd(result_load_2, comp.result)::B)
     push!(body, @ex Store(result, intermediate_result))
@@ -609,9 +574,13 @@ function emit_recursive_equal!(current_blk::Ref{Block}, ir::IR, fdef::FunctionDe
   blk[end]
 end
 
-equality_operator(::IntegerType) = OpIEqual
-equality_operator(::FloatType) = OpFOrdEqual
-equality_operator(::BooleanType) = OpLogicalEqual
+function equality_operator(type::SPIRType)
+  @match type.typename begin
+    &SPIR_TYPE_BOOLEAN => OpLogicalEqual
+    &SPIR_TYPE_INTEGER => OpIEqual
+    &SPIR_TYPE_FLOAT => OpFOrdEqual
+  end
+end
 
 """
 Remove blocks that consist of a single `Branch` instruction if such removal may be done without

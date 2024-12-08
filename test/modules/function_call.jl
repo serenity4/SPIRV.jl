@@ -1,4 +1,4 @@
-Int32 = TypeInt(32, 1)
+Int32 = TypeInt(32, true)
 Float32 = TypeFloat(32)
 c_1f0 = Constant(1f0)::Float32
 

@@ -14,7 +14,7 @@ function create_device()
   physical_device = first(unwrap(Vk.enumerate_physical_devices(instance)))
   device_features_1_1 = Vk.PhysicalDeviceVulkan11Features(:variable_pointers, :variable_pointers_storage_buffer)
   device_features_1_2 = Vk.PhysicalDeviceVulkan12Features(:buffer_device_address, :vulkan_memory_model; next = device_features_1_1)
-  device_features_1_3 = Vk.PhysicalDeviceVulkan13Features(:synchronization2, :dynamic_rendering; next = device_features_1_2)
+  device_features_1_3 = Vk.PhysicalDeviceVulkan13Features(:synchronization2, :dynamic_rendering, :maintenance4; next = device_features_1_2)
   device_features = Vk.PhysicalDeviceFeatures2(Vk.PhysicalDeviceFeatures(:shader_float_64, :shader_int_64); next = device_features_1_3)
   device_extensions = String[]
   queue_family_index = Vk.find_queue_family(physical_device, Vk.QUEUE_GRAPHICS_BIT | Vk.QUEUE_COMPUTE_BIT)
@@ -32,10 +32,11 @@ end
 
 function find_memory_type(physical_device::Vk.PhysicalDevice, type, properties::Vk.MemoryPropertyFlag)
   memory_properties = Vk.get_physical_device_memory_properties(physical_device)
-  memory_types = memory_properties.memory_types[1:(memory_properties.memory_type_count)]
-  candidate_indices = findall(i -> type & (1 << i) ≠ 0, 0:(memory_properties.memory_type_count - 1))
-  index = findfirst(i -> in(Vk.MEMORY_PROPERTY_HOST_COHERENT_BIT, memory_types[i].property_flags), candidate_indices)
-  index - 1
+  n = memory_properties.memory_type_count
+  memory_types = memory_properties.memory_types[1:n]
+  candidate_indices = findall(i -> type & (1 << (i - 1)) ≠ 0, 1:n)
+  index = findfirst(i -> memory_types[i].property_flags & properties == properties, candidate_indices)
+  candidate_indices[index::Int] - 1
 end
 
 """

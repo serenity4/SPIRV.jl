@@ -1,5 +1,5 @@
 Capability(SPIRV.CapabilityInt16)
-Int16 = TypeInt(16, 1)
+Int16 = TypeInt(16, true)
 Float16 = TypeFloat(16)
 c_1f0 = Constant(Float16(1))::Float16
 

@@ -119,7 +119,7 @@ function (pass!::RestructureProperRegions)(ir::IR, fdef::FunctionDefinition)
   cfg = ControlFlowGraph(fdef)
   ctree_global = ControlTree(cfg)
   T = eltype(cfg)
-  U32 = IntegerType(32, false)
+  U32 = integer_type(32, false)
   for ctree in PostOrderDFS(ctree_global)
     is_proper_region(ctree) || continue
     tail, continuation_edges = find_continuation_edges(cfg, ctree)

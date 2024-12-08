@@ -65,7 +65,7 @@ function IR(target::SPIRVTarget, interface::ShaderInterface, specializations)
   for (i, storage_class) in enumerate(interface.storage_classes)
     if represents_constant(storage_class)
       T = tr.argtypes[i]
-      t = spir_type(T, tr.tmap; storage_class)
+      type = spir_type(T, tr.tmap; storage_class)
       decs = interface.variable_decorations[i]
       name, value = @match storage_class begin
         &StorageClassConstantINTERNAL => (nothing, decs.internal)
@@ -73,18 +73,18 @@ function IR(target::SPIRVTarget, interface::ShaderInterface, specializations)
       end
       id = emit_constant!(mt, tr, value; is_specialization_constant = storage_class == StorageClassSpecConstantINTERNAL)
       constant = mt.constants[id]
-      constant.type === t || error("For constant argument $i, a value of type `$(typeof(value))` was provided, but its declared type is `$T`")
+      constant.type === type || error("For constant argument $i, a value of type `$(typeof(value))` was provided, but its declared type is `$T`")
       !isnothing(name) && add_specialization!(specializations, mt, name, constant)
       insert!(globals, i, constant)
     elseif storage_class ≠ StorageClassFunction
-      t = spir_type(tr.argtypes[i], tr.tmap; storage_class)
+      type = spir_type(tr.argtypes[i], tr.tmap; storage_class)
       if in(storage_class, (StorageClassPushConstant, StorageClassUniform, StorageClassStorageBuffer))
-        decorate!(mt, emit!(mt, tr, t), DecorationBlock)
+        decorate!(mt, emit!(mt, tr, type), DecorationBlock)
       end
-      readonly = !isa(t, PointerType)
-      ptr_t = readonly ? PointerType(storage_class, t) : @set(t.storage_class = storage_class)
-      variable = Variable(ptr_t)
-      readonly && !(isa(t, ArrayType) && is_descriptor_backed(ptr_t.type)) && push!(variables_to_load, variable)
+      readonly = !istype(type, SPIR_TYPE_POINTER)
+      ptr_type = readonly ? pointer_type(storage_class, type) : pointer_type(storage_class, type.pointer.type)
+      variable = Variable(ptr_type)
+      readonly && !(istype(type, SPIR_TYPE_ARRAY) && is_descriptor_backed(ptr_type.pointer.type)) && push!(variables_to_load, variable)
       insert!(globals, i, variable)
       emit!(mt, tr, variable)
     end
@@ -120,7 +120,7 @@ function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterfa
 end
 
 function define_entry_point!(mt::ModuleTarget, tr::Translation, specializations, fdef::FunctionDefinition, globals, variables_to_load, model::ExecutionModel, options::ShaderExecutionOptions)
-  main = FunctionDefinition(FunctionType(VoidType(), []))
+  main = FunctionDefinition(function_type(void_type(), []))
   ep = EntryPoint(:main, emit!(mt, tr, main), model, [], ResultID[])
 
   # Fill function body.
@@ -134,13 +134,13 @@ function define_entry_point!(mt::ModuleTarget, tr::Translation, specializations,
     id = mt.global_vars[x]
     push!(ep.interfaces, id)
     if in(x, variables_to_load)
-      t = x.type.type
+      (; type) = x.type.pointer
       loaded_id = next!(mt.idcounter)
-      push!(blk, @ex loaded_id = Load(id)::t)
+      push!(blk, @ex loaded_id = Load(id)::type)
       push!(arguments, loaded_id)
     end
   end
-  push!(blk, @ex next!(mt.idcounter) = OpFunctionCall(fid, arguments...)::fdef.type.rettype)
+  push!(blk, @ex next!(mt.idcounter) = OpFunctionCall(fid, arguments...)::fdef.type.function.rettype)
   push!(blk, @ex OpReturn())
 
   add_options!(ep, mt, tr, options, specializations)

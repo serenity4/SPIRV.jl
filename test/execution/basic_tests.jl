@@ -1,3 +1,5 @@
+using SPIRV.MathFunctions
+
 @testset "Checking basic execution" begin
   # XXX: It's possible some of these are already optimized away before SPIR-V codegen.
   # If that is the case, we could prevent that by using opaque arguments (e.g. provided via buffers).

@@ -21,7 +21,7 @@ result_id(ex::Expression) = ex.result
 function Instruction(ex::Expression, types #= SPIRType => ResultID =#)
   (; args) = ex
   if ex.op == OpFunction
-    if isa(ex[end], FunctionType)
+    if istype(ex[end]::SPIRType, SPIR_TYPE_FUNCTION)
       @reset args[end] = types[ex[end]]
     end
   end

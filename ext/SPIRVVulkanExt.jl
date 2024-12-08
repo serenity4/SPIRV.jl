@@ -3,7 +3,7 @@ module SPIRVVulkanExt
 using Dictionaries: dictionary
 using MLStyle: @match
 using SPIRV
-using SPIRV: iscomposite, SpecializationData
+using SPIRV: istype, iscomposite, SpecializationData
 using Vulkan: Vk
 
 include("features.jl")

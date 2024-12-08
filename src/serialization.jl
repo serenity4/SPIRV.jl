@@ -76,14 +76,14 @@ end
 # This is mostly to work around the fact that array/vector/matrix types
 # are composite types and we do not support looking into their (only) tuple component.
 function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Mat}
-  t = layout[T]
-  isa(t, MatrixType) || return @invoke serialize!(bytes, data::T, layout::LayoutStrategy)
-  vectype = eltype_major(t)
+  type = layout[T]
+  istype(type, SPIR_TYPE_MATRIX) || return @invoke serialize!(bytes, data::T, layout::LayoutStrategy)
+  vectype = eltype_major(type)
   payload = columns(data)
-  if !t.is_column_major
+  if !type.matrix.is_column_major
     payload = reinterpret(NTuple{nrows(T), NTuple{ncols(T), eltype(T)}}, [payload])[]
   end
-  s = stride(layout, t)
+  s = stride(layout, type)
   padding = s - datasize(layout, vectype)
   for row_or_col in payload
     serialize!(bytes, row_or_col, NoPadding())
@@ -92,9 +92,10 @@ function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Mat}
 end
 serialize!(bytes, data::Vec, layout::VulkanLayout) = serialize!(bytes, data.data, NoPadding())
 function serialize!(bytes, data::T, layout::VulkanLayout) where {T<:Arr}
-  t = layout[T]::ArrayType
-  s = stride(layout, t)
-  padding = s - datasize(layout, t.eltype)
+  type = layout[T]
+  assert_type(type, SPIR_TYPE_ARRAY)
+  s = stride(layout, type)
+  padding = s - datasize(layout, type.array.eltype)
   for el in data
     n = length(bytes)
     serialize!(bytes, el, layout)
@@ -161,20 +162,21 @@ end
 
 deserialize(::Type{T}, bytes, from::VulkanLayout) where {T<:Vec} = deserialize(T, bytes, NoPadding())
 function deserialize(T::Type{Arr{N,AT}}, bytes, from::VulkanLayout) where {N,AT}
-  t = from[T]::ArrayType
-  s = stride(from, t)
+  type = from[T]
+  assert_type(type, SPIR_TYPE_ARRAY)
+  s = stride(from, type)
   size = datasize(from, AT)
   T(ntuple(i -> deserialize(AT, @view(bytes[(1 + (i - 1) * s):((i - 1) * s + size)]), from), N))
 end
 function deserialize(T::Type{<:SMatrix{N,M,MT}}, bytes, from::VulkanLayout) where {N,M,MT}
-  t = from[T]
-  isa(t, MatrixType) || return @invoke deserialize(T, bytes, from::LayoutStrategy)
-  vectype = eltype_major(t)
-  s = stride(from, t)
+  type = from[T]
+  istype(type, SPIR_TYPE_MATRIX) || return @invoke deserialize(T, bytes, from::LayoutStrategy)
+  vectype = eltype_major(type)
+  s = stride(from, type)
   size = datasize(from, vectype)
 
   values = MT[]
-  if t.is_column_major
+  if type.matrix.is_column_major
     for i in 1:M
       tuple = deserialize(NTuple{N,MT}, @view(bytes[1 + (i - 1) * s:(i - 1) * s + size]), NoPadding())
       append!(values, tuple)

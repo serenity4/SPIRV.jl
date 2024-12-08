@@ -1,5 +1,5 @@
 using SPIRV, Test, Dictionaries
-using SPIRV: emit!, spir_type, PointerType, add_type_layouts!, StorageClass, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, TypeMetadata, metadata!
+using SPIRV: emit!, spir_type, add_type_layouts!, StorageClass, StorageClassStorageBuffer, StorageClassUniform, StorageClassPhysicalStorageBuffer, StorageClassPushConstant, DecorationBlock, TypeMetadata, metadata!
 using SPIRV: datasize, alignment, element_stride, stride, dataoffset, isinterface, padding
 
 function test_has_offset(tmeta, T, field, offset)

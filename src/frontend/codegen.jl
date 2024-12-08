@@ -17,7 +17,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       &Base.not_int => (OpLogicalNot, args)
       # There sometimes remain quite a few calls to this intrinsic, so let's avoid having to reimplement a bunch of methods.
       &Base.bitcast => (OpBitcast, args[2:2])
-      &Base.have_fma => return (emit!(mt, tr, Constant(true)), BooleanType())
+      &Base.have_fma => return (emit!(mt, tr, Constant(true)), boolean_type())
       ::Core.IntrinsicFunction => throw_compilation_error("reached unsupported core intrinsic function '$f'")
       &getfield => begin
         # If a third argument is provided, we ignore it; it indicates whether the field access is checked,
@@ -26,14 +26,16 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         field_idx = @match args[2] begin
           node::QuoteNode => get_field_index(composite, node, tr, target)
           idx::Integer => idx
-          idx::Core.SSAValue => @match spir_type(target, tr, args[1]) begin
+          idx::Core.SSAValue => begin
+            if !istype(spir_type(target, tr, args[1]), SPIR_TYPE_ARRAY)
+              throw_compilation_error("dynamic access into inhomogeneous tuple or struct members is not supported")
+            end
             # Dynamic accesses into arrays are supported, but not via
             # CompositeExtract; we'll need to convert this instruction
             # to a suitable AccessChain + Load chain.
             # We do this in the pass `composite_extract_to_access_chain_load!`.
             # XXX: `idx` may be an `Int64`.
-            ::ArrayType => idx
-            _ => throw_compilation_error("dynamic access into inhomogeneous tuple or struct members is not supported")
+            idx
           end
         end
         (OpCompositeExtract, (composite, field_idx))
@@ -42,9 +44,12 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         composite = args[1]
         field_idx = @match args[2] begin
           node::QuoteNode => get_field_index(composite, node, tr, target)
-          idx::Core.SSAValue => @match spir_type(target, tr, args[1]) begin
-            ::ArrayType => throw_compilation_error("dynamic `setfield!` into homogeneous tuples is not yet supported")
-            _ => throw_compilation_error("dynamic `setfield!` into inhomogeneous tuple or struct members is not supported")
+          idx::Core.SSAValue => begin
+            if istype(spir_type(target, tr, args[1]), SPIR_TYPE_ARRAY)
+              throw_compilation_error("dynamic `setfield!` into homogeneous tuples is not yet supported")
+            else
+              throw_compilation_error("dynamic `setfield!` into inhomogeneous tuple or struct members is not supported")
+            end
           end
           idx::Integer => idx
           field => throw_compilation_error("unknown field type $(typeof(field))")
@@ -56,11 +61,11 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       &(===) => begin
         x, y = args
         x, y = follow_globalref.((x, y))
-        type = BooleanType()
+        type = boolean_type()
         Tx, Ty = retrieve_type(target, tr, x), retrieve_type(target, tr, y)
         if Tx !== Ty
           ret = emit!(mt, tr, Constant(false))
-          return (ret, BooleanType())
+          return (ret, boolean_type())
         else
           ismutabletype(Tx) && throw_compilation_error("(===) is not supported between mutable values yet, nor between values of immutable types with mutable fields")
           xid = isa(x, LiteralValue) ? emit!(mt, tr, Constant(x)) : ResultID(x, tr)
@@ -126,15 +131,15 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
 
   type = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier)) ? nothing : spir_type(jtype, tr.tmap)
 
-  isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = PointerType(StorageClassFunction, type))
-  if isa(type, PointerType) && opcode in (OpAccessChain, OpPtrAccessChain)
+  isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = pointer_type(StorageClassFunction, type))
+  if !isnothing(type) && istype(type, SPIR_TYPE_POINTER) && in(opcode, (OpAccessChain, OpPtrAccessChain))
     # Propagate storage class to the result.
     ptr = first(args)
     sc = storage_class(ptr, mt, tr, fdef)
     if isnothing(sc)
-      @assert type.storage_class == StorageClassPhysicalStorageBuffer
+      @assert type.pointer.storage_class == StorageClassPhysicalStorageBuffer
     else
-      type = @set type.storage_class = sc
+      type = pointer_type(sc, type.pointer.type)
     end
   end
 
@@ -150,8 +155,10 @@ function get_field_index(composite_type, field::QuoteNode, tr::Translation, targ
   isa(field.value, Symbol) || throw_compilation_error("`Symbol` value expected in `QuoteNode`, got $(repr(field.value))")
   name = field.value::Symbol
   T = get_type(composite_type, tr, target)
-  t = tr.tmap[T]
-  isa(t, Union{ArrayType, VectorType, MatrixType}) && name === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden")
+  type = tr.tmap[T]
+  if in(type.typename, (SPIR_TYPE_VECTOR, SPIR_TYPE_ARRAY, SPIR_TYPE_MATRIX))
+    name === :data && throw_compilation_error("accessing the `:data` tuple field of vectors, arrays and matrices is forbidden")
+  end
   index = findfirst(==(name), fieldnames(T))
   !isnothing(index) || throw_compilation_error("symbol $(repr(name)) is not a field of $T (fields: $(repr.(fieldnames(T))))")
   index
@@ -190,10 +197,10 @@ function storage_class(arg, mt::ModuleTarget, tr::Translation, fdef::FunctionDef
     ::ResultID => get(mt.global_vars, arg, nothing)
     _ => nothing
   end
-  @match var_or_type begin
-    ::PointerType || ::Variable => var_or_type.storage_class
-    _ => nothing
-  end
+  isnothing(var_or_type) && return nothing
+  isa(var_or_type, Variable) && return var_or_type.storage_class
+  istype(var_or_type::SPIRType, SPIR_TYPE_POINTER) && return var_or_type.pointer.storage_class
+  nothing
 end
 
 function peel_global_vars(args, mt::ModuleTarget, tr::Translation, fdef)

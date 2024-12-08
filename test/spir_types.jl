@@ -1,16 +1,16 @@
 using SPIRV, Test
-using SPIRV: Constant, TypeMap, Translation, ModuleTarget, emit_constant!, ResultID, spir_type
+using SPIRV: Constant, TypeMap, Translation, ModuleTarget, emit_constant!, ResultID, istype, Pointer
 
 @testset "SPIR-V types" begin
-  i32 = IntegerType(32, true)
-  f64 = FloatType(64)
-  i32_arr_4 = ArrayType(i32, Constant(4))
-  t = StructType([i32, f64, i32_arr_4])
-  t2 = StructType([i32, f64, i32_arr_4])
+  i32 = integer_type(32, true)
+  f64 = float_type(64)
+  i32_arr_4 = array_type(i32, Constant(4))
+  t = struct_type([i32, f64, i32_arr_4])
+  t2 = struct_type([i32, f64, i32_arr_4])
   @test t ≠ t2
   @test t ≈ t2
-  t_ptr = PointerType(SPIRV.StorageClassFunction, t)
-  t2_ptr = PointerType(SPIRV.StorageClassFunction, t2)
+  t_ptr = pointer_type(SPIRV.StorageClassFunction, t)
+  t2_ptr = pointer_type(SPIRV.StorageClassFunction, t2)
   @test t_ptr ≈ t2_ptr
 end
 
@@ -24,38 +24,38 @@ primitive type TestPrimitiveTypeDisallowed 32 end
 
   @testset "Tuples" begin
     # 1-element tuples are treated as structs.
-    @test isa(spir_type(Tuple{Int64}, tmap), StructType)
+    @test istype(spir_type(Tuple{Int64}, tmap), SPIR_TYPE_STRUCT)
 
     # Heterogeneous tuples are treated as structs.
     t = spir_type(Tuple{Int64,Float64}, tmap)
-    @test isa(t, StructType)
+    @test istype(t, SPIR_TYPE_STRUCT)
     @test t === spir_type(Tuple{Int64,Float64}, tmap)
 
     # Homogeneous tuples are treated as arrays.
-    @test spir_type(Tuple{Int64,Int64}, tmap) == ArrayType(IntegerType(64, true), Constant(2U))
+    @test spir_type(Tuple{Int64,Int64}, tmap) == array_type(integer_type(64, true), Constant(2U))
   end
 
   @testset "Pointers" begin
     t = spir_type(Tuple{Int64,Float64}, tmap)
     pt = spir_type(Pointer{Tuple{Int64,Float64}}, tmap)
-    @test pt.type === t
+    @test pt.pointer.type === t
 
     rt = spir_type(Base.RefValue{Tuple{Int64,Float64}}, tmap)
-    @test isa(rt, StructType)
-    @test rt.members == [t]
-    @test rt.members[1] === t
+    @test istype(rt, SPIR_TYPE_STRUCT)
+    @test rt.struct.members == [t]
+    @test rt.struct.members[1] === t
 
     rt = spir_type(Mutable{Tuple{Int64,Float64}}, tmap)
-    @test isa(rt, PointerType)
-    @test rt.type == t
+    @test istype(rt, SPIR_TYPE_POINTER)
+    @test rt.pointer.type == t
   end
 
   @testset "Primitive types" begin
-    @test spir_type(TestEnum) == IntegerType(32, false)
-    @test spir_type(TestPrimitiveTypeAllowed) == IntegerType(32, false)
+    @test spir_type(TestEnum) == integer_type(32, false)
+    @test spir_type(TestPrimitiveTypeAllowed) == integer_type(32, false)
   end
 
-  @test spir_type(Union{}, tmap) == OpaqueType(Symbol("Union{}"))
+  @test spir_type(Union{}, tmap) == opaque_type(Symbol("Union{}"))
 
   @testset "Disallowed types" begin
     @test_throws "Abstract types" spir_type(Ref{Tuple{Int64,Float64}}, tmap)

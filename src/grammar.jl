@@ -46,11 +46,11 @@ end
 Base.get(info::EnumInfo, @nospecialize(enumerant), default) = get(info.enumerants, UInt32(enumerant::info.type), default)
 
 @nospecialize
-type(T::DataType) = T
-type(x) = typeof(x)
+to_type(T::DataType) = T
+to_type(x) = typeof(x)
 @specialize
 function Base.get(infos::EnumInfos, @nospecialize(enumerant), default)
-  info = get(infos.dict, type(enumerant), nothing)
+  info = get(infos.dict, to_type(enumerant), nothing)
   isa(enumerant, DataType) && return info
   isnothing(info) && return default
   get(info, enumerant, default)

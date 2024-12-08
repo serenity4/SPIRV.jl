@@ -5,8 +5,8 @@ recursive_equals(x::T, y::T) where {T} = isprimitivetype(T) ? x == y : all(recur
 recursive_equals(xs::T, ys::T) where {T<:Array} = all(recursive_equals(x, y) for (x, y) in zip(xs, ys))
 
 function make_row_major(layout::VulkanLayout, T::Type{<:Mat})
-  t = layout[T]
-  layout.tmap[T] = MatrixType(t.eltype, t.n, false)
+  type = layout[T]
+  layout.tmap[T] = matrix_type(type.matrix.eltype, type.matrix.n, false)
   layout
 end
 

@@ -78,8 +78,8 @@ function ir_from_cfg(cfg; structured = false, phi = false)
   global_decls = quote
     Bool = TypeBool()
     Float32 = TypeFloat(32)
-    Int32 = TypeInt(32, 1)
-    Int16 = TypeInt(16, 1)
+    Int32 = TypeInt(32, true)
+    Int16 = TypeInt(16, true)
   end
 
   label(v) = Symbol(:b, v)
