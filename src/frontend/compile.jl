@@ -142,7 +142,7 @@ function Base.showerror(io::IO, err::CompilationError)
       file = contractuser(string(mi.def.file))
       ci = retrieve_code_instance(err.target.interp, mi)
       rettype = cached_return_type(ci)
-      line = !isnothing(frame.line) ? frame.line.line : !iszero(err.jinst_index) && i == lastindex(stacktrace) ? getline(err.target.code, err.jinst_index) : mi.def.line
+      line = !isnothing(frame.line) ? frame.line.line : !iszero(err.jinst_index) && i == lastindex(stacktrace) ? getline(err.target.code, err.jinst_index).line : mi.def.line
       print(io, styled"""
         \n{$color,$weight: $(here ? '>' : ' ') [$i] $mi::$rettype}
              {magenta:@ $(mi.def.module)} {gray:$file:$line}""")
