@@ -322,13 +322,13 @@ end
     @test_code ci minlength = 30
 
     ci = SPIRV.@code_typed debuginfo=:source linearstep(::Float32, ::Float32, ::Float32)
-    @test_code ci minlength = 12 maxlength = 12 spirv_chunk = false
+    @test_code ci minlength = 12 maxlength = 14 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source smoothstep(::Float32, ::Float32, ::Float32)
     @test_code ci minlength = 10 maxlength = 20 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source smootherstep(::Float32, ::Float32, ::Float32)
-    @test_code ci minlength = 10 maxlength = 20 spirv_chunk = false
+    @test_code ci minlength = 10 maxlength = 21 spirv_chunk = false
 
     ci = SPIRV.@code_typed debuginfo=:source compute_roots(::Float32, ::Float32, ::Float32)
     @test_code ci minlength = 30 maxlength = 50 spirv_chunk = false

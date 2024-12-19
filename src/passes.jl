@@ -101,7 +101,7 @@ function index_arguments(ex::Expression)
   n = lastindex(ex)
   @match ex.op begin
     &OpCompositeExtract || &OpVectorExtractDynamic || &OpAccessChain || &OpInBoundsAccessChain || &OpPtrAccessChain || &OpInBoundsPtrAccessChain => 2:n
-    &OpImageRead && if ex.type.dim ≠ DimSubpassData end || &OpImageWrite || &OpImageFetch || &OpImageSparseFetch || &OpImageSparseRead => 2:2
+    &OpImageRead || &OpImageWrite || &OpImageFetch || &OpImageSparseFetch || &OpImageSparseRead => 2:2
     &OpImageTexelPointer => 2:3
     _ => 1:0
   end
@@ -111,21 +111,32 @@ function (::RemapDynamic1BasedIndices)(ir::IR, fdef::FunctionDefinition)
   for blk in fdef
     insert = Pair{Int,Expression}[]
     for ex in blk
-      if ex.op in (OpCompositeExtract, OpVectorExtractDynamic, OpAccessChain, OpInBoundsAccessChain)
-        indices = index_arguments(ex)
-        for i in indices
-          arg = ex[i]
-          if isa(arg, ResultID)
-            j = findfirst(x -> x === ex, blk)
-            c = Constant(1U)
-            get!(() -> next!(ir.idcounter), ir.types, c.type)
-            one = get!(() -> next!(ir.idcounter), ir.constants, c)
-            ret = next!(ir.idcounter)
-            decrement = @ex ret = ISub(arg, one)::integer_type(32, false)
-            push!(insert, j => decrement)
-            ex[i] = ret
-          end
+      in(ex.op, (OpCompositeExtract, OpVectorExtractDynamic, OpAccessChain, OpInBoundsAccessChain, OpImageRead, OpImageSparseRead, OpImageWrite, OpImageFetch, OpImageSparseFetch)) || continue
+      if ex.op == OpImageRead
+        (; image) = retrieve_type(ex[1], fdef, ir)
+        # For subpass data, coordinates are relative, i.e. they should be zero-based offsets.
+        image.dim == DimSubpassData && continue
+      end
+      indices = index_arguments(ex)
+      isempty(indices) && continue
+      for i in indices
+        arg = ex[i]
+        isa(arg, ResultID) || continue
+        type = retrieve_type(arg, fdef, ir)
+        T = builtin_type(ir, type)
+        one = Constant(1U, integer_type(32, false))
+        one_id = emit_constant!(ir, one)
+        c = @match T begin
+          &UInt32 => one
+          &Vec2U => Constant(fill(one_id, 2), type)
+          &Vec3U => Constant(fill(one_id, 3), type)
         end
+        cid = emit_constant!(ir, c)
+        ret = next!(ir.idcounter)
+        decrement = @ex ret = ISub(arg, cid)::type
+        j = findfirst(x -> x === ex, blk)
+        push!(insert, j => decrement)
+        ex[i] = ret
       end
     end
     for (i, ex) in reverse(insert)
@@ -269,13 +280,13 @@ function builtin_type(ir::IR, type::SPIRType)
   @match type.typename begin
     &SPIR_TYPE_VECTOR => begin
       (; eltype, n) = type.vector
-      Vec{n, builtin_type(eltype)}
+      Vec{n, builtin_type(ir, eltype)}
     end
     &SPIR_TYPE_MATRIX => begin
       (; eltype, n, is_column_major) = type.matrix
       m = eltype.vector.n
       is_column_major && return Mat{m, n, builtin_type(eltype)}
-      Mat{n, m, builtin_type(eltype)}
+      Mat{n, m, builtin_type(ir, eltype)}
     end
     &SPIR_TYPE_ARRAY => begin
       (; eltype, size) = type.array
