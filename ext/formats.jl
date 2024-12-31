@@ -57,6 +57,7 @@ SPIRV.ImageFormat(vk_format::Vk.Format) = @match vk_format begin
   &Vk.FORMAT_R8G8_UINT => SPIRV.ImageFormatRg8ui
   &Vk.FORMAT_R8G8_SINT => SPIRV.ImageFormatRg8i
   &Vk.FORMAT_R8G8B8A8_UNORM => SPIRV.ImageFormatRgba8
+  &Vk.FORMAT_R8G8B8A8_SRGB => SPIRV.ImageFormatRgba8
   &Vk.FORMAT_R8G8B8A8_SNORM => SPIRV.ImageFormatRgba8Snorm
   &Vk.FORMAT_R8G8B8A8_UINT => SPIRV.ImageFormatRgba8ui
   &Vk.FORMAT_R8G8B8A8_SINT => SPIRV.ImageFormatRgba8i
