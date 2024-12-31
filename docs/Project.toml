@@ -11,6 +11,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
 
 [sources]
-About = {url = "https://github.com/tecosaur/About.jl"}
-GitHubActions = {url = "https://github.com/serenity4/GitHubActions.jl"}
 SPIRV = {path = ".."}
