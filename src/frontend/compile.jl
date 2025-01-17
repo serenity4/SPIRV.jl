@@ -320,7 +320,6 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     # Actual `nothing` arguments are passed by symbol directly.
     (isnothing(jinst) || jinst === GlobalRef(Base, :nothing)) && continue
     Meta.isexpr(jinst, :loopinfo) && continue
-    Meta.isexpr(jinst, :coverage) && continue
     core_ssaval = Core.SSAValue(i)
     if Meta.isexpr(jinst, :boundscheck)
       # Act as if bounds checking was disabled, emitting a constant instead of the actual condition.

@@ -35,7 +35,8 @@ using Base: Fix1, Fix2,
             IEEEFloat,
             BitSigned, BitSigned_types,
             BitUnsigned, BitUnsigned_types,
-            BitInteger, BitInteger_types
+            BitInteger, BitInteger_types,
+            JLOptions
 
 const IEEEFloat_types = (Float16, Float32, Float64)
 const SmallFloat = Union{Float16,Float32}

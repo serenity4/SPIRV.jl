@@ -136,31 +136,51 @@ function show_debug_spirv_code(io::IO, ir::IR)
   println(io)
 end
 
+function disable_code_coverage()
+  old = JLOptions().code_coverage
+  offset = fieldoffset(JLOptions, findfirst(==(:code_coverage), fieldnames(JLOptions)))
+  ptr = reinterpret(Ptr{UInt8}, cglobal(:jl_options, JLOptions))
+  unsafe_store!(ptr, 0x00, offset + 1)
+  old
+end
+
+function restore_code_coverage(value)
+  offset = fieldoffset(JLOptions, findfirst(==(:code_coverage), fieldnames(JLOptions)))
+  ptr = reinterpret(Ptr{UInt8}, cglobal(:jl_options, JLOptions))
+  unsafe_store!(ptr, value, offset + 1)
+end
+
 "Run type inference on the given `MethodInstance`."
 function infer(mi::MethodInstance, interp::AbstractInterpreter)
   # Reset interpreter state.
   empty!(interp.local_cache)
-  @static if VERSION ≥ v"1.12-DEV"
-    inferred_ci = CC.typeinf_ext_toplevel(interp, mi, CC.SOURCE_MODE_FORCE_SOURCE)
-  else
-    inferred_ci = CC.typeinf_ext_toplevel(interp, mi)
-  end
-  cache = code_instance_cache(interp)
-  ci = CC.get(cache, mi, nothing)
-  !isnothing(ci) || error("Could not get inferred code from the cache for $mi.\n\nThis may be caused by a @generated function body that failed to produce an output.")
+  old = disable_code_coverage()
+  local ci
+  try
+    @static if VERSION ≥ v"1.12-DEV"
+      inferred_ci = CC.typeinf_ext_toplevel(interp, mi, CC.SOURCE_MODE_FORCE_SOURCE)
+    else
+      inferred_ci = CC.typeinf_ext_toplevel(interp, mi)
+    end
+    cache = code_instance_cache(interp)
+    ci = CC.get(cache, mi, nothing)
+    !isnothing(ci) || error("Could not get inferred code from the cache for $mi.\n\nThis may be caused by a @generated function body that failed to produce an output.")
 
-  # If src is rettyp_const, the `CodeInfo` is dicarded after type inference
-  # (because it is normally not supposed to be used ever again).
-  # To avoid the need to re-infer to get the code, store it manually.
-  @static if VERSION ≥ v"1.12-DEV"
-    if ci.inferred === nothing && isdefined(ci, :rettype_const)
-      CC.setindex!(cache, inferred_ci, mi)
-      ci = CC.getindex(cache, mi)
+    # If src is rettyp_const, the `CodeInfo` is dicarded after type inference
+    # (because it is normally not supposed to be used ever again).
+    # To avoid the need to re-infer to get the code, store it manually.
+    @static if VERSION ≥ v"1.12-DEV"
+      if ci.inferred === nothing && isdefined(ci, :rettype_const)
+        CC.setindex!(cache, inferred_ci, mi)
+        ci = CC.getindex(cache, mi)
+      end
+    else
+      if ci.inferred === nothing
+        @atomic ci.inferred = inferred_ci
+      end
     end
-  else
-    if ci.inferred === nothing
-      @atomic ci.inferred = inferred_ci
-    end
+  finally
+    restore_code_coverage(old)
   end
   ci
 end
