@@ -154,7 +154,8 @@ function FeatureRequirements(instructions, supported::FeatureSupport)
   for cap in required_caps
     cap == SPIRV.CapabilityMeshShadingEXT && push!(required_exts, "SPV_EXT_mesh_shader")
   end
-  FeatureRequirements(required_exts, setdiff(required_caps, implicitly_declared_capabilities(required_caps)))
+  setdiff!(required_caps, implicitly_declared_capabilities(required_caps))
+  FeatureRequirements(required_exts, required_caps)
 end
 
 function implicitly_declared_capabilities(capabilities)

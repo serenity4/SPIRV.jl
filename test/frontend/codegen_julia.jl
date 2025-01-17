@@ -11,6 +11,46 @@ function operation(ex; mod = SPIRV)
   end
 end
 
+is_test_successful(result::Union{Test.Broken, Test.Pass}) = true
+is_test_successful(result::Union{Test.Fail, Test.Error}) = false
+
+function test_code(code_info; maxlength = nothing, minlength = nothing, spirv_chunk = nothing, spirv_chunk_broken = nothing, blocks = nothing)
+  success = true
+  success &= is_test_successful(@test unwrap(SPIRV.validate(code_info)))
+  code = filter(!isnothing, code_info.code)
+  !isnothing(maxlength) && (success &= is_test_successful(@test length(code) ≤ maxlength))
+  !isnothing(minlength) && (success &= is_test_successful(@test length(code) ≥ minlength))
+  if spirv_chunk !== false
+    sts = code[1:(end - 1)]
+    is_spirv_chunk = all(sts) do st
+      Meta.isexpr(st, :call) && st.args[1] == GlobalRef(Base, :getfield) && return true
+      Meta.isexpr(st, :new) && return true
+      isa(st, GlobalRef) && return true
+      Meta.isexpr(st, :boundscheck) && return true
+      isnothing(st) && return true
+      if !Meta.isexpr(st, :invoke)
+        msg = "Expected `invoke` expression, got `$st`"
+        spirv_chunk_broken ? @debug(msg) : @error(msg)
+        return false
+      end
+      mi = st.args[1]::Core.MethodInstance
+      mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name)) && return true
+      msg = "Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`"
+      spirv_chunk_broken ? @debug(msg) : @error(msg)
+      false
+    end
+    success &= is_test_successful(@test is_spirv_chunk broken = spirv_chunk_broken)
+  end
+  if !isnothing(blocks)
+    basic_blocks = Core.Compiler.compute_basic_blocks(code).blocks
+    success &= is_test_successful(@test length(basic_blocks) == blocks)
+  end
+  if !success && length(code) < 500
+    @error "Showing code info for non-successful test"
+    display(code_info)
+  end
+end
+
 macro test_code(code, args...)
   maxlength = nothing; minlength = nothing; spirv_chunk = true; spirv_chunk_broken = false; blocks = nothing
   for arg in args
@@ -31,44 +71,7 @@ macro test_code(code, args...)
   end
   !isnothing(blocks) && (spirv_chunk = spirv_chunk_broken = false)
   code = esc(code)
-  test(ex; broken = false) = begin
-    ex = :(@test $ex broken = $broken)
-    ex.args[2] = __source__
-    ex
-  end
-  logmacro = GlobalRef(Base, Symbol(spirv_chunk_broken ? "@debug" : "@error"))
-  log(msg) = Expr(:macrocall, logmacro, __source__, msg)
-  ex = quote
-    code = $code
-    maxlength = $maxlength
-    minlength = $minlength
-    spirv_chunk = $spirv_chunk
-    $(test(:(unwrap(SPIRV.validate(code)))))
-    code = filter(!isnothing, code.code)
-    !isnothing(maxlength) && $(test(:(length(code) ≤ maxlength)))
-    !isnothing(minlength) && $(test(:(length(code) ≥ minlength)))
-    if spirv_chunk !== false
-      sts = code[1:(end - 1)]
-      is_spirv_chunk = all(sts) do st
-        Meta.isexpr(st, :call) && st.args[1] == GlobalRef(Base, :getfield) && return true
-        Meta.isexpr(st, :new) && return true
-        isa(st, GlobalRef) && return true
-        Meta.isexpr(st, :boundscheck) && return true
-        isnothing(st) && return true
-        Meta.isexpr(st, :invoke) || ($(log(:("Expected `invoke` expression, got `$st`"))); return false)
-        mi = st.args[1]::Core.MethodInstance
-        (mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name))) || ($(log(:("Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`")); false))
-      end
-      $(test(:is_spirv_chunk, broken = spirv_chunk_broken))
-    end
-    if !isnothing($blocks)
-      blocks = length(Core.Compiler.compute_basic_blocks(code).blocks)
-      @test blocks == $blocks
-    end
-    nothing
-  end
-  pushfirst!(ex.args, __source__)
-  ex
+  :(test_code($code; maxlength = $maxlength, minlength = $minlength, spirv_chunk = $spirv_chunk, spirv_chunk_broken = $spirv_chunk_broken, blocks = $blocks))
 end
 
 @testset "Codegen - Julia" begin

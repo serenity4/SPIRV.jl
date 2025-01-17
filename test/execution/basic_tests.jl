@@ -18,12 +18,12 @@ using SPIRV.MathFunctions
   @test execute(:(zero(SVector{3,Float32}))) === zero(SVector{3,Float32})
 
   @testset "Setting constants and specialization constants" begin
-    shader = @compute (function (out, value::T) where {T}
+    shader = @compute features = supported_features (function (out, value::T) where {T}
       @store out::T = value
     end)(::DeviceAddressBlock::PushConstant, ::UInt32::Constant{5U})
     @test execute(ShaderSource(shader), device, UInt32) === 5U
 
-    shader = @compute (function (out, value::T) where {T}
+    shader = @compute features = supported_features (function (out, value::T) where {T}
       @store out::T = value
     end)(::DeviceAddressBlock::PushConstant, ::UInt32::Constant{value = 5U})
     @test execute(ShaderSource(shader), device, UInt32) === 5U
@@ -31,12 +31,12 @@ using SPIRV.MathFunctions
   end
 
   @testset "Setting the workgroup size" begin
-    shader = @compute (function (out, value::T) where {T}
+    shader = @compute features = supported_features (function (out, value::T) where {T}
       @store out::T = value
     end)(::DeviceAddressBlock::PushConstant, ::Vec3U::Input{WorkgroupSize})
     @test execute(ShaderSource(shader), device, Vec3U) == Vec3U(shader.info.interface.execution_options.local_size)
 
-    shader = @compute (function (out, value::T) where {T}
+    shader = @compute features = supported_features (function (out, value::T) where {T}
       @store out::T = value
     end)(::DeviceAddressBlock::PushConstant, ::Vec3U::Input{WorkgroupSize}) options = ComputeExecutionOptions(local_size = (1, 1, 1))
     @test execute(ShaderSource(shader), device, Vec3U) == Vec3U(shader.info.interface.execution_options.local_size)
