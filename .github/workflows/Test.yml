@@ -5,14 +5,19 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.allow-failure }}
     strategy:
+      fail-fast: false
       matrix:
-        julia-version: ["1", "pre", "nightly"]
+        julia-version: ["1", "pre"]
         julia-arch: [x64]
         os: [ubuntu-latest]
-        exclude:
-          - os: macOS-latest
-            julia-arch: x86
+        allow-failure: [false]
+        include:
+          - julia-version: "nightly"
+            julia-arch: x64
+            os: ubuntu-latest
+            allow-failure: true
 
     steps:
       - uses: actions/checkout@v2
