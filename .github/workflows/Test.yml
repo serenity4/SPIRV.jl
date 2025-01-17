@@ -23,11 +23,12 @@ jobs:
       - uses: julia-actions/setup-julia@latest
         with:
           version: ${{ matrix.julia-version }}
-      - uses: julia-actions/cache@v1
-      - run: julia --color=yes --project -e 'using Pkg;
-          Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:serenity4/Graphics"));
-          Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:JuliaRegistries/General"));
-          Pkg.instantiate()'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@latest
+        with:
+          localregistry: |
+            git@github.com:serenity4/Graphics
+            git@github.com:JuliaRegistries/General
       - uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v2
