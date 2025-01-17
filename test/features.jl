@@ -33,8 +33,13 @@
   @test issubset(reqs.extensions, features.extensions) && issubset(reqs.capabilities, features.capabilities)
 end
 
+global debug_messenger::Vk.DebugUtilsMessengerEXT
+
 @testset "Supported features" begin
-  instance = Vk.Instance([], [])
+  layers = String["VK_LAYER_KHRONOS_validation"]
+  extensions = String["VK_EXT_debug_utils"]
+  instance = Vk.Instance(layers, extensions; application_info = Vk.ApplicationInfo(v"0.1", v"0.1", v"1.3"))
+  debug_messenger = Vk.DebugUtilsMessengerEXT(instance, debug_callback_c; min_severity = Vk.DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
   physical_devices = unwrap(Vk.enumerate_physical_devices(instance))
   for physical_device in physical_devices
     device_properties = Vk.get_physical_device_properties_2(physical_device)

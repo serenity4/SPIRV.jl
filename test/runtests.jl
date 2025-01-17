@@ -4,7 +4,9 @@ using SPIRV: @compute, @vertex, @fragment, @compute, @any_hit, @mesh, Sampler, I
 using SPIRV.MathFunctions
 using StaticArrays
 using Swizzles
-using Vulkan: Vk
+using Vulkan: Vk, VkCore
+
+debug_callback_c = @cfunction(Vk.default_debug_callback, UInt32, (Vk.DebugUtilsMessageSeverityFlagEXT, Vk.DebugUtilsMessageTypeFlagEXT, Ptr{VkCore.VkDebugUtilsMessengerCallbackDataEXT}, Ptr{Cvoid}))
 
 resource(filename) = joinpath(@__DIR__, "resources", filename)
 read_module(file) = read(joinpath(@__DIR__, "modules", file * (last(splitext(file)) == ".jl" ? "" : ".jl")), String)
