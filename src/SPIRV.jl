@@ -282,6 +282,7 @@ export
   Mat23I, Mat32I, Mat24I, Mat42I, Mat34I, Mat43I,
   @vec, @arr, @mat,
   @load, @store,
+  @discard,
   Image, image_type, Sampler,
   SampledImage,
   DPdx, DPdy, Fwidth,

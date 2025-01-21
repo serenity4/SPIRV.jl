@@ -293,7 +293,7 @@ end
 
 function add_frame_lineno!(debug::InterpDebugInfo, tr::Translation, from::SPIRVTarget)
   iszero(tr.index) && return
-  line = getline(from.code, tr.index)[end]
+  line = getline(from.code, tr.index)
   frame = debug.stacktrace[end]
   debug.stacktrace[end] = @set frame.line = line
 end

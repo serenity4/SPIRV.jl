@@ -209,6 +209,11 @@ end
 @noinline ControlBarrier(execution::Scope, scope::Scope, memory_semantics::MemorySemantics) = invokelatest(Returns(nothing))::Nothing
 @noinline MemoryBarrier(scope::Scope, memory_semantics::MemorySemantics) = invokelatest(Returns(nothing))::Nothing
 
+# Fragment operations
+
+@noinline TerminateInvocation() = invokelatest(Returns(nothing))::Nothing
+macro discard() :(return TerminateInvocation()) end
+
 # Vectors/matrices/arrays/pointers.
 
 @noinline IEqual(x::Vec, y::Vec) = x .== y

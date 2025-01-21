@@ -142,7 +142,15 @@ function Base.showerror(io::IO, err::CompilationError)
       file = contractuser(string(mi.def.file))
       ci = retrieve_code_instance(err.target.interp, mi)
       rettype = cached_return_type(ci)
-      line = !isnothing(frame.line) ? frame.line.line : !iszero(err.jinst_index) && i == lastindex(stacktrace) ? getline(err.target.code, err.jinst_index).line : mi.def.line
+      line = 0
+      if !isnothing(frame.line)
+        (; line) = frame.line
+      elseif err.jinst_index ≠ 0 && i == lastindex(stacktrace)
+        linenode = getline(err.target.code, err.jinst_index)
+        !isnothing(linenode) && (line = linenode.line)
+      else
+        (; line) = mi.def
+      end
       print(io, styled"""
         \n{$color,$weight: $(here ? '>' : ' ') [$i] $mi::$rettype}
              {magenta:@ $(mi.def.module)} {gray:$file:$line}""")
@@ -312,6 +320,7 @@ end
 function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, target::SPIRVTarget, range::UnitRange, node::Integer)
   (; code, ssavaluetypes, slottypes) = target.code
   blk = new_block!(fdef, ResultID(node, tr))
+  discard = false
   for i in range
     jinst = code[i]
     # Ignore single `nothing::Nothing` instructions.
@@ -325,6 +334,12 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
       # Act as if bounds checking was disabled, emitting a constant instead of the actual condition.
       insert!(tr.results, core_ssaval, emit!(mt, tr, Constant(jinst.args[1])))
       continue
+    elseif Meta.isexpr(jinst, :invoke) && isa(jinst.args[1], MethodInstance)
+      mi = jinst.args[1]
+      if GlobalRef(mi.def.module, mi.def.name) === GlobalRef(SPIRV, :TerminateInvocation)
+        discard = true
+        continue
+      end
     end
     jtype = ssavaluetypes[i]
     isa(jtype, Core.PartialStruct) && (jtype = jtype.typ)
@@ -332,21 +347,22 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
     ex = nothing
     tr.index = i
     try
+      discard && return add_expression!(blk, tr, @ex TerminateInvocation())
       @switch jinst begin
         @case ::Core.ReturnNode
         !isdefined(jinst, :val) && throw_compilation_error("unreachable statement encountered at location $i")
         ex = @match follow_globalref(jinst.val) begin
-          ::Nothing => @ex OpReturn()
+          ::Nothing => @ex Return()
           val => begin
             args = Any[val]
             remap_args!(args, mt, tr, OpReturnValue)
-            @ex OpReturnValue(only(args))
+            @ex ReturnValue(only(args))
           end
         end
         add_expression!(blk, tr, ex, core_ssaval)
         @case ::Core.GotoNode
         dest = tr.bb_results[Core.SSAValue(jinst.label)]
-        ex = @ex OpBranch(dest)
+        ex = @ex Branch(dest)
         add_expression!(blk, tr, ex, core_ssaval)
         @case ::Core.GotoIfNot
         # Core.GotoIfNot uses the SSA value of the first instruction of the target
@@ -354,7 +370,7 @@ function emit!(fdef::FunctionDefinition, mt::ModuleTarget, tr::Translation, targ
         dest = tr.bb_results[Core.SSAValue(jinst.dest)]
         (; cond) = jinst
         cond_id = isa(cond, Bool) ? emit!(mt, tr, Constant(cond)) : ResultID(cond, tr)
-        ex = @ex OpBranchConditional(cond_id, ResultID(node + 1, tr), dest)
+        ex = @ex BranchConditional(cond_id, ResultID(node + 1, tr), dest)
         add_expression!(blk, tr, ex, core_ssaval)
         @case _
         if isa(jinst, GlobalRef)
