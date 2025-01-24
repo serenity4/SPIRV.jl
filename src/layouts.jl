@@ -77,14 +77,14 @@ struct NativeLayout <: LayoutStrategy end
 datasize(layout::NativeLayout, ::Type{<:VecOrMat}) = error("Array dimensions must be provided to know the size of a vector or a matrix. If you intend to get the size of a vector of vectors or a vector of matrices, you must not use a tuple and must either provide a value or extra dimension arguments.")
 
 Base.@assume_effects :foldable Base.@constprop :aggressive @inline function datasize(layout::NativeLayout, ::Type{T}) where {T}
-  isbitstype(T) && return UInt(sizeof(T))
+  isbitstype(T) && return sizeof(T)
   isconcretetype(T) || error("A concrete type is required.")
   @assert isstructtype(T)
   n = fieldcount(T)
   offsets = ntuple(i -> dataoffset(layout, T, i), n)
   sizes = ntuple(i -> datasize(layout, fieldtype(T, i)), n)
   total_padding = sum(offsets[2:n] .- (offsets[1:(n - 1)] .+ sizes[1:(n - 1)]); init = 0)
-  sum(sizes; init = UInt(0)) + total_padding
+  sum(sizes; init = 0) + total_padding
 end
 
 Base.@assume_effects :foldable Base.@constprop :aggressive function dataoffset(layout::NativeLayout, ::Type{T}, i::Int) where {T}
@@ -109,8 +109,8 @@ struct NoPadding <: LayoutStrategy end
 
 Base.stride(layout::NoPadding, ::Type{<:VecOrMat{T}}) where {T} = element_stride(layout, T)
 element_stride(layout::NoPadding, T) = datasize(layout, T)
-datasize(layout::NoPadding, ::Type{T}) where {T} = isprimitivetype(T) ? sizeof(T) : sum(ntuple(i -> datasize(layout, fieldtype(T, i)), fieldcount(T)); init = 0)::Int64
-dataoffset(layout::NoPadding, ::Type{T}, i::Integer) where {T} = sum(ntuple(i -> datasize(layout, fieldtype(T, i)), i - 1); init = 0)::Int64
+datasize(layout::NoPadding, ::Type{T}) where {T} = isprimitivetype(T) ? sizeof(T) : sum(ntuple(i -> datasize(layout, fieldtype(T, i)), fieldcount(T)); init = 0)::Int
+dataoffset(layout::NoPadding, ::Type{T}, i::Integer) where {T} = sum(ntuple(i -> datasize(layout, fieldtype(T, i)), i - 1); init = 0)::Int
 alignment(::NoPadding, ::Type{T}) where {T} = 1
 
 padding(::NoPadding, T, i::Integer) = 0
