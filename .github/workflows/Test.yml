@@ -10,12 +10,12 @@ jobs:
       fail-fast: false
       matrix:
         julia-version: ["1", "pre"]
-        julia-arch: [x64, x86]
+        julia-arch: [x64]
         os: [ubuntu-latest]
         allow-failure: [false]
         include:
           - julia-version: "nightly"
-            julia-arch: x86
+            julia-arch: x64
             os: ubuntu-latest
             allow-failure: true
 
