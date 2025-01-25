@@ -66,7 +66,16 @@ function serialize_array!(bytes, data::AbstractVecOrMat, layout::LayoutStrategy,
     pad!(bytes, padding)
   end
 end
-function serialize!(bytes, data::VecOrMat, layout::LayoutStrategy)
+
+function serialize!(bytes, data::Vector, layout::LayoutStrategy)
+  T = typeof(data)
+  isbitstype(eltype(data)) &&
+    stride(NativeLayout(), T) == stride(layout, T) &&
+    return append!(bytes, reinterpret(UInt8, data))
+  serialize_array!(bytes, data, layout, padding(layout, data))
+end
+
+function serialize!(bytes, data::Matrix, layout::LayoutStrategy)
   pad = padding(layout, data)
   iszero(pad) && isbitstype(eltype(data)) && return append!(bytes, reinterpret(UInt8, data))
   serialize_array!(bytes, data, layout, pad)

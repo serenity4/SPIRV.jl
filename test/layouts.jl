@@ -101,10 +101,16 @@ struct Align12
   attenuation::Float32
 end
 
+struct Align13
+  range::UnitRange{UInt32}
+  font_size::Float32
+  color::Vec4
+end
+
 primitive type WeirdType 24 end
 WeirdType(bytes = [0x01, 0x02, 0x03]) = reinterpret(WeirdType, bytes)[]
 
-align_types = [Align1, Align2, Align3, Align4, Align5, Align6, Align7, Align8, Align9, Align10, Align11, Align12]
+align_types = [Align1, Align2, Align3, Align4, Align5, Align6, Align7, Align8, Align9, Align10, Align11, Align12, Align13]
 alltypes = [align_types; WeirdType]
 layout = VulkanLayout(align_types)
 
@@ -241,6 +247,12 @@ layout = VulkanLayout(align_types)
     add_type_layouts!(tmeta, layout)
     test_has_offset(tmeta, Align11, 1, 0)
     test_has_offset(tmeta, Align11, 2, 16)
+
+    tmeta = TypeMetadata([Align13])
+    add_type_layouts!(tmeta, layout)
+    test_has_offset(tmeta, Align13, 1, 0)
+    test_has_offset(tmeta, Align13, 2, 8)
+    test_has_offset(tmeta, Align13, 3, 16)
   end
 
   @testset "Array/Matrix layouts" begin
