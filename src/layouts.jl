@@ -38,7 +38,7 @@ function datasize end
 
 element_stride(layout::LayoutStrategy, t, array_sizes...) = align(datasize(layout, t, array_sizes...), alignment(layout, t, array_sizes...))
 
-function padding(layout::LayoutStrategy, T, i)
+function padding(layout::LayoutStrategy, ::Type{T}, i) where {T}
   i == 1 && return 0
   offset = dataoffset(layout, T, i)
   last = dataoffset(layout, T, i - 1) + datasize(layout, fieldtype(T, i - 1))
@@ -113,7 +113,7 @@ datasize(layout::NoPadding, ::Type{T}) where {T} = isprimitivetype(T) ? sizeof(T
 dataoffset(layout::NoPadding, ::Type{T}, i::Integer) where {T} = sum(ntuple(i -> datasize(layout, fieldtype(T, i)), i - 1); init = 0)::Int
 alignment(::NoPadding, ::Type{T}) where {T} = 1
 
-padding(::NoPadding, T, i::Integer) = 0
+padding(::NoPadding, ::Type{T}, i::Integer) where {T} = 0
 padding(::NoPadding, ::Type{Vector{T}}) where {T} = 0
 
 @struct_hash_equal struct LayoutInfo
@@ -213,13 +213,13 @@ Vulkan-compatible layout strategy.
 @struct_hash_equal struct VulkanLayout <: LayoutStrategy
   alignment::VulkanAlignment
   tmap::TypeMap
-  storage_classes::Dict{SPIRType,Set{StorageClass}}
-  interfaces::Set{SPIRType}
+  storage_classes::Dict{SPIRType,Vector{StorageClass}}
+  interfaces::Vector{SPIRType}
 end
 
 Base.getindex(layout::VulkanLayout, T::DataType) = getindex(layout.tmap, T)
 
-storage_classes(layout::VulkanLayout, type::SPIRType) = get!(Set{StorageClass}, layout.storage_classes, type)
+storage_classes(layout::VulkanLayout, type::SPIRType) = get!(Vector{StorageClass}, layout.storage_classes, type)
 isinterface(layout::VulkanLayout, type::SPIRType) = istype(type, SPIR_TYPE_STRUCT) && in(type, layout.interfaces)
 
 alignment(layout::VulkanLayout, type::SPIRType) = alignment(layout, layout.alignment, type)
@@ -238,10 +238,6 @@ function alignment(layout::VulkanLayout, vulkan::VulkanAlignment, type::SPIRType
   else
     base_alignment(type)
   end
-end
-
-function alignment(vulkan::VulkanAlignment, type::SPIRType, storage_classes, is_interface::Bool)
-  
 end
 
 Base.stride(layout::VulkanLayout, ::Type{T}) where {T} = stride(layout, layout[T])::Int
@@ -383,13 +379,19 @@ function TypeMetadata(Ts; storage_classes = Dict(), interfaces = [])
 end
 
 function storage_classes(types, type::SPIRType)
-  Set{StorageClass}(t.pointer.storage_class for t in types if istype(t, SPIR_TYPE_POINTER) && t.pointer.type == type)
+  result = StorageClass[]
+  for t in types
+    istype(t, SPIR_TYPE_POINTER) || continue
+    t.pointer.type == type || continue
+    !in(result, t.pointer.storage_class) && push!(result, t.pointer.storage_class)
+  end
+  result
 end
 storage_classes(tmeta::TypeMetadata, type::SPIRType) = storage_classes(keys(tmeta.d), type)
 
 isinterface(tmeta::TypeMetadata, type::SPIRType) = istype(type, SPIR_TYPE_STRUCT) && has_decoration(tmeta, type, DecorationBlock)
 
-VulkanLayout(alignment::VulkanAlignment) = VulkanLayout(alignment, TypeMap(), Dict{SPIRType, Set{StorageClass}}(), Set{SPIRType}())
+VulkanLayout(alignment::VulkanAlignment) = VulkanLayout(alignment, TypeMap(), Dict{SPIRType, Set{StorageClass}}(), SPIRType[])
 VulkanLayout(; scalar_block_layout::Bool = false, uniform_buffer_standard_layout::Bool = false) = VulkanLayout(VulkanAlignment(scalar_block_layout, uniform_buffer_standard_layout))
 
 merge_layout!(layout::VulkanLayout, ir::IR) = merge_layout!(layout, TypeMetadata(ir))
@@ -397,7 +399,8 @@ function merge_layout!(layout::VulkanLayout, tmeta::TypeMetadata)
   merge!(layout.tmap, tmeta.tmap)
   for type in layout.tmap
     layout.storage_classes[type] = storage_classes(tmeta, type)
-    istype(type, SPIR_TYPE_STRUCT) && isinterface(tmeta, type) && push!(layout.interfaces, type)
+    istype(type, SPIR_TYPE_STRUCT) && isinterface(tmeta, type) || continue
+    !in(type, layout.interfaces) && push!(layout.interfaces, type)
   end
   layout
 end
