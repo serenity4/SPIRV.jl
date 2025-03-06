@@ -383,7 +383,7 @@ function storage_classes(types, type::SPIRType)
   for t in types
     istype(t, SPIR_TYPE_POINTER) || continue
     t.pointer.type == type || continue
-    !in(result, t.pointer.storage_class) && push!(result, t.pointer.storage_class)
+    !in(t.pointer.storage_class, result) && push!(result, t.pointer.storage_class)
   end
   result
 end

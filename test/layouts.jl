@@ -284,6 +284,6 @@ layout = VulkanLayout(align_types)
     z = merge!(x, y)
     @test z[Int64] == x[Int64]
     @test z[Align1] == y[Align1]
-    @test z.interfaces == Set([z[Align1]])
+    @test z.interfaces == [z[Align1]]
   end
 end;
