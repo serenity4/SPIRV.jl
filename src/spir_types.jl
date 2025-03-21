@@ -270,15 +270,21 @@ function Base.:(==)(x::SPIRType, y::SPIRType)
 end
 
 function Base.hash(type::SPIRType, h::UInt)
-  h = hash(SPIRType, hash(type.typename, h))
-  @match type.typename begin
-    &SPIR_TYPE_FUNCTION => begin
-      (; rettype, argtypes) = type.function
-      hash(rettype, hash(argtypes, h))
-    end
-    &SPIR_TYPE_STRUCT => hash(type.struct.uuid, h)
-    _ => hash(type.data, h)
+  base = @match type.typename begin
+    &SPIR_TYPE_FLOAT => hash(type.float)
+    &SPIR_TYPE_INTEGER => hash(type.integer)
+    &SPIR_TYPE_VECTOR => hash(type.vector)
+    &SPIR_TYPE_MATRIX => hash(type.matrix)
+    &SPIR_TYPE_ARRAY => hash(type.array)
+    &SPIR_TYPE_OPAQUE => hash(type.opaque)
+    &SPIR_TYPE_IMAGE => hash(type.image)
+    &SPIR_TYPE_SAMPLED_IMAGE => hash(type.image_type)
+    &SPIR_TYPE_STRUCT => hash(type.struct.uuid)
+    &SPIR_TYPE_POINTER => hash(type.pointer)
+    &SPIR_TYPE_FUNCTION => hash(type.function)
+    _ => hash(type.data)
   end
+  hash(base, hash(type.typename, hash(SPIRType, h)))
 end
 
 const IS_SPEC_CONST_FALSE = Ref(false)

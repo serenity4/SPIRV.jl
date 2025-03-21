@@ -158,7 +158,7 @@ function infer(mi::MethodInstance, interp::AbstractInterpreter)
   local ci
   try
     @static if VERSION ≥ v"1.12-DEV"
-      inferred_ci = CC.typeinf_ext_toplevel(interp, mi, CC.SOURCE_MODE_FORCE_SOURCE)
+      inferred_ci = CC.typeinf_ext(interp, mi, CC.SOURCE_MODE_ABI)
     else
       inferred_ci = CC.typeinf_ext_toplevel(interp, mi)
     end
