@@ -196,6 +196,7 @@ end
 # Deepcopy has only one implementation and relies on `deepcopy_internal` with consistent semantics.
 @_override deepcopy(x) = CopyObject(x)
 # XXX: This overrides all definitions of `copy` for the purpose of method lookup and therefore breaks a few things.
+# XXX: This should be a fallback method, that does not shadow more specific methods defined elsewhere.
 # @override copy(x) = CopyObject(x)
 
 @override copysign(x::T, y::T) where {T <: Union{Float32, Float64}} = ifelse(y < 0, -x, x)

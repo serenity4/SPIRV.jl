@@ -461,7 +461,7 @@ end
 
 function validate(code::CodeInfo)::Result{Bool,ValidationError}
   globalrefs = Dictionary{Core.SSAValue, GlobalRef}()
-  validation_error(msg, i, ex, (line,)) = ValidationError(string(msg, " in expression `", ex, "` at code location ", i, " around ", line.file, ":", line.line, '\n'))
+  validation_error(msg, i, ex, line) = ValidationError(string(msg, " in expression `", ex, "` at code location ", i, " around ", line.file, ":", line.line, '\n'))
   for (i, ex) in enumerate(code.code)
     ex === nothing && continue
     isa(ex, GlobalRef) && insert!(globalrefs, Core.SSAValue(i), ex)
