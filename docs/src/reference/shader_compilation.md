@@ -29,22 +29,22 @@ The limitations imposed on Julia programs for SPIR-V compilation are the followi
 
 A few additional limitations exist currently that may be removed in the future:
 - Keyword arguments are not supported.
-- Mutable objects can be mutated, but will not see mutations to their mutable fields: if `x.a` is modified, `x.a` will return the modified value, but if `x.a.b` is modified, `x.a.b` will return the original value. This stems from a fundamental difference in the expression of mutability between Julia and SPIR-V, and may prove quite difficult to address reliably. For this reason, it is highly advised that you avoid relying on mutability in shader code.
-- Methods attached to objects cannot be compiled, or only if the resulting code does not use its members. For this reason, prefer `blur(x::GaussianBlur, ...) = compute_blur(x.strength, ...)` to `(x::GaussianBlur)(...) = compute_blur(x.strength)`. For this reason, closures (which are callable objects in disguise) should always be inlined so that they are optimized away.
-- `Base.ctlz` and `Base.cttz` intrinsics to count leading and trailing zeroes, respectively.
-- `Expr(:throw_undef_if_not, ...)` is not supported, forbidding to have programs that access a variable that may or may not have been defined depending on prior control-flow.
+- Mutable objects can't be mutated, but a [`Mutable`](@ref) object may be constructed which then supports `setindex!` (acting like a `Ref`, but with special support for SPIR-V mutation semantics). This limitation stems from the fact that SPIR-V expresses mutability in a fundamentally different way than Julia, which can't be reliably supported.
+- Callable objects cannot be compiled, or only if the resulting code does not access any of its fields. For this reason, prefer `blur(x::GaussianBlur, ...) = compute_blur(x.strength, ...)` to `(x::GaussianBlur)(...) = compute_blur(x.strength, ...)`. For this reason, closures (which are callable objects in disguise) should always be [inlined](https://docs.julialang.org/en/v1/base/base/#Base.@inline) so that these intermediate objects may be optimized away.
+- `Base.ctlz` and `Base.cttz` intrinsics to count leading and trailing zeroes are not supported, having no SPIR-V counterpart.
+- `Expr(:throw_undef_if_not, ...)` is not supported, forbidding programs that access a variable that may or may not have been defined depending on prior control-flow.
 
-Due to these limitations, arbitrary Julia code is unlikely to compile successfully out of the box without a conscious effort to only operate in the allowed Julia language subset.
+Due to these limitations, arbitrary Julia code is unlikely to compile successfully out of the box without a conscious effort to only operate within the compatible Julia language subset.
 
 Regarding support for the SPIR-V language:
 - Most basic SPIR-V instructions are covered.
 - A few SPIR-V instructions are not covered yet, especially those related to advanced uses; if you need one that is missing, please file an issue or contact the developers directly. We aim to have all shader-related SPIR-V instructions added eventually.
 - GLSL intrinsics are available via a corresponding method table overlay (which can be disabled).
 - Data layouts are automatically computed according to a [`LayoutStrategy`](@ref).
-- SPIR-V capabilities and extensions are automatically declared based on a user-provided [`FeatureSupport`](@ref) (see [`SupportedFeatures`](@ref) to specify the exact set of features supported by a given driver).
+- SPIR-V capabilities and extensions are automatically declared in shaders based on a user-provided [`FeatureSupport`](@ref) (see [`SupportedFeatures`](@ref) to specify the exact set of features supported by a given driver).
 - Vulkan features and extensions are automatically translated to SPIR-V capabilities and features, provided by a [Vulkan.jl](https://github.com/JuliaGPU/Vulkan.jl) package extension that adds a constructor to [`SupportedFeatures`](@ref).
 
-Any Julia program that you can write in perspective of being compiled to SPIR-V *should* be executable on the CPU, unless they rely on specific configurations of the SPIR-V execution environment. For instance, filtered [image operations](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_image_instructions) are not supported for CPU execution, nor are [derivative operations](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#Derivative) or [group operations](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_group_and_subgroup_instructions), to cite a few.
+Any Julia program that you can write in perspective of being compiled to SPIR-V should be executable on the CPU, unless they rely on specific configurations of the SPIR-V execution environment. For instance, filtered [image operations](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_image_instructions) are not supported for CPU execution, nor are [derivative operations](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#Derivative) or [group operations](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_group_and_subgroup_instructions), to cite a few.
 
 ## Targeting SPIR-V via LLVM
 
@@ -52,4 +52,4 @@ As described in the [introduction](@ref Introduction), SPIR-V and LLVM IR are bo
 
 There exists a [SPIR-V to LLVM bidirectional translator](https://github.com/KhronosGroup/SPIRV-LLVM), but the project title omits one thing: only the OpenCL subset of SPIR-V is supported. Adding support for the graphics subset would be a tedious task; see [this issue comment](https://github.com/KhronosGroup/SPIRV-LLVM/issues/202#issuecomment-278367134) for more details about a few of the challenges involved.
 
-Therefore, we cannot rely on LLVM tooling to generate SPIR-V from Julia code; that is unfortunate, as we otherwise might have been able to use the [GPUCompiler.jl](https://github.com/JuliaGPU/GPUCompiler.jl) infrastructure. One promising approach so far is to [target SPIR-V from Julia IR](@ref compiler) using the `AbstractInterpreter` interface, hooking into Julia's compilation pipeline in a way that is similar to [GPUCompiler.jl](https://github.com/JuliaGPU/GPUCompiler.jl) until we bifurcate to emit SPIR-V IR instead of LLVM IR.
+Therefore, we cannot rely on LLVM tooling to generate SPIR-V from Julia code; that is unfortunate, as we otherwise might have been able to use the [GPUCompiler.jl](https://github.com/JuliaGPU/GPUCompiler.jl) infrastructure. The approach so far that has been promising is to [target SPIR-V from Julia IR](@ref compiler) using the `AbstractInterpreter` interface, hooking into Julia's compilation pipeline in a way that is similar to [GPUCompiler.jl](https://github.com/JuliaGPU/GPUCompiler.jl) until we bifurcate to emit SPIR-V IR instead of LLVM IR.

@@ -40,23 +40,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         end
         (OpCompositeExtract, (composite, field_idx))
       end
-      &setfield! => begin
-        composite = args[1]
-        field_idx = @match args[2] begin
-          node::QuoteNode => get_field_index(composite, node, tr, target)
-          idx::Core.SSAValue => begin
-            if istype(spir_type(target, tr, args[1]), SPIR_TYPE_ARRAY)
-              throw_compilation_error("dynamic `setfield!` into homogeneous tuples is not yet supported")
-            else
-              throw_compilation_error("dynamic `setfield!` into inhomogeneous tuple or struct members is not supported")
-            end
-          end
-          idx::Integer => idx
-          field => throw_compilation_error("unknown field type $(typeof(field))")
-        end
-        value = args[3]
-        throw_compilation_error("`setfield!` not supported at the moment")
-      end
+      &setfield! => throw_compilation_error("`setfield!` is not supported; use a `Mutable` object with `setindex!` instead")
       &Core.tuple => (OpCompositeConstruct, args)
       &(===) => begin
         x, y = args

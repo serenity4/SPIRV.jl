@@ -38,7 +38,7 @@ Module annotated with instruction ranges for each logical SPIR-V section, suitab
 
 Any desired modifications of annotated modules should be staged and applied via a [`Diff`](@ref).
 
-!!! warn
+!!! warning
     This module *should not* be modified, and in particular *must not* have its structure affected in any way by the insertion or removal of instructions.
     Modifications can cause the annotations to become out of sync with the updated state of the module, yielding undefined behavior.
 """
