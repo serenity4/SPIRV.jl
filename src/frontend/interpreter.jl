@@ -99,5 +99,5 @@ Core.Compiler.cache_owner(interp::SPIRVInterpreter) = interp.token
 Core.Compiler.method_table(si::SPIRVInterpreter) = si.method_table
 
 function Base.show(io::IO, interp::SPIRVInterpreter)
-  print(io, SPIRVInterpreter, '(', interp.inference_parameters, ", ", interp.optimization_parameters, ')')
+  print(io, typeof(interp), "(...)")
 end

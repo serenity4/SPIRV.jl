@@ -219,6 +219,14 @@ end
 
 Base.getindex(layout::VulkanLayout, T::DataType) = getindex(layout.tmap, T)
 
+function Base.show(io::IO, layout::VulkanLayout)
+  print(io, typeof(layout), '(')
+  print(io, length(layout.tmap), " types")
+  print(io, ", ", length(layout.storage_classes), " storage classes")
+  print(io, ", ", length(layout.interfaces), " interface types")
+  print(io, ')')
+end
+
 storage_classes(layout::VulkanLayout, type::SPIRType) = get!(Vector{StorageClass}, layout.storage_classes, type)
 isinterface(layout::VulkanLayout, type::SPIRType) = istype(type, SPIR_TYPE_STRUCT) && in(type, layout.interfaces)
 

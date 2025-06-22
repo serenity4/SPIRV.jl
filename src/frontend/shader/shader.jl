@@ -49,6 +49,14 @@ function Base.show(io::IO, mime::MIME"text/plain", shader::Shader)
   end
 end
 
+function Base.show(io::IO, shader::Shader)
+  print(io, typeof(shader), '(')
+  print(io, shader.ir)
+  print(io, ", ", "entry point: ", shader.entry_point)
+  print(io, ", ", "specializations: "); show(io, shader.specializations)
+  print(io, ')')
+end
+
 function ShaderSource(shader::Shader; validate::Bool = true, optimize = false)
   # Validate if we are going to optimize, otherwise the optimizer may fail.
   validate |= optimize
