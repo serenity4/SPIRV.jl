@@ -71,6 +71,7 @@ function construct_cfg(cfg::Core.Compiler.CFG)
   g = DeltaGraph(length(cfg.blocks))
   for (i, block) in enumerate(cfg.blocks)
     for pred in block.preds
+      pred === 0 && continue
       add_edge!(g, pred, i)
     end
     for succ in block.succs
