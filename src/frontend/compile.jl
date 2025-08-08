@@ -1,3 +1,16 @@
+Base.@kwdef struct CompilationConfig
+  # Compiler passes.
+  compact_blocks::Bool = true
+  fill_phi_branches::Bool = true
+  remap_dynamic_1based_indices::Bool = true
+  egal_to_recursive_equal::Bool = true
+  propagate_constants::Bool = true
+  composite_extract_to_vector_extract_dynamic::Bool = true
+  composite_extract_dynamic_to_literal::Bool = true
+  composite_extract_to_access_chain_load::Bool = true
+  remove_op_nops::Bool = true
+end
+
 @refbroadcast struct ModuleTarget
   extinst_imports::Dictionary{String,ResultID}
   types::BijectiveMapping{ResultID,SPIRType}
@@ -5,13 +18,14 @@
   global_vars::BijectiveMapping{ResultID,Variable}
   fdefs::BijectiveMapping{ResultID,FunctionDefinition}
   metadata::ResultDict{Metadata}
+  config::CompilationConfig
   debug::DebugInfo
   idcounter::IDCounter
 end
 
 @forward_methods ModuleTarget field = :metadata metadata!(_, args...) decorations!(_, args...) decorations(_, args...) has_decoration(_, args...) decorate!(_, args...)
 
-ModuleTarget() = ModuleTarget(Dictionary(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), ResultDict(), DebugInfo(), IDCounter(0))
+ModuleTarget(; config = CompilationConfig()) = ModuleTarget(Dictionary(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), BijectiveMapping(), ResultDict(), config, DebugInfo(), IDCounter(0))
 
 GlobalsInfo(mt::ModuleTarget) = GlobalsInfo(mt.types, mt.constants, mt.global_vars)
 
@@ -58,7 +72,8 @@ function compile(@nospecialize(f), @nospecialize(argtypes = Tuple{}), args...; i
   compile(SPIRVTarget(f, argtypes; interp), args...)
 end
 
-compile(target::SPIRVTarget, args...) = compile!(ModuleTarget(), Translation(target), target, args...)
+compile(target::SPIRVTarget, args...; config = CompilationConfig()) =
+  compile!(ModuleTarget(; config), Translation(target), target, args...)
 
 function compile!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget, globals::Dictionary{Int,Union{Constant,Variable}} = Dictionary{Int,Union{Constant,Variable}}())
   emit!(mt, tr, target, globals)
@@ -82,17 +97,19 @@ function IR(mt::ModuleTarget, tr::Translation)
   ir.idcounter = mt.idcounter
   ir.tmap = tr.tmap
   ir.metadata = mt.metadata
-  compact_blocks!(ir)
-  fill_phi_branches!(ir)
-  remap_dynamic_1based_indices!(ir)
-  egal_to_recursive_equal!(ir)
+  (; config) = mt
+  config.compact_blocks && compact_blocks!(ir)
+  config.fill_phi_branches && fill_phi_branches!(ir)
+  config.remap_dynamic_1based_indices && remap_dynamic_1based_indices!(ir)
+  config.egal_to_recursive_equal && egal_to_recursive_equal!(ir)
   # XXX: Only a handful of operations are propagated, related to index conversions
   # and subtractions coming from Int64 1-based vs UInt32 0-based indexing.
-  propagate_constants!(ir)
-  composite_extract_to_vector_extract_dynamic!(ir)
-  composite_extract_dynamic_to_literal!(ir)
-  composite_extract_to_access_chain_load!(ir)
-  remove_op_nops!(ir)
+  config.propagate_constants && propagate_constants!(ir)
+  config.composite_extract_to_vector_extract_dynamic && composite_extract_to_vector_extract_dynamic!(ir)
+  config.composite_extract_dynamic_to_literal && composite_extract_dynamic_to_literal!(ir)
+  config.composite_extract_to_access_chain_load && composite_extract_to_access_chain_load!(ir)
+  config.remove_op_nops && remove_op_nops!(ir)
+  return ir
 end
 
 mutable struct CompilationError <: Exception
