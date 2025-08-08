@@ -288,7 +288,7 @@ function Base.show(io::IO, mime::MIME"text/plain", (mod, debug)::Pair{Module,Deb
   str = sprint(disassemble, mod; context = IOContext(io))
   lines = split(str, '\n')
   filter!(lines) do line
-    !contains(line, "OpName") && !contains(line, "OpMemberName")
+    !contains(line, "Name") && !contains(line, "MemberName")
   end
   lines = map(lines) do line
     replace(line, r"%\d+" => id -> replace_name(parse(ResultID, id), debug.filenames))
@@ -303,7 +303,7 @@ end
 
 function Base.show(io::IO, mime::MIME"text/plain", ir::IR)
   mod = Module(ir)
-  isnothing(ir.debug) && return show(io, mime, mod)
+  ir.debug === nothing && return show(io, mime, mod)
   show(io, mime, mod => ir.debug)
 end
 
