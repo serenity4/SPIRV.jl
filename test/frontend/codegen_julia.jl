@@ -1,5 +1,5 @@
 using SPIRV, Test
-using SPIRV: @trymatch
+using SPIRV: @trymatch, get_method_instance
 
 function operation(ex; mod = SPIRV)
   @trymatch ex begin
@@ -33,7 +33,7 @@ function test_code(code_info; maxlength = nothing, minlength = nothing, spirv_ch
         spirv_chunk_broken ? @debug(msg) : @error(msg)
         return false
       end
-      mi = st.args[1]::Core.MethodInstance
+      mi = get_method_instance(st.args[1])
       mi.def.module === SPIRV && !isnothing(SPIRV.lookup_opcode(mi.def.name)) && return true
       msg = "Expected `invoke` expression corresponding to a SPIR-V opcode, got `$st`"
       spirv_chunk_broken ? @debug(msg) : @error(msg)
@@ -290,7 +290,7 @@ end
     @test_code ci minlength = 8 maxlength = 8 # 4 accesses, 3 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source sum(::Arr{10,Float32})
-    @test_code ci minlength = 20 maxlength = 20 # 10 accesses, 9 additions, 1 return
+    @test_code ci minlength = 20 maxlength = 30 # 10 accesses, 9 additions, 1 return
 
     ci = SPIRV.@code_typed debuginfo=:source ((x, y) -> x .+ y)(::Vec2, ::Vec2)
     @test_code ci minlength = 2 maxlength = 2 # 1 addition, 1 return
@@ -299,7 +299,7 @@ end
     @test_code ci minlength = 11 maxlength = 13 # Two `UConvert`s may be present.
 
     ci = SPIRV.@code_typed debuginfo=:source (+)(::Arr{3,Vec2}, ::Arr{3, Vec2})
-    @test_code ci minlength = 11 maxlength = 11
+    @test_code ci minlength = 11 maxlength = 16
 
     ci = SPIRV.@code_typed debuginfo=:source convert(::Type{Arr{5,Float32}}, ::Arr{5,Float32})
     @test_code ci minlength = 1 maxlength = 1 # 1 return

@@ -218,7 +218,7 @@ macro discard() :(return TerminateInvocation()) end
 
 @noinline IEqual(x::Vec, y::Vec) = x .== y
 @noinline FOrdEqual(x::Vec, y::Vec) = x .== y
-@noinline Any(x::Vec{<:Any,Bool}) = any(x.data)
+@noinline Base.Any(x::Vec{<:Any,Bool}) = any(x.data)
 @noinline All(x::Vec{<:Any,Bool}) = all(x.data)
 
 @noinline FConvert(::Type{Vec{N,T}}, v::Vec{N}) where {N,T} = convert_vec(Vec{N,T}, v)

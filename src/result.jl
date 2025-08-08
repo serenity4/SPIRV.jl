@@ -17,7 +17,7 @@ Base.convert(::Type{ResultID}, id::Integer) = ResultID(id)
 
 Base.zero(::Type{ResultID}) = ResultID(zero(UInt32))
 
-UInt32(id::ResultID) = reinterpret(UInt32, id)
+Base.UInt32(id::ResultID) = reinterpret(UInt32, id)
 
 Base.tryparse(::Type{ResultID}, id::AbstractString) = !isempty(id) && return ResultID(parse(UInt32, id[2:end]))
 Base.parse(::Type{ResultID}, id::AbstractString) = tryparse(ResultID, id)::ResultID

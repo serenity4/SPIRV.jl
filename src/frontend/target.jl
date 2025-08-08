@@ -65,7 +65,15 @@ function simplify_cfg!(code::CodeInfo)
   ir, code
 end
 
-inferred_code(ci::CodeInstance) = isa(ci.inferred, CodeInfo) ? ci.inferred : Core.Compiler._uncompressed_ir(ci, ci.inferred)
+function inferred_code(interp::SPIRVInterpreter, ci::CodeInstance)
+  src = ci.inferred
+  isa(src, CodeInfo) && return src
+  isa(src, String) && return CC._uncompressed_ir(ci, src)
+  @assert src === nothing
+  ci.rettype
+  value = ci.rettype_const
+  return CC.codeinfo_for_const(interp, get_method_instance(ci), value)
+end
 
 function construct_cfg(cfg::Core.Compiler.CFG)
   g = DeltaGraph(length(cfg.blocks))
@@ -81,7 +89,7 @@ function construct_cfg(cfg::Core.Compiler.CFG)
   g
 end
 
-SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = SPIRVTarget(mi, inferred_code(ci), interp)
+SPIRVTarget(mi::MethodInstance, ci::CodeInstance, interp::AbstractInterpreter) = SPIRVTarget(mi, inferred_code(interp, ci), interp)
 function SPIRVTarget(mi::MethodInstance, code::CodeInfo, interp::AbstractInterpreter)
   ir, code = simplify_cfg!(code)
   g = construct_cfg(ir.cfg)
@@ -158,20 +166,21 @@ function infer(mi::MethodInstance, interp::AbstractInterpreter)
   old = disable_code_coverage()
   local ci
   try
-    @static if VERSION ≥ v"1.12-DEV"
-      inferred_ci = CC.typeinf_ext(interp, mi, CC.SOURCE_MODE_ABI)
+    @static if VERSION > v"1.12-"
+      inferred_ci = CC.typeinf_ext(interp, mi, CC.SOURCE_MODE_GET_SOURCE)
     else
       inferred_ci = CC.typeinf_ext_toplevel(interp, mi)
     end
     cache = code_instance_cache(interp)
     ci = CC.get(cache, mi, nothing)
-    !isnothing(ci) || error("Could not get inferred code from the cache for $mi.\n\nThis may be caused by a @generated function body that failed to produce an output.")
+    ci === nothing && error("Could not get inferred code from the cache for $mi.\n\nThis may be caused by a @generated function body that failed to produce an output.")
 
     # If src is rettyp_const, the `CodeInfo` is dicarded after type inference
     # (because it is normally not supposed to be used ever again).
     # To avoid the need to re-infer to get the code, store it manually.
-    @static if VERSION ≥ v"1.12-DEV"
-      if ci.inferred === nothing && isdefined(ci, :rettype_const)
+    @static if VERSION > v"1.12-"
+      if ci.inferred === nothing
+        isdefined(ci, :rettype_const) || error("No inferred source available")
         CC.setindex!(cache, inferred_ci, mi)
         ci = CC.getindex(cache, mi)
       end

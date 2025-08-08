@@ -62,7 +62,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
       ::Function => throw_compilation_error("dynamic dispatch detected for function `$f`. All call sites must be statically resolved")
       _ => throw_compilation_error("call to unknown function `$f`")
     end
-    Expr(:invoke, mi, f, args...) => begin
+    Expr(:invoke, src, f, args...) => begin
       f = @match f begin
         ::Core.SSAValue => begin
           value = get(tr.globalrefs, f, nothing)
@@ -71,8 +71,18 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
         end
         ::Core.Argument => throw_compilation_error("call to function argument `$f` detected. All function calls must be made to globally defined symbols; if using a closure, the closure must be inlined")
         ::GlobalRef => f
-        ::Function => throw_compilation_error("`invoke` call to generic function `$f` detected, possibly indicative of a user error")
-        _ => throw_compilation_error("unhandled call to `$f` of type $(typeof(f))")
+        _ => @match src begin
+          ci::CodeInstance => begin
+            ci.rettype === Union{} && throw_compilation_error("call to function `$f` throws unconditionally")
+            mi = get_method_instance(ci)
+            method = mi.def::Method
+            GlobalRef(method.module, method.name)
+          end
+          _ => @match f begin
+              ::Function => throw_compilation_error("`invoke` call to generic function `$f` detected, possibly indicative of a user error")
+            _ => throw_compilation_error("unhandled call to `$f` of type $(typeof(f))")
+          end
+        end
       end
       if f.mod == @__MODULE__() || !in(f.mod, (Base, Core))
         opcode = lookup_opcode(f.name)

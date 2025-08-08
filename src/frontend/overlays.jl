@@ -347,17 +347,23 @@ for N in 2:4
     @override dot(x::Vec{$N,<:BitSigned}, y::Vec{$N,<:BitUnsigned}) = SUDot(x, y)
 
     @_override @generated foldl(f::F, xs::Vec{$N}) where {F<:Function} =
-      foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex_uint32(xs)[2:end]; init = :(xs[$(firstindex_uint32(xs))]))
+      foldl((x, y) -> quote f($x, xs[$y]) end, eachindex_uint32(xs)[2:end]; init = quote xs[$(firstindex_uint32(xs))] end)
     @_override @generated foldl(f::F, xs::Vec{$N}, init) where {F <: Function} =
-      foldl((x, y) -> Expr(:call, :f, x, :(xs[$y])), eachindex_uint32(xs); init = :init)
+      foldl((x, y) -> quote f(x, xs[$y]) end, eachindex_uint32(xs); init = :init)
     @_override @generated foldr(f::F, xs::Vec{$N}) where {F<:Function} =
-      foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex_uint32(xs)[1:(end - 1)]; init = :(xs[$(lastindex_uint32(xs))]))
+      foldr((x, y) -> quote f(xs[$x], y) end, eachindex_uint32(xs)[1:(end - 1)]; init = quote xs[$(lastindex_uint32(xs))] end)
     @_override @generated foldr(f::F, xs::Vec{$N}, init) where {F <: Function} =
-      foldr((x, y) -> Expr(:call, :f, :(xs[$x]), y), eachindex_uint32(xs); init = :init)
+      foldr((x, y) -> quote f(xs[$x], y) end, eachindex_uint32(xs); init = :init)
     @_override any(f::F, xs::Vec{$N}) where {F<:Function} = foldl((x, y) -> x | f(y), xs, false)
     @_override all(f::F, xs::Vec{$N}) where {F<:Function} = foldl((x, y) -> x & f(y), xs, true)
-    @_override @generated sum(f::F, xs::Vec{$N}) where {F<:Function} = Expr(:call, :+, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
-    @_override @generated prod(f::F, xs::Vec{$N}) where {F<:Function} = Expr(:call, :*, (:(f(xs[$i])) for i in eachindex_uint32(xs))...)
+    @_override @generated function sum(f::F, xs::Vec{$N}) where {F<:Function}
+      terms = [:(f(xs[$i])) for i in eachindex_uint32(xs)]
+      quote +($(terms...)) end
+    end
+    @_override @generated function prod(f::F, xs::Vec{$N}) where {F<:Function}
+      factors = [:(f(xs[$i])) for i in eachindex_uint32(xs)]
+      quote *($(factors...)) end
+    end
     @_override sum(xs::Vec{$N}) = sum(identity, xs)
     @_override prod(xs::Vec{$N}) = prod(identity, xs)
 

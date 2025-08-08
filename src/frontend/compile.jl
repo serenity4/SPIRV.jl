@@ -449,14 +449,18 @@ macro compile(ex)
 end
 
 function getline(code::CodeInfo, i::Int)
-  @static if VERSION ≥ v"1.12-DEV"
+  @static if VERSION > v"1.12-"
     line = Base.IRShow.buildLineInfoNode(code.debuginfo, code.parent, i)
+    return @match line begin
+      [_..., line] => line
+      [] => nothing
+      _ => line
+    end
   else
     codeloc = code.codelocs[i]
     iszero(codeloc) && return nothing
-    line = code.linetable[codeloc]
+    code.linetable[codeloc]
   end
-  line
 end
 
 function validate(code::CodeInfo)::Result{Bool,ValidationError}
@@ -478,8 +482,8 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
         ::Function => return validation_error("Dynamic dispatch detected", i, ex, line)
         _ => return validation_error("Expected `GlobalRef`", i, ex, line)
       end
-      Expr(:invoke, mi, f, _...) => begin
-        mi::MethodInstance
+      Expr(:invoke, src, f, _...) => begin
+        mi = get_method_instance(src)
         isa(f, Core.SSAValue) && (f = globalrefs[f])
         isa(f, GlobalRef) && (f = follow_globalref(f))
         f === throw && return validation_error("An exception may be throwned", i, ex, line)
@@ -512,7 +516,7 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
     !Meta.isexpr(ex, :invoke) && continue
     T = code.ssavaluetypes[i]
     line = getline(code, i)
-    mi = ex.args[1]
+    mi = get_method_instance(ex.args[1])
     if mi.def.module === SPIRV
       opcode = lookup_opcode(mi.def.name)
       isnothing(opcode) && return validation_error("Invocation of a `MethodInstance` defined in module SPIRV that does not correspond to an opcode (they should be inlined to ones that correspond to opcodes)", i, ex, line)
@@ -521,6 +525,9 @@ function validate(code::CodeInfo)::Result{Bool,ValidationError}
 
   true
 end
+
+get_method_instance(mi::MethodInstance) = mi
+get_method_instance(ci::CodeInstance) = CC.get_ci_mi(ci)
 
 function FunctionDefinition(mt::ModuleTarget, name::Symbol)
   for (id, val) in pairs(mt.debug.names)
