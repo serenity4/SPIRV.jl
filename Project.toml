@@ -1,7 +1,7 @@
 name = "SPIRV"
 uuid = "84138a67-b342-4d33-8200-33cfcca52eb2"
-version = "0.6.10"
 authors = ["Cédric Belmant"]
+version = "0.6.10"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
@@ -42,7 +42,7 @@ Accessors = "0.1"
 BitMasks = "0.1"
 CEnum = "0.4.1, 0.5"
 CompileTraces = "1"
-Cthulhu = "3"
+Cthulhu = "3, 2"
 Dictionaries = "0.3, 0.4"
 ForwardMethods = "1"
 Graphs = "1"
