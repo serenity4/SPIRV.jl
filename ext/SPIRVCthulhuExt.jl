@@ -2,7 +2,7 @@ module SPIRVCthulhuExt
 
 using Accessors
 using Core.IR
-using Cthulhu: Cthulhu, CthulhuState, CthulhuInterpreter, default_menu_commands, set_view, view_function, AbstractProvider, LookupResult, OptimizedSource, InferredSource, run_type_inference, Command
+using Cthulhu: Cthulhu, CthulhuState, CthulhuInterpreter, default_menu_commands, value_for_default_command, is_default_command_enabled, set_view, view_function, AbstractProvider, LookupResult, OptimizedSource, InferredSource, run_type_inference, Command
 using SPIRV
 using SPIRV: sprintc_mime, CompilationConfig
 using SPIRV.CC: InferenceResult
@@ -20,6 +20,11 @@ end
 
 Cthulhu.get_abstract_interpreter(provider::SPIRVProvider) = provider.interp
 Cthulhu.AbstractProvider(interp::SPIRVInterpreter) = SPIRVProvider(interp)
+
+function Cthulhu.is_command_enabled(provider::SPIRVProvider, state::CthulhuState, command::Command)
+  state.config.view !== :spirv && in(command.name, fieldnames(CompilationConfig)) && return false
+  return is_default_command_enabled(provider, state, command)
+end
 
 function Cthulhu.menu_commands(provider::SPIRVProvider)
   commands = default_menu_commands()
@@ -40,8 +45,7 @@ function Cthulhu.menu_commands(provider::SPIRVProvider)
 end
 
 function toggle_pass(key::Char, name::Symbol, description::String = string(name))
-  callback = state -> toggle_pass!(state, name)
-  Command(true, key, name, description, :passes, callback, callback)
+  Command(state -> toggle_pass!(state, name), key, name, description, :passes)
 end
 
 function toggle_pass!(state::CthulhuState, pass::Symbol)
@@ -50,6 +54,11 @@ function toggle_pass!(state::CthulhuState, pass::Symbol)
   value = !getproperty(config, pass)::Bool
   provider.config = setproperties(config, NamedTuple((pass => value,)))
   state.display_code = true
+end
+
+function Cthulhu.value_for_command(provider::SPIRVProvider, state::CthulhuState, command::Command)
+  isdefined(provider.config, command.name) && return getproperty(provider.config, command.name)
+  return value_for_default_command(provider, state, command)
 end
 
 function Cthulhu.view_function(provider::SPIRVProvider, view::Symbol)
