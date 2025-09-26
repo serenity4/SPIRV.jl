@@ -94,7 +94,7 @@ function IR(target::SPIRVTarget, interface::ShaderInterface, specializations)
   ep = define_entry_point!(mt, tr, specializations, fdef, globals, variables_to_load, interface.execution_model, interface.execution_options)
   ir = IR(mt, tr)
   insert!(ir.entry_points, ep.func, ep)
-  make_shader!(ir, fdef, interface, globals)
+  make_shader!(ir, fdef, interface, globals, target)
 end
 
 """
@@ -105,16 +105,21 @@ The provided interface describes storage locations and decorations for those glo
 
 It is assumed that the function arguments are typed to use the same storage classes.
 """
-function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterface, globals)
+function make_shader!(ir::IR, fdef::FunctionDefinition, interface::ShaderInterface, globals, target::SPIRVTarget)
   add_variable_decorations!(ir, globals, interface)
   emit_types!(ir)
   add_type_metadata!(ir, interface)
 
-  restructure_proper_regions!(ir)
-  fill_phi_branches!(ir)
-  restructure_merge_blocks!(ir)
-  add_merge_headers!(ir)
-  restructure_loop_header_conditionals!(ir)
+  try
+    restructure_proper_regions!(ir)
+    fill_phi_branches!(ir)
+    restructure_merge_blocks!(ir)
+    add_merge_headers!(ir)
+    restructure_loop_header_conditionals!(ir)
+  catch exc
+    isa(exc, CompilationError) || rethrow()
+    throw_compilation_error(exc, (; target))
+  end
 
   ir
 end

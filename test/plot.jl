@@ -19,7 +19,7 @@ function edgecolors(cfg::ControlFlowGraph)
   colors
 end
 
-plotcfg(g; names = Graphs.vertices(g), nodesize = 0.3, size = (1000, 1000), nodeshape = :circle, nodecolor = ["#ffabff"; fill("#ffbb00", Graphs.nv(g) - 1)], background_color = "rgb(10, 10, 12)", edgecolor=:gray, curvature = 0.01, kwargs...) = plot(g; names, nodesize, size, nodeshape, nodecolor, background_color, edgecolor, curvature, kwargs...)
+plotcfg(g; names = Graphs.vertices(g), nodesize = 0.3, size = (1500, 1000), nodeshape = :circle, nodecolor = ["#ffabff"; fill("#ffbb00", Graphs.nv(g) - 1)], background_color = "rgb(10, 10, 12)", edgecolor=:gray, curvature = 0.01, kwargs...) = plot(g; names, nodesize, size, nodeshape, nodecolor, background_color, edgecolor, curvature, kwargs...)
 plotcfg(g::DeltaGraph; kwargs...) = plotcfg(SimpleDiGraph(g); kwargs...)
 plotcfg(tgt::SPIRV.SPIRVTarget; kwargs...) = plotcfg(tgt.cfg; kwargs...)
 plotcfg(cfg::ControlFlowGraph; kwargs...) = plotcfg(cfg.g; edgecolor=edgecolors(cfg), kwargs...)

@@ -57,7 +57,7 @@ function simplify_cfg!(code::CodeInfo)
   mi = code.parent::MethodInstance
   isnothing(code.slottypes) && (code.slottypes = collect(mi.specTypes.types))
   ir = CC.inflate_ir!(code, mi)
-  @static if VERSION ≥ v"1.12-DEV"
+  @static if VERSION ≥ v"1.12-"
     ir.debuginfo.def = mi
   end
   ir = CC.compact!(CC.cfg_simplify!(CC.copy(ir)))

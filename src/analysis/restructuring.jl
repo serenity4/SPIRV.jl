@@ -256,7 +256,8 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
     is_selection(ctree) || is_loop(ctree) || continue
     outer_construct = find_parent(p -> is_selection(p) || is_loop(p), ctree)
     isnothing(outer_construct) && continue
-    merge_inner, merge_outer = merge_candidate.((ctree, outer_construct), cfg)
+    merge_inner = merge_candidate(ctree, cfg)
+    merge_outer = merge_candidate(outer_construct, cfg)
     @debug "Evaluating merge candidates for node $(node_index(ctree)) (parent: $(node_index(outer_construct))): merge_inner = $merge_inner, merge_outer = $merge_outer"
     if merge_inner ≠ merge_outer
       is_loop(outer_construct) || continue
@@ -264,7 +265,9 @@ function (pass!::RestructureMergeBlocks)(fdef::FunctionDefinition)
       # we also need to introduce a new block right before that continue block.
       o = node_index(outer_construct)
       local_back_edges = filter!(in(back_edges), [Edge(u, o) for u in inneighbors(cfg, o)])
-      length(local_back_edges) > 1 && throw_compilation_error("there is more than one backedge to a loop")
+      # XXX: if we have more than one backedge, we should attempt to restructure that too.
+      length(local_back_edges) > 1 && throw_compilation_error("there is more than one backedge to a loop (edges: $(join(local_back_edges, ", ")))")
+      # length(local_back_edges) > 1 && (display(Main.plotcfg(cfg)); throw_compilation_error("there is more than one backedge to a loop (edges: $(join(local_back_edges, ", ")))"))
       continue_target = src(only(local_back_edges))
       merge_inner ≠ continue_target && continue
     end
