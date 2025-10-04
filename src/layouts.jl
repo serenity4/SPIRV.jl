@@ -297,37 +297,85 @@ function datasize(layout::LayoutStrategy, type::SPIRType)
       dataoffset(layout, type, lastindex(members)) + datasize(layout, members[end])
     end
   end
-  value::Int
+  return value::Int
 end
 
 function dataoffset(layout::VulkanLayout, type::SPIRType, i::Integer)
+  istype(type, SPIR_TYPE_STRUCT) || return next_offset(layout, type, i, 0, 0)
+  offset = start = 0
+  for j in 2:i
+    start = offset + datasize(layout, type.struct.members[j - 1])
+    offset = next_offset(layout, type, j, start, start)
+  end
+  return offset
+end
+
+const STRADDLE_ADJUSTMENT_CANDIDATE_OFFSETS = 0:15
+straddle_adjustment_offset_to_mask(offset::Int) = UInt16(1) << offset
+straddle_adjustment_is_offset_in_mask(mask::UInt16, offset::Integer) = ((mask << (15 - offset)) >> 15) == 1
+
+function compatible_straddle_adjustments(alignment::Integer)
+  compatible = 0x0000
+  for offset in STRADDLE_ADJUSTMENT_CANDIDATE_OFFSETS
+    preserves_alignment(offset, alignment) || continue
+    compatible |= straddle_adjustment_offset_to_mask(offset)
+  end
+  return compatible
+end
+
+preserves_alignment(offset::Integer, alignment::Integer) = offset % alignment == 0
+
+function get_fitting_straddle_adjustments(layout::VulkanLayout, type::SPIRType, adjustments::UInt16, outer_offset::Integer)
+  if istype(type, SPIR_TYPE_VECTOR)
+    n = datasize(layout, type)
+    for offset in STRADDLE_ADJUSTMENT_CANDIDATE_OFFSETS
+      edge = (outer_offset + offset) % 16 + n
+      if n < 16
+        edge < 16 && continue
+      else
+        (outer_offset + offset) % 16 == 0 && continue
+      end
+      adjustments &= ~straddle_adjustment_offset_to_mask(offset)
+    end
+  elseif istype(type, SPIR_TYPE_STRUCT)
+    for (i, member) in enumerate(type.struct.members)
+      offset = dataoffset(layout, type, i)
+      adjustments &= get_fitting_straddle_adjustments(layout, member, adjustments, outer_offset + offset)
+    end
+  end
+  return adjustments
+end
+
+function next_offset(layout::VulkanLayout, type::SPIRType, i::Integer, from::Integer, outer::Integer)
   @match type.typename begin
     &SPIR_TYPE_ARRAY => (i - 1) * stride(layout, type)
     &SPIR_TYPE_STRUCT => begin
       i == 1 && return 0
       (; members) = type.struct
-      member_type = members[i]
-      req_alignment = alignment(layout, member_type)
-      prevloc = dataoffset(layout, type, i - 1) + datasize(layout, members[i - 1])
-      offset = align(prevloc, req_alignment)
-      if istype(member_type, SPIR_TYPE_VECTOR)
-        # Prevent vectors from straddling improperly, as defined per the specification.
-        n = datasize(layout, member_type)
-        if n > 16 || offset % 16 + n > 16
-          offset = align(offset, 16)
-        end
-      end
-      prev_member_type = members[i - 1]
-      @match prev_member_type.typename begin
+      prev = members[i - 1]
+      @when &SPIR_TYPE_MATRIX || &SPIR_TYPE_ARRAY || &SPIR_TYPE_STRUCT = prev.typename begin
         # Advance an offset to have some padding in accordance with the specification:
         #   The `Offset` decoration of a member must not place it between the end of a structure,
         #   an array or a matrix and the next multiple of the alignment of that structure, array or matrix.
         # https://registry.khronos.org/vulkan/specs/1.3-extensions/html/chap15.html#interfaces-resources-layout
-        &SPIR_TYPE_MATRIX || &SPIR_TYPE_ARRAY || &SPIR_TYPE_STRUCT => align(offset, alignment(layout, prev_member_type))
-        _ => offset
+        from = align(from, alignment(layout, prev))
       end
+      member = members[i]
+      req_alignment = alignment(layout, member)
+      offset = align(from, req_alignment)
+      # Prevent vectors from straddling improperly, as defined per the specification.
+      compatible = compatible_straddle_adjustments(req_alignment)
+      adjustments = get_fitting_straddle_adjustments(layout, member, compatible, offset)
+      @assert adjustments !== 0x0000
+      adjustment = 0
+      for offset in STRADDLE_ADJUSTMENT_CANDIDATE_OFFSETS
+        straddle_adjustment_is_offset_in_mask(adjustments, offset) || continue
+        adjustment = offset
+        break
+      end
+      return offset + adjustment
     end
-    _ => 0
+    _ => error(type.typename)
   end
 end
 
@@ -518,3 +566,49 @@ function dataoffset(tmeta::TypeMetadata, type::SPIRType, i)
   has_decoration(decs, DecorationOffset) || error("Missing offset declaration for member ", i, " on ", t)
   decs.offset
 end
+
+show_offsets(layout::LayoutStrategy, @nospecialize(T)) = show_offsets(stdout, layout, T)
+function show_offsets(io::IO, layout::LayoutStrategy, @nospecialize(T), depth::Int = 0, outer::Int = 0, is_new_struct::Bool = false)
+  type = layout[T]
+  istype(type, SPIR_TYPE_STRUCT) || return
+  !is_new_struct && print(io, "  "^depth)
+  printstyled(io, "struct"; color = :yellow)
+  printstyled(io, ' ', nameof(T); color = 134)
+  printstyled(io, " ($(type.struct.uuid))"; color = :light_black)
+  println(io)
+  start = 0
+  previous_offset = previous_size = 0
+  for i in 1:fieldcount(T)
+    subT = fieldtype(T, i)
+    member = layout[subT]
+    offset = next_offset(layout, type, i, start, outer)
+    size = datasize(layout, member)
+    padding = i == 1 ? 0 : offset - (previous_offset + previous_size)
+    start = offset + size
+    outer += padding
+    print(io, "  "^(depth + 1))
+    printstyled(io, fieldname(T, i); color = :light_black)
+    printstyled(io, "::"; color = 176)
+    if istype(member, SPIR_TYPE_STRUCT)
+      show_offsets(io, layout, subT, depth + 1, outer, true)
+      printstyled(io, " $offset"; color = :cyan)
+      print(io, " → ")
+      printstyled(io, "$(offset + size)"; color = 134)
+      printstyled(io, " ($(outer) → $(outer + size))"; color = :light_black)
+      println(io)
+    else
+      printstyled(io, subT; color = :yellow)
+      printstyled(io, " $offset"; color = :cyan)
+      print(io, " → ")
+      printstyled(io, "$(offset + size)"; color = 134)
+      printstyled(io, " ($(outer) → $(outer + size))"; color = :light_black)
+      println(io)
+      show_offsets(io, layout, subT, depth + 1, outer, false)
+    end
+    outer += size
+    previous_offset = offset
+    previous_size = size
+  end
+  printstyled(io, "  "^depth, "end"; color = :yellow)
+end
+
