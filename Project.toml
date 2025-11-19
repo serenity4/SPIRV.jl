@@ -32,7 +32,6 @@ Swizzles = "60694085-d904-4bfc-95dc-1e0e768e9359"
 Vulkan = "9f14b124-c50e-4008-a7d4-969b3a6cd68a"
 
 [extensions]
-# SPIRVCthulhuExt = "Cthulhu"
 SPIRVSwizzlesExt = "Swizzles"
 SPIRVVulkanExt = "Vulkan"
 
@@ -42,7 +41,7 @@ Accessors = "0.1"
 BitMasks = "0.1"
 CEnum = "0.4.1, 0.5"
 CompileTraces = "1"
-# Cthulhu = "3"
+Cthulhu = "3"
 Dictionaries = "0.3, 0.4"
 ForwardMethods = "1"
 Graphs = "1"
