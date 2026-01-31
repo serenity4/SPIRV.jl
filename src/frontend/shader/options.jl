@@ -50,6 +50,7 @@ Base.@kwdef struct MeshExecutionOptions <: ShaderExecutionOptions
   common::CommonExecutionOptions = CommonExecutionOptions()
   output::Symbol = :points
   max_output_vertices::Optional{UInt32} = nothing
+  max_output_primitives::Optional{UInt32} = nothing
 end
 
 function ShaderExecutionOptions(model::ExecutionModel)
@@ -156,13 +157,16 @@ function add_options!(ep::EntryPoint, options::TessellationExecutionOptions)
 end
 
 function validate(options::MeshExecutionOptions)
-  check_value(options, :output, (:points,))
+  check_value(options, :output, (:points, :lines, :triangles))
 end
 
 function add_options!(ep::EntryPoint, options::MeshExecutionOptions)
   add_options!(ep, options.common)
   options.output === :points && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputPoints))
+  options.output === :lines && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputLinesEXT))
+  options.output === :triangles && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputTrianglesEXT))
   !isnothing(options.max_output_vertices) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_output_vertices))
+  !isnothing(options.max_output_primitives) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputPrimitivesEXT, options.max_output_vertices))
   ep
 end
 
