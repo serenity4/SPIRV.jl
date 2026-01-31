@@ -16,7 +16,7 @@ jobs:
           ssh-private-key: ${{ secrets.ENV_KEY }}
       - uses: julia-actions/setup-julia@latest
         with:
-          version: "1"
+          version: "1.11"
       - uses: julia-actions/cache@v1
       - run: julia --color=yes --project -e 'using Pkg;
           Pkg.Registry.add(Pkg.RegistrySpec(url = "git@github.com:serenity4/Graphics"));
