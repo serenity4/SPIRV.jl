@@ -34,7 +34,7 @@ Base.@kwdef struct GeometryExecutionOptions <: ShaderExecutionOptions
   invocations::Optional{UInt32} = nothing
   input::Symbol = :triangles
   output::Symbol = :triangle_strip
-  max_output_vertices::Optional{UInt32} = nothing
+  max_vertices::UInt32 = 0
 end
 
 Base.@kwdef struct TessellationExecutionOptions <: ShaderExecutionOptions
@@ -43,14 +43,14 @@ Base.@kwdef struct TessellationExecutionOptions <: ShaderExecutionOptions
   vertex_order::Symbol = :cw
   point_mode::Bool = false
   generate::Symbol = :triangles
-  output_patch_size::Optional{UInt32} = nothing
+  max_vertices::Optional{UInt32} = nothing
 end
 
 Base.@kwdef struct MeshExecutionOptions <: ShaderExecutionOptions
   common::CommonExecutionOptions = CommonExecutionOptions()
   output::Symbol = :points
-  max_output_vertices::Optional{UInt32} = nothing
-  max_output_primitives::Optional{UInt32} = nothing
+  max_vertices::UInt32 = 0
+  max_primitives::UInt32 = 0
 end
 
 function ShaderExecutionOptions(model::ExecutionModel)
@@ -131,7 +131,7 @@ function add_options!(ep::EntryPoint, options::GeometryExecutionOptions)
   options.output === :points && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputPoints))
   options.output === :line_strip && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputLineStrip))
   options.output === :triangle_strip && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputTriangleStrip))
-  !isnothing(options.max_output_vertices) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_output_vertices))
+  !isnothing(options.max_vertices) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_vertices))
   ep
 end
 
@@ -152,7 +152,7 @@ function add_options!(ep::EntryPoint, options::TessellationExecutionOptions)
   options.generate === :triangles && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeTriangles))
   options.generate === :quads && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeQuads))
   options.generate === :isolines && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeIsolines))
-  !isnothing(options.output_patch_size) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_output_vertices))
+  !isnothing(options.max_vertices) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_vertices))
   ep
 end
 
@@ -165,8 +165,8 @@ function add_options!(ep::EntryPoint, options::MeshExecutionOptions)
   options.output === :points && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputPoints))
   options.output === :lines && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputLinesEXT))
   options.output === :triangles && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputTrianglesEXT))
-  !isnothing(options.max_output_vertices) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_output_vertices))
-  !isnothing(options.max_output_primitives) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputPrimitivesEXT, options.max_output_vertices))
+  push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_vertices))
+  push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputPrimitivesEXT, options.max_primitives))
   ep
 end
 
@@ -176,11 +176,12 @@ function validate_options_type(options::ShaderExecutionOptions, execution_model:
 end
 
 function validate(options::ShaderExecutionOptions, execution_model::ExecutionModel)
+  validate(options)
   execution_model == ExecutionModelFragment && return validate_options_type(options, execution_model, FragmentExecutionOptions)
   execution_model == ExecutionModelGLCompute && return validate_options_type(options, execution_model, ComputeExecutionOptions)
   execution_model == ExecutionModelGeometry && return validate_options_type(options, execution_model, GeometryExecutionOptions)
   if execution_model in (ExecutionModelTessellationControl, ExecutionModelTessellationEvaluation)
-    execution_model === ExecutionModelTessellationEvaluation && check_value(options, :output_patch_size, (nothing,))
+    execution_model === ExecutionModelTessellationEvaluation && check_value(options, :max_vertices, (nothing,))
     return validate_options_type(options, execution_model, TessellationExecutionOptions)
   end
   execution_model in (ExecutionModelMeshNV, ExecutionModelMeshEXT) && return validate_options_type(options, execution_model, MeshExecutionOptions)

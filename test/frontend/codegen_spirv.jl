@@ -478,4 +478,39 @@ SUPPORTED_FEATURES = SupportedFeatures(
     @test unwrap(validate(expected))
     @test ir ≈ expected renumber = true
   end
+
+  @testset "Mesh shaders" begin
+    struct MeshOutput
+      position::SPIRV.Vec4
+      point_size::Float32
+      clip_distance::Arr{1,Float32}
+      cull_distance::Arr{1,Float32}
+    end
+
+    function mesh_shader!(mesh_output::Mutable{Arr{3,MeshOutput}}, triangle_indices::Mutable{Arr{2,SPIRV.Vec3U}})
+      mesh_output[1] = MeshOutput(
+        SPIRV.Vec4(-1,-1,0, 1.f0),
+        1f0,
+        @arr([1f0]),
+        @arr([1f0]),
+      )
+      mesh_output[2] = MeshOutput(
+        SPIRV.Vec4(0,1,0, 1.f0),
+        1f0,
+        @arr([1f0]),
+        @arr([1f0]),
+      )
+      mesh_output[3] = MeshOutput(
+        SPIRV.Vec4(1,-1,0, 1.f0),
+        1f0,
+        @arr([1f0]),
+        @arr([1f0]),
+      )
+      triangle_indices[1] = SPIRV.Vec3U(0,1,2)
+    end
+
+    shader = @mesh mesh_shader!(::Mutable{Arr{3,MeshOutput}}::Output{MeshPerVertex}, ::Mutable{Arr{2,SPIRV.Vec3U}}::Output{PrimitiveTriangleIndicesEXT}) options=SPIRV.MeshExecutionOptions(output=:triangles, max_vertices=8, max_primitives=2)
+
+    @test unwrap(validate(shader))
+  end
 end;

@@ -6,6 +6,7 @@ const Mut{T} = Mutable{T}
 
 Base.getindex(mut::Mutable) = Load(mut)
 Base.getindex(mut::Mutable, index) = Load(mut)[index]
+Base.eltype(::Type{Mutable{T}}) where {T} = T
 
 @noinline Load(mut) = mut.value
 

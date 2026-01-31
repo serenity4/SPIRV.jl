@@ -100,15 +100,21 @@ function compile_shader_ex(ex::Expr, __module__, execution_model::ExecutionModel
     :($f($(args...))) => (f, args)
   end
 
-  argtypes, storage_classes, variable_decorations = shader_decorations(ex, __module__)
+  prelude, argtypes, storage_classes, variable_decorations, type_metadata = shader_decorations(ex, __module__)
 
   interface = :($ShaderInterface($execution_model;
     storage_classes = $(copy(storage_classes)),
     variable_decorations = $(deepcopy(variable_decorations)),
     features = something($features, $AllSupported()),
+    type_metadata = $dictionary([$(type_metadata...)]),
   ))
   !isnothing(options) && push!(interface.args[2].args, :(execution_options = $options))
-  compile_shader_ex(f, :($Tuple{$(argtypes...)}), interface; cache, assemble, layout, interpreter, validate, optimize)
+  compilation_ex = compile_shader_ex(f, :__spirv_shader_argtypes, interface; cache, assemble, layout, interpreter, validate, optimize)
+  quote
+    $(prelude...)
+    __spirv_shader_argtypes = $Tuple{$(argtypes...)}
+    $compilation_ex
+  end
 end
 
 function tryeval(__module__, ex)
@@ -134,9 +140,11 @@ function shader_decorations(ex::Expr, __module__ = @__MODULE__)
     :($f($(args...))) => (f, args)
   end
 
+  prelude = Expr[]
   argtypes = []
   storage_classes = StorageClass[]
   variable_decorations = Dictionary{Int,Decorations}()
+  type_metadata = Expr[]
   input_location = -1
   output_location = -1
   i = firstindex(args)
@@ -161,12 +169,22 @@ function shader_decorations(ex::Expr, __module__ = @__MODULE__)
         # We assume that there must be only one such declaration at maximum.
         for (j, dec) in enumerate(decs)
           isa(dec, Symbol) || continue
-          builtin = get_builtin(dec)
-          isnothing(builtin) && throw(ArgumentError("Unknown built-in decoration $dec in $(repr(arg))"))
-          get!(Decorations, variable_decorations, i).decorate!(DecorationBuiltIn, builtin)
-          deleteat!(decs, j)
-          other_builtins = filter(!isnothing ∘ get_builtin, decs)
-          !isempty(other_builtins) && throw(ArgumentError("More than one built-in decoration provided: $(join([builtin; other_builtins], ", "))"))
+          if dec === :MeshPerVertex
+            metadata = :(Metadata())
+            for (k, builtin) in enumerate((BuiltInPosition, BuiltInPointSize, BuiltInClipDistance, BuiltInCullDistance))
+              tname = :(eltype(:__spirv_shader_argtypes))
+              metadata = :($metadata.decorate!($k, $DecorationBuiltIn, $builtin))
+            end
+            push!(type_metadata, :($eltype(eltype(fieldtype(__spirv_shader_argtypes, $i))) => $metadata))
+            deleteat!(decs, j)
+          else
+            builtin = get_builtin(dec)
+            isnothing(builtin) && throw(ArgumentError("Unknown built-in decoration $dec in $(repr(arg))"))
+            get!(Decorations, variable_decorations, i).decorate!(DecorationBuiltIn, builtin)
+            deleteat!(decs, j)
+            other_builtins = filter(!isnothing ∘ get_builtin, decs)
+            !isempty(other_builtins) && throw(ArgumentError("More than one built-in decoration provided: $(join([builtin; other_builtins], ", "))"))
+          end
         end
       end
       if represents_constant(sc)
@@ -200,9 +218,9 @@ function shader_decorations(ex::Expr, __module__ = @__MODULE__)
           get!(Decorations, variable_decorations, i).decorate!(concrete_dec, args...)
         end
       end
-      if sc in (StorageClassInput, StorageClassOutput) && (!has_decorations || begin
+      if sc in (StorageClassInput, StorageClassOutput) && (!haskey(variable_decorations, i) || begin
             list = variable_decorations[i]
-            !has_decoration(list, DecorationBuiltIn) && !has_decoration(variable_decorations[i], DecorationLocation)
+            !has_decoration(list, DecorationBuiltIn) && !has_decoration(list, DecorationLocation)
         end)
         location = sc == StorageClassInput ? (input_location += 1) : (output_location += 1)
         get!(Decorations, variable_decorations, i).decorate!(DecorationLocation, UInt32(location))
@@ -217,7 +235,7 @@ function shader_decorations(ex::Expr, __module__ = @__MODULE__)
     end
   end
 
-  argtypes, storage_classes, variable_decorations
+  prelude, argtypes, storage_classes, variable_decorations, type_metadata
 end
 
 function get_enum_if_defined(dec, ::Type{T}) where {T}

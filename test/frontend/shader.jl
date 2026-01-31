@@ -91,17 +91,17 @@ shader2!(color) = @swizzle color.a = 1F
     @test_throws "Unknown decoration" @eval @fragment any_shader(::UInt32::Input{VertexIndex, @Typo(1)})
     @test_throws "Only one non-keyword expression" @eval @fragment VulkanLayout() any_shader(::UInt32::Input{VertexIndex, @Typo(1)})
 
-    argtypes, scs, vardecs = shader_decorations(:(any_shader(::Vec4::Uniform{@DescriptorSet(1)})))
+    prelude, argtypes, scs, vardecs, type_metadata = shader_decorations(:(any_shader(::Vec4::Uniform{@DescriptorSet(1)})))
     @test argtypes == [:Vec4]
     @test scs == [SPIRV.StorageClassUniform]
     @test vardecs == dictionary([1 => Decorations(SPIRV.DecorationDescriptorSet, 1)])
 
-    argtypes, scs, vardecs = shader_decorations(:(any_shader(::UInt32::Input{@Flat})))
+    prelude, argtypes, scs, vardecs, type_metadata = shader_decorations(:(any_shader(::UInt32::Input{@Flat})))
     @test argtypes == [:UInt32]
     @test scs == [SPIRV.StorageClassInput]
     @test vardecs == dictionary([1 => Decorations(SPIRV.DecorationFlat).decorate!(SPIRV.DecorationLocation, 0)])
 
-    argtypes, scs, vardecs = shader_decorations(:(any_shader(::UInt32::Input{@Flat}, ::Vec4::Input{Position}, ::Vec4::Input)))
+    prelude, argtypes, scs, vardecs, type_metadata = shader_decorations(:(any_shader(::UInt32::Input{@Flat}, ::Vec4::Input{Position}, ::Vec4::Input)))
     @test argtypes == [:UInt32, :Vec4, :Vec4]
     @test scs == [SPIRV.StorageClassInput, SPIRV.StorageClassInput, SPIRV.StorageClassInput]
     @test vardecs == dictionary([
@@ -110,7 +110,7 @@ shader2!(color) = @swizzle color.a = 1F
       3 => Decorations(SPIRV.DecorationLocation, 1),
     ])
 
-    argtypes, scs, vardecs = shader_decorations(:(any_shader(::Mutable{Vec3}::Output, ::GaussianBlur::Input, ::UInt32::Input{@Flat}, ::Vec2::Input)))
+    prelude, argtypes, scs, vardecs, type_metadata = shader_decorations(:(any_shader(::Mutable{Vec3}::Output, ::GaussianBlur::Input, ::UInt32::Input{@Flat}, ::Vec2::Input)))
     @test argtypes == [:(Mutable{Vec3}), :GaussianBlur, :UInt32, :Vec2]
     @test scs == [SPIRV.StorageClassOutput, SPIRV.StorageClassInput, SPIRV.StorageClassInput, SPIRV.StorageClassInput]
     # XXX: Implement a more clever `Location` assignment strategy, currently we just bump by 1 after assignment.
@@ -133,11 +133,11 @@ shader2!(color) = @swizzle color.a = 1F
     @test isa(compute_shader, ShaderSource)
     @test Vk.ShaderStageFlag(compute_shader) == Vk.SHADER_STAGE_COMPUTE_BIT
 
-    argtypes, scs, vardecs = shader_decorations(:(any_shader(::Arr{128, Float32}::Workgroup, ::Vec3::Input{GlobalInvocationId})))
+    prelude, argtypes, scs, vardecs, type_metadata = shader_decorations(:(any_shader(::Arr{128, Float32}::Workgroup, ::Vec3::Input{GlobalInvocationId})))
     @test argtypes == [:(Arr{128, Float32}), :Vec3]
     @test scs == [SPIRV.StorageClassWorkgroup, SPIRV.StorageClassInput]
 
-    argtypes, scs, vardecs = shader_decorations(:(any_shader(::Vec3U::Input{WorkgroupSize}, ::UInt32::Constant{1U}, ::Vec2::Constant{uv = zero(Vec2)})))
+    prelude, argtypes, scs, vardecs, type_metadata = shader_decorations(:(any_shader(::Vec3U::Input{WorkgroupSize}, ::UInt32::Constant{1U}, ::Vec2::Constant{uv = zero(Vec2)})))
 
     @test argtypes == [:Vec3U, :UInt32, :Vec2]
     @test scs == [SPIRV.StorageClassSpecConstantINTERNAL, SPIRV.StorageClassConstantINTERNAL, SPIRV.StorageClassSpecConstantINTERNAL]
