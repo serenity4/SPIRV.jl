@@ -33,7 +33,9 @@ function add_align_operands!(ir::IR, fdef::FunctionDefinition, layout::LayoutStr
       (; type, storage_class) = def.type.pointer
       if storage_class == StorageClassPhysicalStorageBuffer
         # We assume that no other storage class uses the pointer.
-        push!(ex, MemoryAccessAligned, UInt32(alignment(layout, type)))
+        align_value = alignment(layout, type)
+        align_value == 0 && (align_value = 2)
+        push!(ex, MemoryAccessAligned, UInt32(align_value))
       end
       @case &OpFunctionCall
       # Recurse into function calls.
