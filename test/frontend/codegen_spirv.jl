@@ -488,6 +488,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
     end
 
     function mesh_shader!(mesh_output::Mutable{Arr{3,MeshOutput}}, triangle_indices::Mutable{Arr{2,SPIRV.Vec3U}})
+      SPIRV.set_mesh_outputs(3, 1)
       mesh_output[1] = MeshOutput(
         SPIRV.Vec4(-1,-1,0, 1.f0),
         1f0,
@@ -509,7 +510,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
       triangle_indices[1] = SPIRV.Vec3U(0,1,2)
     end
 
-    shader = @mesh mesh_shader!(::Mutable{Arr{3,MeshOutput}}::Output{MeshPerVertex}, ::Mutable{Arr{2,SPIRV.Vec3U}}::Output{PrimitiveTriangleIndicesEXT}) options=SPIRV.MeshExecutionOptions(output=:triangles, max_vertices=8, max_primitives=2)
+    shader = @mesh mesh_shader!(::Mutable{Arr{3,MeshOutput}}::Output{MeshPerVertex}, ::Mutable{Arr{2,SPIRV.Vec3U}}::Output{PrimitiveTriangleIndicesEXT}) options=SPIRV.MeshExecutionOptions(output=:triangles, max_vertices = 3, max_primitives = 2)
 
     @test unwrap(validate(shader))
   end

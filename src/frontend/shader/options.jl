@@ -46,12 +46,23 @@ Base.@kwdef struct TessellationExecutionOptions <: ShaderExecutionOptions
   max_vertices::Optional{UInt32} = nothing
 end
 
-Base.@kwdef struct MeshExecutionOptions <: ShaderExecutionOptions
-  common::CommonExecutionOptions = CommonExecutionOptions()
-  output::Symbol = :points
-  max_vertices::UInt32 = 0
-  max_primitives::UInt32 = 0
+struct MeshExecutionOptions <: ShaderExecutionOptions
+  common::CommonExecutionOptions
+  local_size::Union{NTuple{3,UInt32},NTuple{3,ResultID}}
+  output::Symbol
+  max_vertices::UInt32
+  max_primitives::UInt32
 end
+
+function MeshExecutionOptions(; common::CommonExecutionOptions = CommonExecutionOptions(),
+                                   local_size::NTuple{3, <:Union{ResultID, Integer}} = (8, 8, 1),
+                                   output::Symbol = :points,
+                                   max_vertices::Integer = 1,
+                                   max_primitives::Integer = 1)
+  eltype(local_size) !== ResultID && (local_size = UInt32.(local_size))
+  MeshExecutionOptions(common, local_size, output, max_vertices, max_primitives)
+end
+
 
 function ShaderExecutionOptions(model::ExecutionModel)
   model == ExecutionModelFragment && return FragmentExecutionOptions()
@@ -108,10 +119,15 @@ end
 
 validate(options::ComputeExecutionOptions) = true
 
+function add_local_size!(ep::EntryPoint, options::ShaderExecutionOptions)
+  (; local_size) = options
+  isa(local_size, NTuple{3,UInt32}) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeLocalSize, local_size...))
+  isa(local_size, NTuple{3,ResultID}) && push!(ep.modes, @inst ExecutionModeId(ep.func, ExecutionModeLocalSizeId, local_size...))
+end
+
 function add_options!(ep::EntryPoint, options::ComputeExecutionOptions)
   add_options!(ep, options.common)
-  isa(options.local_size, NTuple{3,UInt32}) && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeLocalSize, options.local_size...))
-  isa(options.local_size, NTuple{3,ResultID}) && push!(ep.modes, @inst ExecutionModeId(ep.func, ExecutionModeLocalSizeId, options.local_size...))
+  add_local_size!(ep, options)
   ep
 end
 
@@ -167,6 +183,7 @@ function add_options!(ep::EntryPoint, options::MeshExecutionOptions)
   options.output === :triangles && push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputTrianglesEXT))
   push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputVertices, options.max_vertices))
   push!(ep.modes, @inst ExecutionMode(ep.func, ExecutionModeOutputPrimitivesEXT, options.max_primitives))
+  add_local_size!(ep, options)
   ep
 end
 

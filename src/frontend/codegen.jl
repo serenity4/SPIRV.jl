@@ -97,11 +97,11 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
           end
         else
           args, globals = peel_global_vars(args, mt, tr, fdef)
-          (OpFunctionCall, (emit_new!(mt, tr, target, mi, fdef, globals), args...))
+          (OpFunctionCall, (emit_new!(mt, tr, target, src, fdef, globals), args...))
         end
       else
         args, globals = peel_global_vars(args, mt, tr, fdef)
-        (OpFunctionCall, (emit_new!(mt, tr, target, mi, fdef, globals), args...))
+        (OpFunctionCall, (emit_new!(mt, tr, target, src, fdef, globals), args...))
       end
     end
     Expr(:foreigncall, f, _...) => begin
@@ -124,7 +124,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
     end
   end
 
-  type = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier)) ? nothing : spir_type(jtype, tr.tmap)
+  type = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier, OpSetMeshOutputsEXT)) ? nothing : spir_type(jtype, tr.tmap)
 
   isa(jinst, Core.PhiNode) && ismutabletype(jtype) && (type = pointer_type(StorageClassFunction, type))
   if !isnothing(type) && istype(type, SPIR_TYPE_POINTER) && in(opcode, (OpAccessChain, OpPtrAccessChain))
@@ -140,7 +140,7 @@ function emit_expression!(mt::ModuleTarget, tr::Translation, target::SPIRVTarget
 
   remap_args!(args, mt, tr, opcode)
 
-  result = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier)) ? nothing : next!(mt.idcounter)
+  result = in(opcode, (OpStore, OpImageWrite, OpControlBarrier, OpMemoryBarrier, OpSetMeshOutputsEXT)) ? nothing : next!(mt.idcounter)
 
   ex = @ex result = opcode(args...)::type
   (ex, type)
@@ -276,6 +276,8 @@ function const_to_literals!(args, mt::ModuleTarget, tr::Translation, opcode)
   end
 end
 
+emit_new!(mt::ModuleTarget, tr::Translation, from::SPIRVTarget, ci::CodeInstance, fdef::FunctionDefinition, globals) =
+  emit_new!(mt, tr, from, ci.def, fdef, globals)
 function emit_new!(mt::ModuleTarget, tr::Translation, from::SPIRVTarget, mi::MethodInstance, fdef::FunctionDefinition, globals)
   (; interp) = from
   target = SPIRVTarget(mi, interp)

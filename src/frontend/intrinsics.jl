@@ -287,3 +287,8 @@ end)
 
 @noinline CompositeExtract(m::Mat, i::UInt32, j::UInt32) = m.data[i + (j - 1)nrows(m)]
 @noinline CompositeExtract(m::Mat{N,M,T}, i::UInt32) where {N,M,T} = Vec{N,T}(ntuple(j -> m.data[j + (i - 1)N], N))
+
+@inline SetMeshOutputsEXT(vertex_count, primitive_count) = SetMeshOutputsEXT(vertex_count * U, primitive_count * U)
+@noinline SetMeshOutputsEXT(vertex_count::UInt32, primitive_count::UInt32) = invokelatest(+, vertex_count, primitive_count)::UInt32
+
+@inline set_mesh_outputs(vertex_count, primitive_count) = SetMeshOutputsEXT(vertex_count, primitive_count)
