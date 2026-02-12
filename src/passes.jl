@@ -679,3 +679,49 @@ function simplify_branches(ex::Expression)
     _ => ex
   end
 end
+
+struct OutputLoadCompositeInsertStoreToAccessChainStore <: FunctionPass end
+
+output_load_composite_insert_store_to_access_chain_store!(ir::IR) = OutputLoadCompositeInsertStoreToAccessChainStore()(ir)
+
+function (::OutputLoadCompositeInsertStoreToAccessChainStore)(ir::IR, fdef::FunctionDefinition)
+  for blk in fdef
+    @label again
+    for (i, store) in enumerate(blk)
+      store.op === OpStore || continue
+      dest = store[1]::ResultID
+      value = store[2]::ResultID
+      variable = get(ir.global_vars, dest, nothing)
+      variable === nothing && continue
+      variable.storage_class == StorageClassOutput || continue
+      pointee_type = variable.type.pointer[2]
+      iscomposite(pointee_type) || continue
+      # From here, we have an OpStore on an output composite variable.
+      # Let's see if this results from a Load + CompositeInsert instruction.
+      insert = definition(value, fdef, ir)
+      isa(insert, Expression) || continue
+      insert === blk[i - 1] || continue
+      insert.op === OpCompositeInsert || continue
+      length(insert.args) == 3 || continue
+      object = insert[1]::ResultID
+      composite = insert[2]::ResultID
+      index_literal = insert[3]::UInt32
+      load = definition(composite, fdef, ir)
+      isa(load, Expression) || continue
+      load === blk[i - 2] || continue
+      source = load[1]::ResultID
+      source === dest || continue
+      # Now we replace the three instructions with an AccessChain/Store pair.
+      index = emit_constant!(ir, Constant(index_literal))
+      access_chain_ptr = next!(ir.idcounter)
+      object_type = retrieve_type(object, fdef, ir)
+      access_chain_type = pointer_type(variable.storage_class, object_type)
+      patch = Expression[]
+      push!(patch, @ex access_chain_ptr = AccessChain(dest, index)::access_chain_type)
+      push!(patch, @ex Store(access_chain_ptr, object))
+      splice!(blk, (i - 2):i)
+      insert!(blk, i - 2, patch)
+      @goto again
+    end
+  end
+end

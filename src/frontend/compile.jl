@@ -9,6 +9,7 @@ Base.@kwdef struct CompilationConfig
   composite_extract_dynamic_to_literal::Bool = true
   composite_extract_to_access_chain_load::Bool = true
   remove_op_nops::Bool = true
+  output_load_composite_insert_store_to_access_chain_store::Bool = true
 end
 
 @refbroadcast struct ModuleTarget
@@ -109,6 +110,7 @@ function IR(mt::ModuleTarget, tr::Translation)
   config.composite_extract_dynamic_to_literal && composite_extract_dynamic_to_literal!(ir)
   config.composite_extract_to_access_chain_load && composite_extract_to_access_chain_load!(ir)
   config.remove_op_nops && remove_op_nops!(ir)
+  config.output_load_composite_insert_store_to_access_chain_store && output_load_composite_insert_store_to_access_chain_store!(ir)
   return ir
 end
 
