@@ -17,6 +17,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
   [
     "SPV_KHR_vulkan_memory_model",
     "SPV_EXT_physical_storage_buffer",
+    "SPV_EXT_mesh_shader",
   ],
   [
     SPIRV.CapabilityVulkanMemoryModel,
@@ -26,6 +27,9 @@ SUPPORTED_FEATURES = SupportedFeatures(
     SPIRV.CapabilityVariablePointers,
     SPIRV.CapabilityStorageImageExtendedFormats,
     SPIRV.CapabilityImageQuery,
+    SPIRV.CapabilityMeshShadingEXT,
+    SPIRV.CapabilityClipDistance,
+    SPIRV.CapabilityCullDistance,
   ],
 )
 
@@ -510,7 +514,7 @@ SUPPORTED_FEATURES = SupportedFeatures(
       triangle_indices[1] = SPIRV.Vec3U(0,1,2)
     end
 
-    shader = @mesh mesh_shader!(::Mutable{Arr{3,MeshOutput}}::Output{MeshPerVertex}, ::Mutable{Arr{2,SPIRV.Vec3U}}::Output{PrimitiveTriangleIndicesEXT}) options=SPIRV.MeshExecutionOptions(output=:triangles, max_vertices = 3, max_primitives = 2)
+    shader = @mesh mesh_shader!(::Mutable{Arr{3,MeshOutput}}::Output{MeshPerVertex}, ::Mutable{Arr{2,SPIRV.Vec3U}}::Output{PrimitiveTriangleIndicesEXT}) options=SPIRV.MeshExecutionOptions(output=:triangles, max_vertices = 3, max_primitives = 2) features = SUPPORTED_FEATURES
 
     @test unwrap(validate(shader))
   end
